@@ -2,8 +2,6 @@
 # -*- coding: utf-8 -*-
 # PEP 0008 -- Style Guide for Python Code
 
-#ajout le 7/10 : second item de qualité des photos
-
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
 import tkinter.ttk as ttk                   # amélioration de certains widgets de tkinter : le comportement est géré indépendamment de l'apparence : c'est mieux ! mais différent !
@@ -20,6 +18,7 @@ from   PIL import ImageTk
 from   PIL import ImageDraw
 import base64
 import tempfile
+import inspect
 
 ########################### Classe pour tracer les masques
 
@@ -707,15 +706,23 @@ class Interface(ttk.Frame):
         # zone de test éventuel :
                           
 
-    ####################### initialiseValeursParDefaut du défaut : On choisit de nouvelles photos : on oublie ce qui précéde, sauf les paramètres généraux de aperodedenis (param micmac)
-
+    #initialise les valeurs par défaut au lancement de l'outil
+        
     def initialiseConstantes(self):
+
+        repertoire_script=os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+        if not os.path.isdir(repertoire_script):
+            repertoire_script = os.path.dirname(os.path.abspath(__file__))
+            if not os.path.isdir(repertoire_script):
+                repertoire_script = os.path.dirname(sys.argv[0])
+                if not os.path.isdir(repertoire_script):
+                     repertoire_script = os.getcwd()   
 
        # initialisation variables globales et propre au contexte local :
 
-        self.repertoireScript           =   os.path.dirname(sys.argv[0])                        # là sont enrgistrés les paramètres généraux et le dossie ren cours
+        self.repertoireScript           =   repertoire_script                                   # là sont enrgistrés les paramètres généraux et le dossie ren cours
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 1.4"
+        self.version                    =   " V 1.51"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -977,9 +984,9 @@ class Interface(ttk.Frame):
         self.item710=ttk.Frame(self.item700,height=50,relief='sunken',padding="0.2cm")      # pour le check button, fera un encadrement
         self.item701=ttk.Label(self.item710,text="image maitresse = ")
         self.item702=ttk.Button(self.item710,text="Choisir l'image maîtresse",command=self.imageMaitresse)
-        self.item703=ttk.Label(self.item710,text="masque = ")        
+        self.item703=ttk.Label(self.item710,text="Pas de masque.")
         self.item704=ttk.Button(self.item710,text='Tracer le masque',command=self.traceMasque) 
-        self.item705=ttk.Label(self.item700,text="Attention : le masque 3D de C3DC a la priorité sur Malt")
+        self.item705=ttk.Label(self.item700,text="Attention :\nLe masque 3D de C3DC a la priorité sur Malt\nTracer le masque supprime le masque précédent")
         self.item701.pack()        
         self.item702.pack(ipady=2,pady=10)
         self.item703.pack()                
@@ -1336,7 +1343,9 @@ class Interface(ttk.Frame):
         self.logoIGN                    =       os.path.join(self.repertoireScript,'logoIGN.jpg')
         self.messageNouveauDepart       =       str()   # utilisé lorsque l'on relance la fenêtre
         self.nbEncadre                  =       0       # utilisé pour relancer la fenetre
-        
+
+    ####################### initialiseValeursParDefaut du défaut : On choisit de nouvelles photos : on oublie ce qui précéde, sauf les paramètres généraux de aperodedenis (param micmac)
+       
     def initialiseValeursParDefaut(self):
 
     # Numéro du chantier : pour indicer le numéro du répertoire de travail : un nouveau est créé à chaque éxécution
@@ -1381,9 +1390,13 @@ class Interface(ttk.Frame):
         self.modeMalt.set('GeomImage')
         self.masque                     =   str()                                               # nom du fichier image représentant le masque sur l'image maitresse
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
+        self.masqueSansCheminProvisoire =   str()
+        self.maitre                     =   str()        
         self.maitreSansChemin           =   str()                                               # image maitresse
+        self.maitreSansCheminProvisoire =   str()
+        self.item701.config(text="Pas d'image maitresse.")
+        self.item703.config(text="Pas de masque")                                               # réinitialise le masque        
         self.maitreCommentaire          =   str()                                               # indique si l'image maitresse est choisie automatiquement
-        self.maitre                     =   str()
         self.fichierMasqueXML           =   str()                                               # nom du fichier XML décrivant le masque
         self.nomMaitreSansExtension     =   str()
         self.monImage_MaitrePlan        =   str()                                               # Nom de l'image maitresse du plan repere (sans extension)
@@ -1738,14 +1751,15 @@ class Interface(ttk.Frame):
         else:
             return False
         
-    def existeMasque2D(self):
+    def existeMaitre2D(self):
         if self.repTravail==self.repertoireScript:
             return False        
-        if os.path.exists(self.masque) and os.path.exists(self.maitre) and self.modeMalt.get()=="GeomImage":
+        if os.path.exists(self.maitre) and str(self.modeMalt.get())=="GeomImage":
             return True        
-        if str(self.modeMalt.get())=="GeomImage":    # pas besoin de masque !
-            return False        
-        return True        
+        if str(self.modeMalt.get())!="GeomImage":    # pas besoin d'image maitresse !
+            return True
+        else:                                       # le mode est geomimage et il n'y a pas d'image maitre
+            return False      
         
     def afficherToutesLesPhotos(self):
         self.choisirUnePhoto(self.photosAvecChemin,
@@ -2000,8 +2014,8 @@ class Interface(ttk.Frame):
         self.fermerVisuPhoto()                          #  s'il y a une visualisation en cours des photos ou du masque on la ferme             
 
         if self.etatDuChantier>2:                       # 1 = avec photo ; 2 = enregistré, plus = traitement effectué
-            if self.deuxBoutons("Réinialiser le chantier.",
-                                "Les résultats en cours seront effacés.\n Pour conserver le chantier créer un nouveau chantier.?",
+            if self.deuxBoutons("Choisir de nouvelles photos réinitialisera le chantier.",
+                                "Les résultats en cours seront effacés.\n",
                                 "Abandon",
                                 "Réinitialiser") == 0:
                 return
@@ -2035,7 +2049,7 @@ class Interface(ttk.Frame):
         retourExtraire=self.extrairePhotoEtCopier(photos)       # crée le repertoire de travail, copie les photos et renvoit le nombre de fichiers photos "aceptables"
 
         if retourExtraire.__class__()=='':              # si le retour est un texte alors erreur, probablement création du répertoire impossible
-            self.encadre (retourExtraire)
+            self.encadre ("Impossible de créer le répertoire de travail.\nVérifier les droits en écriture sous le répertoire des photos\n"+retourExtraire)
             return 
         if retourExtraire==0:                           # extraction et positionne  self.repertoireDesPhotos, et les listes de photos avec et sanschemin (photosAvecChemin et photosSansChemin)
             self.encadre ("Aucun JPG sélectionné,\nle répertoire et les photos restent inchangés.\n")
@@ -2070,8 +2084,8 @@ class Interface(ttk.Frame):
             return 0
         liste.sort()
         oldRepertoireDesphotos =  self.repertoireDesPhotos  
-        self.repertoireDesPhotos=os.path.dirname(liste[0])                                              # si positif alors on affecte le repertoire (string)
-        self.photosAvecChemin= list(liste)                                                              # les photos avec les chemins initiaux 
+        self.repertoireDesPhotos = os.path.dirname(liste[0])                                              # si positif alors on affecte le repertoire (string)
+        self.photosAvecChemin = list(liste)                                                              # les photos avec les chemins initiaux 
 
         # création du répertoire du chantier si nouveau chantier
                       
@@ -2173,6 +2187,7 @@ class Interface(ttk.Frame):
             self.onglets.hide(self.item400)                         # tapioca
             self.onglets.hide(self.item500)                         # tapas
             self.onglets.hide(self.item950)                         # Calibration
+            self.item703.config(text="Masque = "+self.masqueSansChemin)
             self.item710.pack(pady=15)                              # Malt : toujours présent
             selection = self.item700
      
@@ -2184,7 +2199,13 @@ class Interface(ttk.Frame):
         else:
             try: self.onglets.hide(self.item800)
             except: pass
-            
+
+        # préparation du masque :
+        
+        self.masqueProvisoire = str()
+        self.masqueSansCheminProvisoire = str()
+        self.item703.config(text="Masque = "+self.masqueSansChemin)
+        
         # dernier onglet (qui se régénére, forcément le dernier)
 
         self.optionsReperes()                                       # points GPS, en nombre variable # points de repères calés dans la scène
@@ -2199,11 +2220,12 @@ class Interface(ttk.Frame):
         texte = str()
         # Pour Tapioca : toutes les variables sont sauvées 
         # Pour tapas :
-
-        self.maitreSansChemin = os.path.basename(self.maitre)    # photoMaitre sans chemin avec extension, en minuscule
-
-        self.ecrireMasqueXML()                                      # création du fichier xml associé à l'image maitresse
+        # Pour Malt :
         
+        self.maitreSansChemin = os.path.basename(self.maitre)       # photoMaitre sans chemin avec extension, en minuscule
+
+        self.ecrireMasqueXML()                                      # création du fichier xml associé à l'image maitresse, si besoin, sinon efface
+
         try: del self.masqueRetour                                  # suppression de l'objet "saisie du masque" s'il existe
         except : pass
 
@@ -2219,6 +2241,7 @@ class Interface(ttk.Frame):
         
         if self.controleOptions()!=True:                                # Controle de cohérence de la saisie (valeur entière...)
             texte=("Saisie d'une option incomplète ou incorrecte.\nCorriger.\n"+str(self.controleOptions()))
+        self.sauveParam()
         self.afficheEtat(texte)
         
     def finCalibrationGPSOK(self):                                  # crée le fichier xml qui va bien avec les données saisies
@@ -2477,9 +2500,22 @@ class Interface(ttk.Frame):
         
         return True
 
-    def finOptionsKO(self):       
-        self.restaureParamChantier(self.fichierParamChantierEnCours)
-        self.afficheEtat('Pas de changement.')
+    def finOptionsKO(self):
+
+        if self.masque==str():                                             #le masque 2D a pu être supprimé définitivement
+            self.restaureParamChantier(self.fichierParamChantierEnCours)
+            if  self.masque==str():
+                message = "Pas de changement./n"
+            else:
+                message = "Masque 2D supprimé./n"
+            self.masque = str()
+            self.masqueSansChemin = str()
+            self.sauveParam()            
+        else:
+            self.restaureParamChantier(self.fichierParamChantierEnCours)
+            message = "Pas de changement/n"
+        self.afficheEtat(message)
+
         
     #"""""""""""""""""""""""   Options de TAPIOCA
         
@@ -2497,7 +2533,8 @@ class Interface(ttk.Frame):
             
         if self.modeTapioca.get()=='Line':
             self.item470.pack(pady=15)
-        
+
+    # Options de Malt        
         
     def imageMaitresse(self):
         self.choisirUnePhoto(self.photosPropresAvecChemin,
@@ -2533,22 +2570,30 @@ class Interface(ttk.Frame):
 
         if os.path.exists(self.maitre):                                                         #l'image maître doit exister
             self.masqueProvisoire = os.path.splitext(self.maitre)[0]+"_Masq_provisoire.tif"     # Nom du fichier masque, à partir du fichier maître, imposé par micmac
-            self.masqueSansCheminProvisoire = os.path.basename(self.masqueProvisoire)           # sans le chemin       
+            self.masqueSansCheminProvisoire = os.path.basename(self.masqueProvisoire)           # sans le chemin
+            supprimeMasque(self.repTravail,"_Masq.tif")                                         # suppression des anciens masques
+            supprimeFichier(self.fichierMasqueXML)
+            self.masque = str()
+            self.masquesansChemin = str()
             self.masqueRetour = TracePolygone(fenetre,self.maitre,self.masqueProvisoire)        # L'utilisateur peut tracer le masque sur l'image maitre 
             if self.masqueRetour.polygone == True:                                              # si retour OK (masqueRetour est un élément de la classe tracePolygone)
                 self.item703.config(text="masque = "+self.masqueSansCheminProvisoire)           # affichage du nom du masque
             else:
                  self.masqueProvisoire = str()                                                  # pas de masque : détricotage
-                 self.masqueSansCheminProvisoire = str()                
+                 self.masqueSansCheminProvisoire = str()
+                 self.item703.config(text="pas de masque")
         else:
             self.item703.config(text="Il faut une image maîtresse pour définir un masque.",
                                 background="#ffffaa")
 
     def ecrireMasqueXML(self):
-        try:        
-            if self.masqueProvisoire==str():
-                return
-        except: return
+ 
+        if self.masqueProvisoire==str() or os.path.exists(self.masqueProvisoire)==False:                         # si pas de masque
+            supprimeMasque(self.repTravail,"_Masq.tif")          # suppression des anciens masques s'ils existent
+            supprimeFichier(self.fichierMasqueXML)                      # suppression ancien xml
+            self.masque = str()
+            self.masqueSansChemin = str()
+            return
         self.masque = os.path.splitext(self.maitre)[0]+"_Masq.tif"                              # nom définitif du masque
         self.masqueSansChemin = os.path.basename(self.masque)
         if os.path.exists(self.masque):
@@ -3112,11 +3157,13 @@ class Interface(ttk.Frame):
             self.encadre(ligne)
             return
 
-        if not(self.existeMasque3D() or self.existeMasque2D()):
-            ligne = ("Pas de masque, 2D ou 3D, généré pour Malt.\n"+
+        if not(self.existeMasque3D() or self.existeMaitre2D()):
+            ligne = ("Pas de masque 3D, ou d'image maitresse pour Malt.\n"+
                      "Le traitement ne peut se poursuivre.\n"+
-                     "Changer le mode 'GeomImage' qui impose un masque\n"+
-                     "ou définir un masque 2D ou 3D (item option/Malt ou C3DC)\n")
+                     "Définir une image maitresse\n"+                     
+                     "ou Changer le mode 'GeomImage' qui impose une image maitresse\n"+
+                     "ou définir un masque 3D\n"+
+                     "Pour cela utiliser l'item option/Malt ou option/C3DC du menu MicMac\n")
             self.ajoutLigne(ligne)
             self.encadre(ligne)
             return
@@ -3684,7 +3731,7 @@ class Interface(ttk.Frame):
         if os.path.exists(self.exiftool):
             exif = (self.exiftool,
                     "-"+tag,
-                    os.path.join(self.repTravail,"*"+self.extensionChoisie))
+                    os.path.join(self.repTravail))
             self.lanceCommande(exif,
                                self.FiltreTags)
         return self.tags
@@ -4149,8 +4196,16 @@ class Interface(ttk.Frame):
             self.modeCheckedTapas.set(r[31])
             self.echelle4.set(r[32])
 
-            self.item701.config(text="image maitresse = "+self.maitreSansChemin)
-            
+            if self.maitreSansChemin==str():
+                self.item701.config(text="Pas d'image maitresse.")              
+            else:
+                self.item701.config(text="image maitresse = "+self.maitreSansChemin)
+                
+            if self.masqueSansChemin!=str():
+                self.item703.config(text="Masque = "+self.masqueSansChemin)                       # réinitialise le masque
+            else:
+                self.item703.config(text="Pas de masque.")
+           
         except Exception as e:
             pass     
 
@@ -4850,6 +4905,11 @@ def supprimeFichier(fichier):
     except:
         return
 
+def supprimeMasque(repertoire,masque):
+    for e in os.listdir(repertoire):
+        if masque in e:
+            supprimeFichier(e)
+
 def blancAuNoir(p):
     if p == 255:
         return 0
@@ -4878,7 +4938,11 @@ def supprimeArborescenceSauf(racine,listeSauf=list()):  # supprime toute une arb
                 shutil.rmtree(chemin)
         else:
             if os.path.isfile(chemin):
-                os.remove(chemin)           
+                try:
+                    os.remove(chemin)
+                except Exception as e:
+                    print(e)
+                    return
             else:
                 shutil.rmtree(chemin)           # on supprime tous les sous répertoires 'calculs, temporaires...)
 
