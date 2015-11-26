@@ -591,7 +591,7 @@ class Interface(ttk.Frame):
                     time.sleep(0.1)
                 self.logo1.destroy()
         except Exception as e:
-            print(e)
+            print(str(e))
 
         # initialise les variables "chantier"
                 
@@ -709,20 +709,14 @@ class Interface(ttk.Frame):
     #initialise les valeurs par défaut au lancement de l'outil
         
     def initialiseConstantes(self):
+       
 
-        repertoire_script=os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
-        if not os.path.isdir(repertoire_script):
-            repertoire_script = os.path.dirname(os.path.abspath(__file__))
-            if not os.path.isdir(repertoire_script):
-                repertoire_script = os.path.dirname(sys.argv[0])
-                if not os.path.isdir(repertoire_script):
-                     repertoire_script = os.getcwd()   
 
        # initialisation variables globales et propre au contexte local :
 
         self.repertoireScript           =   repertoire_script                                   # là sont enrgistrés les paramètres généraux et le dossie ren cours
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 1.51"
+        self.version                    =   " V 1.52"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -1612,11 +1606,11 @@ class Interface(ttk.Frame):
         try:
             self.etatSauvegarde = ""                                                    # Pour indiquer que le chantier sauvegardé sous le répertoire du chantier
             self.sauveParam()
-            if self.repTravail!=os.path.dirname(self.fichierParamChantierEnCours):      # pour éviter de copier un fichier sur lui même
-                shutil.copy(self.fichierParamChantierEnCours,self.repTravail)            
+            try: shutil.copy(self.fichierParamChantierEnCours,self.repTravail)        # pour éviter de copier un fichier sur lui même
+            except Exception as e: print("erreur copie : ",self.fichierParamChantierEnCours," vers ",self.repTravail," erreur=",str(e))
             fenetre.title(self.etatSauvegarde+self.titreFenetre)            
         except Exception as e:
-            self.ajoutLigne("Erreur lors de la copy du fichier paramètre chantier \n"+self.fichierParamChantierEnCours+"\n vers \n"+self.repTravail+"\n erreur : \n"+e)
+            self.ajoutLigne("Erreur lors de la copy du fichier paramètre chantier \n"+self.fichierParamChantierEnCours+"\n vers \n"+self.repTravail+"\n erreur : \n"+str(e))
 
 
     ################################## LE MENU EDITION : afficher l'état, les photos, lire une trace, afficher les nuages de points ############################
@@ -1905,11 +1899,13 @@ class Interface(ttk.Frame):
 
     def afficheParam(self):
         texte =('\nRépertoire bin de MicMac : \n\n'+afficheChemin(self.micMac)+
-                '\n\n------------------------------\n'+
-                '\n\nOutil exiftool : \n\n'+afficheChemin(self.exiftool)+
-                '\n\n------------------------------\n'+
-                '\n\nOutil pour afficher les .ply : \n\n'+afficheChemin(self.meshlab)+
-                '\n\n------------------------------\n')        
+                '\n------------------------------\n'+
+                '\nOutil exiftool : \n\n'+afficheChemin(self.exiftool)+
+                '\n------------------------------\n'+
+                '\nOutil pour afficher les .ply : \n\n'+afficheChemin(self.meshlab)+
+                '\n------------------------------\n'+
+                "\nRépertoire d'AperoDeDenis : \n\n"+afficheChemin(self.repertoireScript)+
+                '\n------------------------------\n')
         self.encadre(texte)
 
     def repMicmac(self):
@@ -2105,8 +2101,8 @@ class Interface(ttk.Frame):
                     if not os.path.exists(dest):                            # on ne copie que si le fichier n'est pas déjà présent
                         shutil.copy(e,dest)                                 # copie du fichier sous le répertoire de travail                       
                     ajout(listeCopie,dest)                                     # liste des fichiers à traiter
-        except Exception as err:
-            texte=  'erreur lors de la copie du fichier\n'+e+'\n dans le répertoire \n'+self.repTravail+"\nlibellé de l'erreur : \n"+str(err)+\
+        except Exception as e:
+            texte=  'erreur lors de la copie du fichier\n'+e+'\n dans le répertoire \n'+self.repTravail+"\nlibellé de l'erreur : \n"+str(e)+\
                     "\nCauses possibles : manque d'espace disque ou droits insuffisants."
             return texte
         
@@ -3331,7 +3327,7 @@ class Interface(ttk.Frame):
             return ligne           
         if 'utopano' in ligne and self.etape==0:                    # début de la première étape sur la première échelle
             self.etape+=1
-            return heure()+"Recherche des points remarquables et des correspondances sur une image de taille "+self.echelle1PourMessage+" pixels.\n\n"
+            return heure()+"\nRecherche des points remarquables et des correspondances sur une image de taille "+self.echelle1PourMessage+" pixels.\n\n"
         if 'utopano' in ligne and self.etape==1:                    # début de la seconde étape sur la seconde échelle
             self.etape+=1
             if self.echelle2PourMessage=="-1":
@@ -4106,7 +4102,7 @@ class Interface(ttk.Frame):
                         sauvegarde1)
             sauvegarde1.close()
         except Exception as e:
-            print ('erreur sauveParamChantier : ',e)
+            print ('erreur sauveParamChantier : ',str(e))
 
        
     def sauveParamMicMac(self):
@@ -4123,7 +4119,7 @@ class Interface(ttk.Frame):
                         sauvegarde2)
             sauvegarde2.close()            
         except Exception as e:              # Controle que le programme a accès en écriture dans le répertoire d'installation
-            print ('erreur sauveParamMicMac : ',e)
+            print ('erreur sauveParamMicMac : ',str(e))
             texte = "L'interface doit être installée dans un répertoire ou vous avez les droits d'écriture.\n\n"+\
                     "Installer l'interface AperoDeDenis à un emplacement ou vous avez ce droit.\n\n"+\
                     "Répertoire actuel : "+self.repertoireScript+".\n\n"+\
@@ -4150,7 +4146,7 @@ class Interface(ttk.Frame):
 
             self.CameraXML = os.path.join(os.path.dirname(self.micMac),self.dicoCameraGlobalRelatif)
 
-        except Exception as e: print("Erreur restauration param généraux : ",e)
+        except Exception as e: print("Erreur restauration param généraux : ",str(e))
 
         self.mm3dOK                         =   verifMm3d(self.mm3d)                # Booléen indiquant si la version de MicMac permet la saisie de masque 3D         
         
@@ -4249,7 +4245,7 @@ class Interface(ttk.Frame):
         self.listeFrames()
         for a in self.l:
             try: exec("self."+a+".pack_forget()")
-            except Exception as e : print("Erreur menage : ",e)
+            except Exception as e : print("Erreur menage : ",str(e))
 
     def listeFrames(self):                                          # CREE LA LISTE DE TOUS LES FRAMES de la fenetre self
         self.l=list()
@@ -4457,7 +4453,7 @@ class Interface(ttk.Frame):
             self.lignePourTrace = self.lignePourTrace+str(lue)             # la trace détaillée en fin de MicMac, dans le répertoire de travail, sous le nom traceTotale
             print(lue)
         except Exception as e: 
-            print("Erreur ajout trace complète : ",str(lue)," erreur=",e)
+            print("Erreur ajout trace complète : ",str(lue)," erreur=",str(e))
             
     def ajoutTraceSynthese(self,filtree=''):
         try:
@@ -4489,7 +4485,7 @@ class Interface(ttk.Frame):
             self.effaceBufferTrace()
             
         except Exception as e:
-            print ('erreur ecritureTraceMicMac : ',e,"\ntraces : ",self.TraceMicMacSynthese," et ",self.TraceMicMacComplete)
+            print ('erreur ecritureTraceMicMac : ',str(e),"\ntraces : ",self.TraceMicMacSynthese," et ",self.TraceMicMacComplete)
 
     
             
@@ -4640,7 +4636,7 @@ class Interface(ttk.Frame):
             self.bulle.update()
 
         except Exception as e:
-            print("erreur infobulle : ",e," pour ",texte)
+            print("erreur infobulle : ",str(e)," pour ",texte)
         
     def yview(self, *args):
         if args[0] == 'scroll':
@@ -4926,7 +4922,7 @@ def ajout(liste,item):                                  # ajout d'un item dns un
             for e in c:
                 liste.append(e)
         except Exception as e:
-            print ("erreur ajout : ",liste,"+",item," : ",e)
+            print ("erreur ajout : ",liste,"+",item," : ",str(e))
 
 def supprimeArborescenceSauf(racine,listeSauf=list()):  # supprime toute une arborescence, sauf une liste de fichiers sous la racine
     listeSauf = [os.path.basename(e) for e in listeSauf]
@@ -4941,7 +4937,7 @@ def supprimeArborescenceSauf(racine,listeSauf=list()):  # supprime toute une arb
                 try:
                     os.remove(chemin)
                 except Exception as e:
-                    print(e)
+                    print(str(e))
                     return
             else:
                 shutil.rmtree(chemin)           # on supprime tous les sous répertoires 'calculs, temporaires...)
@@ -5055,6 +5051,15 @@ continuer = True
 messageDepart = str()
 compteur = 0
 iconeTexte = "R0lGODlhIAAgAIcAMQQCBJSGJNTSPHQKBMTCpGxKBPziXJxmJIR6BOTCXPTybDwCBHR2TMTGhPTmjOzmpJxuBMy+pIRyLDweDPz+1MTGjOzuhDwmBMRaFPz+pHx6LKRiLPzibDQiDMzKZIxqTKR6NOy2fHxCBNTCdEwaBISGTPzqfBwCBPTmpJRuLMzCjKxqBPTmnKxuBOzqnNzGXJQ2BHxGBIx2FIR+fMzGfOTmtMS+vIRyPPz67PTubBQCBJyGJMTCtPzqVKRmHPzSfFQWBIRuTJxuFEQeBPz+vHx2RKxiLNTKXMzCnPzqZAQKBHROBHx6JPz+hPzihPTqfEwqLJxqLJR+XOS+bEwiBMzGhPzenAwCBIyKNNzKTMzCpHxyTOzqpIxyLEwqBJxmRMzKbKx6PIQ+BNTGdISCXMzGjIxCBNS6vPz+/PzqXKRqHPzeZGQOBPzqdPzmjMzOVGwSBMTGpGxGHIR6FPTyfKRuDMy+tDwiBPz+5MTGnEQqBPz+tIR2NKRmLDQiJMzOXJx6VEwWDIx6fPyubLR6FCwCBHRCHIx+BMy6vOS+hPzedPzilIxuPIR2PJSGNJR2hFQaBJRqPKxmFJyCNFwSBIR2JPTqjJQ+BPTqlOzmtKRuFNTOTHRKBIyGTCQCBNzGbJw2BIRGBPz+zPz+lFQiBHxyXMy6zPzmVMzKdPz+7PzuTEQiBHx6PPzuZPzmfKRyBAQGBHQOBJxqJMTKhDwqBKR+NEweBMzGnHRSBPTufMzKhAwGBIRCBPzuXIR+FPzmlFwWBMTCrPTydHR2VOzmrMy+rIRyNPz+3MTGlOzujPz+rHx6NDQiFIxqVNTCfPzqhPTmrMzClIRyRPTudMTCvKRmJIRuVJxuHEQeDPz+xNTKZOS+dIyKPOzqrIxyNNTGfISCZMzGlKRqJDwiDKRmNMzOZPzefPTqnOzmvMzKfPz+9PzubPzmhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAIAAgAAcI/gABCBxIsKDBgwgTKlxI8MoVHVcYShT4cMIdHRAnKtRxwZIlGsa+eIqo0eAVCey0/fHATgSkEyRLUrwCjUg6MH9yHXECZKRMih0IVKjAZY+FUexCGAryU+AWPHiQVchTJsO0F26waNAASyaDVKkodCOAzMERDxb2uEiGJaZEcOrUUdDF5du2KZiq5EEGxsEQHROvlEqFRxSLADIKWPmGLFgeD09A2HKbUAc2JGUSxYDAScYYLqJE6bKwKY2XVRgpFzwxpNOiKNXqOBnTrUI4ZN2U5VCVZlKQOw5VUzTmwtEGYIyiEQDLgwcBLsqyCKNBjIsEWycQwlpGowslSoC0/qAZj0bdsVmoLCjTJSrbNyurhAOYlc0YpQWRpJwxVf5YmWQeoNIAHuqkcgw0KnBlECzdNNAFEJTY8gEUjyASgSi/vJCLI9DcslwceFSByS4HlZBMALL0pMMEzQTyxQa8qAFBFJM4kE4Nxxg4Ai0HLfNHG6SoYYsnhRQJBDBGqBGDDyI4sQMYZYCFQheUwaKBAr28UkcoK8DAhidgDmGLLCJIMogZTqCCRyploJARQRq8ccgSBpyyBgYDBIKRDid0YQ4hMEjyggsE8IBMFQ5cENMVdyCgwCZJNLEGKHlC9NAdbfTSQxJPVNAcMlx4kChgADjEhAe5ePCHKz/EUkhGfRjJIIAA08wSBw/mqeDCHtKQKtAuLrRHxCeKmLGBJ3ueoEcbROTIw3jF4ACVarAMEwc6RCRgDghyTKDDRU44k0p56lBjwyN+SFQEH3w4wkKbc1gSjXjqFGNNKSXBou8uy5TQgHrH8EDNDOPIpxEDeeSRCThNLaRvwxBHLFFAADs="
+
+repertoire_script=os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+if not os.path.isdir(repertoire_script):
+    repertoire_script = os.path.dirname(os.path.abspath(__file__))
+    if not os.path.isdir(repertoire_script):
+        repertoire_script = os.path.dirname(sys.argv[0])
+        if not os.path.isdir(repertoire_script):
+             repertoire_script = os.getcwd()   
+
 if __name__ == "__main__":
     while continuer:
         compteur += 1
@@ -5063,6 +5068,6 @@ if __name__ == "__main__":
         if messageDepart==str():
             interface.afficheEtat()
         else:
-            interface.encadre(messageDepart)    # affiche les infos restaurées :
+            interface.encadre(str(messageDepart))    # affiche les infos restaurées :
         fenetre.mainloop()                    # boucle tant que l'interface existe
 
