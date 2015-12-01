@@ -714,9 +714,10 @@ class Interface(ttk.Frame):
 
        # initialisation variables globales et propre au contexte local :
 
-        self.repertoireScript           =   repertoire_script                                   # là sont enrgistrés les paramètres généraux et le dossie ren cours
+        self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
+        self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 1.52"
+        self.version                    =   " V 1.54"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -1327,8 +1328,8 @@ class Interface(ttk.Frame):
     # Fichier de persistance des paramètres
         
         self.paramChantierSav           =   'ParamChantier.sav'
-        self.fichierParamMicmac         =   os.path.join(self.repertoireScript,'ParamMicmac.sav')       # sauvegarde des paramètres globaux d'AperodeDenis
-        self.fichierParamChantierEnCours=   os.path.join(self.repertoireScript,self.paramChantierSav)   # pour les paramètres du chantier en cours
+        self.fichierParamMicmac         =   os.path.join(self.repertoireData,'ParamMicmac.sav')       # sauvegarde des paramètres globaux d'AperodeDenis
+        self.fichierParamChantierEnCours=   os.path.join(self.repertoireData,self.paramChantierSav)   # pour les paramètres du chantier en cours
 
 
     # Divers
@@ -1375,7 +1376,7 @@ class Interface(ttk.Frame):
         self.photosSansChemin           =   list()                                              # nom des photos sans le chemin
         self.photosPropresAvecChemin    =   list()                                              # les photos propres = photos à copier : on remplace les photos "sales" par les "propres" (nettoyées)            
         self.lesExtensions              =   str()                                               # l'utilisateur pourrait sélectionner des photos avec des extensions différentes
-        self.repTravail                 =   self.repertoireScript                               # répertoire ou seront copiés les photos et ou se fera le traitement,Pour avoir un répertoire valide au début
+        self.repTravail                 =   self.repertoireData                                 # répertoire ou seront copiés les photos et ou se fera le traitement,Pour avoir un répertoire valide au début
         self.chantier                   =   str()                                               # nom du chantier (répertoire sosu le répertoire des photos)
         self.extensionChoisie           =   str()                                               # extensions des photos (actuellement JPG obligatoire)
         
@@ -1525,7 +1526,7 @@ class Interface(ttk.Frame):
                 self.encadre("Le nom \n"+new.saisie+"\npour le chantier est déjà utilisé.\nChoississez un autre nom.")
                 return               
             self.fermerVisuPhoto()                                                      # fermer tous les fichiers potentiellement ouvert.
-            os.chdir(self.repertoireScript)                                             # quitter le répertoire courant
+            os.chdir(self.repertoireData)                                             # quitter le répertoire courant
             try:
                 self.meshlabExe1.kill()
                 time.sleep(0.1)
@@ -1561,41 +1562,31 @@ class Interface(ttk.Frame):
 
             self.photosPropresAvecChemin    = [os.path.join(self.repTravail,os.path.basename(e)) for e in self.photosPropresAvecChemin]
             
-            # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
-            print("avant : ",self.dicoPointsGPSEnPlace)            
+            # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y          
             dico=dict()
             for  e in self.dicoPointsGPSEnPlace.keys():
                 f = (e[0],os.path.join(self.repTravail,os.path.basename(e[1])),e[2])
                 dico[f]=self.dicoPointsGPSEnPlace[e]
             self.dicoPointsGPSEnPlace = dict(dico)
-            print("aprés : ",self.dicoPointsGPSEnPlace)
 
             # axe horizontal, dans le dico : self.dicoLigneHorizontale. key = nom point, photo, identifiant ;Retrouver nom de la photo, coordonnées des points
             # items = liste de tuple (key,values) soit tuple = (point,photo, id),(x1,y1)
-
-            print("avant : ",self.dicoLigneHorizontale)            
+           
             dico=dict()
             for  e in self.dicoLigneHorizontale.keys():
                 f = (e[0],os.path.join(self.repTravail,os.path.basename(e[1])),e[2])
                 dico[f]=self.dicoLigneHorizontale[e]
-            self.dicoLigneHorizontale = dict(dico)
-            print("aprés : dicoLigneHorizontale",self.dicoLigneHorizontale)
-
-            print("avant : ",self.dicoLigneVerticale)            
+            self.dicoLigneHorizontale = dict(dico)           
             dico=dict()
             for  e in self.dicoLigneVerticale.keys():
                 f = (e[0],os.path.join(self.repTravail,os.path.basename(e[1])),e[2])
                 dico[f]=self.dicoLigneVerticale[e]
-            self.dicoLigneVerticale = dict(dico)
-            print("aprés dicoLigneVerticale: ",self.dicoLigneVerticale)        
-
-            print("avant : ",self.dicoCalibre)            
+            self.dicoLigneVerticale = dict(dico)           
             dico=dict()
             for  e in self.dicoCalibre.keys():
                 f = (e[0],os.path.join(self.repTravail,os.path.basename(e[1])),e[2])
                 dico[f]=self.dicoCalibre[e]
             self.dicoCalibre = dict(dico)
-            print("aprés dicoCalibre: ",self.dicoCalibre)
             
             self.chantier = new.saisie
             self.definirFichiersTrace()                                                 #positionne sous le répertoire de travail
@@ -1737,7 +1728,7 @@ class Interface(ttk.Frame):
            
         
     def existeMasque3D(self):
-        if self.repTravail==self.repertoireScript:
+        if self.repTravail==self.repertoireData:
             return False
         self.masque3D = os.path.join(self.repTravail,self.masque3DSansChemin)        
         if os.path.exists(self.masque3D):
@@ -1746,7 +1737,7 @@ class Interface(ttk.Frame):
             return False
         
     def existeMaitre2D(self):
-        if self.repTravail==self.repertoireScript:
+        if self.repTravail==self.repertoireData:
             return False        
         if os.path.exists(self.maitre) and str(self.modeMalt.get())=="GeomImage":
             return True        
@@ -1905,7 +1896,9 @@ class Interface(ttk.Frame):
                 '\nOutil pour afficher les .ply : \n\n'+afficheChemin(self.meshlab)+
                 '\n------------------------------\n'+
                 "\nRépertoire d'AperoDeDenis : \n\n"+afficheChemin(self.repertoireScript)+
-                '\n------------------------------\n')
+                '\n------------------------------\n'+
+                "\nRépertoire des paramètres : \n\n"+afficheChemin(self.repertoireData)+
+                '\n------------------------------\n')        
         self.encadre(texte)
 
     def repMicmac(self):
@@ -1927,21 +1920,18 @@ class Interface(ttk.Frame):
             if os.path.exists(self.mm3d):
                 self.micMac = source
                 existe = True
-                
-            exiftool = os.path.join(source+"aire-aux","exiftool.exe")   # recherche de l'existence de exiftool sous binaire-aux
-            if os.path.exists(exiftool):
-                self.exiftool = exiftool
-                exiftoolOK = True                
+            if self.pasDeExiftool():    
+                exiftool = os.path.join(source+"aire-aux","exiftool.exe")   # recherche de l'existence de exiftool sous binaire-aux
+                if os.path.exists(exiftool):
+                    self.exiftool = exiftool
+                    exiftoolOK = True
+            else: exiftoolOK = True
                 
         if self.systeme=="posix":
             self.mm3d = os.path.join(source,"mm3d")
             if os.path.exists(self.mm3d):
                 self.micMac = source
                 existe = True
-                
-            '''exiftool = os.path.join(self.micMac+"aire-aux","exiftool") # la recherche d'exitool sous ubuntu ne peut se faire comme cela : on demande à l'utilisateur
-            if os.path.exists(exiftool):
-                self.exiftool = exiftool'''
 
         self.CameraXML = os.path.join(os.path.dirname(self.micMac),self.dicoCameraGlobalRelatif)
         executable = verifierSiExecutable(self.mm3d)
@@ -2045,7 +2035,7 @@ class Interface(ttk.Frame):
         retourExtraire=self.extrairePhotoEtCopier(photos)       # crée le repertoire de travail, copie les photos et renvoit le nombre de fichiers photos "aceptables"
 
         if retourExtraire.__class__()=='':              # si le retour est un texte alors erreur, probablement création du répertoire impossible
-            self.encadre ("Impossible de créer le répertoire de travail.\nVérifier les droits en écriture sous le répertoire des photos\n"+retourExtraire)
+            self.encadre ("Impossible de créer le répertoire de travail.\nVérifier les droits en écriture sous le répertoire des photos\n"+str(retourExtraire))
             return 
         if retourExtraire==0:                           # extraction et positionne  self.repertoireDesPhotos, et les listes de photos avec et sanschemin (photosAvecChemin et photosSansChemin)
             self.encadre ("Aucun JPG sélectionné,\nle répertoire et les photos restent inchangés.\n")
@@ -2095,14 +2085,14 @@ class Interface(ttk.Frame):
         listeCopie=list()                   # liste des fichiers copiés, vide
 
         try:
-            for e in self.photosAvecChemin:                          # self.photosPropresAvecChemin est la  liste des photos nettoyées à copier
-                if self.extensionChoisie.upper() in e.upper():              # ON NE COPIE QUE L'EXTENSION CHOISIE, en majuscule
-                    dest=os.path.join(self.repTravail,os.path.basename(e).upper().replace(" ","_")) #sans blanc : mm3d plante !
+            for f in self.photosAvecChemin:                                 # self.photosPropresAvecChemin est la  liste des photos nettoyées à copier
+                if self.extensionChoisie.upper() in f.upper():              # ON NE COPIE QUE L'EXTENSION CHOISIE, en majuscule
+                    dest=os.path.join(self.repTravail,os.path.basename(f).upper().replace(" ","_")) #sans blanc : mm3d plante !
                     if not os.path.exists(dest):                            # on ne copie que si le fichier n'est pas déjà présent
-                        shutil.copy(e,dest)                                 # copie du fichier sous le répertoire de travail                       
-                    ajout(listeCopie,dest)                                     # liste des fichiers à traiter
+                        shutil.copy(f,dest)                                 # copie du fichier sous le répertoire de travail                            
+                    ajout(listeCopie,dest)                                  # liste des fichiers à traiter
         except Exception as e:
-            texte=  'erreur lors de la copie du fichier\n'+e+'\n dans le répertoire \n'+self.repTravail+"\nlibellé de l'erreur : \n"+str(e)+\
+            texte=  'erreur lors de la copie du fichier\n'+f+'\n dans le répertoire \n'+self.repTravail+"\nlibellé de l'erreur : \n"+str(e)+\
                     "\nCauses possibles : manque d'espace disque ou droits insuffisants."
             return texte
         
@@ -2289,7 +2279,7 @@ class Interface(ttk.Frame):
     def controlePointsGPS(self):                # controle pour affiche etat : informer de la situation : si vrai alors self.etatPointsGPS sera affiché
         #si pas de chantier, pas de problème mais retour False :  pas de calibration
         self.etatPointsGPS = str()
-        if self.repTravail==self.repertoireScript:
+        if self.repTravail==self.repertoireData:
             return False
         listePointsActifs = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] and e[0]!="" ] # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
 
@@ -2305,7 +2295,7 @@ class Interface(ttk.Frame):
     def controleCalibration(self):                   # controle de saisie globale du repère, arrêt à la première erreur, True si pas d'erreur, sinon message
         #si pas de chantier, pas de problème mais retour False :  pas de calibration
         self.etatCalibration = str()
-        if self.repTravail==self.repertoireScript:
+        if self.repTravail==self.repertoireData:
             return False
         # fichier xml présent :
        
@@ -2996,11 +2986,11 @@ class Interface(ttk.Frame):
     def lanceMicMac(self):                                      # vérification du choix de photos, de présence de l'éxécutable, du choix de l'extension, de la copie effective dans le répertoire de travail
     # Vérification de l'état du chantier :
 
-    # si pas de photos choisies : retour :
+    # si pas de photos choisies ou pas de paramètre : retour :
 
-        if self.etatDuChantier==0:                              # pas de photos choisies : avertissement à l'utilisateur
-            self.encadre("Choisir les photos à traiter avant d'exécuter Micmac.") 
-            return
+        if self.pasDePhoto():return        
+        if self.pasDeMm3d():return
+        
     # pas enregistré : on enregistre on poursuit
             
         if self.etatDuChantier==1:                              # Des photos mais fichier paramètre non encore enregistré, on enregistre et on poursuit
@@ -3254,12 +3244,6 @@ class Interface(ttk.Frame):
         if len(self.photosAvecChemin)==1:                       # photos sans chemin
             texte='Une seule photo choisie. Abandon.'
             return texte
-
-        # si pas de chemin pour micmac on le demande :
-        
-        if not(os.path.exists(self.mm3d)):
-            texte='mm3d non trouvé : \n'+self.mm3d+'\nVeuillez indiquer le répertoire \\bin de MicMac (menu paramètres)'
-            return texte
             
         if self.controleOptions()!=True:
             return "\nOption incorrecte :\n"+str(self.controleOptions())
@@ -3289,7 +3273,7 @@ class Interface(ttk.Frame):
                        self.modeTapioca.get(),
                        '.*'+self.extensionChoisie,
                        self.echelle1.get(),
-                       "ExpTxt=0"]
+                       "ExpTxt=1"]
             
         if self.modeTapioca.get()=="MulScale":
             self.echelle1PourMessage = self.echelle2.get()
@@ -3300,7 +3284,7 @@ class Interface(ttk.Frame):
                        '.*'+self.extensionChoisie,
                        self.echelle2.get(),      
                        self.echelle3.get(),
-                       "ExpTxt=0"]
+                       "ExpTxt=1"]
             
         if self.modeTapioca.get()=="Line":
             self.echelle1PourMessage = self.echelle4.get()            
@@ -3310,7 +3294,7 @@ class Interface(ttk.Frame):
                        '.*'+self.extensionChoisie,
                        self.echelle4.get(),               
                        self.delta.get(),
-                       "ExpTxt=0"]
+                       "ExpTxt=1"]
             
         self.lanceCommande(tapioca,
                            self.filtreTapioca)
@@ -3345,7 +3329,7 @@ class Interface(ttk.Frame):
                  self.modeCheckedTapas.get(),
                  '.*'+self.extensionChoisie,
                  'Out=Arbitrary',
-                 'ExpTxt=0']        
+                 'ExpTxt=1']        
         self.lanceCommande(tapas,
                            self.filtreTapas,
                            "Calibration, pour trouver les réglages intrinsèques de l'appareil photo\nRecherche d'un point de convergence au centre de l'image.\n\n"        )
@@ -3377,7 +3361,7 @@ class Interface(ttk.Frame):
                     '.*'+self.extensionChoisie,
                     self.orientation(),
                     "Out=AperiCloud.ply",
-                    "ExpTxt=0"]
+                    "ExpTxt=1"]
         self.lanceCommande(apericloud,
                            self.filtreApericloud,
                            "Positionne les appareils photos autour du sujet.\n\Création d'un nuage de points grossier.")
@@ -3500,6 +3484,7 @@ class Interface(ttk.Frame):
     def OutilQualitePhotosLine(self):
 
         if self.pasDePhoto():return       
+        if self.pasDeMm3d():return
         
     # on copie les photos dans un répertoire de test
 
@@ -3515,7 +3500,8 @@ class Interface(ttk.Frame):
                    "Line",
                    ".*"+self.extensionChoisie,      #'"'+str(self.repTravail+os.sep+".*"+self.extensionChoisie)+'"',
                    "1000",               
-                   "1"]
+                   "1",
+                   "ExpTxt=1"]
 
             
         self.lanceCommande(qualite,
@@ -3534,6 +3520,7 @@ class Interface(ttk.Frame):
     def OutilQualitePhotosAll(self):
         
         if self.pasDePhoto():return
+        if self.pasDeMm3d():return
         
     # on copie les photos dans un répertoire de test
 
@@ -3569,13 +3556,14 @@ class Interface(ttk.Frame):
         
     def filtreQualite(self,ligne):
         
-         if 'matches' in ligne:
+        if 'matches' in ligne:
             self.encadrePlus("***")
             self.qualiteTrouvee.append(ligne)
             return ligne           
-
+        return ligne
     def analyseQualitePhotos(self):
-        if self.pasDePhoto():return       
+        if self.pasDePhoto():return
+        if self.pasDeMm3d():return
         #somme des scores de chaque photo :
         homol = dict()
         nb = dict()
@@ -3639,12 +3627,7 @@ class Interface(ttk.Frame):
     def OutilAppareilPhoto(self):
 
         if self.pasDePhoto():return
-        
-        if os.path.exists(self.exiftool)==False:
-            texte = "L'outil exiftool n'a pas été trouvé. Traitement impossible.\nIndiquer son chemin (menu paramètrage)."
-            self.encadre(texte)
-            return
-
+        if self.pasDeExiftool():return
               
         texte = " ******\nCaractéristiques de l'appareil photo : \n\n"
         self.fabricant =  self.tagExif("Make")
@@ -3675,7 +3658,7 @@ class Interface(ttk.Frame):
                 texte = texte+"\nFocale équivalente 35 mm : "+ self.focale35MM+"\n"            
 
         if not os.path.isfile(self.CameraXML):
-            texte = texte+"DicoCamera.xml non trouvé : paramètrer au préalable le chemin de MicMac\\bin."
+            texte = texte+"\nDicoCamera.xml non trouvé : paramètrer au préalable le chemin de MicMac\\bin."
         else:
             self.tailleCapteurAppareil()
             if self.tailleCapteur==str():
@@ -3696,17 +3679,12 @@ class Interface(ttk.Frame):
     # tag dans l'exif : renvoi la valeur du tag 'tag' dans l'exif de la première photo (on suppose qu'elles sont identiques pour toutes les photos)
                           
     def tagExif(self,tag):
-        if os.path.exists(self.exiftool)==False:
-            texte = "L'outil exiftool n'a pas été trouvé. Traitement impossible.\nIndiquer son chemin (menu paramètrage)."
-            return texte       
         self.tag = str()        
-        if self.pasDePhoto():return self.tag
-        if os.path.exists(self.exiftool):
-            exif = (self.exiftool,
-                    "-"+tag,
-                    self.photosAvecChemin[0])            
-            self.lanceCommande(exif,
-                               self.FiltreTag)
+        exif = (self.exiftool,
+                "-"+tag,
+                self.photosAvecChemin[0])            
+        self.lanceCommande(exif,
+                           self.FiltreTag)
         return self.tag
 
     def FiltreTag(self, ligne):                             # ne retourne rien (pour éviter la trace, mais positionne si possible self.tag
@@ -3719,17 +3697,13 @@ class Interface(ttk.Frame):
     # tags dans l'exif : renvoi la valeur du tag 'tag' dans l'exif de toutes les photos
                           
     def tagsExif(self,tag):
-        if os.path.exists(self.exiftool)==False:
-            texte = "L'outil exiftool n'a pas été trouvé. Traitement impossible.\nIndiquer son chemin (menu paramètrage)."
-            return texte
-        
+              
         self.tags = list()
-        if os.path.exists(self.exiftool):
-            exif = (self.exiftool,
-                    "-"+tag,
-                    os.path.join(self.repTravail))
-            self.lanceCommande(exif,
-                               self.FiltreTags)
+        exif = (self.exiftool,
+                "-"+tag,
+                os.path.join(self.repTravail))
+        self.lanceCommande(exif,
+                           self.FiltreTags)
         return self.tags
 
     def FiltreTags(self, ligne):
@@ -3768,11 +3742,8 @@ class Interface(ttk.Frame):
     def miseAJourDicoCamera(self):
         
         if self.pasDePhoto():return
-        
-        if os.path.exists(self.exiftool)==False:
-            texte = "L'outil exiftool n'a pas été trouvé. Traitement impossible."
-            self.encadre(texte)
-            return        
+        if self.pasDeMm3d():return
+        if self.pasDeExiftool():return     
         
         self.nomCamera = self.tagExif("Model")
         if self.nomCamera==str():
@@ -3830,11 +3801,7 @@ class Interface(ttk.Frame):
     def toutesLesFocales(self):
 
         if self.pasDePhoto():return
-        
-        if os.path.exists(self.exiftool)==False:
-            texte = "L'outil exiftool n'a pas été trouvé. Traitement impossible."
-            self.encadre(texte)
-            return
+        if self.pasDeExiftool():return        
         
         texte=self.tagsExif("FocalLength")
         texte=texte+["\n",]+self.tagsExif("FocalLengthIn35mmFormat")
@@ -3941,7 +3908,7 @@ class Interface(ttk.Frame):
                 "       - Quelques conseils : sur la prise de vue et les paramètres.\n"+\
                 "       - A propos\n\n\n"+\
                 " Quelques précisions :\n"+\
-                " Cette version a été développée sous Windows XP et Seven avec micmac rev 1963, puis rev 5508 d'avril 2015.\n"+\
+                " Cette version a été développée sous Windows XP et Seven avec micmac rev 5508 d'avril 2015.\n"+\
                 " L'utilisation d'autres versions de Micmac peut poser problème.\n"+\
                 " Cette version n'admet que des photos au format JPG.\n"+\
                 " L'outil libre XNView propose des conversions 'sans perte' à partir de multiples formats (via Imagemagick).\n\n"+\
@@ -4061,9 +4028,9 @@ class Interface(ttk.Frame):
         self.sauveParamChantier()
     
     def sauveParamChantier(self):
-
+        essai = (self.fichierParamChantierEnCours+"essai")       # pour éviter d'écraser le fichier si le diqsque est plein
         try:
-            sauvegarde1=open(self.fichierParamChantierEnCours,mode='wb')
+            sauvegarde1=open(essai,mode='wb')
             pickle.dump((               
                          self.repertoireDesPhotos,  
                          self.photosAvecChemin,
@@ -4101,14 +4068,16 @@ class Interface(ttk.Frame):
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
+            supprimeFichier(self.fichierParamChantierEnCours)
+            os.rename(essai,self.fichierParamChantierEnCours)            
         except Exception as e:
             print ('erreur sauveParamChantier : ',str(e))
 
        
     def sauveParamMicMac(self):
-
+        essai = (self.fichierParamMicmac+"essai")       # pour éviter d'écraser le fichier si le diqsque est plein
         try:
-            sauvegarde2=open(self.fichierParamMicmac,mode='wb')
+            sauvegarde2=open(essai,mode='wb')
             pickle.dump((self.micMac,
                          self.meshlab,
                          self.indiceTravail,
@@ -4117,12 +4086,14 @@ class Interface(ttk.Frame):
                          self.mm3d
                          ),     
                         sauvegarde2)
-            sauvegarde2.close()            
+            sauvegarde2.close()
+            supprimeFichier(self.fichierParamMicmac)
+            os.rename(essai,self.fichierParamMicmac)
         except Exception as e:              # Controle que le programme a accès en écriture dans le répertoire d'installation
             print ('erreur sauveParamMicMac : ',str(e))
             texte = "L'interface doit être installée dans un répertoire ou vous avez les droits d'écriture.\n\n"+\
                     "Installer l'interface AperoDeDenis à un emplacement ou vous avez ce droit.\n\n"+\
-                    "Répertoire actuel : "+self.repertoireScript+".\n\n"+\
+                    "Répertoire actuel : "+self.repertoireData+".\n\n"+\
                     "Erreur rencontrée : "+str(e)
             self.deuxBoutons(titre="Problème d'installation",question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
             fin(1)
@@ -4254,15 +4225,6 @@ class Interface(ttk.Frame):
                 self.l.append(v)
 
 
-    ################################## 2 outils : envoi retour chariot et compte le nombre d'extensions différentes dans une lister de fichiers
-
-    def envoiRetourChariot(self,dest):                                                      # dest étant le processus ouvert par popen
-        dest.communicate(input='t\n')
-
-    def nombreDExtensionDifferentes(self,liste):
-        lesExtensions=set([os.path.splitext(x)[1].upper() for x in liste])                  # on vérifie l'unicité de l'extension :
-        self.lesExtensions=list(lesExtensions)                                              # liste pour être slicable
-        return len(self.lesExtensions)
 
     #################################### Supprime (ou conserve) les répertoires de travail
     
@@ -4307,7 +4269,7 @@ class Interface(ttk.Frame):
                     texte="Le précédent chantier "" "+self.chantier+" "" est en cours de suppression.\n"                    
                     self.nouveauChantier()
                     time.sleep(0.1)
-                try: shutil.rmtree(e,False,self.echecSuppression(e))                           # il semble que la racine reste présente il faut ensuite la supprimer
+                try: shutil.rmtree(e)                           # il semble que la racine reste présente il faut ensuite la supprimer
                 except: pass
                 try:    os.rmdir(e)
                 except: pass            
@@ -4331,13 +4293,6 @@ class Interface(ttk.Frame):
                 texte = texte+'\n\nIl reste des chantiers impossibles à supprimer maintenant : \n\n'+'\n'.join(conserve)                 
         self.sauveParam()                                   # mémorisation de la suppression
         self.encadre(texte)
-        
-    def echecSuppression(self,e):
-        try:
-            time.sleep(0.05)
-            os.rmdir(e)
-        except:
-            pass
 
     ############################### Message proposant une question et deux Boutons OK, Annuler
     # si b2="" alors pas de second bouton    
@@ -4428,12 +4383,12 @@ class Interface(ttk.Frame):
         
         self.ajoutLigne("\n"+heure()+" : Fin de "+commandeTexte+"\n")
 
-    # Fichiers TRACE
+    ########################## Fichiers TRACE
 
     def definirFichiersTrace(self):     # crée les fichiers à vide
         if self.repTravail != "":
-            self.TraceMicMacSynthese = self.repTravail+os.path.sep+'Trace_MicMac_Synthese.txt'
-            self.TraceMicMacComplete = self.repTravail+os.path.sep+'Trace_MicMac_Complete.txt' 
+            self.TraceMicMacSynthese = os.path.join(self.repTravail,'Trace_MicMac_Synthese.txt')
+            self.TraceMicMacComplete = os.path.join(self.repTravail,'Trace_MicMac_Complete.txt')
             os.chdir(self.repTravail)                                                       # on se met dans le répertoire de travail, indispensable
             
     # ajout de lignes dans les traces
@@ -4489,7 +4444,7 @@ class Interface(ttk.Frame):
 
     
             
-    ############################### Choix d'une image dans la liste des images retenues avec scrollbar : charge self.selectionPhotosAvecChemin
+    ############################### Choix d'une image dans la liste des images retenues avec scrollbar : charge self.selectionPhotosAvecChemin, gadgets
         
         """ les deux autres présentations sous forme de dialogue :
 
@@ -4815,6 +4770,8 @@ class Interface(ttk.Frame):
 
         return "Arbitrary"
 
+    #################### Utilitaires : tests de la présence de photos, de mm3d, d'exiftool, envoi retour chariot et compte le nombre d'extensions différentes dans une list
+
     def pasDePhoto(self):
 
         if self.photosPropresAvecChemin.__len__()==0:
@@ -4829,9 +4786,25 @@ class Interface(ttk.Frame):
             self.photosAvecChemin = [os.path.join(repertoireInitial,e) for e in self.photosSansChemin]
             self.deuxBoutons(titre="Problème de fichiers",question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
  
+    def pasDeMm3d(self):
+        if not os.path.exists(self.mm3d):
+            self.encadre("Désigner le répertoire MicMac\\bin (menu paramètrage).",nouveauDepart="non")            
+            return True
 
-       
-    ########################################################   nouvelle fenêtre
+    def pasDeExiftool(self):
+        if not os.path.exists(self.exiftool):
+            self.encadre("Désigner le fichier exiftool (menu paramètrage).",nouveauDepart="non")            
+            return True
+
+    def envoiRetourChariot(self,dest):                                                      # dest étant le processus ouvert par popen
+        dest.communicate(input='t\n')
+
+    def nombreDExtensionDifferentes(self,liste):
+        lesExtensions=set([os.path.splitext(x)[1].upper() for x in liste])                  # on vérifie l'unicité de l'extension :
+        self.lesExtensions=list(lesExtensions)                                              # liste pour être slicable
+        return len(self.lesExtensions)
+        
+    ########################################################   nouvelle fenêtre (relance utile pour vider les traces d'exécution de mm3d et autres)
 
     def nouveauDepart(self):
 
@@ -5058,8 +5031,17 @@ if not os.path.isdir(repertoire_script):
     if not os.path.isdir(repertoire_script):
         repertoire_script = os.path.dirname(sys.argv[0])
         if not os.path.isdir(repertoire_script):
-             repertoire_script = os.getcwd()   
-
+             repertoire_script = os.getcwd()
+             
+if os.name=="nt":             
+    repertoire_data = os.getenv('APPDATA')+'\\AperoDeDenis'
+    try: os.mkdir(repertoire_data)
+    except: pass
+    if not os.path.isdir(repertoire_data):
+        repertoire_data = repertoire_script    
+else:
+    repertoire_data = repertoire_script
+    
 if __name__ == "__main__":
     while continuer:
         compteur += 1
