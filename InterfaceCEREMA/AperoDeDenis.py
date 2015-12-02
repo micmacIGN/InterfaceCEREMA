@@ -3186,6 +3186,7 @@ class Interface(ttk.Frame):
         ligne = texte + "\n\n************* Fin du traitement MicMac "+heure()+" *******************\n\n"
         self.etatDuChantier = 5 		                                                    # 5 : chantier terminé         
         self.ajoutLigne(ligne)
+        self.nouveauDepart()
 
     # Que faire après Tapioca et Tapas ? malt ou D3DC
         
@@ -3370,7 +3371,7 @@ class Interface(ttk.Frame):
         if ligne[0]=="|":
             return ligne        
         if "cMetaDataPhoto" in ligne:
-            print("ligne avec meta : ",ligne)
+            print("ligne avec meta : ",str(ligne))
             return "\n#### ATTENTION : Des Metadonnées nécessaires sont absentes des photos. Vérifier l'exif.\n\n" 
 
     # ------------------ Meslab 1 : ouvre AperiCloud.ply avec l'outil choisi par l'utilisateur --------------------------
@@ -4374,7 +4375,7 @@ class Interface(ttk.Frame):
                     
             try: ligne=exe.stdout.readline()            # ligne suivante, jusqu'à la fin du fichier, sauf décès (anormal) du processus père
             except:
-                print("erreur lecture output : ",commandeTexte)
+                print("erreur lecture output : ",str(commandeTexte))
                 break                                   # si la lecture ne se fait pas c'est que le processus est "mort", on arrête
 
         while exe.poll()==None:                          # on attend la fin du process, si pas fini (en principe : fini)
@@ -4406,7 +4407,7 @@ class Interface(ttk.Frame):
             if lue==None:
                 return            
             self.lignePourTrace = self.lignePourTrace+str(lue)             # la trace détaillée en fin de MicMac, dans le répertoire de travail, sous le nom traceTotale
-            print(lue)
+            print(str(lue))
         except Exception as e: 
             print("Erreur ajout trace complète : ",str(lue)," erreur=",str(e))
             
@@ -4591,7 +4592,7 @@ class Interface(ttk.Frame):
             self.bulle.update()
 
         except Exception as e:
-            print("erreur infobulle : ",str(e)," pour ",texte)
+            print("erreur infobulle : ",str(e)," pour ",str(texte))
         
     def yview(self, *args):
         if args[0] == 'scroll':
@@ -4832,7 +4833,7 @@ class Interface(ttk.Frame):
             if self.deuxBoutons("Enregistrer le chantier "+self.chantier+" ?","Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?","Enregistrer","Ne pas enregistrer.") == 0:
                 self.copierParamVersChantier()
                 texte="Chantier précédent enregistré : "+self.chantier+"\n"        
-        print(heure()+" "+texte+" fin normale d'aperodedenis.")
+        print(heure()+" "+str(texte)+" fin normale d'aperodedenis.")
         self.sauveParam()
         global continuer                                # pour éviter de boucler sur un nouveau départ
         continuer = False
