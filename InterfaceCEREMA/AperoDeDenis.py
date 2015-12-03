@@ -704,7 +704,6 @@ class Interface(ttk.Frame):
         fenetre.protocol("WM_DELETE_WINDOW", self.quitter)
 
         # zone de test éventuel :
-                          
 
     #initialise les valeurs par défaut au lancement de l'outil
         
@@ -717,7 +716,7 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 1.54"
+        self.version                    =   " V 1.55"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -3186,7 +3185,6 @@ class Interface(ttk.Frame):
         ligne = texte + "\n\n************* Fin du traitement MicMac "+heure()+" *******************\n\n"
         self.etatDuChantier = 5 		                                                    # 5 : chantier terminé         
         self.ajoutLigne(ligne)
-        self.nouveauDepart()
 
     # Que faire après Tapioca et Tapas ? malt ou D3DC
         
@@ -3336,8 +3334,8 @@ class Interface(ttk.Frame):
                            "Calibration, pour trouver les réglages intrinsèques de l'appareil photo\nRecherche d'un point de convergence au centre de l'image.\n\n"        )
 
     def filtreTapas(self,ligne): 
-        if 'RESIDU LIAISON MOYENS' in ligne:
-            self.nbResiduTapas = 1
+        if ('RESIDU LIAISON MOYENS' in ligne) or ('Residual' in ligne) :   # Residual pour la version 5999
+            self.nbResiduTapas+=1
             return ligne
         if ligne[0]=="|":
             return ligne      
@@ -3371,7 +3369,7 @@ class Interface(ttk.Frame):
         if ligne[0]=="|":
             return ligne        
         if "cMetaDataPhoto" in ligne:
-            print("ligne avec meta : ",str(ligne))
+            print("ligne avec meta : ",ligne)
             return "\n#### ATTENTION : Des Metadonnées nécessaires sont absentes des photos. Vérifier l'exif.\n\n" 
 
     # ------------------ Meslab 1 : ouvre AperiCloud.ply avec l'outil choisi par l'utilisateur --------------------------
@@ -4375,7 +4373,7 @@ class Interface(ttk.Frame):
                     
             try: ligne=exe.stdout.readline()            # ligne suivante, jusqu'à la fin du fichier, sauf décès (anormal) du processus père
             except:
-                print("erreur lecture output : ",str(commandeTexte))
+                print("erreur lecture output : ",commandeTexte)
                 break                                   # si la lecture ne se fait pas c'est que le processus est "mort", on arrête
 
         while exe.poll()==None:                          # on attend la fin du process, si pas fini (en principe : fini)
@@ -4407,7 +4405,7 @@ class Interface(ttk.Frame):
             if lue==None:
                 return            
             self.lignePourTrace = self.lignePourTrace+str(lue)             # la trace détaillée en fin de MicMac, dans le répertoire de travail, sous le nom traceTotale
-            print(str(lue))
+            print(lue)
         except Exception as e: 
             print("Erreur ajout trace complète : ",str(lue)," erreur=",str(e))
             
@@ -4592,7 +4590,7 @@ class Interface(ttk.Frame):
             self.bulle.update()
 
         except Exception as e:
-            print("erreur infobulle : ",str(e)," pour ",str(texte))
+            print("erreur infobulle : ",str(e)," pour ",texte)
         
     def yview(self, *args):
         if args[0] == 'scroll':
@@ -4771,6 +4769,23 @@ class Interface(ttk.Frame):
 
         return "Arbitrary"
 
+    #################### Examen du nombre de points homologues  dans le répertoire homol
+
+    def nombrePointsHomologues(self):
+        print("===============================================================================================================================")
+        repertoireHomol = os.path.join(self.repTravail,"Homol") # répertoire des homologues
+        print(repertoireHomol)
+        os.chdir(repertoireHomol)
+        for e in os.listdir():                   # balaie tous les fichiers
+            print(e)
+            os.chdir(os.path.join(repertoireHomol,e))
+            for f in os.listdir():
+                if os.path.isfile(f):                               # fichier
+                    with  open(f) as infile:
+                        nbLignes = len(infile.readlines())    #lecture dicoCamera.xml   
+                        print(e,f," = ",nbLignes)
+        print("===============================================================================================================================")
+
     #################### Utilitaires : tests de la présence de photos, de mm3d, d'exiftool, envoi retour chariot et compte le nombre d'extensions différentes dans une list
 
     def pasDePhoto(self):
@@ -4833,7 +4848,7 @@ class Interface(ttk.Frame):
             if self.deuxBoutons("Enregistrer le chantier "+self.chantier+" ?","Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?","Enregistrer","Ne pas enregistrer.") == 0:
                 self.copierParamVersChantier()
                 texte="Chantier précédent enregistré : "+self.chantier+"\n"        
-        print(heure()+" "+str(texte)+" fin normale d'aperodedenis.")
+        print(heure()+" "+texte+" fin normale d'aperodedenis.")
         self.sauveParam()
         global continuer                                # pour éviter de boucler sur un nouveau départ
         continuer = False
