@@ -82,7 +82,7 @@ class TracePolygone():
                                             "utilisable avant ET pendant le tracé\n"+\
                                             "glisser-déposer actif avant le tracé\n\n"+\
                                             "Tracer :\n"+\
-                                            "Clic gauche : ajouter un point;\n clic droit : fermer le polygone,\n"+\
+                                            "Clic gauche : ajouter un point;\n double clic gauche : fermer le polygone,\n"+\
                                             "Touche Del pour supprimer un point ou le polygone,\n")       
         self.boutonAide.pack(side='left',pady=2,padx=2)
         self.boutonTracer.pack(side='left',pady=2,padx=8)
@@ -3272,7 +3272,7 @@ class Interface(ttk.Frame):
                        self.modeTapioca.get(),
                        '.*'+self.extensionChoisie,
                        self.echelle1.get(),
-                       "ExpTxt=1"]
+                       "ExpTxt=0"]
             
         if self.modeTapioca.get()=="MulScale":
             self.echelle1PourMessage = self.echelle2.get()
@@ -3283,7 +3283,7 @@ class Interface(ttk.Frame):
                        '.*'+self.extensionChoisie,
                        self.echelle2.get(),      
                        self.echelle3.get(),
-                       "ExpTxt=1"]
+                       "ExpTxt=0"]
             
         if self.modeTapioca.get()=="Line":
             self.echelle1PourMessage = self.echelle4.get()            
@@ -3293,7 +3293,7 @@ class Interface(ttk.Frame):
                        '.*'+self.extensionChoisie,
                        self.echelle4.get(),               
                        self.delta.get(),
-                       "ExpTxt=1"]
+                       "ExpTxt=0"]
             
         self.lanceCommande(tapioca,
                            self.filtreTapioca)
@@ -3328,7 +3328,7 @@ class Interface(ttk.Frame):
                  self.modeCheckedTapas.get(),
                  '.*'+self.extensionChoisie,
                  'Out=Arbitrary',
-                 'ExpTxt=1']        
+                 'ExpTxt=0']        
         self.lanceCommande(tapas,
                            self.filtreTapas,
                            "Calibration, pour trouver les réglages intrinsèques de l'appareil photo\nRecherche d'un point de convergence au centre de l'image.\n\n"        )
@@ -3360,7 +3360,7 @@ class Interface(ttk.Frame):
                     '.*'+self.extensionChoisie,
                     self.orientation(),
                     "Out=AperiCloud.ply",
-                    "ExpTxt=1"]
+                    "ExpTxt=0"]
         self.lanceCommande(apericloud,
                            self.filtreApericloud,
                            "Positionne les appareils photos autour du sujet.\n\Création d'un nuage de points grossier.")
@@ -3426,7 +3426,7 @@ class Interface(ttk.Frame):
         # Si on a un masque 3D on l'utilise et on ne cherche pas plus loin :
         C3DC = [self.mm3d,
                 "C3DC",
-                "MicMac",
+                "QuickMac",
                 ".*"+self.extensionChoisie,
                 self.orientation(),
                 "Masq3D="+self.masque3DSansChemin,
@@ -3500,7 +3500,7 @@ class Interface(ttk.Frame):
                    ".*"+self.extensionChoisie,      #'"'+str(self.repTravail+os.sep+".*"+self.extensionChoisie)+'"',
                    "1000",               
                    "1",
-                   "ExpTxt=1"]
+                   "ExpTxt=0"]
 
             
         self.lanceCommande(qualite,
@@ -3537,7 +3537,7 @@ class Interface(ttk.Frame):
                    "All",
                    ".*"+self.extensionChoisie,
                    "1000",
-                   "ExpTxt=1"]          
+                   "ExpTxt=0"]          
             
         self.lanceCommande(qualite,
                            self.filtreQualite)
@@ -3964,10 +3964,10 @@ class Interface(ttk.Frame):
                 "   Puis : Installer Meshlab ou CloudCompare (pour afficher les nuages de points)\n\n"+\
                 "   Ensuite, dans cette interface graphique :\n\n"+\
                 "1) Paramétrer l'interface : indiquer ou se trouvent le répertoire bin de MicMac et l'éxécutable Meshlab ou CloudCompare.\n"+\
-                "2) Choisir quelques photos, pas plus de 5 pour commencer (menu MicMac).\n"+\
+                "2) Choisir quelques photos, par exemple du jeu d'essai gravillons, au moins 3 mais pas plus de 6 pour commencer (menu MicMac).\n"+\
                 "3) Lancer MicMac en laissant les paramètres par défaut (menu MicMac).\n"+\
                 "   Si tout va bien une vue en 3D non densifiée doit s'afficher, patience : cela peut être long.\n"+\
-                "4) Si tout va bien alors modifier les paramétres pour la suite du traitement (Malt ou C3DC) (voir la doc).\n"+\
+                "4) Si tout va bien alors modifier les options pour la suite du traitement (Malt ou C3DC) (voir la doc).\n"+\
                 "   Puis re lancer MicMac pour obtenir une vue 3D densifiée.\n\n"+\
                 "5) Si tout ne va pas bien re 'lancer MicMac' et annuler le traitement, puis :\n"\
                 "   Lire 'quelques conseils' (menu Aide).\n"+\
@@ -4250,7 +4250,7 @@ class Interface(ttk.Frame):
         if len(self.selectionPhotosAvecChemin)==1:
             self.deuxBoutons('Suppression des répertoires de travail superflus',
                              'Le répertoire suivant va être supprimé, sans mise en corbeille : \n\n'+'\n'.join(self.selectionPhotosAvecChemin),
-                             'Confimez',
+                             'Confirmez',
                              'Annuler')
         if len(self.selectionPhotosAvecChemin)>1:
             if self.repTravail in self.selectionPhotosAvecChemin:
