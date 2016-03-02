@@ -697,8 +697,9 @@ class Interface(ttk.Frame):
         menuParametres.add_command(label="Afficher les paramètres", command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
         menuParametres.add_separator()         
         menuParametres.add_command(label="Associer le répertoire bin de MicMac'", command=self.repMicmac)   ## Ajout d'une option au menu fils menuFile
-        menuParametres.add_command(label="Associer 'exiftool'", command=self.repExiftool)                   ## Exiftool : sous MicMac\bin-aux si Windows, mais sinon ???   
-        menuParametres.add_command(label="Associer 'convert' d'ImageMagick", command=self.repConvert)       ## convert : sous MicMac\bin-aux si Windows, mais sinon ???   
+        menuParametres.add_command(label="Associer 'exiftool'", command=self.repExiftool)                   ## Exiftool : sous MicMac\binaire-aux si Windows, mais sinon ???   
+        menuParametres.add_command(label="Associer 'convert' d'ImageMagick", command=self.repConvert)       ## convert : sous MicMac\binaire-aux si Windows, mais sinon ???   
+        menuParametres.add_command(label="Associer 'ffmpeg (décompacte les vidéos)", command=self.repFfmpeg)                        ## ffmpeg : sous MicMac\binaire-aux si Windows, mais sinon ???
         menuParametres.add_command(label="Associer 'Meshlab' ou 'CloudCompare'", command=self.repMeslab)    ## Meslab   
       
         # Aide
@@ -739,12 +740,12 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.20"
+        self.version                    =   " V 2.21"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
         self.exptxt                     =   "0"                                                 # 0 pour exptxt format binaire, 1 format texte (pts homologues)             
-        self.inndiceTravail             =   0                                                   # lors de l'installation, valeur initial de l'indice des répertoires de travail
+        self.indiceTravail              =   0                                                   # lors de l'installation, valeur initial de l'indice des répertoires de travail
 
         # Les 3 chemins utiles : mecmac\bin, meshlab et exiftool :  
 
@@ -1955,6 +1956,7 @@ class Interface(ttk.Frame):
     ################################## LE MENU EDITION : afficher l'état, les photos, lire une trace, afficher les nuages de points ############################
                                                 
     def afficheEtat(self,entete="",finale=""):
+        if self.pasDeMm3d():return
         self.sauveParam()
         nbPly = 0
         photosSansCheminDebutFin = list(self.photosSansChemin)
@@ -2314,6 +2316,8 @@ class Interface(ttk.Frame):
                 '\n------------------------------\n'+                
                 '\nOutil pour afficher les .ply : \n\n'+afficheChemin(self.meshlab)+
                 '\n------------------------------\n'+
+                "\nOutil pour décompacter les vidéos (ffmpeg) : \n\n"+afficheChemin(self.ffmpeg)+                
+                '\n------------------------------\n'+
                 "\nRépertoire d'AperoDeDenis : \n\n"+afficheChemin(self.repertoireScript)+
                 '\n------------------------------\n'+
                 "\nRépertoire des paramètres : \n\n"+afficheChemin(self.repertoireData)+
@@ -2438,7 +2442,7 @@ class Interface(ttk.Frame):
         
         # Choisir le répertoire de Meshlab ou CLoudCompare :
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.exiftool),                                                 
-                                                  filetypes=[("convert","convert*"),("Tous","*")],multiple=False,
+                                                  filetypes=[("convert",("convert*","avconv*")),("Tous","*")],multiple=False,
                                                   title = "Recherche convert")
         if len(source)==0:
             texte="Abandon, pas de changement.\nFichier convert inchangé :\n\n"+afficheChemin(self.convertMagick)
@@ -2469,6 +2473,28 @@ class Interface(ttk.Frame):
         texte="\nProgramme ouvrant les .PLY :\n\n"+afficheChemin(self.meshlab)
         self.encadre(texte,nouveauDepart='non')
 
+    def repFfmpeg(self):
+        self.menageEcran()
+        if self.ffmpeg=="":
+            texte="Pas de chemin pour le programme Ffmpeg"
+        else:
+            texte="Programme ffmpeg :\n"+afficheChemin(self.ffmpeg)
+        self.encadre(texte,nouveauDepart='non')         
+        
+        # Choisir le répertoire de ffmpeg:
+        source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.ffmpeg),                                                 
+                                                  filetypes=[("ffmpeg","ffmpeg*"),("Tous","*")],multiple=False,
+                                                  title = "Recherche ffmpeg")
+        if len(source)==0:
+            texte="Abandon, pas de changement.\nFichier ffmpeg inchangé :\n\n"+afficheChemin(self.ffmpeg)
+            self.encadre(texte,nouveauDepart='non')
+            return
+        self.ffmpeg=''.join(source)
+        self.sauveParam()
+        texte="\nProgramme ffmpeg :\n\n"+afficheChemin(self.ffmpeg)
+        self.encadre(texte,nouveauDepart='non')
+
+ 
     ################################## LE MENU MICMAC : Choisir les photos, les options, le traitement ##########################################################
 
 
@@ -2516,6 +2542,7 @@ class Interface(ttk.Frame):
             if verifierSiExecutable(self.convertMagick)==False:
                 self.encadre("Désigner l'outil de conversation 'convert' d'ImageMagick\n(Menu Paramètrage)",nouveauDepart="non")
                 return
+            if  self.pasDeConvertMagick():return 
             self.conversionJPG(photos)
             photos = [os.path.splitext(e)[0]+".JPG" for e in photos]
             
@@ -3749,6 +3776,7 @@ class Interface(ttk.Frame):
 
         if self.pasDePhoto():return        
         if self.pasDeMm3d():return
+        if self.pasDeExiftool():return
 
 
     # Les photos sont-elles correctes ?
@@ -4546,7 +4574,7 @@ class Interface(ttk.Frame):
 
     def OutilQualitePhotosLine(self):
 
-        if self.pasDePhoto():return       
+        if self.pasDePhoto():return    
         if self.pasDeMm3d():return
         
     # on copie les photos dans un répertoire de test
@@ -6593,7 +6621,7 @@ class Interface(ttk.Frame):
     ################### Conversion au format jpg, information de l'Exif
 
     def conversionJPG(self,liste=list()):
-        
+        if self.pasDeConvertMagick:return
         if liste==list():
             liste = self.photosSansChemin
         if liste.__len__()==0:
@@ -6611,6 +6639,7 @@ class Interface(ttk.Frame):
     # mise à jour de l'exif :
                 
     def majExif(self,liste=list()):
+        if self.pasDeExiftool():return
         self.menageEcran()
         self.OutilAppareilPhoto(silence='oui')
         self.menageEcran()
@@ -6622,7 +6651,7 @@ class Interface(ttk.Frame):
         return
 
     def exifOK(self):
-
+        if self.pasDeExiftool():return
         listeTag = [('Make',                    self.exifMaker.get()     ),
                     ('Model',                   self.exifNomCamera.get() ),
                     ('FocalLength',             self.exifFocale.get()    ),
@@ -6642,7 +6671,7 @@ class Interface(ttk.Frame):
     # Aprés saisie de l'exif :
 
     def informerExif(self,exiftool,listeFichiers,listeTagInfo): # la liste peut être relative ou absolue, taginfo est une liste de tuple (tag,info)
-
+        if self.pasDeExiftool():return
         if listeFichiers.__len__()==0:
             return "Aucune photo à mettre à jour."
 
@@ -6702,8 +6731,12 @@ class Interface(ttk.Frame):
  
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
-            self.encadre("Désigner le répertoire MicMac\\bin (menu paramètrage).",nouveauDepart="non")            
-            return True
+             self.encadre("\nCommencer par définir les paramètres :\n\n"+
+                         " - le répertoire bin de MicMac\n"+
+                         " - convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux\n"+
+                         " - un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D",
+                         aligne='left',nouveauDepart='non')
+             return True
 
     def pasDeExiftool(self):
         if not os.path.exists(self.exiftool):
@@ -6712,7 +6745,12 @@ class Interface(ttk.Frame):
         
     def pasDeConvertMagick(self):
         if not os.path.exists(self.convertMagick):
-            self.encadre("Désigner le fichier convert d'image Magick\nen principe sous micmac\bin-aux (menu paramètrage).",nouveauDepart="non")            
+            self.encadre("Désigner le fichier convert, ou avconv, d'image Magick\nen principe sous micmac\binaire-aux (menu paramètrage).",nouveauDepart="non")            
+            return True
+
+    def pasDeFfmpeg(self):
+        if not os.path.exists(self.ffmpeg):
+            self.encadre("Désigner le fichier ffmpeg en principe sous micmac\binaire-aux (menu paramètrage).",nouveauDepart="non")            
             return True
 
     def envoiRetourChariot(self,dest):                                                      # dest étant le processus ouvert par popen
