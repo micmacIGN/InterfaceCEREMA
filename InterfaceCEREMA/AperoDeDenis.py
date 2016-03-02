@@ -1864,7 +1864,9 @@ class Interface(ttk.Frame):
                 self.encadre("Importation abandonnée.",nouveauDepart='non')
                 return
             if not zipfile.is_zipfile(archive):
-                self.encadre(archive+" n'est pas un fichier d'export valide.",nouveauDepart='non')
+                self.encadre(archive+" n'est pas un fichier d'export valide\n"+
+                             "ou alors, sous ubuntu,il lui manque le droit d'éxécutio).",
+                             nouveauDepart='non')
                 return
             
             self.encadre("Choisir le répertoire dans lequel recopier le chantier.",nouveauDepart='non')          
@@ -3802,11 +3804,12 @@ class Interface(ttk.Frame):
             
         if self.exifsOK==False and self.pasDeFocales==False and self.etatDuChantier<3 :
             if self.calibSeule.get()==False:
+                print(self.exifsDesPhotos)
+                print("\n".join(str(self.exifsDesPhotos)))
                 message += "Les focales des photos ne sont pas toutes identiques.\n"+\
                       "Le traitement par MicMac n'est possible qu'en utilisant une focale pour la calibration intrinsèque de Tapas.\n"+\
-                      "Si ce n'est pas le cas :  modifier les options de Tapas.\n"+\
-                      "\n".join(str(self.exifsDesPhotos))
-                retour = troisBoutons(titre='Avertissement',question=message,b1='Continuer',b2='Abandon',b3=None)
+                      "Si ce n'est pas le cas :  modifier les options de Tapas.\n"
+                retour = self.troisBoutons(titre='Avertissement',question=message,b1='Continuer',b2='Abandon',b3=None)
                 if retour != 0:
                     return
 
