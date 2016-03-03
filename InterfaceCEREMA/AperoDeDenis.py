@@ -740,7 +740,7 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.21"
+        self.version                    =   " V 2.22"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -1865,9 +1865,9 @@ class Interface(ttk.Frame):
                 return
             if not zipfile.is_zipfile(archive):
                 self.encadre(archive+" n'est pas un fichier d'export valide\n"+
-                             "ou alors, sous ubuntu,il lui manque le droit d'éxécutio).",
+                             "ou alors, sous ubuntu,il lui manque le droit d'éxécution.",
                              nouveauDepart='non')
-                return
+                return                                                               
             
             self.encadre("Choisir le répertoire dans lequel recopier le chantier.",nouveauDepart='non')          
             destination = tkinter.filedialog.askdirectory(title='Désigner le répertoire où importer le chantier ',
@@ -2544,10 +2544,11 @@ class Interface(ttk.Frame):
             if verifierSiExecutable(self.convertMagick)==False:
                 self.encadre("Désigner l'outil de conversation 'convert' d'ImageMagick\n(Menu Paramètrage)",nouveauDepart="non")
                 return
-            if  self.pasDeConvertMagick():return 
+            if  self.pasDeConvertMagick():return
+
             self.conversionJPG(photos)
             photos = [os.path.splitext(e)[0]+".JPG" for e in photos]
-            
+           
         if self.nombreDExtensionDifferentes(photos)==0:
             self.encadre("Aucune extension acceptable pour des images. Abandon.",nouveauDepart="non")
             return            
@@ -2633,9 +2634,7 @@ class Interface(ttk.Frame):
 
         liste.sort()
         self.photosAvecChemin = list(liste)                                 # les photos avec les chemins initiaux, triées alphabétique 
-
         listeCopie=list()                                                   # liste des fichiers copiés, vide
-
         try:
             self.extensionChoisie = self.extensionChoisie.upper()
             for f in self.photosAvecChemin:                                 # self.photosAvecChemin est la  liste des photos nettoyées à copier
@@ -3055,7 +3054,7 @@ class Interface(ttk.Frame):
             delta = 4
             self.delta.set(str(delta))
             erreur += "\nLa valeur de delta est invalide, une valeur par défaut, 4, est affectée.\n"
-        print(erreur)            
+            print(erreur)            
         if self.modeTapioca.get()=='MulScale':
             try:
                 if 0<=echelle1<50:
@@ -3804,8 +3803,6 @@ class Interface(ttk.Frame):
             
         if self.exifsOK==False and self.pasDeFocales==False and self.etatDuChantier<3 :
             if self.calibSeule.get()==False:
-                print(self.exifsDesPhotos)
-                print("\n".join(str(self.exifsDesPhotos)))
                 message += "Les focales des photos ne sont pas toutes identiques.\n"+\
                       "Le traitement par MicMac n'est possible qu'en utilisant une focale pour la calibration intrinsèque de Tapas.\n"+\
                       "Si ce n'est pas le cas :  modifier les options de Tapas.\n"
@@ -6624,7 +6621,8 @@ class Interface(ttk.Frame):
     ################### Conversion au format jpg, information de l'Exif
 
     def conversionJPG(self,liste=list()):
-        if self.pasDeConvertMagick:return
+
+        if self.pasDeConvertMagick():return
         if liste==list():
             liste = self.photosSansChemin
         if liste.__len__()==0:
@@ -6674,7 +6672,9 @@ class Interface(ttk.Frame):
     # Aprés saisie de l'exif :
 
     def informerExif(self,exiftool,listeFichiers,listeTagInfo): # la liste peut être relative ou absolue, taginfo est une liste de tuple (tag,info)
+
         if self.pasDeExiftool():return
+
         if listeFichiers.__len__()==0:
             return "Aucune photo à mettre à jour."
 
@@ -6686,7 +6686,7 @@ class Interface(ttk.Frame):
         if extension.upper() not in ".JPG.JPEG":
             interface.encadre("La version actuelle ne traite que les exif des photos au format JPG, or le format des photos est "+extension+". Désolé, abandon." )
             return
-                             
+                  
         # Controle de l'existence des fichiers :
         for e in listeFichiers:
             if os.path.isfile(e)==False:
@@ -6702,9 +6702,8 @@ class Interface(ttk.Frame):
 
         # pour format jpg            
   
-        setExif  = [exiftool]+listeModifs+["*"+extension]
-
-        print("setexif=",setExif)        
+        setExif  = [exiftool]+listeModifs+["-ext .JPG", self.repTravail] # ["*"+extension]
+    
         self.lanceCommande(setExif)
                     
         # SetExit crée des copies "original" des fichiers initiaux, on les supprime ;
