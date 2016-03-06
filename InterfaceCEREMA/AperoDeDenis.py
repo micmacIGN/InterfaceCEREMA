@@ -740,7 +740,7 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.22"
+        self.version                    =   " V 2.23"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -3874,7 +3874,7 @@ class Interface(ttk.Frame):
                                          question="Le chantier est terminé après Malt.\n"+
                                          "Vous pouvez :\n"+
                                          " - Nettoyer le chantier, conserver les résultats, permet de relancer Tapioca/Tapas/Malt\n"+
-                                         " - Conserver les traitements de Tapioca/Tapas pour relancer Malt"
+                                         " - Conserver les traitements de Tapioca/Tapas pour relancer Malt\n"+
                                          " - Ne rien faire.\n",                                    
                                          b1='Nettoyer le chantier',
                                          b2='Débloquer pour relancer malt',
@@ -4975,7 +4975,7 @@ class Interface(ttk.Frame):
                 "                                  désigner une ou plusieurs images maîtresses\n"+\
                 "                                  dessiner si besoin le ou les masques associés.\n"+\
                 "                                  Seuls les points visibles sur les images maitres seront sur l'image 3D finale.\n"+\
-                "                                  Le masque limite la zone ""utile"" de l'image 3D finale.\n"+\
+                "                                  Le masque limite la zone utile de l'image 3D finale.\n"+\
                 "                                  La molette permet de zoomer et le clic droit maintenu de déplacer l'image.\n"+\
                 "                                  Supprimer une image maîtresse de la liste réinitialise le masque.\n\n"+\
                 "                                  Nombre de photos utiles autour de l'image maîtresse :.\n"+\
@@ -5140,7 +5140,7 @@ class Interface(ttk.Frame):
                 "   Si tout va bien une vue en 3D non densifiée doit s'afficher, patience : cela peut être long.\n"+\
                 "4) Si tout va bien alors modifier les options pour la suite du traitement (Malt ou C3DC) (voir la doc).\n"+\
                 "   Puis re lancer MicMac pour obtenir une vue 3D densifiée.\n\n"+\
-                "5) Si tout ne va pas bien re 'lancer MicMac' et annuler le traitement, puis :\n"\
+                "5) Si tout ne va pas bien re 'lancer MicMac' et annuler le traitement, puis :\n"+\
                 "   Lire 'quelques conseils' (menu Aide).\n"+\
                 "   Tester la qualité des photos (menu Outils).\n"+\
                 "   Examiner les traces (menu Edition),\n"+\
@@ -5609,7 +5609,7 @@ class Interface(ttk.Frame):
             if os.path.exists(e):
                 if self.repTravail==e:
                     self.etatDuChantier = -1
-                    texte="Le précédent chantier "" "+self.chantier+" "" est en cours de suppression.\n"                    
+                    texte="Le précédent chantier "+self.chantier+" est en cours de suppression.\n"                    
                     self.nouveauChantier()
                     time.sleep(0.1)
                 try: shutil.rmtree(e)                           # il semble que la racine reste présente il faut ensuite la supprimer
