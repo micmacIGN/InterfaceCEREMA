@@ -740,7 +740,7 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.22"
+        self.version                    =   " V 2.23"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -2580,14 +2580,13 @@ class Interface(ttk.Frame):
         if self.exifsOK==False:
             if self.pasDeFocales:
                 message+='Les focales sont absentes des exif.\nMettez à jour les exifs avant de lancer MicMac.\n'+\
-                "Utiliser le menu Outils/Modifier l'exifs des photos.\n"
+                "Utiliser le menu Outils/Modifier l'exif des photos.\n"
             else:
-                message += "Les focales des photos ou ne sont pas toutes identiques.\n"+\
-                           "\nLe traitement par MicMac nécessitera une calibration intrinsèque.\n"
+                message += "Attention : Les focales des photos ou ne sont pas toutes identiques.\n"
                 
         if self.dimensionsOK==False:
-            message += "Les dimensions des photos ne sont pas toutes identiques.\n"+\
-                      "\nLe traitement par MicMac ne sera pas possible.\n"
+            message += "Attention : les dimensions des photos ne sont pas toutes identiques.\n"+\
+                      "\nLe traitement par MicMac ne sera peut-être pas possible.\n"
             
         # conséquences du choix de nouvelles photos sur un ancien chantier : on supprime tous le répertoire de travail ancien
         # on conserve les options
@@ -3779,35 +3778,50 @@ class Interface(ttk.Frame):
         if self.pasDeMm3d():return
         if self.pasDeExiftool():return
 
+    
+
+        if self.photosAvecChemin.__len__()==2:
+            message = "Avec 2 photos MicMac ne peut pas construire de nuage de point dense."   
+            retour = self.troisBoutons(titre='Avertissement : 2 photos seulement',
+                              question=message,
+                                b1='Continuer',b2='Abandon',b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
+            if retour != 0:
+                self.afficheEtat()
+                return
 
     # Les photos sont-elles correctes ?
         self.encadre("Controle des photos en cours.... Patience.",nouveauDepart='non')
         self.controlePhotos()
         message = str()
         if self.dimensionsOK==False:
-            message += "\nLes dimensions des photos ne sont pas toutes identiques.\n"+\
-                      "Le traitement par MicMac n'est pas possible. Choississez de nouvelles photos.\n"+\
+            message = "\nLes dimensions des photos ne sont pas toutes identiques.\n"+\
+                      "Le traitement par MicMac est incertain.\n"+\
                       "\n".join([ a+" : "+str(b[0])+" "+str(b[1]) for a, b in self.dimensionsDesPhotos])
-            self.encadre(message,nouveauDepart='non')
-            return            
+            retour = self.troisBoutons(titre='Avertissement',question=message,b1='Continuer',b2='Abandon',b3=None)
+            if retour != 0:
+                self.afficheEtat()
+                return            
 
         if self.pasDeFocales:
                 
-            self.troisBoutons(titre='Absence de focales',
+            retour = self.troisBoutons(titre='Absence de focales',
                               question="Certaines photos n'ont pas de focales.\n"+
-                                "Le traitement echouera.\n"+
+                                "Le traitement echouera probablement.\n"+
                                 "Mettre à jour les exifs (menu Outils)",
-                                b1='Abandonner',b2='')   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
-            self.afficheEtat()
-            return
+                                b1='Continuer',b2='Abandon',b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
+            if retour != 0:
+                self.afficheEtat()
+                return            
+
             
         if self.exifsOK==False and self.pasDeFocales==False and self.etatDuChantier<3 :
             if self.calibSeule.get()==False:
-                message += "Les focales des photos ne sont pas toutes identiques.\n"+\
-                      "Le traitement par MicMac n'est possible qu'en utilisant une focale pour la calibration intrinsèque de Tapas.\n"+\
-                      "Si ce n'est pas le cas :  modifier les options de Tapas.\n"
+                message = "Les focales des photos ne sont pas toutes identiques.\n"+\
+                      "Le traitement par MicMac est possible en utilisant une focale pour la calibration intrinsèque de Tapas.\n"+\
+                      "Cependant vous pouvez essayer sans cela.\n"
                 retour = self.troisBoutons(titre='Avertissement',question=message,b1='Continuer',b2='Abandon',b3=None)
                 if retour != 0:
+                    self.afficheEtat()
                     return
 
         if self.assezDePhotos==False:
@@ -3874,7 +3888,7 @@ class Interface(ttk.Frame):
                                          question="Le chantier est terminé après Malt.\n"+
                                          "Vous pouvez :\n"+
                                          " - Nettoyer le chantier, conserver les résultats, permet de relancer Tapioca/Tapas/Malt\n"+
-                                         " - Conserver les traitements de Tapioca/Tapas pour relancer Malt"
+                                         " - Conserver les traitements de Tapioca/Tapas pour relancer Malt\n"+
                                          " - Ne rien faire.\n",                                    
                                          b1='Nettoyer le chantier',
                                          b2='Débloquer pour relancer malt',
@@ -3928,7 +3942,7 @@ class Interface(ttk.Frame):
         
         if os.path.isdir("Ori-Arbitrary")==False:               # Tapioca n'a pu mettre en correspondance ce aucun point entre deux images : échec
             message = "Pourquoi MicMac s'arrête : \n"+"Pas d'orientation trouvé par tapas.\nPrises de vues non positionnées.\n"+\
-                      "Consulter la trace.\n"+\
+                      "Consulter l'aide (quelques conseils),\nconsulter la trace.\n"+\
                       "Verifier la qualité des photos (item du menu outil)\n\n"+self.messageRetourTapas
             self.ajoutLigne(message)
             self.ecritureTraceMicMac()                              # on écrit les fichiers trace
@@ -4303,7 +4317,7 @@ class Interface(ttk.Frame):
         else:
            texte="\nPas de fichier AperiCloud.ply généré.\n"
            self.ajoutLigne(texte)
-           self.messageNouveauDepart = texte+"Consulter la trace.\n"
+           self.messageNouveauDepart = texte+"Consulter l'aide (quelques conseils),\nConsulter la trace.\n"
            return -1
 
 
@@ -4975,7 +4989,7 @@ class Interface(ttk.Frame):
                 "                                  désigner une ou plusieurs images maîtresses\n"+\
                 "                                  dessiner si besoin le ou les masques associés.\n"+\
                 "                                  Seuls les points visibles sur les images maitres seront sur l'image 3D finale.\n"+\
-                "                                  Le masque limite la zone ""utile"" de l'image 3D finale.\n"+\
+                "                                  Le masque limite la zone utile de l'image 3D finale.\n"+\
                 "                                  La molette permet de zoomer et le clic droit maintenu de déplacer l'image.\n"+\
                 "                                  Supprimer une image maîtresse de la liste réinitialise le masque.\n\n"+\
                 "                                  Nombre de photos utiles autour de l'image maîtresse :.\n"+\
@@ -5111,16 +5125,17 @@ class Interface(ttk.Frame):
                 "               - C3DC : propose de définir un masque en 3D qui conservera tout le volume concerné.\n"                  +\
                 "                        Alternative à Malt, le traitement est beaucoup plus rapide. Nécessite la dernière version de MicMac.\n\n"+\
                 "               - GPS  : définir au moins 3 points cotés et les placer sur 2 photos. La trace indique s'ils sont pris en compte\n\n"+\
-                "Si MicMac ne trouve pas de nuage de points :\n\n"+\
+                "Si MicMac ne trouve pas d'orientation ou pas de nuage de points :\n\n"+\
                 "               - Examiner la qualité des photos : .\n"                             +\
                 "                        1) Eliminer les photos ayant les plus mauvais scores\n"+\
                 "                        2) si ce n'est pas suffisant ne garder que les meilleures photos (typiquement : moins de 10)\n"+\
                 "                           Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.\n"+\
-                "                        3) modifier le type d'appareil pour Tapas (radialstd ou radialbasic)\n"+\
-                "                        4) vérifier la taille du capteur dans dicocamera, l'exif des photos\n"+\
-                "                        5) examiner la trace synthétique et la trace complète : MicMac donne quelques informations\n"+\
-                "                        6) consulter le forum micmac (http://forum-micmac.forumprod.com)\n"+\
-                "                        7) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)\n\n"+\
+                "                        3) Augmenter l'échelle des photos pour tapas, mettre -1 au lieu de 1200 par défaut.\n"+\
+                "                        4) modifier le type d'appareil pour Tapas (radialstd ou radialbasic)\n"+\
+                "                        5) vérifier la taille du capteur dans dicocamera, l'exif des photos\n"+\
+                "                        6) examiner la trace synthétique et la trace complète : MicMac donne quelques informations\n"+\
+                "                        7) consulter le forum micmac (http://forum-micmac.forumprod.com)\n"+\
+                "                        8) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)\n\n"+\
                 "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
         self.cadreVide()
         self.effaceBufferTrace()        
@@ -5140,7 +5155,7 @@ class Interface(ttk.Frame):
                 "   Si tout va bien une vue en 3D non densifiée doit s'afficher, patience : cela peut être long.\n"+\
                 "4) Si tout va bien alors modifier les options pour la suite du traitement (Malt ou C3DC) (voir la doc).\n"+\
                 "   Puis re lancer MicMac pour obtenir une vue 3D densifiée.\n\n"+\
-                "5) Si tout ne va pas bien re 'lancer MicMac' et annuler le traitement, puis :\n"\
+                "5) Si tout ne va pas bien re 'lancer MicMac' et annuler le traitement, puis :\n"+\
                 "   Lire 'quelques conseils' (menu Aide).\n"+\
                 "   Tester la qualité des photos (menu Outils).\n"+\
                 "   Examiner les traces (menu Edition),\n"+\
@@ -5609,7 +5624,7 @@ class Interface(ttk.Frame):
             if os.path.exists(e):
                 if self.repTravail==e:
                     self.etatDuChantier = -1
-                    texte="Le précédent chantier "" "+self.chantier+" "" est en cours de suppression.\n"                    
+                    texte="Le précédent chantier "+self.chantier+" est en cours de suppression.\n"                    
                     self.nouveauChantier()
                     time.sleep(0.1)
                 try: shutil.rmtree(e)                           # il semble que la racine reste présente il faut ensuite la supprimer
