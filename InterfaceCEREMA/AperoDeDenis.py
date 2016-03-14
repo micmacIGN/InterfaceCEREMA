@@ -922,7 +922,6 @@ class Interface(ttk.Frame):
             b=ttk.Radiobutton(self.item500, text=t, variable=self.modeCheckedTapas, value=m)
             b.pack(anchor='w')
             b.state([s])       
-        self.modeCheckedTapas.set('RadialExtended')                  # valeur par défaut nécessaire pour définir la variable obtenue par radiobutton    
 
         self.item520 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour la calibration, fera un encadrement
         # photosPourCalibrationIntrinseque       
@@ -1610,7 +1609,7 @@ class Interface(ttk.Frame):
 
     # TAPAS
 
-        self.modeCheckedTapas.set('RadialExtended')
+        self.modeCheckedTapas.set('RadialBasic')
         self.arretApresTapas.set(1)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
         self.calibSeule.set(False)                              # par défaut on exploite toutes les photos
