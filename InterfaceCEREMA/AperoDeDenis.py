@@ -2,6 +2,10 @@
 # -*- coding: utf-8 -*-
 # PEP 0008 -- Style Guide for Python Code
 
+# Version 3 ou plus
+# ligne 2584 : modif message si pas d'exiftool
+# début d'ajout d'une sauvegarde des options
+
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
 import tkinter.ttk as ttk                   # amélioration de certains widgets de tkinter : le comportement est géré indépendamment de l'apparence : c'est mieux ! mais différent !
@@ -688,8 +692,9 @@ class Interface(ttk.Frame):
         menuOutils.add_command(label="Qualité des photos 'line'", command=self.OutilQualitePhotosLine)        
         menuOutils.add_command(label="Qualité des photos 'All' ", command=self.OutilQualitePhotosAll)
         menuOutils.add_separator()
-        #menuOutils.add_command(label="Convertir les photos au format jpg", command=self.conversionJPG)
         menuOutils.add_command(label="Modifier l'exif des photos", command=self.majExif)
+        menuOutils.add_separator()
+        menuOutils.add_command(label="Modifier les options par défaut", command=self.majOptionsParDefaut)
         
         # Paramètrage       
 
@@ -740,7 +745,7 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.23"
+        self.version                    =   " V 2.30"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -828,7 +833,7 @@ class Interface(ttk.Frame):
 
         # Pour tapioca
 
-        self.echelle1           = tkinter.StringVar()                # nécessaire pour définir la variable obtenue le widget
+        self.echelle1           = tkinter.StringVar()                # nécessaire pour définir la variable obtenue le widget 
         self.echelle2           = tkinter.StringVar()       
         self.echelle3           = tkinter.StringVar() 
         self.echelle4           = tkinter.StringVar()        
@@ -843,7 +848,7 @@ class Interface(ttk.Frame):
         self.modeCheckedTapas   = tkinter.StringVar()                   # nécessaire pour définir la variable obtenue par radiobutton
         self.arretApresTapas    = tkinter.IntVar()                      # 
         self.calibSeule         = tkinter.BooleanVar()
-        self.repCalibSeule      = "PhotosCalibrationIntrinseque"        # nom du répertoire pour cantonnet les photos servant uniquement à la calibration
+        self.repCalibSeule      = "PhotosCalibrationIntrinseque"        # nom du répertoire pour cantonner les photos servant uniquement à la calibration
         
         # pour la calibration
 
@@ -872,7 +877,7 @@ class Interface(ttk.Frame):
         self.item404.pack(anchor='w')
         self.item404.state(['disabled'])                # dans cette version de l'outil
 
-        # tapioca Echelle 1
+        # tapioca Echelle 1 All
         
         self.item480  = ttk.Frame(self.item400,height=50,relief='sunken',padding="0.3cm")        
         self.item481  = ttk.Label(self.item480, text="Echelle image (-1 pour l'image entière) :")
@@ -880,7 +885,7 @@ class Interface(ttk.Frame):
         self.item481.pack()
         self.item482.pack()
 
-        # tapioca Echelle2 (MultiScale)
+        # tapioca Echelle2 et 3 (MultiScale) 
 
         self.item460=ttk.Frame(self.item400,height=50,relief='sunken',padding="0.3cm")        
         self.item461=ttk.Label(self.item460, text="Echelle image réduite : ")
@@ -892,7 +897,7 @@ class Interface(ttk.Frame):
         self.item463.pack()
         self.item464.pack()
         
-        # tapioca Delta
+        # tapioca Delta Echelle4
 
         self.item470=ttk.Frame(self.item400,height=50,relief='sunken',padding="0.3cm")
         self.item471=ttk.Label(self.item470, text="Echelle image (-1 pour l'image entière) :")
@@ -1546,7 +1551,7 @@ class Interface(ttk.Frame):
         self.paramChantierSav           =   'ParamChantier.sav'
         self.fichierParamMicmac         =   os.path.join(self.repertoireData,'ParamMicmac.sav')       # sauvegarde des paramètres globaux d'AperodeDenis
         self.fichierParamChantierEnCours=   os.path.join(self.repertoireData,self.paramChantierSav)   # pour les paramètres du chantier en cours
-
+        self.fichierSauvOptions         =   os.path.join(self.repertoireData,'OptionsMicmac.sav')     # pour la sauvegarde d'options personnalisées
 
     # Divers
 
@@ -1609,7 +1614,11 @@ class Interface(ttk.Frame):
 
     # TAPAS
 
+<<<<<<< local
+        self.modeCheckedTapas.set('RadialBasic')                # mode par défaut depuis la v 2.23 du 14 mars 2016
+=======
         self.modeCheckedTapas.set('RadialBasic')
+>>>>>>> other
         self.arretApresTapas.set(1)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
         self.calibSeule.set(False)                              # par défaut on exploite toutes les photos
@@ -1660,6 +1669,10 @@ class Interface(ttk.Frame):
         self.fermetureOngletsEnCours    =   False                       # pour éviter de boucler sur la fermeture de la boite à onglet
         self.fermetureOptionsGoProEnCours= False
         self.fermetureModifExif         =   False
+
+    # si les options par défaut sont personnalisées on les restaure :
+
+        self.restaureOptions()
         
     ################# Le Menu FICHIER : Ouvre un nouveau chantier avec les valeurs par défaut, ouvre un chantier existant, enregistrer, renommer, supprimer
 
@@ -2055,7 +2068,8 @@ class Interface(ttk.Frame):
                     texte = texte+"2 fois "+str(self.photosUtilesAutourDuMaitre.get())+" photos utiles autour de la maîtresse"+"\n"
                     
                 if self.zoomF.get()!="1":
-                     texte = texte+"\narrêt au zoom : "+self.zoomF.get()+"\n"
+                    print("Affiche etat : self.zoomF.get()",self.zoomF.get())
+                    texte = texte+"\narrêt au zoom : "+self.zoomF.get()+"\n"
 
                      
             # état du chantier :
@@ -2573,13 +2587,17 @@ class Interface(ttk.Frame):
         self.etatSauvegarde="*"                                     # chantier modifié
 
         # Controle des photos :
+
         
         self.controlePhotos()                                   # Vérifie l'exif et les dimensions des photos        
         message = str()
         if self.exifsOK==False:
             if self.pasDeFocales:
-                message+='Les focales sont absentes des exif.\nMettez à jour les exifs avant de lancer MicMac.\n'+\
-                "Utiliser le menu Outils/Modifier l'exif des photos.\n"
+                if self.pasDeExiftool():
+                    message+="L'outil exiftool n'est pas localisé : controle des photos impossible.\nDésigner le fichier exiftool (menu paramètrage)."
+                else:
+                    message+='Les focales sont absentes des exif.\nMettez à jour les exifs avant de lancer MicMac.\n'+\
+                            "Utiliser le menu Outils/Modifier l'exif des photos.\n"
             else:
                 message += "Attention : Les focales des photos ou ne sont pas toutes identiques.\n"
                 
@@ -2679,7 +2697,9 @@ class Interface(ttk.Frame):
 
         self.dimensionsDesPhotos = [(x,Image.open(x).size) for x in self.photosSansChemin]  # si OK : x = self.dimensionsDesPhotos[0][0] et y=self.densionsDesPhotos[0][1]
         self.dimensionsOK = set([y for (x,y) in self.dimensionsDesPhotos]).__len__()==1     # vrai si une seule taille
+        
         # les focales :
+        
         self.exifsDesPhotos = [(x,self.tagExif(tag="FocalLength",photo=x)) for x in self.photosSansChemin]
         lesFocales = set([y for (x,y) in self.exifsDesPhotos])
         self.exifsOK = False
@@ -2737,10 +2757,34 @@ class Interface(ttk.Frame):
                          "Si besoin créer un nouveau chantier ou débloquer le chantier en lancant micmac.",nouveauDepart='non')       
             return        
 
-        if self.etatDuChantier==5:		
-            self.encadre("Le chantier est terminé. Modification des options inutile.\n\n."+
-                         "Si besoin créer un nouveau chantier ou débloquer le chantier en lancant micmac.",nouveauDepart='non')            
-            return
+    # Chantier arrété après tapas : l'utilisateur a pu modifier les options et veut continuer ou reprendre au début suivant les résultats
+    # poursuite du traitement ou arrêt suivant demande utilisateur
+
+            
+    # Chantier terminé, l'utilisateur peur décider de le débloquer en conservant les résultats de tapas ou supprimer tous les résultats
+    
+        if self.etatDuChantier==5:		                # Chantier terminé
+            retour = self.troisBoutons(  titre='Le chantier '+self.chantier+' est terminé.',
+                                         question="Le chantier est terminé après Malt.\n"+
+                                         "Vous pouvez :\n"+
+                                         " - Nettoyer le chantier, conserver les résultats, permet de relancer Tapioca/Tapas/Malt\n"+
+                                         " - Conserver les traitements de Tapioca/Tapas pour relancer Malt\n"+
+                                         " - Ne rien faire.\n",                                    
+                                         b1='Nettoyer le chantier',
+                                         b2='Débloquer pour relancer malt',
+                                         b3='Ne rien faire',)
+            if retour==-1:                                      # -1 : fermeture fenêtre, abandon
+                self.afficheEtat()
+                return
+            if retour==2:                                       # 0 : ne rien faire
+                self.afficheEtat()
+                return
+            if retour==0:                                       # 1 : on nettoie, on passe à l'état 2
+                self.nettoyerChantier()
+
+            if retour==1:
+                self.etatDuChantier = 4
+
 
         # L'état du chantier permet de choisir des options :
 
@@ -2820,14 +2864,13 @@ class Interface(ttk.Frame):
         self.finCalibrationGPSOK()                                      # mise à jour des options de calibration
         self.finRepereOK()                                              # mise à jour des options de repérage (axe Ox, plan horizontal, distance
 
-        # Sauvegarde des nouvelles info :
+        # Controle puis Sauvegarde des nouvelles info :
+
+        retour = self.controleOptions()
         
-        self.sauveParam()
         self.etatSauvegarde="*"                                         # chantier modifié  ="*"                     #Pour indiquer que le chantier a été modifié, sans être sauvegardé sous le répertoire du chantier
         self.sauveParam()
 
-
-        retour = self.controleOptions()   
         if retour!=True:
             texte = "\nOption incorrecte :\n"+str(retour)
             self.encadreEtTrace(texte)
@@ -3024,109 +3067,101 @@ class Interface(ttk.Frame):
                                                 # et que echelle1 < echelle2
                                                 # et enfin que echelle 1 et 2 sont au max = taille la plus grande de l'image
                                                 # ce controle peut-être appelé avant de lancer micMac
-        texte=str()
-        erreur = str()
-        try: echelle1 = int(self.echelle1.get()) # si erreur saisie (texte!) alors valeur par défaut
+                                                # Retour : true si Ok, message d'erreur sinon (string)
+        texte  = str()  # message informatif (pas toujours !)
+        erreur = str()  # message erreur 
+
+        # remarque la fonction int(str) nécessite que la chaîne représente un nombre entier et non décimal
         
+        # Controle echelle 1 pour le mode All de tapioca
+        
+        try: echelle1 = int(self.echelle1.get()) # si erreur saisie (texte!) alors valeur par défaut         
         except:
             echelle1 = 1000
             self.echelle1.set(str(echelle1))
-            erreur = "\nUne echelle est invalide, une valeur par défaut, 1000, est affectée.\n"
+            erreur += "\nL'échelle pour le mode All de Tapioca est invalide, une valeur par défaut, "+self.echelle1.get()+", est affectée.\n"
+
+        try:
+            if echelle1<50 and echelle1 != -1:
+                texte += "\nEchelle pour le mode All de Tapioca trop petite : \n"+self.echelle1.get()+"\nMinimum = 50\n"
+        except:
+            pass
+
+        # Controle echelle 2 pour le mode MulScale de tapioca (première échelle du MulScale)
+        
         try: echelle2 = int(self.echelle2.get())
         except:
             echelle2 = 300
             self.echelle2.set(str(echelle2))
-            erreur = "\nUne echelle est invalide, une valeur par défaut, 300, est affectée.\n"            
+            erreur += "\nL'échelle 1 pour MulScale de Tapioca est invalide, une valeur par défaut, "+self.echelle2.get()+", est affectée.\n"
+
+        try:
+            if echelle2==-1:
+                texte += "\nL'échelle 1 de MulScale ne doit pas être -1.\nElle est mise à 300.\n"
+                echelle2 = 300
+                self.echelle2.set(str(echelle2))
+        except: pass
+        
+        try:
+            if echelle2<50:
+                texte += "\nL'échelle 1 pour le mode MulScale de Tapioca est trop petite : \n"+self.echelle2.get()+"\nMinimum = 50, maximum conseillé : 300\n"
+        except:
+            pass
+
+        # Controle echelle 3 pour le mode MulScale de tapioca (seconde échelle du MulScale)
+        
         try: echelle3 = int(self.echelle3.get())
         except:
             echelle3 = 1200
             self.echelle3.set(str(echelle3))
-            erreur = "\nUne echelle est invalide, une valeur par défaut, 1200, est affectée.\n"            
+            erreur += "\nL'échelle 2 pour le mode  MulScale de Tapioca est invalide, une valeur par défaut, "+self.echelle3.get()+", est affectée.\n"        
+
+        try:
+            if echelle3<50:
+                texte += "\nL'échelle 2 pour le mode MulScale de Tapioca est trop petite : \n"+self.echelle3.get()+"\nMinimum = 50\n"
+        except:
+            pass
+
+        # controle cohérence echelle2 et echelle3
+
+        try:
+            if echelle3<=echelle2 and echelle3!=-1:
+                texte += "\nL'échelle 2 de MulScale pour tapioca\n"+self.echelle3.get()+"\n plus petite que l'échelle 1 : \n"+self.echelle2.get()+"\n"                  
+        except:
+            pass
+
+        # Controle échelle pour le mode line
+
         try: echelle4 = int(self.echelle4.get())
         except:
             echelle4 = 1200
             self.echelle4.set(str(echelle4))
-            erreur = "\nUne echelle est invalide, une valeur par défaut, 1200, est affectée.\n"            
+            erreur += "\nL'échelle pour le mode Line de tapioca est invalide, une valeur par défaut, "+self.echelle4.get()+", est affectée.\n"
+
+        try:
+            if echelle4<50 and echelle4!=-1:
+                texte += "\nEchelle pour le mode Line de tapioca trop petite : \n"+self.echelle4.get()+"\n"
+        except:
+            pass
+
+        # Controle delta pour le mode line
+        
         try: delta = int(self.delta.get())
         except:
             delta = 4
             self.delta.set(str(delta))
-            erreur += "\nLa valeur de delta est invalide, une valeur par défaut, 4, est affectée.\n"
-            print(erreur)            
-        if self.modeTapioca.get()=='MulScale':
-            try:
-                if 0<=echelle1<50:
-                    texte="\nEchelle 1 trop petite : \n"+self.echelle1.get()+"\nMinimum = 50"
-                    return texte+erreur
-            except:
-                texte = texte+"\nEchelle non numérique poutr Tapioca : \n"+self.echelle1.get()+"\n"
-                return texte+erreur
-            try:
-
-                if echelle2!=-1:
-                    if echelle3<echelle2 and echelle3!=-1:
-                        texte="\nEchelle 2 \n"+self.echelle2.get()+"\n plus petite que echelle 1 : \n"+self.echelle3.get()+"\n"
-                        return texte+erreur
-                    if 0<=echelle2<50:
-                        texte="\nEchelle 1 trop petite : \n"+self.echelle2.get()+"\nMinimum = 50"
-                        return texte+erreur                    
-
-            except:
-                texte = texte+"\nEchelle 2 non numérique : \n"+self.echelle2.get()+"."
-                return texte+erreur
+            erreur += "\nLa valeur de delta pour le mode Line de Tapioca est invalide,\n une valeur par défaut, "+self.delta.get()+", est affectée.\n"        
             
-        if self.modeTapioca.get()=='All':
-            try:
-                if 0<echelle1<50:
-                    texte="\nEchelle 1 trop petite : \n"+self.echelle1.get()+"\n"
-                    return texte+erreur
-            except:
-                texte = texte+"\nEchelle 1 non numérique : \n"+self.echelle1.get()+"\n"
-                return texte+erreur
-            
-        if self.modeTapioca.get()=='Line':
-            try:
-                if delta<1:
-                    texte="\nDelta trop petit : \n"+self.delta.get()+"\nMinimum = 1"
-                    return texte+erreur    
-            except:
-                texte="\nDelta non numérique : \n"+self.delta.get()+"\n"
-                return texte+erreur
-            try:
-                if 0<echelle4<50:
-                    texte="\nEchelle 1 trop petite : \n"+self.echelle4.get()+"\n"
-                    return texte+erreur
-            except:
-                texte = texte+"\nEchelle 1 non numérique : \n"+self.echelle4.get()+"\n"
-                return texte+erreur            
-            
-        # vérif taille image :
-        
-        if len(self.photosAvecChemin)==0:
-            return True
-        if os.path.exists(self.photosAvecChemin[0])==False:
-            texte = "La photo "+self.photosAvecChemin[0]+" n'existe plus."
-            return texte+erreur
-        
-        photo1 = Image.open(self.photosAvecChemin[0])
-        largeur,hauteur = photo1.size
-        del photo1
-        
-        maxi = max(largeur,hauteur)
-        if self.modeTapioca.get()=='All':
-            if int(self.echelle1.get())>maxi:
-                texte = "\nechelle1 = "+self.echelle1.get()+"\n plus grand que la dimension maxi de la photo : \n"+str(maxi)+".\n\nInutile et ralenti le traitement. Modifier."
-                return texte+erreur
-        if self.modeTapioca.get()=='MulScale':
-            if int(self.echelle2.get())>maxi:
-                texte = "\nechelle2 = "+self.echelle2.get()+"\n plus grand que la dimension maxi de la photo : \n"+str(maxi)+".\n\nInutile et ralenti le traitement. Modifier."
-                return texte+erreur                    
+        try:
+            if delta<1:
+                texte += "\nDelta trop petit : \n"+self.delta.get()+"\nMinimum = 1\n"
+        except:
+            pass           
 
-        #vérification zoom et nombre d'images utiles autour du maître pour Malt
-
-        if self.zoomF.get() not in "1248":
-            texte = "Le zoom final pour MALT n'est pas 1,2,4 ou 8 : "+self.zoomF.get()+"\n"
-            return texte+erreur
+        #vérification du zoom final :
+                    
+        if self.zoomF.get() not in ("1","2","4","8"):
+            erreur += "\nLe zoom final pour MALT n'est pas 1,2,4 ou 8 : "+self.zoomF.get()+"\n"
         
         # zoom OK, les valeurs 8,4,2,1 correspondent au nuage étape 5, 6, 7, 8 
         
@@ -3134,14 +3169,47 @@ class Interface(ttk.Frame):
         if self.zoomF.get()=="4":self.etapeNuage = "6"
         if self.zoomF.get()=="2":self.etapeNuage = "7"        
         if self.zoomF.get()=="1":self.etapeNuage = "8"
+
+        # vérification nombre d'images utiles autour du maître pour Malt en mode GeomImage
+
+        try:
+            self.photosUtilesAutourDuMaitre.set(int(self.photosUtilesAutourDuMaitre.get())) # met un entier (sinon galère !)
+            if self.photosUtilesAutourDuMaitre.get()<1:
+                texte += "\nMalt mode Geomimage :\n Le nombre de photos utiles autour de l'image maîtresse est trop petit : "+str(self.photosUtilesAutourDuMaitre.get())+"\n"
+        except Exception as e:
+            texte += "\nMalt mode Geomimage :\nLe nombre de photos utiles autour de l'image centrale n'est pas numérique : \nIl est mis à 1.\n"
+            self.photosUtilesAutourDuMaitre.set(1)
+
+            
+        # vérif taille image (s'il y a des images !):
         
-        if self.photosUtilesAutourDuMaitre.get()<1:
-            texte = "Le nombre de photos utiles autour de l'image centrale est trop petit : "+str(self.photosUtilesAutourDuMaitre.get())+"\n"
-            return texte+erreur
-        if erreur==str():
+        if len(self.photosAvecChemin)>0:
+            if os.path.exists(self.photosAvecChemin[0])==False:
+                texte += "La photo "+self.photosAvecChemin[0]+" n'existe plus."
+                return texte+erreur        
+            photo1 = Image.open(self.photosAvecChemin[0])
+            largeur,hauteur = photo1.size
+            del photo1
+        
+            maxi = max(largeur,hauteur)
+            if self.modeTapioca.get()=='All':
+                if int(self.echelle1.get())>maxi:
+                    texte += "\nL'échelle pour le mode All de tapioca = "+self.echelle1.get()+"\n, est plus grande que la dimension maxi de la photo : \n"+str(maxi)+".\n\nInutile et ralenti le traitement. Modifier."
+
+            if self.modeTapioca.get()=='MulScale':
+                if int(self.echelle2.get())>maxi:
+                    texte += "\nL'échelle 2 pour le mode MulScale de tapioca= "+self.echelle2.get()+"\n est plus grande que la dimension maxi de la photo : \n"+str(maxi)+".\n\nInutile et ralenti le traitement. Modifier."
+
+            if self.modeTapioca.get()=='Line':
+                if int(self.echelle4.get())>maxi:
+                    texte += "\nL'échelle pour le mode Line de tapioca = "+self.echelle2.get()+"\n est plus grande que la dimension maxi de la photo : \n"+str(maxi)+".\n\nInutile et ralenti le traitement. Modifier."
+
+        # retour True ou String
+
+        if texte+erreur==str():
             return True
         else:
-            return erreur
+            return texte+erreur
 
     def finOptionsKO(self):
 
@@ -3768,19 +3836,26 @@ class Interface(ttk.Frame):
     ################################## LANCEMENT DE MICMAC ###########################################################
         
     def lanceMicMac(self):                                      # vérification du choix de photos, de présence de l'éxécutable, du choix de l'extension, de la copie effective dans le répertoire de travail
-    
+   
     # Vérification de l'état du chantier :
 
-    # si pas de photos choisies ou pas de paramètre : retour :
+    # si pas de photo ou pas de répertoire micmac : retour :
 
         if self.pasDePhoto():return        
         if self.pasDeMm3d():return
         if self.pasDeExiftool():return
 
+    # controle que les options sont correctes (toutes, même si elles ne doivent pas servir)
     
+        retour = self.controleOptions()
+        if retour!=True:
+            self.encadre("Options incorrectes : corriger\n\n"+retour,nouveauDepart="non")
+            return            
 
+    #  pas assez de photos choisies :
+    
         if self.photosAvecChemin.__len__()==2:
-            message = "Avec 2 photos MicMac ne peut pas construire de nuage de point dense."   
+            message = "Avec 2 photos MicMac ne pourra pas construire de nuage de point dense.\nUtiliser l'échelle -1 dans Tapioca pour obtenir un nuage optimal.\n"   
             retour = self.troisBoutons(titre='Avertissement : 2 photos seulement',
                               question=message,
                                 b1='Continuer',b2='Abandon',b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
@@ -3789,6 +3864,7 @@ class Interface(ttk.Frame):
                 return
 
     # Les photos sont-elles correctes ?
+    
         self.encadre("Controle des photos en cours.... Patience.",nouveauDepart='non')
         self.controlePhotos()
         message = str()
@@ -3904,8 +3980,9 @@ class Interface(ttk.Frame):
                 return
             if retour==1:
                 self.etatDuChantier = 4
-                self.afficheEtat("Chantier "+self.chantier+" de nouveau modifiable pour relancer Tapas.")                
+                self.afficheEtat("Chantier "+self.chantier+" de nouveau modifiable pour relancer Malt.")                
                 return
+            
     # L'état du chantier est prêt pour l'exécution de Tapioca (2) ou débloqué (6) : sauvegarde des paramètres actuels puis traitement
         
         self.sauveParam()
@@ -3972,7 +4049,7 @@ class Interface(ttk.Frame):
         self.ecritureTraceMicMac()                              # on écrit les fichiers trace
             
         # Faut-il poursuivre ?
-        
+      
         if self.arretApresTapas.get():                         # L'utilisateur a demandé l'arrêt
             ligne="\nArrêt après Tapas "+heure()+". Lancer MicMac pour reprendre le traitement. \n"              
             ligne=ligne+"\n\-------------- Arrêt aprés Tapas sur demande utilisateur --------------\n\n"        
@@ -5201,6 +5278,9 @@ class Interface(ttk.Frame):
               "\nVersion 2.20\n"+\
               chr(9)+chr(9)+"- Maintien des options compatibles lors du choix de nouvelles photos.\n"+\
               "Diffusion le 29/02/2016\n"+\
+              "\nVersion 2.30\n"+\
+              chr(9)+chr(9)+"- Modification possible des options par défaut dans le menu outils.\n"+\
+              "Diffusion le 18/03/2016\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         
@@ -5224,7 +5304,7 @@ class Interface(ttk.Frame):
             if self.labelIgn.winfo_manager()!="pack":
                 self.labelIgn.pack(pady=5)            
                 
-        except Exception as e: print("erreur cavas logo cerema : "+str(e))
+        except Exception as e: print("erreur canvas logo cerema : "+str(e))
 
         #ajout du logo IGN si possible
         if os.path.exists(self.logoIGN):
@@ -5436,7 +5516,6 @@ class Interface(ttk.Frame):
             texte='\n'.join(texte.splitlines()[0:nbLignesmax-5]) +'\n.......\n'+'\n'.join(texte.splitlines()[-3:])
         self.menageEcran()
         if nouveauDepart=='oui':
-            print("oui")
             self.nbEncadre+=1
         if self.nbEncadre>=6 and nouveauDepart=='oui' and self.systeme=='nt':
             self.messageNouveauDepart =  texte
@@ -6326,14 +6405,9 @@ class Interface(ttk.Frame):
         if self.dicoInfoBullesAAfficher==None:
             return
         for e in self.dicoInfoBullesAAfficher:
-            print("e=",e)
-            print("enCours=",self.enCours)
             if os.path.basename(e)==self.enCours:
-                print("=")
                 message = str(self.dicoInfoBullesAAfficher[e])
-                print(message)
                 if message!=str():
-                    print("bulle")
                     self.infoBulle(message)
             
  
@@ -6582,7 +6656,6 @@ class Interface(ttk.Frame):
                              boutonDeux="Fermer",
                              mode='single')
         if self.selectionPhotosAvecChemin.__len__()==1:
-            print("self.selectionPhotosAvecChemin[0]]=",self.selectionPhotosAvecChemin[0])
             self.lanceCommande([self.meshlab,self.selectionPhotosAvecChemin[0]],attendre=False)
 
     ####################    Fusionner des fichiers Ply :
@@ -6776,7 +6849,103 @@ class Interface(ttk.Frame):
         lesExtensions=set([os.path.splitext(x)[1].upper() for x in liste])                  # on vérifie l'unicité de l'extension :
         self.lesExtensions=list(lesExtensions)                                              # liste pour être slicable
         return len(self.lesExtensions)
-        
+########################################################   Modifier les options par défaut
+
+
+    def majOptionsParDefaut(self):                  # Si les options ont déjà été modifiées
+        if os.path.exists(self.fichierSauvOptions):
+            retour = self.troisBoutons(titre="Modifier les options par défaut",
+                                       question="Quelles options par défaut utiliser pour les nouveaux chantiers ?\n_n"+
+                                       "Les options par défaut concernent :\n\n"+
+                                       "Tapioca : All, MulScale, line ,les échelles et delta\n\n"+
+                                       "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n\n"+
+                                       "Malt    : zoom final, nombre de photos autour de la maîtresse\n\n",
+                                       b1="Revenir aux options par défaut d'AperoDeDenis",
+                                       b2="Utiliser les options du chantier en cours",
+                                       b3="Ne rien changer")
+            if retour == 0:
+                supprimeFichier(self.fichierSauvOptions)
+                self.encadre("Options par défaut réinitialisées")
+            elif retour == 1:
+                optionsOK = self.sauveOptions()
+                if optionsOK==True:
+                    self.encadre("Les options par défaut seront  désormais celles du chantier en cours",nouveauDepart='non')
+                else:
+                    self.encadre(optionsOK,nouveauDepart='non')
+            else:
+                self.afficheEtat()
+                
+        else:                                   # Si les options n'ont pas été modifiées
+            retour = self.troisBoutons(titre="Modifier les options par défaut",
+                                       question="Quelles options par défaut utiliser pour les nouveaux chantiers ?\n\n"+
+                                       "Les options par défaut concernent :\n\n"+
+                                       "Tapioca : All, MulScale, line ,les échelles et delta\n\n"+
+                                       "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n\n"+
+                                       "Malt    : zoom final, nombre de photos autour de la maîtresse\n\n"+
+                                       "Les options actuelles sont les options par défaut d'AperoDeDenis",                                      
+                                       b1="Utiliser les options du chantier en cours",
+                                       b2="Ne rien changer")
+            if retour == 0:
+                optionsOK = self.sauveOptions()
+                if optionsOK==True:
+                    self.encadre("Les options par défaut seront  désormais celles du chantier en cours",nouveauDepart='non')
+                else:
+                    self.encadre(optionsOK,nouveauDepart='non')
+            else:
+                self.afficheEtat()                    
+                
+    def sauveOptions(self):
+        retour = self.controleOptions()
+        if retour!=True:
+            message = "Options par défaut non sauvegardées car les options du chantier en cours sont invalides :\n"+retour
+            return message
+        try:
+            sauvegarde3=open(self.fichierSauvOptions,mode='wb')
+            pickle.dump((   self.echelle1.get(),               # nécessaire pour définir la variable obtenue le widget
+                            self.echelle2.get(),             
+                            self.echelle3.get(),
+                            self.echelle4.get(),             
+                            self.delta.get(),    
+                            self.file.get(),           
+                            self.modeTapioca.get(),
+                            self.modeMalt.get(),
+                            self.modeCheckedTapas.get(),
+                            self.arretApresTapas.get(),
+                            self.photosUtilesAutourDuMaitre.get(),
+                            self.calibSeule.get(),
+                            self.zoomF.get()),     
+                        sauvegarde3)
+            sauvegarde3.close()
+        except Exception as e:              # Controle que le programme a accès en écriture dans le répertoire d'installation
+            print ('erreur sauveOptions : ',str(e))
+            texte = "Erreur rencontrée lors de la sauvegarde des options : "+str(e)
+            return texte
+        return True
+            
+    def restaureOptions(self):
+        if not os.path.exists(self.fichierSauvOptions): return
+        try:                                                                        # s'il y a une sauvegarde alors on la restaure
+            sauvegarde4 = open(self.fichierSauvOptions,mode='rb')
+            r = pickle.load(sauvegarde4)
+            sauvegarde4.close()
+            self.echelle1.set(r[0])               # nécessaire pour définir la variable obtenue le widget
+            self.echelle2.set(r[1])             
+            self.echelle3.set(r[2])
+            self.echelle4.set(r[3])             
+            self.delta.set(r[4])    
+            self.file.set(r[5])           
+            self.modeTapioca.set(r[6])
+            self.modeMalt.set(r[7])
+            self.modeCheckedTapas.set(r[8])
+            self.arretApresTapas.set(r[9])
+            self.photosUtilesAutourDuMaitre.set(r[10])
+            self.calibSeule.set(r[11])
+            self.zoomF.set(r[12])
+        except Exception as e:
+            print("erreur restauration options : "+str(e))
+
+    
+       
     ########################################################   nouvelle fenêtre (relance utile pour vider les traces d'exécution de mm3d et autres)
 
     def nouveauDepart(self):
@@ -6883,7 +7052,6 @@ def supprimeArborescenceSauf(racine,listeSauf=list()):  # supprime toute une arb
             if os.path.isfile(chemin):
                 try:
                     os.remove(chemin)
-                    print("remove=",chemin)
                 except Exception as e:
                     print("erreur remove = ",str(e))
                     return
