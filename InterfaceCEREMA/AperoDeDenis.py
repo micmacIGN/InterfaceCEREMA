@@ -1614,11 +1614,7 @@ class Interface(ttk.Frame):
 
     # TAPAS
 
-<<<<<<< local
         self.modeCheckedTapas.set('RadialBasic')                # mode par défaut depuis la v 2.23 du 14 mars 2016
-=======
-        self.modeCheckedTapas.set('RadialBasic')
->>>>>>> other
         self.arretApresTapas.set(1)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
         self.calibSeule.set(False)                              # par défaut on exploite toutes les photos
