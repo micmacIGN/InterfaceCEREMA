@@ -41,7 +41,7 @@ class TracePolygone():
         self.listePointsJPG = list()                        # liste des points du polygone
         self.polygone = False                               # deviendra vrai lorsque le polygone sera effectif
         self.file = image                                   # nom du fichier partagé, devient attribut de la classe
-        self.nomMasque = masque                             # nom du fichier masque partagé (en principe : os.path.splitext(self.file)[0]+"_mask.tif")
+        self.nomMasque = masque                             # nom du fichier masque partagé (en principe : os.path.splitext(self.file)[0]+"_Mask.tif")
         
         # initialisations de l'affichage de l'image, dimensions du cadre, positionnement :
         
@@ -745,7 +745,7 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.30"
+        self.version                    =   " V 2.31"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -1626,7 +1626,7 @@ class Interface(ttk.Frame):
         self.photosUtilesAutourDuMaitre.set(4)                  # 4 autour de l'image maîtresse (en + et en - soit 9 photos examinées)
         self.zoomF.set('4')                                     # doit être "1","2","4" ou "8" (1 le plus détaillé, 8 le plus rapide)
         self.etapeNuage                 = "5"                   # par défaut (très mystérieux!)
-        self.modele3DEnCours            = "modele3d.ply"        # Nom du self.modele3DEnCours courant
+        self.modele3DEnCours            = "modele3D.ply"        # Nom du self.modele3DEnCours courant
         self.reinitialiseMaitreEtMasque()                       # initialise toutes les variables lièes à l'image maitresse et au masque
         self.dicoInfoBullesAAfficher    = None                  # pour passer l'info à afficherLesInfosBullesDuDico (dans choisirUnePhoto)
         self.listeDesMaitresses         = list()
@@ -2064,9 +2064,7 @@ class Interface(ttk.Frame):
                     texte = texte+"2 fois "+str(self.photosUtilesAutourDuMaitre.get())+" photos utiles autour de la maîtresse"+"\n"
                     
                 if self.zoomF.get()!="1":
-                    print("Affiche etat : self.zoomF.get()",self.zoomF.get())
                     texte = texte+"\narrêt au zoom : "+self.zoomF.get()+"\n"
-
                      
             # état du chantier :
             
@@ -2828,7 +2826,7 @@ class Interface(ttk.Frame):
         # met à jour les infos sur les maîtresses et les masques
         
         self.miseAJourItem701_703()
-        self.masqueProvisoire = str()   # utile pour éecrireMasqueXML
+        self.masqueProvisoire = str()   # utile pour tracemasque
         
         # dernier onglet (qui se régénére, forcément le dernier)
 
@@ -2843,17 +2841,6 @@ class Interface(ttk.Frame):
     def finOptionsOK(self):                                         # l'utilisateur a valider l'ensemble des options
         self.onglets.pack_forget()      # on ferme la boite à onglets             
         texte = str()
-        # Pour Tapioca : toutes les variables sont sauvées 
-        # Pour tapas :
-        # Pour Malt :
-##        
-##        self.maitreSansChemin = os.path.basename(self.maitre)       # photoMaitre sans chemin avec extension, en minuscule
-##        self.nomMaitreSansExtension = os.path.splitext(self.maitreSansChemin)[0]                        # utile pour nuage2ply
-##            
-####        #self.ecrireMasqueXML()                                      # création du fichier xml associé à l'image maîtresse, si besoin, sinon efface
-##        self.MasqueXML(self.maitreSansChemin,os.path.basename(self.listeDesMasques[0])) # pour tester
-##        try: del self.masqueRetour                                  # suppression de l'objet "saisie du masque" s'il existe
-##        except : pass
 
         # on enregistre les options de calibration et de GPS 
         
@@ -2970,11 +2957,20 @@ class Interface(ttk.Frame):
         except: 
             self.etatCalibration = self.etatCalibration+"Pas de distance.\n"
             return False
-        # métrique :      
-        liste = list(self.dicoCalibre.items())
-        if liste.__len__()!=4:
-            self.etatCalibration = self.etatCalibration+"La distance n'est pas mesurée par 2 points repérés sur 2 photos.\n"
-
+        # métrique :
+        if self.dicoCalibre.__len__()>0:
+            liste = list(self.dicoCalibre.items())
+            if liste.__len__()!=4:
+                self.etatCalibration += "La distance n'est pas mesurée par 2 points repérés sur 2 photos.\n"
+            photosAvecDistance = list(set([os.path.basename(e[1]) for e in self.dicoCalibre.keys() ]))
+            if not os.path.exists(photosAvecDistance[0]):
+                self.etatCalibration += "La photo avec distance "+photosAvecDistance[0]+" est absente.\n"
+            if photosAvecDistance.__len__()>1:
+                if not os.path.exists(photosAvecDistance[1]):
+                    self.etatCalibration += "La photo avec distance "+photosAvecDistance[1]+" est absente.\n"                
+        if self.dicoCalibre.__len__()==0:
+            self.etatCalibration += "Pas de distance pour la calibration.\n"
+            
         if self.etatCalibration==str():
             return True                             # calibration OK, tout va bien
         else: return False
@@ -3260,6 +3256,9 @@ class Interface(ttk.Frame):
             self.item730.pack(pady=10)            
         
     def imageMaitresse(self):
+
+        # préparation des infos bulles
+        
         bulles = dict()
 
         for f in self.listeDesMaitresses:
@@ -3268,26 +3267,44 @@ class Interface(ttk.Frame):
                     bulles[f]="Image maitresse avec masque"
             if f not in bulles:
                 bulles[f]=""    # image maitresse sans masque
+
+        # suppression des fichiers masques pour malt ;; ces fichiers sont créés au lancement de Malt
+        # par contre on garde les dessins des masques (_masque.tif) qui ne serontutiles qui si le nom est dans la liste des masques
+
+        for e in self.photosAvecChemin:
+            supprimeFichier(os.path.splitext(e)[0]+"_Masq.xml")
+            supprimeFichier(os.path.splitext(e)[0]+"_Masq.tif")
+
+        # choix des nouvelles maîtresses :
                 
         self.choisirUnePhoto(self.photosAvecChemin,
                              "Choisir les maîtresses",
                              "Choisir une ou plusieurs image(s) maîtresse(s)\nen jaune : les maitresses actuelles\nUne info bulle informe de la présence d'un masque",
-                             boutonDeux="Supprimer les images maîtresses",
+                             boutonDeux="Supprimer les images maîtresses", # self.fermerVisu=True
                              mode="extended",
-                             bulles=bulles)       
-        if self.fermerVisu:                                             # sortie par bouton deux = fermeture de fenêtre
-            self.reinitialiseMaitreEtMasque()
+                             bulles=bulles)
+
+        # suppression de toutes les maitresses
+        if self.fermerVisu:                                             # sortie par bouton deux = fermeture de fenêtre + self.fermerVisu=True 
+            self.reinitialiseMaitreEtMasque()                  
             return
-        if self.selectionPhotosAvecChemin.__len__()==0:                 #  sortie par fermeture fenêtre ou usans choix
+        
+        #abandon de la saisie
+        if self.selectionPhotosAvecChemin.__len__()==0:                 #sortie par fermeture fenêtre ou sans choix
             self.item701.config(text="Abandon. Choix inchangé.\n")
             return
+        
+        # nouvelle liste des maitresses : mettre à jour la nouvelle liste des masques
         self.listeDesMaitresses = self.selectionPhotosAvecChemin
-        # mise à jour de la liste des masques :
+        # mise à jour de la liste des masques : suppression des masques qui ne sont plus dans la liste des maitresses
         new = list()
         for e in self.listeDesMaitresses:
-            if os.path.splitext(e)[0] in ' '.join(self.listeDesMasques):
-                new.append(os.path.splitext(e)[0]+"_masque.tif")
-        self.listeDesMasques = list(new)
+            if ' '.join(self.listeDesMasques).count(os.path.splitext(e)[0]): # la maitresse est dans la liste des masques
+                nouveauMasque = os.path.splitext(e)[0]+"_masque.tif"
+                if nouveauMasque in self.listeDesMasques:
+                    new.append(nouveauMasque)            
+
+        self.listeDesMasques = list(new)        # nouvelle liste des masques 
         self.miseAJourItem701_703()
 
     def miseAJourItem701_703(self):         # Onglet Malt, Cadre geomImage
@@ -3379,34 +3396,7 @@ class Interface(ttk.Frame):
             self.item703.config(text="Il faut une image maîtresse pour définir un masque.",
                                 background="#ffffaa")
 
-    def ecrireMasqueXML(self):  # en entrée : self.masqueProvisoire ( si absent efface tout) et self.maitre
- 
-        if self.masqueProvisoire==str() or os.path.exists(self.masqueProvisoire)==False:                         # si pas de masque
-            supprimeMasque(self.repTravail,"_Masq.tif")         # suppression des anciens masques s'ils existent
-            supprimeFichier(self.fichierMasqueXML)              # suppression ancien xml
-            self.masque = str()
-            self.masqueSansChemin = str()
-            return
-        self.masque = os.path.splitext(self.maitre)[0]+"_Masq.tif"                              # nom définitif du masque
-        self.masqueSansChemin = os.path.basename(self.masque)
-        if os.path.exists(self.masque):
-            try:
-                os.remove(self.masque)
-            except:
-                self.encadre ("Impossible de remplacer le fichier masque :\n"+self.masque+"\nVérifier s'il n'est pas ouvert.\n Masque inchangé.",
-                              nouveauDepart='non')
-                return
-        os.rename(self.masqueProvisoire,self.masque)                            # on renomme le fichier (et on écrase l'ancien !)
-        self.masqueProvisoire = str()                                           # plus de masque provisoire: détricotage
-        
-        self.masqueXML=self.masqueXML.replace("MonImage_Masq.tif",self.masqueSansChemin)                #écriture dans le fichier xml
-        self.masqueXML=self.masqueXML.replace("largeur",str(self.masqueRetour.largeurImageFichier))
-        self.masqueXML=self.masqueXML.replace("hauteur",str(self.masqueRetour.hauteurImageFichier))
-        self.fichierMasqueXML=self.masque.replace(".tif",".xml")
-        with open(self.fichierMasqueXML, 'w', encoding='utf-8') as infile:
-            infile.write(self.masqueXML)
-
-    def MasqueXML(self):      # préparation pour malt GeomImage. self.maitreSansChemin est nécessaire
+    def MasqueXML(self):      # préparation du masque pour malt GeomImage. self.maitreSansChemin est nécessaire
         
         # le masque est constitué d'un fichier .tif ET d'un fichier .xml (masqueSansChemin est le tif
         # la racine des noms est le nom de l'image maître, suivi de _Masq. puis de tif ou xml
@@ -3857,7 +3847,13 @@ class Interface(ttk.Frame):
                                 b1='Continuer',b2='Abandon',b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
             if retour != 0:
                 self.afficheEtat()
-                return
+                return         
+             
+    
+    # pas enregistré : on enregistre on poursuit
+            
+        if self.etatDuChantier==1:                              # Des photos mais fichier paramètre non encore enregistré, on enregistre et on poursuit
+            self.enregistreChantier()                           # sauvegarde du fichier paramètre sous le répertoire du chantier : modif etatduchantier = 2
 
     # Les photos sont-elles correctes ?
     
@@ -3898,14 +3894,8 @@ class Interface(ttk.Frame):
         if self.assezDePhotos==False:
             message += "Pas assez de photos pour le traitement : il en faut au moins 2."
             self.encadre(message,nouveauDepart='non')
-            return            
-             
-    
-    # pas enregistré : on enregistre on poursuit
-            
-        if self.etatDuChantier==1:                              # Des photos mais fichier paramètre non encore enregistré, on enregistre et on poursuit
-            self.enregistreChantier()                           # sauvegarde du fichier paramètre sous le répertoire du chantier : modif etatduchantier = 2
-
+            return
+        
     # anormal : chantier planté lors de la dernière éxécution : on propose le déblocage mais on sort dans tous les cas
                 
         if self.etatDuChantier==3:		                # En principe ne doit pas arriver : plantage en cours d'un traitement précédent 
@@ -3978,7 +3968,8 @@ class Interface(ttk.Frame):
                 self.etatDuChantier = 4
                 self.afficheEtat("Chantier "+self.chantier+" de nouveau modifiable pour relancer Malt.")                
                 return
-            
+
+        
     # L'état du chantier est prêt pour l'exécution de Tapioca (2) ou débloqué (6) : sauvegarde des paramètres actuels puis traitement
         
         self.sauveParam()
@@ -4083,9 +4074,19 @@ class Interface(ttk.Frame):
         if os.path.exists(self.mesureAppuis):
             self.lanceBascule()
 
-        # Si un modele3D existe déjà on ne le renomme pas : le nom du modéle 3D dépend de l'image maitresse et du niveau de zoom : cela suffit
-        # si c3dc uniquement du niveau de zoom : un peu faible
+
+        # Si un modele3D existe déjà on le renomme pour le conserver (limité à 20 exemplaire !)
         
+        if os.path.exists("modele3D.ply"):
+            for i in range(1,20):
+                new = "modele3D_V"+str(i)+".ply"
+                if not os.path.exists(new):
+                    try: os.replace(os.path.join(self.repTravail,"modele3D.ply"),os.path.join(self.repTravail,new))
+                    except Exception as e: print("erreur renommage ancien modele_3d en ",new,str(e))
+                    break
+                    
+                
+            print("----------------------------------- i=",i)
         
         # malt ou D3CD : suivant que le masque 3 D existe ou pas, avec préférence au masque 3D,
         # la production sera self.modele3DEnCours
@@ -4456,9 +4457,9 @@ class Interface(ttk.Frame):
         self.listeDesMasques            =   list()
         self.miseAJourItem701_703()                                                             # met à jour les windgets de l'onglet Malt
 
-    def reinitialiseMaitreEtMasqueDisparus(self):                                        # on conserve si la photo appartient au nouveau lot (photos = liste avec chemins)
+    def reinitialiseMaitreEtMasqueDisparus(self):                                               # on conserve les options si la photo appartient au nouveau lot (photos = liste avec chemins)
 
-        self.masque                     =   str()                                                # nom du fichier image représentant le masque sur l'image maîtresse
+        self.masque                     =   str()                                               # nom du fichier image représentant le masque sur l'image maîtresse
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
         self.maitre                     =   str()        
         self.maitreSansChemin           =   str()                                               # image maîtresse        
@@ -4491,19 +4492,13 @@ class Interface(ttk.Frame):
 
         # Distance
         # dicoCalibre key = nom point, photo, identifiant, value = x,y         
-        
-        if self.dicoCalibre.__len__()>0:
-            photosAvecDistance = set([e[1] for e in self.dicoCalibre.keys()])
 
-            try:
-                if photosAvecDistance[0] not in photos:
-                    self.dicoCalibre.pop([0])
-                if photosAvecDistance[1] not in photos:
-                    if self.dicoCalibre.__len__()==1: 
-                        self.dicoCalibre.pop([0])
-                    else:
-                        self.dicoCalibre.pop([1])
-            except: pass
+        if self.dicoCalibre.__len__()>0:
+            photosAvecDistance = set([(e[1],e) for e in self.dicoCalibre.keys()])   # ensemble des clés et des noms de fichiers
+            for photo,key in photosAvecDistance:
+                if not os.path.exists(photo):
+                    del self.dicoCalibre[key]
+
 
         #Points GPS
         # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y              
@@ -4534,6 +4529,7 @@ class Interface(ttk.Frame):
         self.finOptionsOK        ()                                                             # mise à jours des fichiers xml liès aux options
         self.miseAJourItem701_703()                                                             # met à jour les windgets de l'onglet Malt
 
+    
     
     # ------------------ C3DC : alternative à Malt avec un masque 3D -----------------------
         
@@ -4701,7 +4697,6 @@ class Interface(ttk.Frame):
         self.encadre("Détermine un indice de qualité des photos en mode 'All' ou 'MulScale' \n\n"+
                      "Le résultat sera inscrit dans le fichier trace synthétique\n\nPatience...",nouveauDepart='non')    
         
-        print(self.ligneFiltre)
         self.ajoutLigne(heure()+"\n\nDebut de la recherche sur la qualité des photos, mode 'All' ou 'MulScale'.")        
         self.qualiteTrouvee = list()
         
@@ -5478,7 +5473,7 @@ class Interface(ttk.Frame):
             self.typeDuChantier             =   r[38]
             self.listeDesMaitresses         =   r[39]
             self.listeDesMasques            =   r[40]
-        except Exception as e: print("erreur restauration param chantier : ",str(e))    
+        except Exception as e: print("Erreur restauration param chantier : ",str(e))    
 
         try: self.definirFichiersTrace()                 # attention : peut planter a juste titre si reptravail
         except: print("erreur définir fichier trace, est normale lors d'une importation.")
@@ -6528,7 +6523,7 @@ class Interface(ttk.Frame):
     ############################## Répertoire Orientation et répertoire des points Homologues
 
     def orientation(self):                              # définit le répertoire qui contient l'orientation la plus récente : 
-                                                        # soit Arbitrary soit echelle3d soit bascul soit GoPro
+                                                        # soit Arbitrary soit echelle3 soit bascul soit GoPro
 
         if os.path.exists(os.path.join(self.repTravail,"Ori-bascul")):
             return "bascul"
@@ -6619,7 +6614,6 @@ class Interface(ttk.Frame):
     #on crée le rapport : nombre moyen de points homologues, trié du + grand au plus petit : dans ajouLigne
 
         listeHomol = list(moyenne.items())
-        print ("listehomol=",listeHomol)
         listeHomol.sort(key=lambda e: e[1],reverse=True)
         self.effaceBufferTrace()        # efface ajoutligne
         self.ajoutLigne("\nClassement des photos par nombre de points homologues :\n\n"+cas+"\n\n")
@@ -6816,10 +6810,12 @@ class Interface(ttk.Frame):
  
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
-             self.encadre("\nCommencer par définir les paramètres :\n\n"+
+             self.encadre("\nBonjour !\n\nCommencer par définir les paramètres :\n\n"+
                          " - le répertoire bin de MicMac\n"+
                          " - convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux\n"+
-                         " - un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D",
+                         " - un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D\n\n"+
+                         "Consulter l'aide : notamment l'item 'pour commencer'\n"+
+                         "Consulter la notice d'installation et de prise en main",
                          aligne='left',nouveauDepart='non')
              return True
 
@@ -7037,7 +7033,6 @@ def ajout(liste,item):                                  # ajout d'un item dns un
 
 def supprimeArborescenceSauf(racine,listeSauf=list()):  # supprime toute une arborescence, sauf une liste de fichiers sous la racine
     listeSauf = [os.path.basename(e) for e in listeSauf]
-    print("\nlisteSauf=",listeSauf)
     for fichier in os.listdir(racine):
         chemin = os.path.join(racine,fichier)
         if fichier in listeSauf:
