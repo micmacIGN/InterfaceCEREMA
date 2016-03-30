@@ -745,7 +745,7 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.31"
+        self.version                    =   " V 2.32"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -1171,7 +1171,7 @@ class Interface(ttk.Frame):
         
         self.item2000 = ttk.Frame(fenetre)
         self.item2010 = ttk.Label(self.item2000,
-                                  text="Narque de l'appareil : ")
+                                  text="Marque de l'appareil : ")
         self.item2011 = ttk.Entry(self.item2000,
                                   textvariable=self.goProMaker)         
         self.item2001 = ttk.Label(self.item2000,
@@ -3067,49 +3067,55 @@ class Interface(ttk.Frame):
         
         # Controle echelle 1 pour le mode All de tapioca
         
-        try: echelle1 = int(self.echelle1.get()) # si erreur saisie (texte!) alors valeur par défaut         
+        try:
+            if self.modeTapioca.get()=="All":
+                echelle1 = int(self.echelle1.get()) # si erreur saisie (texte!) alors valeur par défaut         
         except:
             echelle1 = 1000
             self.echelle1.set(str(echelle1))
             erreur += "\nL'échelle pour le mode All de Tapioca est invalide, une valeur par défaut, "+self.echelle1.get()+", est affectée.\n"
 
         try:
-            if echelle1<50 and echelle1 != -1:
+            if echelle1<50 and echelle1!=-1 and self.modeTapioca.get()=="All":
                 texte += "\nEchelle pour le mode All de Tapioca trop petite : \n"+self.echelle1.get()+"\nMinimum = 50\n"
         except:
             pass
 
         # Controle echelle 2 pour le mode MulScale de tapioca (première échelle du MulScale)
         
-        try: echelle2 = int(self.echelle2.get())
+        try:
+            if self.modeTapioca.get()=="MulScale":
+                echelle2 = int(self.echelle2.get())
         except:
             echelle2 = 300
             self.echelle2.set(str(echelle2))
             erreur += "\nL'échelle 1 pour MulScale de Tapioca est invalide, une valeur par défaut, "+self.echelle2.get()+", est affectée.\n"
 
         try:
-            if echelle2==-1:
+            if echelle2==-1 and self.modeTapioca.get()=="MulScale":
                 texte += "\nL'échelle 1 de MulScale ne doit pas être -1.\nElle est mise à 300.\n"
                 echelle2 = 300
                 self.echelle2.set(str(echelle2))
         except: pass
         
         try:
-            if echelle2<50:
+            if echelle2<50 and echelle2!=-1 and self.modeTapioca.get()=="MulScale":
                 texte += "\nL'échelle 1 pour le mode MulScale de Tapioca est trop petite : \n"+self.echelle2.get()+"\nMinimum = 50, maximum conseillé : 300\n"
         except:
             pass
 
         # Controle echelle 3 pour le mode MulScale de tapioca (seconde échelle du MulScale)
         
-        try: echelle3 = int(self.echelle3.get())
+        try:
+            if self.modeTapioca.get()=="MulScale":
+                echelle3 = int(self.echelle3.get())
         except:
             echelle3 = 1200
             self.echelle3.set(str(echelle3))
             erreur += "\nL'échelle 2 pour le mode  MulScale de Tapioca est invalide, une valeur par défaut, "+self.echelle3.get()+", est affectée.\n"        
 
         try:
-            if echelle3<50:
+            if echelle3<50 and echelle3!=-1 and self.modeTapioca.get()=="MulScale":
                 texte += "\nL'échelle 2 pour le mode MulScale de Tapioca est trop petite : \n"+self.echelle3.get()+"\nMinimum = 50\n"
         except:
             pass
@@ -3117,35 +3123,39 @@ class Interface(ttk.Frame):
         # controle cohérence echelle2 et echelle3
 
         try:
-            if echelle3<=echelle2 and echelle3!=-1:
+            if echelle3<=echelle2 and echelle3!=-1 and self.modeTapioca.get()=="MulScale":
                 texte += "\nL'échelle 2 de MulScale pour tapioca\n"+self.echelle3.get()+"\n plus petite que l'échelle 1 : \n"+self.echelle2.get()+"\n"                  
         except:
             pass
 
         # Controle échelle pour le mode line
 
-        try: echelle4 = int(self.echelle4.get())
+        try:
+            if self.modeTapioca.get()=="Line":
+                echelle4 = int(self.echelle4.get())
         except:
             echelle4 = 1200
             self.echelle4.set(str(echelle4))
             erreur += "\nL'échelle pour le mode Line de tapioca est invalide, une valeur par défaut, "+self.echelle4.get()+", est affectée.\n"
 
         try:
-            if echelle4<50 and echelle4!=-1:
+            if echelle4<50 and echelle4!=-1 and self.modeTapioca.get()=="Line":
                 texte += "\nEchelle pour le mode Line de tapioca trop petite : \n"+self.echelle4.get()+"\n"
         except:
             pass
 
         # Controle delta pour le mode line
         
-        try: delta = int(self.delta.get())
+        try:
+            if self.modeTapioca.get()=="Line":
+                delta = int(self.delta.get())
         except:
             delta = 4
             self.delta.set(str(delta))
             erreur += "\nLa valeur de delta pour le mode Line de Tapioca est invalide,\n une valeur par défaut, "+self.delta.get()+", est affectée.\n"        
             
         try:
-            if delta<1:
+            if delta<1 and self.modeTapioca.get()=="Line":
                 texte += "\nDelta trop petit : \n"+self.delta.get()+"\nMinimum = 1\n"
         except:
             pass           
@@ -4084,9 +4094,6 @@ class Interface(ttk.Frame):
                     try: os.replace(os.path.join(self.repTravail,"modele3D.ply"),os.path.join(self.repTravail,new))
                     except Exception as e: print("erreur renommage ancien modele_3d en ",new,str(e))
                     break
-                    
-                
-            print("----------------------------------- i=",i)
         
         # malt ou D3CD : suivant que le masque 3 D existe ou pas, avec préférence au masque 3D,
         # la production sera self.modele3DEnCours
@@ -5193,13 +5200,13 @@ class Interface(ttk.Frame):
                 "                        Alternative à Malt, le traitement est beaucoup plus rapide. Nécessite la dernière version de MicMac.\n\n"+\
                 "               - GPS  : définir au moins 3 points cotés et les placer sur 2 photos. La trace indique s'ils sont pris en compte\n\n"+\
                 "Si MicMac ne trouve pas d'orientation ou pas de nuage de points :\n\n"+\
-                "               - Examiner la qualité des photos : .\n"                             +\
+                "               - Examiner la qualité des photos (utiliser le menu outils/Qualité des photos): .\n"                             +\
                 "                        1) Eliminer les photos ayant les plus mauvais scores\n"+\
                 "                        2) si ce n'est pas suffisant ne garder que les meilleures photos (typiquement : moins de 10)\n"+\
                 "                           Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.\n"+\
-                "                        3) Augmenter l'échelle des photos pour tapas, mettre -1 au lieu de 1200 par défaut.\n"+\
+                "                        3) Augmenter l'échelle des photos pour tapioca, mettre -1 au lieu de la valeur par défaut.\n"+\
                 "                        4) modifier le type d'appareil pour Tapas (radialstd ou radialbasic)\n"+\
-                "                        5) vérifier la taille du capteur dans dicocamera, l'exif des photos\n"+\
+                "                        5) vérifier la taille du capteur dans dicocamera, nécessaire si la focale equivalente 35 mm est absente de l'exif\n"+\
                 "                        6) examiner la trace synthétique et la trace complète : MicMac donne quelques informations\n"+\
                 "                        7) consulter le forum micmac (http://forum-micmac.forumprod.com)\n"+\
                 "                        8) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)\n\n"+\
@@ -5617,18 +5624,21 @@ class Interface(ttk.Frame):
         # la boite à oglet n'est pas une fenêtre modale mais une frame..
         # on pallie à cela en proposant de la sauver ou pas lorsque l'on fait du ménage
         # pour éviter de fermer brutalement
-        # la vraie solution serait de mettre lma frame dans une fenêtre toplevel, modale, elle.
-        if self.fermetureOngletsEnCours == True:
-            return
-        if self.onglets.winfo_manager()=="":
-            return
-        self.fermetureOngletsEnCours = True        
-        if self.troisBoutons("Fermer les options.","Enregistrer les options saisies ?",b1="enregistrer",b2="abandon")==0:
-            self.finOptionsOK()
-        else:
-            self.finOptionsKO()
-        self.fermetureOngletsEnCours = False
-
+        # la vraie solution serait de mettre la frame dans une fenêtre toplevel, modale, elle.
+        # le try récupére l'erreur si jamais l'interface n'existe plus.
+        try:
+            if self.fermetureOngletsEnCours == True:
+                return
+            if self.onglets.winfo_manager()=="":
+                return
+            self.fermetureOngletsEnCours = True        
+            if self.troisBoutons("Fermer les options.","Enregistrer les options saisies ?",b1="enregistrer",b2="abandon")==0:
+                self.finOptionsOK()
+            else:
+                self.finOptionsKO()
+            self.fermetureOngletsEnCours = False
+        except: pass
+        
     def fermerOptionsGoPro(self):
         if self.fermetureOptionsGoProEnCours == True:
             return
@@ -6617,7 +6627,7 @@ class Interface(ttk.Frame):
         listeHomol.sort(key=lambda e: e[1],reverse=True)
         self.effaceBufferTrace()        # efface ajoutligne
         self.ajoutLigne("\nClassement des photos par nombre de points homologues :\n\n"+cas+"\n\n")
-        self.ajoutLigne("Photo"+chr(9)+chr(9)+"moyenne"+chr(9)+"nb photos en correspondance \n\n")
+        self.ajoutLigne(chr(9)+"Photo"+chr(9)+chr(9)+"score"+chr(9)+"nb photos en correspondance \n\n")
 
         for e in listeHomol:
             self.ajoutLigne(e[0]+chr(9)+chr(9)+str(int(e[1]))+chr(9)+chr(9)+str(nb[e[0]])+"\n")
@@ -6810,10 +6820,10 @@ class Interface(ttk.Frame):
  
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
-             self.encadre("\nBonjour !\n\nCommencer par définir les paramètres :\n\n"+
-                         " - le répertoire bin de MicMac\n"+
-                         " - convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux\n"+
-                         " - un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D\n\n"+
+             self.encadre("\nBonjour !\n\nCommencer par définir les paramètres (menu Paramètrage):\n\n"+
+                         " - Associer le répertoire bin de MicMac\n"+
+                         " - Associer convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux\n"+
+                         " - Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D\n\n"+
                          "Consulter l'aide : notamment l'item 'pour commencer'\n"+
                          "Consulter la notice d'installation et de prise en main",
                          aligne='left',nouveauDepart='non')
@@ -6941,8 +6951,10 @@ class Interface(ttk.Frame):
     ########################################################   nouvelle fenêtre (relance utile pour vider les traces d'exécution de mm3d et autres)
 
     def nouveauDepart(self):
-        self.copierParamVersChantier()                          # sauvegarde du chantier, des param...
-        self.ecritureTraceMicMac()                              # on écrit les fichiers trace
+        try: self.copierParamVersChantier()                          # sauvegarde du chantier, des param...
+        except: pass
+        try: self.ecritureTraceMicMac()                              # on écrit les fichiers trace
+        except: pass
 
 # faut-t-il différencier linux et windows ?
         if self.systeme=='posix':
@@ -6955,9 +6967,12 @@ class Interface(ttk.Frame):
         if self.systeme=='nt':       
            global messageDepart
            messageDepart = self.messageNouveauDepart            # ce message sera repris dans la nouvelle "interface"
-           if "fenetre" in globals():               
-               fenetre.destroy()                                # relance une nouvelle "interface"
-
+           if "fenetre" in globals():
+                time.sleep(0.2)
+                try:
+                        fenetre.destroy()                                # relance une nouvelle "interface"
+                except: pass
+            
     # quitter
             
     def quitter(self):
