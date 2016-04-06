@@ -696,7 +696,7 @@ class Interface(ttk.Frame):
         menuOutils.add_separator()
         menuOutils.add_command(label="Modifier les options par défaut", command=self.majOptionsParDefaut)
         
-        # Paramètrage       
+        # Paramétrage       
 
         menuParametres = tkinter.Menu(mainMenu,tearoff = 0)
         menuParametres.add_command(label="Afficher les paramètres", command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
@@ -723,7 +723,7 @@ class Interface(ttk.Frame):
         mainMenu.add_cascade(label = "MicMac",menu=menuMicMac)
         mainMenu.add_cascade(label = "Vidéo",menu=menuGoPro)                              
         mainMenu.add_cascade(label = "Outils",menu=menuOutils)
-        mainMenu.add_cascade(label = "Paramètrage",menu=menuParametres)        
+        mainMenu.add_cascade(label = "Paramétrage",menu=menuParametres)        
         mainMenu.add_cascade(label = "Aide",menu=menuAide)
         
         # affichage du menu principal dans la fenêtre
@@ -745,7 +745,7 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.32"
+        self.version                    =   " V 2.33"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
@@ -2549,7 +2549,7 @@ class Interface(ttk.Frame):
                               b2='Abandonner')==1:
                 return
             if verifierSiExecutable(self.convertMagick)==False:
-                self.encadre("Désigner l'outil de conversation 'convert' d'ImageMagick\n(Menu Paramètrage)",nouveauDepart="non")
+                self.encadre("Désigner l'outil de conversation 'convert' d'ImageMagick\n(Menu Paramétrage)",nouveauDepart="non")
                 return
             if  self.pasDeConvertMagick():return
 
@@ -2588,7 +2588,7 @@ class Interface(ttk.Frame):
         if self.exifsOK==False:
             if self.pasDeFocales:
                 if self.pasDeExiftool():
-                    message+="L'outil exiftool n'est pas localisé : controle des photos impossible.\nDésigner le fichier exiftool (menu paramètrage)."
+                    message+="L'outil exiftool n'est pas localisé : controle des photos impossible.\nDésigner le fichier exiftool (menu paramétrage)."
                 else:
                     message+='Les focales sont absentes des exif.\nMettez à jour les exifs avant de lancer MicMac.\n'+\
                             "Utiliser le menu Outils/Modifier l'exif des photos.\n"
@@ -4544,9 +4544,7 @@ class Interface(ttk.Frame):
         # Si on a un masque 3D on l'utilise et on ne cherche pas plus loin :
 
         # exclusion des images pour la calibration si demandé :
-            
-        self.lanceFilterHomol3D()       # filtre des points homologues 
-        
+                    
         C3DC = [self.mm3d,
                 "C3DC",
                 "QuickMac",
@@ -5122,7 +5120,7 @@ class Interface(ttk.Frame):
                 "         La présence de photos avec peu de points homologues peut faire échouer le traitement.\n"+\
                 "         Il est parfois préférable de traiter peu de photos mais de bonne qualité.\n\n"+\
                 "       - Modifier l'exif des photos : permet la création et la modification des exifs des photos du chantier.\n\n"+\
-                "menu Paramètrage :\n\n"+\
+                "menu Paramétrage :\n\n"+\
                 "       - Affiche les paramètres : visualise les chemins de micmac\\bin, d'exiftool, du fichier pour visualiser les .ply (Meshlab ou Cloud Compare),\n"+\
                 "         ainsi que le répertoire où se trouve les fichiers paramètres de l'interface.\n"+\
                 "         Ces paramètres sont sauvegardés de façon permanente dans le fichier :"+\
@@ -5222,7 +5220,7 @@ class Interface(ttk.Frame):
                 "   Tout d'abord : Installer MicMac.\n"+\
                 "   Puis : Installer Meshlab ou CloudCompare (pour afficher les nuages de points)\n\n"+\
                 "   Ensuite, dans cette interface graphique :\n\n"+\
-                "1) Paramétrer l'interface : indiquer ou se trouvent le répertoire bin de MicMac et l'éxécutable Meshlab ou CloudCompare.\n"+\
+                "1) Paramètrer l'interface : indiquer ou se trouvent le répertoire bin de MicMac et l'éxécutable Meshlab ou CloudCompare.\n"+\
                 "   Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick (en principe sous MicMac\\binaire-aux).\n"+\
                 "2) Choisir quelques photos, par exemple du jeu d'essai gravillons, au moins 3 mais pas plus de 6 pour commencer (menu MicMac).\n"+\
                 "3) Lancer MicMac en laissant les paramètres par défaut (menu MicMac).\n"+\
@@ -6425,7 +6423,7 @@ class Interface(ttk.Frame):
     def retailleEtAffichePhoto(self,photo):                                             # charge le canvas self.canvasPhoto
         self.enCours = os.path.basename(photo)
 
-        if not os.path.exists(photo):                                                   # erreur de paramètrage
+        if not os.path.exists(photo):                                                   # erreur de paramétrage
             try: self.canvasPhoto.delete(self.imgTk_id)                                 # supprimer la photo dans le canvas si elle existe
             except: return "KO"
         self.dimMaxiCanvas = 200
@@ -6820,7 +6818,7 @@ class Interface(ttk.Frame):
  
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
-             self.encadre("\nBonjour !\n\nCommencer par définir les paramètres (menu Paramètrage):\n\n"+
+             self.encadre("\nBonjour !\n\nCommencer par définir les paramètres (menu Paramétrage):\n\n"+
                          " - Associer le répertoire bin de MicMac\n"+
                          " - Associer convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux\n"+
                          " - Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D\n\n"+
@@ -6831,17 +6829,17 @@ class Interface(ttk.Frame):
 
     def pasDeExiftool(self):
         if not os.path.exists(self.exiftool):
-            self.encadre("Désigner le fichier exiftool (menu paramètrage).",nouveauDepart="non")            
+            self.encadre("Désigner le fichier exiftool (menu paramétrage).",nouveauDepart="non")            
             return True
         
     def pasDeConvertMagick(self):
         if not os.path.exists(self.convertMagick):
-            self.encadre("Désigner le fichier convert, ou avconv, d'image Magick\nen principe sous micmac\binaire-aux (menu paramètrage).",nouveauDepart="non")            
+            self.encadre("Désigner le fichier convert, ou avconv, d'image Magick\nen principe sous micmac\binaire-aux (menu paramétrage).",nouveauDepart="non")            
             return True
 
     def pasDeFfmpeg(self):
         if not os.path.exists(self.ffmpeg):
-            self.encadre("Désigner le fichier ffmpeg en principe sous micmac\binaire-aux (menu paramètrage).",nouveauDepart="non")            
+            self.encadre("Désigner le fichier ffmpeg en principe sous micmac\binaire-aux (menu paramétrage).",nouveauDepart="non")            
             return True
 
     def envoiRetourChariot(self,dest):                                                      # dest étant le processus ouvert par popen
@@ -6857,7 +6855,7 @@ class Interface(ttk.Frame):
     def majOptionsParDefaut(self):                  # Si les options ont déjà été modifiées
         if os.path.exists(self.fichierSauvOptions):
             retour = self.troisBoutons(titre="Modifier les options par défaut",
-                                       question="Quelles options par défaut utiliser pour les nouveaux chantiers ?\n_n"+
+                                       question="Quelles options par défaut utiliser pour les nouveaux chantiers ?\n\n"+
                                        "Les options par défaut concernent :\n\n"+
                                        "Tapioca : All, MulScale, line ,les échelles et delta\n\n"+
                                        "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n\n"+
@@ -6884,7 +6882,7 @@ class Interface(ttk.Frame):
                                        "Tapioca : All, MulScale, line ,les échelles et delta\n\n"+
                                        "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n\n"+
                                        "Malt    : zoom final, nombre de photos autour de la maîtresse\n\n"+
-                                       "Les options actuelles sont les options par défaut d'AperoDeDenis",                                      
+                                       "Les options par défaut actuelles sont les options par défaut d'AperoDeDenis",                                      
                                        b1="Utiliser les options du chantier en cours",
                                        b2="Ne rien changer")
             if retour == 0:
