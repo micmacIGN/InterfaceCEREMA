@@ -5,6 +5,7 @@
 # Version 3 ou plus
 # ligne 2584 : modif message si pas d'exiftool
 # début d'ajout d'une sauvegarde des options
+# est-il possible de relancer Malt en conservant le niveau de zoom déjà atteint ??? pas sur, sauf en passant par Micmac
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -25,6 +26,8 @@ import tempfile
 import inspect
 import zipfile
 import zlib
+import ctypes
+
 
 ########################### Classe pour tracer les masques
 
@@ -630,7 +633,7 @@ class Interface(ttk.Frame):
         menuFichier.add_command(label="Ouvrir un chantier", command=self.ouvreChantier)
         menuFichier.add_separator()        
         menuFichier.add_command(label="Enregistrer le chantier en cours", command=self.enregistreChantierAvecMessage)
-        menuFichier.add_command(label="Renommer le chantier en cours", command=self.renommeChantier)         
+        menuFichier.add_command(label="Renommer ou déplacer le chantier en cours", command=self.renommeChantier)         
         menuFichier.add_separator()
         menuFichier.add_command(label="Exporter le chantier en cours", command=self.exporteChantier)
         menuFichier.add_command(label="Importer un chantier", command=self.importeChantier)         
@@ -701,7 +704,7 @@ class Interface(ttk.Frame):
         menuParametres = tkinter.Menu(mainMenu,tearoff = 0)
         menuParametres.add_command(label="Afficher les paramètres", command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
         menuParametres.add_separator()         
-        menuParametres.add_command(label="Associer le répertoire bin de MicMac'", command=self.repMicmac)   ## Ajout d'une option au menu fils menuFile
+        menuParametres.add_command(label="Associer le répertoire bin de MicMac", command=self.repMicmac)   ## Ajout d'une option au menu fils menuFile
         menuParametres.add_command(label="Associer 'exiftool'", command=self.repExiftool)                   ## Exiftool : sous MicMac\binaire-aux si Windows, mais sinon ???   
         menuParametres.add_command(label="Associer 'convert' d'ImageMagick", command=self.repConvert)       ## convert : sous MicMac\binaire-aux si Windows, mais sinon ???   
         menuParametres.add_command(label="Associer 'ffmpeg (décompacte les vidéos)", command=self.repFfmpeg)                        ## ffmpeg : sous MicMac\binaire-aux si Windows, mais sinon ???
@@ -745,9 +748,8 @@ class Interface(ttk.Frame):
         self.repertoireScript           =   repertoire_script                                   # là où est le script et les logos cerema et IGN
         self.repertoireData             =   repertoire_data                                     # là ou l'on peut écrire des données
         self.systeme                    =   os.name                                             # nt ou posix
-        self.version                    =   " V 2.33"
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
-        self.titreFenetre               =   self.nomApplication+self.version                    # nom du programme titre de la fenêtre
+        self.titreFenetre               =   self.nomApplication+version                         # nom du programme titre de la fenêtre (version = varaioble globale)
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés
         self.exptxt                     =   "0"                                                 # 0 pour exptxt format binaire, 1 format texte (pts homologues)             
         self.indiceTravail              =   0                                                   # lors de l'installation, valeur initial de l'indice des répertoires de travail
@@ -1233,7 +1235,7 @@ class Interface(ttk.Frame):
         
         self.item3000 = ttk.Frame(fenetre)
         self.item3010 = ttk.Label(self.item3000,
-                                  text="Modification des Exif\n\nNarque de l'appareil : ")
+                                  text="Modification des Exif\n\nMarque de l'appareil : ")
         self.item3011 = ttk.Entry(self.item3000,
                                   textvariable=self.exifMaker)         
         self.item3001 = ttk.Label(self.item3000,
@@ -1631,7 +1633,9 @@ class Interface(ttk.Frame):
         self.dicoInfoBullesAAfficher    = None                  # pour passer l'info à afficherLesInfosBullesDuDico (dans choisirUnePhoto)
         self.listeDesMaitresses         = list()
         self.listeDesMasques            = list()
-
+        self.densification              = ""                    # la densification en cours : Malt ou C3DC
+        self.zoomI                      = ""                    # le niveau de zoom initial en reprise de Malt
+        
     # Calibration
 
         self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
@@ -1744,12 +1748,11 @@ class Interface(ttk.Frame):
         if self.etatDuChantier==0:
             self.encadre("Le chantier est en cours de définition.\nIl n'a pas encore de nom, il ne peut être renommé.\n\nCommencer par choisir les photos",nouveauDepart='non')
             return                        
-        texte = "Nouveau nom pour le chantier "+self.chantier+" :\n"
-        bas = ("Un chemin relatif au répertoire des photos est valide\n\n"+
+        texte = "Nouveau nom ou nouveau chemin pour le chantier "+self.chantier+" :\n"
+        bas = ("Tout chemin relatif au chemin actuel est valide\n\n"+
                "Un chemin absolu sur la même unité disque est valide\n\n"+
                "Aucun fichier de l'arborescence du chantier ne doit être ouvert.")
-        if self.etatSauvegarde=="*":
-            bas = bas+"\nLe chantier, actuellement modifié, sera enregistré."
+
         new = MyDialog(fenetre,texte,basDePage=bas)
         if new.saisie=="":
             return
@@ -2041,12 +2044,14 @@ class Interface(ttk.Frame):
                 if self.existeMasque3D():
                     texte = texte+'\nC3DC : Masque 3D\n'
                     malt = False                                                    # on éxécutera C3DC
+                    self.densification = "C3DC"
             else:
                 texte = texte + "\nLa version installée de Micmac n'autorise pas les masques en 3D\n"
 
             # Malt si pas c3dc
 
             if malt:
+                self.densification = "Malt"
                 texte = texte+'\nMalt :\nMode : '+self.modeMalt.get()
                 if self.modeMalt.get()=="GeomImage":
                     if self.listeDesMaitresses.__len__()==0:
@@ -2083,14 +2088,14 @@ class Interface(ttk.Frame):
                     texte = texte + "Chemin du chantier :\n"+afficheChemin(os.path.dirname(self.repTravail))+"\n\n"
             else:
                 texte = texte+"\nChantier en attente d'enregistrement.\n"
-            if self.etatDuChantier in (2,6) and self.etatSauvegarde=="":		
+            if self.etatDuChantier in (2,3,4,5,6) and self.etatSauvegarde=="":		
                 texte = texte+"\nChantier enregistré.\n"
-            if self.etatDuChantier==2:		
-                texte = texte+"Chantier modifiable.\n"                
+            if self.etatDuChantier == "2":		
+                texte = texte+"Options du chantier modifiables.\n"                
             if self.etatDuChantier == 3:		
-                texte = texte+"\nChantier interrompu.\nRelancer micmac.\n"                      
+                texte = texte+"\nChantier interrompu suite à erreur.\nRelancer micmac.\n"                      
             if self.etatDuChantier == 4:		
-                texte = texte+"Arrêté aprés Tapas.\n"
+                texte = texte+"Options de Malt/C3DC modifiables.\n"
             if self.etatDuChantier == 5:		
                 texte = texte+"Chantier terminé.\n"
             if self.etatDuChantier == 6:		
@@ -2104,7 +2109,7 @@ class Interface(ttk.Frame):
                nbPly=1
 
             if os.path.exists(self.modele3DEnCours):
-               texte = texte+"Nuage de point densifié généré après Malt ou C3DC.\n"
+               texte = texte+"Nuage de point densifié généré après "+self.densification+".\n"
                nbPly+=1
             if self.etatDuChantier in (4,5,6) and nbPly==0:
                texte = texte+"Aucun nuage de point généré.\n"
@@ -2759,13 +2764,13 @@ class Interface(ttk.Frame):
     
         if self.etatDuChantier==5:		                # Chantier terminé
             retour = self.troisBoutons(  titre='Le chantier '+self.chantier+' est terminé.',
-                                         question="Le chantier est terminé après Malt.\n"+
+                                         question="Le chantier est terminé après "+self.densification+".\n"+
                                          "Vous pouvez :\n"+
-                                         " - Nettoyer le chantier, conserver les résultats, permet de relancer Tapioca/Tapas/Malt\n"+
-                                         " - Conserver les traitements de Tapioca/Tapas pour relancer Malt\n"+
+                                         " - Nettoyer le chantier pour modifier les options de Tapioca et Tapas\n"+
+                                         " - Conserver les traitements de Tapioca/Tapas pour modifier les options de Malt ou C3DC\n"+
                                          " - Ne rien faire.\n",                                    
-                                         b1='Nettoyer le chantier',
-                                         b2='Débloquer pour relancer malt',
+                                         b1='Modifier les options de Tapioca et Tapas',
+                                         b2='Modifier les options de Malt ou C3DC',
                                          b3='Ne rien faire',)
             if retour==-1:                                      # -1 : fermeture fenêtre, abandon
                 self.afficheEtat()
@@ -2776,7 +2781,7 @@ class Interface(ttk.Frame):
             if retour==0:                                       # 1 : on nettoie, on passe à l'état 2
                 self.nettoyerChantier()
 
-            if retour==1:
+            if retour==1:                                       # lancer malt
                 self.etatDuChantier = 4
 
 
@@ -3832,6 +3837,15 @@ class Interface(ttk.Frame):
     ################################## LANCEMENT DE MICMAC ###########################################################
         
     def lanceMicMac(self):                                      # vérification du choix de photos, de présence de l'éxécutable, du choix de l'extension, de la copie effective dans le répertoire de travail
+
+        if self.etatDuChantier==5:		                # Chantier terminé
+            self.encadre("Le chantier "+self.chantier+" est terminé après "+self.densification+".\n\n"+
+                         "Vous pouvez modifier les options puis relancer MicMac.",nouveauDepart='non')
+            return
+            
+    # réinitialisation des variables "locales" définies dans le module
+
+        self.zoomI = ""     # pour Malt
    
     # Vérification de l'état du chantier :
 
@@ -3867,7 +3881,7 @@ class Interface(ttk.Frame):
 
     # Les photos sont-elles correctes ?
     
-        self.encadre("Controle des photos en cours.... Patience.",nouveauDepart='non')
+        self.encadre("Controle des photos en cours....\nPatienter jusqu'à la fin du controle.",nouveauDepart='non')
         self.controlePhotos()
         message = str()
         if self.dimensionsOK==False:
@@ -3928,10 +3942,10 @@ class Interface(ttk.Frame):
             
             retour = self.troisBoutons(  titre='Continuer le chantier '+self.chantier+' après tapas ?',
                                          question =  "Le chantier est arrêté après tapas. Vous pouvez :\n"+
-                                                     " - lancer Malt pour obtenir un nuage dense\n"+
+                                                     " - lancer Malt, ou C3DC, pour obtenir un nuage dense\n"+
                                                      " - débloquer le chantier pour modifier les paramètres de Tapioca/tapas\n"+
                                                      " - ne rien faire\n",
-                                         b1='Lancer Malt',
+                                         b1='Lancer '+self.densification,
                                          b2='Débloquer le chantier - garder les résultats',
                                          b3='Abandon')
             if retour == -1:                                    # fermeture de la fenêtre
@@ -3953,31 +3967,49 @@ class Interface(ttk.Frame):
                 return
             
     # Chantier terminé, l'utilisateur peur décider de le débloquer en conservant les résultats de tapas ou supprimer tous les résultats
-    
-        if self.etatDuChantier==5:		                # Chantier terminé
-            retour = self.troisBoutons(  titre='Le chantier '+self.chantier+' est terminé.',
-                                         question="Le chantier est terminé après Malt.\n"+
-                                         "Vous pouvez :\n"+
-                                         " - Nettoyer le chantier, conserver les résultats, permet de relancer Tapioca/Tapas/Malt\n"+
-                                         " - Conserver les traitements de Tapioca/Tapas pour relancer Malt\n"+
-                                         " - Ne rien faire.\n",                                    
-                                         b1='Nettoyer le chantier',
-                                         b2='Débloquer pour relancer malt',
-                                         b3='Ne rien faire',)
-            if retour==-1:                                      # -1 : fermeture fenêtre, abandon
-                self.afficheEtat()
-                return
-            if retour==2:                                       # 0 : ne rien faire
-                self.afficheEtat()
-                return
-            if retour==0:                                       # 1 : on nettoie, on passe à l'état 2
-                self.nettoyerChantier()
-                self.afficheEtat("Chantier "+self.chantier+" de nouveau modifiable, paramètrable et exécutable.")
-                return
-            if retour==1:
-                self.etatDuChantier = 4
-                self.afficheEtat("Chantier "+self.chantier+" de nouveau modifiable pour relancer Malt.")                
-                return
+    # est-il possible de relancer Malt en conservant le niveau de zoom déjà atteint ??? pas sur, sauf en passant par Micmac
+##    
+##        if self.etatDuChantier==5:		                # Chantier terminé
+##            if self.densification=="C3DC":
+##                self.encadre("Le chantier "+self.chantier+" est terminé après "+self.densification+".\n\n"+
+##                             "Vous pouvez modifier les options puis relancer MicMac.")
+##                return
+##            if self.zoomF.get()=="1":
+##                self.encadre("Le chantier "+self.chantier+" est terminé après "+self.densification+", avec un zoom final de 1.\n\n"+
+##                             "Vous pouvez modifier les options puis relancer MicMac.")
+##                return
+##            
+##            if self.zoomF.get()=="2":    
+##                retour = self.troisBoutons(  titre='Le chantier '+self.chantier+' est terminé.',
+##                                         question="Le chantier est terminé après Malt, avec un zoom final de 2.\n"+
+##                                         "Vous pouvez :\n"+
+##                                         " - Relancer MicMac pour obtenir un zoom final de 1\n"+
+##                                         " - Modifier les options avant de relancer MicMac\n"+
+##                                         " - Ne rien faire.\n",                                    
+##                                         b1='Zoom final = 1',
+##                                         b2='Modifier les options',
+##                                         b3='Ne rien faire',)
+##            if retour==-1:                                      # -1 : fermeture fenêtre, abandon  
+##                self.afficheEtat()
+##                return
+##            
+##            if retour==0:                                       # bouton b1, retour = 0 : on nettoie, on passe à l'état 2
+##                self.zoomF.set("1")                             # zoom final = 1
+##                self.zoomI = "4"                                # zoom Initial = 2
+##                self.ajoutLigne(heure()+" Reprise du chantier "+self.chantier+" avec un zoom final = 1.\n")
+##                self.etatDuChantier=4                          # état : arrêt aprés tapas
+##                self.suiteMicmac()                 
+##                return
+##
+##            if retour==1:                                       # retour=1, bouton b2 : modifier les options
+##                self.optionsOnglet()               
+##                return
+##            
+##            if retour==2:                                       # retour=2, bouton b3 : ne rien faire
+##                self.afficheEtat()
+##                return
+
+
 
         
     # L'état du chantier est prêt pour l'exécution de Tapioca (2) ou débloqué (6) : sauvegarde des paramètres actuels puis traitement
@@ -4018,7 +4050,7 @@ class Interface(ttk.Frame):
                       "Consulter l'aide (quelques conseils),\nconsulter la trace.\n"+\
                       "Verifier la qualité des photos (item du menu outil)\n\n"+self.messageRetourTapas
             self.ajoutLigne(message)
-            self.ecritureTraceMicMac()                              # on écrit les fichiers trace
+            self.ecritureTraceMicMac()                          # on écrit les fichiers trace
             self.sauveParam()
             self.messageNouveauDepart =  message
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
@@ -4091,8 +4123,12 @@ class Interface(ttk.Frame):
             for i in range(1,20):
                 new = "modele3D_V"+str(i)+".ply"
                 if not os.path.exists(new):
-                    try: os.replace(os.path.join(self.repTravail,"modele3D.ply"),os.path.join(self.repTravail,new))
-                    except Exception as e: print("erreur renommage ancien modele_3d en ",new,str(e))
+                    try:
+                        os.replace(os.path.join(self.repTravail,"modele3D.ply"),os.path.join(self.repTravail,new))
+                        self.ajoutLigne("\nLe fichier modele3D.ply précédent est renommé en "+new+".")
+                    except Exception as e:
+                        print("erreur renommage ancien modele_3d en ",new,str(e))
+                        self.ajoutLigne("\nLe fichier Modele3D.ply précédent n'a pu être renommé. Il sera remplacé.")
                     break
         
         # malt ou D3CD : suivant que le masque 3 D existe ou pas, avec préférence au masque 3D,
@@ -4418,6 +4454,8 @@ class Interface(ttk.Frame):
                             # et si geoImage : l'image maîtresse dans self.maitreSansChemin (str() si absent)
                             #                  et dans self.photosSansChemin les images autour de l'image maitressse
                             #                  si il y a un masque il faut les 2 fichiers maitre_Masq.xml et maitre_Masq.tif sans les indiquer dans la syntaxe
+
+        self.densification = "Malt"
             
         malt = [self.mm3d,
                 "Malt",
@@ -4426,6 +4464,12 @@ class Interface(ttk.Frame):
                 self.orientation(),
                 "ZoomF="+self.zoomF.get()]                          # zoom 8,4,2,1 qui correspondent au nuage étape 5, 6, 7, 8
 
+##        # s'il y a un zoom initial on l'ajoute :
+##
+##        if self.zoomI!="":
+##            malt += ["ZoomI="+self.zoomI]
+##        else:
+##            malt += ["ZoomI=8"] # pour test
         # si geomimage on ajoute l'image maitresse et on limite le nombre de photos utiles autour du maitre
 
         if self.modeMalt.get()=="GeomImage":
@@ -4542,7 +4586,7 @@ class Interface(ttk.Frame):
         
     def lanceC3DC(self):
         # Si on a un masque 3D on l'utilise et on ne cherche pas plus loin :
-
+        self.densification = "C3DC"
         # exclusion des images pour la calibration si demandé :
                     
         C3DC = [self.mm3d,
@@ -5370,7 +5414,8 @@ class Interface(ttk.Frame):
                          self.modele3DEnCours,
                          self.typeDuChantier,
                          self.listeDesMaitresses,
-                         self.listeDesMasques
+                         self.listeDesMasques,
+                         self.densification
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -5478,6 +5523,7 @@ class Interface(ttk.Frame):
             self.typeDuChantier             =   r[38]
             self.listeDesMaitresses         =   r[39]
             self.listeDesMasques            =   r[40]
+            self.densification              =   r[41]
         except Exception as e: print("Erreur restauration param chantier : ",str(e))    
 
         try: self.definirFichiersTrace()                 # attention : peut planter a juste titre si reptravail
@@ -5730,10 +5776,10 @@ class Interface(ttk.Frame):
         self.sauveParam()                                   # mémorisation de la suppression
         self.encadre(texte,nouveauDepart='non')
 
-    ############################### Message proposant une question et deux Boutons OK, Annuler
+    ############################### Message proposant une question et deux, trois ou 4 Boutons
     # si b2="" alors pas de second bouton    
-    def troisBoutons(self,titre='Choisir',question="Choisir : ",b1='OK',b2='KO',b3=None):
-        # positionne self.bouton et le renvoie : b1 = 0, b2 = 1 b3 = 2 ; fermer fenetre = -1, 
+    def troisBoutons(self,titre='Choisir',question="Choisir : ",b1='OK',b2='KO',b3=None,b4=None):
+        # positionne self.bouton et le renvoie : b1 = 0, b2 = 1 b3 = 2 b4 = 3; fermer fenetre = -1, 
         try:
             self.bouton = -1
             self.resul300 = tkinter.Toplevel(height=50,relief='sunken')
@@ -5745,12 +5791,15 @@ class Interface(ttk.Frame):
             self.texte301.pack(pady=10,padx=10)        
             self.texte302=ttk.Button(self.resul300, text=b1,command=self.bouton1)
             self.texte302.pack(pady=5)
-            if b2!="":                    # autorise un seul bouton
+            if b2!="":                     # autorise un seul bouton
                 self.texte303=ttk.Button(self.resul300, text=b2,command=self.bouton2)
                 self.texte303.pack(pady=5)
             if b3!=None:                    # autorise un seul bouton
                 self.texte304=ttk.Button(self.resul300, text=b3,command=self.bouton3)
                 self.texte304.pack(pady=5)
+            if b4!=None:                    # autorise un seul bouton
+                self.texte305=ttk.Button(self.resul300, text=b4,command=self.bouton4)
+                self.texte305.pack(pady=5)                
             self.resul300.transient(fenetre)                                    # 3 commandes pour définir la fenêtre comme modale pour l'application
             self.resul300.grab_set()
             fenetre.wait_window(self.resul300)
@@ -5770,6 +5819,10 @@ class Interface(ttk.Frame):
 
     def bouton3(self):
         self.bouton = 2
+        self.resul300.destroy()
+
+    def bouton4(self):
+        self.bouton = 3
         self.resul300.destroy()
         
     ############################### Prépare un cadre pour Afficher une trace dans la fenêtre
@@ -6818,12 +6871,13 @@ class Interface(ttk.Frame):
  
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
-             self.encadre("\nBonjour !\n\nCommencer par définir les paramètres (menu Paramétrage):\n\n"+
-                         " - Associer le répertoire bin de MicMac\n"+
+             self.encadre("\nBonjour !\n\nCommencer par indiquer où se trouve MicMac :\n\n"+
+                         " - menu Paramétrage/Associer le répertoire bin de MicMac\n\n"+
+                         "Ensuite consulter l'aide, item 'pour commencer'.\n\n"+
+                         "Si besoin :\n"+
                          " - Associer convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux\n"+
                          " - Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D\n\n"+
-                         "Consulter l'aide : notamment l'item 'pour commencer'\n"+
-                         "Consulter la notice d'installation et de prise en main",
+                         " - Consulter la notice d'installation et de prise en main",
                          aligne='left',nouveauDepart='non')
              return True
 
@@ -7161,6 +7215,19 @@ def iconeGrainSel():
         f.write(iconeBin)
     return f.name
 '''
+
+# liste des fenetres sous windows
+
+def foreach_window(hwnd, lParam):
+    if IsWindowVisible(hwnd):
+        length = GetWindowTextLength(hwnd)
+        buff = ctypes.create_unicode_buffer(length + 1)
+        GetWindowText(hwnd, buff, length + 1)
+        titles.append(buff.value)
+    return True
+
+
+
 ################################## Classe : Dialogue minimum modal : demande une chaine de caractères ###########################"
 
 class MyDialog:
@@ -7196,7 +7263,34 @@ class MyDialog:
     def ko(self):
         self.top.destroy()
         return
-    
+
+################################## Classe : Dialogue minimum modal : deux boutons OK KO ###########################"
+
+   
+def MyDialog_OK_KO(parent=None,titre="Question",b1="OK",b2="KO"):
+    top = tkinter.Toplevel(parent,width=200,relief='sunken')
+    top.transient(parent)
+    top.geometry("400x250+100+100")
+    fenetreIcone(top)                
+    l=ttk.Label(top, text=titre)
+    l.pack(pady=10,padx=10)
+    b = ttk.Button(top, text=b1, command=ok)
+    b.pack(pady=5)
+    c = ttk.Button(top, text=b2, command=ko)
+    c.pack(pady=5)
+    top.grab_set()
+    parent.wait_window(top)
+    parent.mainloop()
+        
+def ok(event='none'):
+    print("OK")
+    try: f.destroy()
+    except: pass
+    return 1
+        
+def ko(event=None):
+    print("KO")
+    return 0  
 
 ################################## Style pur TTK  ###########################"
 
@@ -7208,14 +7302,15 @@ def monStyle():
        
 ################################## LANCEMENT DU PROGRAMME ###########################################################
 
-# si on ouvre ce script comme programme principal alors on instancie un objet de la classe Interface sur la fenêtre principale de l'outil :
+# Variables globales
 
+version = " V 2.34"
 continuer = True
 messageDepart = str()
 compteur = 0
 iconeTexte = "R0lGODlhIAAgAIcAMQQCBJSGJNTSPHQKBMTCpGxKBPziXJxmJIR6BOTCXPTybDwCBHR2TMTGhPTmjOzmpJxuBMy+pIRyLDweDPz+1MTGjOzuhDwmBMRaFPz+pHx6LKRiLPzibDQiDMzKZIxqTKR6NOy2fHxCBNTCdEwaBISGTPzqfBwCBPTmpJRuLMzCjKxqBPTmnKxuBOzqnNzGXJQ2BHxGBIx2FIR+fMzGfOTmtMS+vIRyPPz67PTubBQCBJyGJMTCtPzqVKRmHPzSfFQWBIRuTJxuFEQeBPz+vHx2RKxiLNTKXMzCnPzqZAQKBHROBHx6JPz+hPzihPTqfEwqLJxqLJR+XOS+bEwiBMzGhPzenAwCBIyKNNzKTMzCpHxyTOzqpIxyLEwqBJxmRMzKbKx6PIQ+BNTGdISCXMzGjIxCBNS6vPz+/PzqXKRqHPzeZGQOBPzqdPzmjMzOVGwSBMTGpGxGHIR6FPTyfKRuDMy+tDwiBPz+5MTGnEQqBPz+tIR2NKRmLDQiJMzOXJx6VEwWDIx6fPyubLR6FCwCBHRCHIx+BMy6vOS+hPzedPzilIxuPIR2PJSGNJR2hFQaBJRqPKxmFJyCNFwSBIR2JPTqjJQ+BPTqlOzmtKRuFNTOTHRKBIyGTCQCBNzGbJw2BIRGBPz+zPz+lFQiBHxyXMy6zPzmVMzKdPz+7PzuTEQiBHx6PPzuZPzmfKRyBAQGBHQOBJxqJMTKhDwqBKR+NEweBMzGnHRSBPTufMzKhAwGBIRCBPzuXIR+FPzmlFwWBMTCrPTydHR2VOzmrMy+rIRyNPz+3MTGlOzujPz+rHx6NDQiFIxqVNTCfPzqhPTmrMzClIRyRPTudMTCvKRmJIRuVJxuHEQeDPz+xNTKZOS+dIyKPOzqrIxyNNTGfISCZMzGlKRqJDwiDKRmNMzOZPzefPTqnOzmvMzKfPz+9PzubPzmhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAIAAgAAcI/gABCBxIsKDBgwgTKlxI8MoVHVcYShT4cMIdHRAnKtRxwZIlGsa+eIqo0eAVCey0/fHATgSkEyRLUrwCjUg6MH9yHXECZKRMih0IVKjAZY+FUexCGAryU+AWPHiQVchTJsO0F26waNAASyaDVKkodCOAzMERDxb2uEiGJaZEcOrUUdDF5du2KZiq5EEGxsEQHROvlEqFRxSLADIKWPmGLFgeD09A2HKbUAc2JGUSxYDAScYYLqJE6bKwKY2XVRgpFzwxpNOiKNXqOBnTrUI4ZN2U5VCVZlKQOw5VUzTmwtEGYIyiEQDLgwcBLsqyCKNBjIsEWycQwlpGowslSoC0/qAZj0bdsVmoLCjTJSrbNyurhAOYlc0YpQWRpJwxVf5YmWQeoNIAHuqkcgw0KnBlECzdNNAFEJTY8gEUjyASgSi/vJCLI9DcslwceFSByS4HlZBMALL0pMMEzQTyxQa8qAFBFJM4kE4Nxxg4Ai0HLfNHG6SoYYsnhRQJBDBGqBGDDyI4sQMYZYCFQheUwaKBAr28UkcoK8DAhidgDmGLLCJIMogZTqCCRyploJARQRq8ccgSBpyyBgYDBIKRDid0YQ4hMEjyggsE8IBMFQ5cENMVdyCgwCZJNLEGKHlC9NAdbfTSQxJPVNAcMlx4kChgADjEhAe5ePCHKz/EUkhGfRjJIIAA08wSBw/mqeDCHtKQKtAuLrRHxCeKmLGBJ3ueoEcbROTIw3jF4ACVarAMEwc6RCRgDghyTKDDRU44k0p56lBjwyN+SFQEH3w4wkKbc1gSjXjqFGNNKSXBou8uy5TQgHrH8EDNDOPIpxEDeeSRCThNLaRvwxBHLFFAADs="
 
-#recherche du répertoire d'installation de "aperodedenis" (différent suivant les systèmes et les versions de système)
+# recherche du répertoire d'installation de "aperodedenis" (différent suivant les systèmes et les versions de système)
 
 repertoire_script=os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if not os.path.isdir(repertoire_script):
@@ -7227,13 +7322,37 @@ if not os.path.isdir(repertoire_script):
 if not os.path.isdir(repertoire_script):
     repertoire_script = os.getcwd()
              
-if os.name=="nt":             
+if os.name=="nt":   
+
+    # lancement unique d'aperodedenis sous WINDOWS : (pas trouvé d'équivalent sous Linux/Ubuntu)
+    
+    EnumWindows = ctypes.windll.user32.EnumWindows
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
+    GetWindowText = ctypes.windll.user32.GetWindowTextW
+    GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
+    IsWindowVisible = ctypes.windll.user32.IsWindowVisible 
+    titles = []  
+    EnumWindows(EnumWindowsProc(foreach_window), 0)     # liste des fenetres ouvertes dans titles 
+
+    # apero déjà ouvert ?
+    liste = [e for e in titles  if "AperoDeDenis V "in e]
+    if liste.__len__():
+        texte = "AperoDeDenis est déjà lancé dans la fenêtre :\n\n"+liste[0]+"\n\n"+\
+                "La version actuelle d'AperoDeDenis n'autorise qu'une seule instance du programme.\n"+\
+                "Valider pour quitter."
+        tkinter.messagebox.showwarning("AperoDeDenis : Avertissement",texte)
+        fin()
+            
+    # Répertoire de travail
+    
     repertoire_data = os.path.join(os.getenv('APPDATA'),'AperoDeDenis')
     try: os.mkdir(repertoire_data)
     except: pass
     if not os.path.isdir(repertoire_data):
-        repertoire_data = repertoire_script    
-else:
+        repertoire_data = repertoire_script
+        
+else:           # sous Linux
+    
     if not os.path.isdir(repertoire_script):
         repertoire_script = os.getenv('HOME')
     repertoire_data = repertoire_script
@@ -7242,7 +7361,12 @@ else:
     if not os.path.isdir(repertoire_data):
         repertoire_data = repertoire_script   
 
-print(heure()+" lancement d'aperodedenis.")    
+# Message indiquant le lancement de l'outil dans le shell
+
+print(heure()+" lancement d'aperodedenis"+version+".")
+
+# boucle sur l'interface tant que continuer est vrai :
+
 if __name__ == "__main__":
     while continuer:
         compteur += 1
@@ -7251,6 +7375,6 @@ if __name__ == "__main__":
         if messageDepart==str():
             interface.afficheEtat()
         else:
-            interface.encadre(str(messageDepart))    # affiche les infos restaurées :
-        fenetre.mainloop()                    # boucle tant que l'interface existe
+            interface.encadre(str(messageDepart))   # affiche les infos restaurées :
+        fenetre.mainloop()                          # boucle tant que l'interface existe
 
