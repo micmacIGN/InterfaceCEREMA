@@ -3,9 +3,13 @@
 # PEP 0008 -- Style Guide for Python Code
 
 # Version 3 ou plus
-# ligne 2584 : modif message si pas d'exiftool
-# début d'ajout d'une sauvegarde des options
 # est-il possible de relancer Malt en conservant le niveau de zoom déjà atteint ??? pas sur, sauf en passant par Micmac
+
+# Version 2.35 :
+# le 26 avril 2016
+# - affichage des heures avec les secondes
+# - Controle que le nom du répertoire bin de micmac ne comporte pas d'espace.
+
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -762,6 +766,7 @@ class Interface(ttk.Frame):
         self.mm3d                       =   "Pas de fichier pour mm3d"                          # lanceur des commandes micmac
         self.ffmpeg                     =   "Pas de fichier pour ffmpeg"                        # outil d'extraction des images à partir de video
         self.mercurialMicMac            =   "Pas de version MicMac"
+        self.mercurialMicMacChantier    =   ""      
         self.convertMagick              =   "Pas de version Image Magick"                       # pour convertir les formats
 
         # le controle des photos
@@ -859,7 +864,11 @@ class Interface(ttk.Frame):
         # Pour Malt
 
         self.zoomF              =  tkinter.StringVar() 
-        self.photosUtilesAutourDuMaitre = tkinter.IntVar() 
+        self.photosUtilesAutourDuMaitre = tkinter.IntVar()
+
+        # pour C3DC
+
+        self.modeC3DC           = tkinter.StringVar()
 
         # L'onglet :
         
@@ -1086,10 +1095,20 @@ class Interface(ttk.Frame):
         # C3DC
         
         self.item800 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")
+        
+        #self.item810 = ttk.Radiobutton(self.item800, text="Ground",     variable=self.modeC3DC, value='Ground') non supportée
+        self.item811 = ttk.Radiobutton(self.item800, text="Statue - avec drapage",     variable=self.modeC3DC, value='Statue')
+        self.item812 = ttk.Radiobutton(self.item800, text="QuickMac - rapide, sans drapage",   variable=self.modeC3DC, value='QuickMac')
+        #self.item810.pack(anchor='w')
+        self.item811.pack(anchor='w')
+        self.item812.pack(anchor='w')
+        #self.item810.state(['disabled'])                # dans micmac : non supporté
        
         self.item801 = ttk.Button(self.item800,text='Tracer le masque 3D sur le nuage AperiCloud',command=self.affiche3DApericloud)              
         self.item801.pack(ipady=2,pady=10)
-        self.item802 = ttk.Label(self.item800, text= "Tapas doit avoir créé un nuage de points.\n\n"+\
+        self.item802 = ttk.Button(self.item800,text='Supprimer le masque 3D',command=self.supprimeMasque3D)              
+        self.item802.pack(ipady=2,pady=10)        
+        self.item803 = ttk.Label(self.item800, text= \
                                                    "Dans l'outil : \n"+\
                                                    "Définir le masque : F9 \n"+\
                                                    "Ajouter un point : clic gauche\n"+\
@@ -1097,12 +1116,14 @@ class Interface(ttk.Frame):
                                                    "Sélectionner : touche espace\n"+\
                                                    "Sauver le masque : Ctrl S.\n"+
                                                    "Quitter : Ctrl Q.\n\n"+
-                                                   "Supprimer le masque : Ctrl Q (sans saisie préalable).\n\n"+                               
-                                                   "Attention : C3DC a la priorité sur le masque 2D de Malt")
-        self.item802.pack(ipady=2,pady=10)
-
- 
-        #Ajout des onglets dans la boite à onglet :
+                                                   "Agrandir les points : Maj +\n\n"+\
+                                                   "Saisie simultanée de plusieurs masques disjoints possible\n\n"+\
+                                                   "C3DC a la priorité sur le masque 2D de Malt")
+        self.item803.pack(ipady=2,pady=10)
+        self.item804 = ttk.Label(self.item800, text= "")
+        self.item804.pack(ipady=2,pady=10)
+        
+        # Ajout des onglets dans la boite à onglet :
         
         self.onglets.add(self.item400,text="Tapioca")               # add onglet to Notebook        
         self.onglets.add(self.item500,text="Tapas")                 # add onglet to Notebook
@@ -1282,7 +1303,7 @@ class Interface(ttk.Frame):
 
         # fichier XML de description du masque
 
-        self.masqueXML                  =   (   '<?xml version="1.0" ?>\n'+
+        self.masqueXMLOriginal          =   (   '<?xml version="1.0" ?>\n'+
                                                 "<FileOriMnt>\n"+
                                                 "<NameFileMnt>MonImage_Masq.tif</NameFileMnt>\n"+
                                                 "<NombrePixels>largeur hauteur</NombrePixels>\n"+
@@ -1635,6 +1656,10 @@ class Interface(ttk.Frame):
         self.listeDesMasques            = list()
         self.densification              = ""                    # la densification en cours : Malt ou C3DC
         self.zoomI                      = ""                    # le niveau de zoom initial en reprise de Malt
+
+    # C3DC
+
+        self.modeC3DC.set("Statue")                             # valeur possible : Statue, Ground,  QuickMac
         
     # Calibration
 
@@ -1805,11 +1830,9 @@ class Interface(ttk.Frame):
     def redefinirLesChemins(self):       # Mettre self.repTravail dans les chemins des images maitre et masques et dans les dictionnaires, sauver
                                          # si le chantier n'est plus sous le répertoire des photos alors le répertoire des photos devient le chantier lui même       
 
+        self.listeDesMaitresses = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.listeDesMaitresses]
+        self.listeDesMasques = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.listeDesMasques]                              
 
-        if self.maitre!=str():
-            self.maitre                 = os.path.join(self.repTravail,afficheChemin(self.maitreSansChemin))
-        if self.masque!=str():
-            self.masque                 = os.path.join(self.repTravail,afficheChemin(self.masqueSansChemin))
         if self.fichierMasqueXML!=str():
             self.fichierMasqueXML       = os.path.join(self.repTravail,os.path.basename(afficheChemin(self.fichierMasqueXML)))
         if self.monImage_MaitrePlan!=str():
@@ -1945,11 +1968,17 @@ class Interface(ttk.Frame):
             
             # on affiche l'état du chantier :
             
-            self.encadreEtTrace(heure()+"\n\n -------------- \n"+
+            self.encadreEtTrace("\n\n -------------- \n"+
                                 heure()+
                                 "\nChantier importé :\n"+self.chantier+"\n\nRépertoire :\n"+
                                 self.repTravail+"\n\nVous pouvez le renommer si  besoin."+
                                 "\n -------------- ")
+            try:
+                self.ajoutLigne("\nVersion de MicMac avant l'import : "+self.mercurialMicMacChantier+"\n")
+                self.ajoutLigne("\nVersion de MicMac : "+self.mercurialMicMac+"\n")            
+                self.ecritureTraceMicMac()
+            except Exception as e:
+                print("erreur affichage version lors de l'import d'un chantier : "+str(e))
         except Exception as e:
             self.encadre("Anomalie lors de l'importation : "+str(e),nouveauDepart='non')
             return
@@ -2131,7 +2160,7 @@ class Interface(ttk.Frame):
     def existeMasque3D(self):
         if self.repTravail==self.repertoireData:
             return False
-        self.masque3D = os.path.join(self.repTravail,self.masque3DSansChemin)        
+        self.masque3D = os.path.join(self.repTravail,self.masque3DSansChemin)
         if os.path.exists(self.masque3D):
             return True
         else:
@@ -2359,6 +2388,13 @@ class Interface(ttk.Frame):
             self.encadre(texte,nouveauDepart='non')
             return
 
+        if " " in source:
+            texte = "Le chemin du répertoire bin de micmac ne doit pas comporter le caractère 'espace'.\n"
+            texte = "Renommer le répertoire de MicMac.\n"            
+            texte += "Abandon, pas de changement.\nRépertoire bin de Micmac : \n\n"+afficheChemin(self.micMac)
+            self.encadre(texte,nouveauDepart='non')
+            return
+        
         # mm3d  sous Windows :
         
         if self.systeme=="nt":
@@ -2422,7 +2458,8 @@ class Interface(ttk.Frame):
           
         self.mm3dOK = verifMm3d(self.mm3d)                # Booléen indiquant si la version de MicMac permet la saisie de masque 3D
         self.mercurialMicMac = mercurialMm3d(self.mm3d)
-        
+        self.ajoutLigne("\nNouvelle version de MicMac : "+self.mercurialMicMac+"\n")
+        self.ecritureTraceMicMac()
         self.encadre(texte,nouveauDepart='non')
         
     def repExiftool(self):
@@ -2527,10 +2564,13 @@ class Interface(ttk.Frame):
                                 "Réinitialiser le chantier") == 0:
                 self.encadre("Abandon, le chantier n'est pas modifié.",nouveauDepart='non')
                 return
-             
-         
+            
+        repIni = ""                                     # répertoire initial de la boite de dialogue
+        if os.path.isdir(self.repertoireDesPhotos):
+            repIni = self.repertoireDesPhotos
+            
         photos=tkinter.filedialog.askopenfilename(title='Choisir des JPEG',
-                                                  initialdir=self.repertoireDesPhotos,
+                                                  initialdir=repIni,
                                                   filetypes=[("Photos",("*.JPG","*.jpg","*.BMP","*.bmp","*.TIF","*.tif")),("Tous","*")],
                                                   multiple=True)
         
@@ -2708,7 +2748,7 @@ class Interface(ttk.Frame):
                 self.pasDeFocales = True               
             if lesFocales.__len__()==1 and self.pasDeFocales==False:
                 self.exifsOK = True                  
-        except Exception as e: print("erreur controle des photos : ",st(e))
+        except Exception as e: print("erreur controle des photos : ",str(e))
         
     ################# définir le répertoire de travail, le créer :
     
@@ -2818,15 +2858,31 @@ class Interface(ttk.Frame):
             self.optionsMalt()                                      # La frame Image Maitre à afficher n'est pas "fixe"
             selection = self.item700
 
+        #Onglet C3DC :
     
-        if self.mm3dOK:                                             # ne pas proposer C3DC si MicMac ne l'accepte pas
-
+        if not self.mm3dOK:                                             # ne pas proposer C3DC si MicMac ne l'accepte pas
             os.chdir(self.repTravail)
-            supprimeFichier(self.masque3DSansChemin)                # suppression des anciens masques 3D 
-            supprimeFichier(self.masque3DBisSansChemin)        
-        else:
+            if os.path.exists(self.masque3DSansChemin):
+                supprimeFichier(self.masque3DSansChemin)                # suppression des anciens masques 3D 
+                supprimeFichier(self.masque3DBisSansChemin)
+                self.ajoutLigne("Suppression du masque 3D : la version de MicMac ne comporte pas C3DC")
+                self.ecritureTraceMicMac()
             try: self.onglets.hide(self.item800)
             except: pass
+
+        else:                                                       #Si l'onglet existe on met à jour les messages :
+
+            os.chdir(self.repTravail)        
+            if os.path.exists("AperiCloud.ply")==False:
+                self.item804.configure(text= "pas de fichier AperiCloud.ply pour construire le masque :\nlancer Micmac pour en constituer un.",foreground='red',style="C.TButton")
+                self.item801.configure(state = "disable")
+            else:
+                self.item801.configure(state = "normal")
+            if self.existeMasque3D():
+                self.item804.configure(text = "Masque 3D créé",foreground='black')
+            else:
+                self.item804.configure(text = "Pas de masque 3D",foreground='black')            
+            
 
         # met à jour les infos sur les maîtresses et les masques
         
@@ -3401,7 +3457,6 @@ class Interface(ttk.Frame):
             self.masqueProvisoire = os.path.splitext(self.maitre)[0]+"_Masq_provisoire.tif"     # Nom du fichier masque, à partir du fichier maître, imposé par micmac
             supprimeMasque(self.repTravail,"_Masq.tif")                                         # suppression des anciens masques
             supprimeFichier(self.fichierMasqueXML)
-            self.masque = str()
             self.masquesansChemin = str()
             self.masqueRetour = TracePolygone(fenetre,self.maitre,self.masqueProvisoire)        # L'utilisateur peut tracer le masque sur l'image maitre 
             if self.masqueRetour.polygone == False:                                             # si retour OK (masqueRetour est un élément de la classe tracePolygone)
@@ -3426,40 +3481,37 @@ class Interface(ttk.Frame):
         masqueTIF = os.path.splitext(self.maitreSansChemin)[0]+"_Masq.tif"
         supprimeFichier(masqueTIF)
         shutil.copy(masque,masqueTIF)
-        #écriture xml
 
+        #écriture xml
+        self.masqueXML = self.masqueXMLOriginal     # version initiale du fichier XML
         self.masqueXML=self.masqueXML.replace("MonImage_Masq.tif",masqueTIF)                       # écriture dans le fichier xml        
         self.masqueXML=self.masqueXML.replace("largeur",str(self.dimensionsDesPhotos[0][1][0]))    # x = self.dimensionsDesPhotos[0][0] 
         self.masqueXML=self.masqueXML.replace("hauteur",str(self.dimensionsDesPhotos[0][1][1]))    # y=self.densionsDesPhotos[0][1]
-        self.fichierMasqueXML=masqueTIF.replace(".tif",".xml")      # nom ddu fichier xml
+        self.fichierMasqueXML=masqueTIF.replace(".tif",".xml")      # nom du fichier xml
 
         with open(self.fichierMasqueXML, 'w', encoding='utf-8') as infile:
             infile.write(self.masqueXML)
 
+    #""""""""""""""""""""""" Options masque 3D pour C3DC
+
     def affiche3DApericloud(self):                              # lance SAisieMasqQT, sans le fermer.... attente de la fermeture (subprocess.call)
-        os.chdir(self.repTravail)        
-        if os.path.exists("AperiCloud.ply")==False:
-            try:
-                self.item803 = ttk.Label(self.item800,
-                                       text= "pas de fichier AperiCloud.ply pour construire le masque :\nlancer Micmac pour en constituer un.",
-                                       style="C.TButton")
-                self.item803.pack(ipady=2,pady=10)
-            except: pass
-            return
-        else:
-            try: self.item803.destroy()
-            except: pass
             
         masque3D = [self.mm3d,"SaisieMasqQT","AperiCloud.ply"]              # " SaisieAppuisInitQT AperiCloud.ply"
-        self.apericloudExe = subprocess.call(masque3D,shell=self.shell)       # Lancement du programme et attente du retour
-        try:                                                                #marche pas si on est en visu
+        self.apericloudExe = subprocess.call(masque3D,shell=self.shell)     # Lancement du programme et attente du retour
+        
+        try:                                                                # marche pas si on est en visu
             if self.existeMasque3D():
-                self.item803 = ttk.Label(self.item800, text= "masque 3D créé")
-                self.item803.pack(ipady=2,pady=10)
+                self.item804.configure(text= "Masque 3D créé",foreground='black') 
             else:
-                self.item803 = ttk.Label(self.item800, text= "Abandon : pas de masque créé.",foreground='red')
-                self.item803.pack(ipady=2,pady=10)
+                self.item804.configure(text= "Abandon : pas de masque créé.",foreground='red')                
         except: pass
+
+
+    def supprimeMasque3D(self):
+        supprimeFichier(self.masque3DSansChemin)                # suppression définitive des fichiers pour le masque 3D 
+        supprimeFichier(self.masque3DBisSansChemin)        
+        self.item804.configure(text= "Masque 3D supprimé.",foreground='red')
+        
             
     #""""""""""""""""""""""" Options de CalibrationGPS : faire correspondre des points (x,y,z) numérotés de 1 à N, avec des pixels des images.
 
@@ -3865,7 +3917,7 @@ class Interface(ttk.Frame):
     #  pas assez de photos choisies :
     
         if self.photosAvecChemin.__len__()==2:
-            message = "Avec 2 photos MicMac ne pourra pas construire de nuage de point dense.\nUtiliser l'échelle -1 dans Tapioca pour obtenir un nuage optimal.\n"   
+            message = "Avec 2 photos MicMac construira difficilement un nuage de point dense.\nUtiliser l'échelle -1 dans Tapioca pour obtenir un nuage optimal.\n"   
             retour = self.troisBoutons(titre='Avertissement : 2 photos seulement',
                               question=message,
                                 b1='Continuer',b2='Abandon',b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
@@ -4180,9 +4232,9 @@ class Interface(ttk.Frame):
             self.tousLesNuages()
             
              # création de modele3D.ply (self.modele3DEnCours= dernier ply généré par tousLesNuages)
-             
-            shutil.copy(self.modele3DEnCours,"modele3D.ply")
-            self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage            
+            try: shutil.copy(self.modele3DEnCours,"modele3D.ply")
+            except Exception as e: self.ajoutLigne("Erreur copie modele3D.ply")
+            self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage           
             return             
 
         # si le mode est GeomImage il faut lancer Malt sur chaque Image Maitresse et préparer le résultat
@@ -4229,7 +4281,7 @@ class Interface(ttk.Frame):
         self.lignePourTrace = ("-------------- TRACE DETAILLEE **--------------\n") # première ligne de la trace détaillée        
         self.ligneFiltre = ("-------------- TRACE SYNTHETIQUE --------------\n")  # première ligne de la trace synthétique
         
-        texte = "-------------- DEBUT DU TRAITEMENT MICMAC à "+ heure()+" -------------- n\n\n"
+        texte = "-------------- DEBUT DU TRAITEMENT MICMAC à "+ heure()+" -------------- \n\n"
 
         photosPropres=list([os.path.basename(x) for x in self.photosAvecChemin])
         texte = texte+'Photos choisies : \n\n'+'\n'.join(photosPropres)+'\n\n'           
@@ -4436,9 +4488,14 @@ class Interface(ttk.Frame):
            self.messageNouveauDepart = texte+"Consulter l'aide (quelques conseils),\nConsulter la trace.\n"
            return -1
 
+    # ------------------ GCPBascule : utilise les points GPS-----------------------    
 
     def lanceBascule(self):             # une alternative est Campari
-        
+
+        self.ajoutLigne("\n\n---------------------------\nPrise en compte des points GPS : nécessite au minimum 3 points, chacun sur 2 photos\n")
+        if len(self.dicoPointsGPSEnPlace)<6:
+            self.ajoutLigne("\nLe nombre minimum de points placés sur les photos n'est pas atteint. Abandon.\n")
+            return
         GCPBascule = [  self.mm3d,
                         "GCPBascule",
                         '.*'+self.extensionChoisie,
@@ -4455,6 +4512,7 @@ class Interface(ttk.Frame):
                             #                  et dans self.photosSansChemin les images autour de l'image maitressse
                             #                  si il y a un masque il faut les 2 fichiers maitre_Masq.xml et maitre_Masq.tif sans les indiquer dans la syntaxe
 
+        self.ajoutLigne("\n\n---------------------------\nPréparation du lancement de Malt\n")
         self.densification = "Malt"
             
         malt = [self.mm3d,
@@ -4462,23 +4520,24 @@ class Interface(ttk.Frame):
                 self.modeMalt.get(),
                 ".*"+self.extensionChoisie,
                 self.orientation(),
+                "NbVI=2",
                 "ZoomF="+self.zoomF.get()]                          # zoom 8,4,2,1 qui correspondent au nuage étape 5, 6, 7, 8
 
-##        # s'il y a un zoom initial on l'ajoute :
-##
-##        if self.zoomI!="":
-##            malt += ["ZoomI="+self.zoomI]
-##        else:
-##            malt += ["ZoomI=8"] # pour test
-        # si geomimage on ajoute l'image maitresse et on limite le nombre de photos utiles autour du maitre
 
         if self.modeMalt.get()=="GeomImage":
             if self.maitreSansChemin==str():
                 return
-            malt += ["Master="+self.maitreSansChemin]                                         
-            i = self.photosSansChemin.index(self.maitreSansChemin)  # il faut limiter l'éxécution aux photos "proches"  de l'image maître si besoin
-            listeAConserver = self.photosSansChemin[max(0,i-self.photosUtilesAutourDuMaitre.get()):min(i+1+self.photosUtilesAutourDuMaitre.get(),self.photosSansChemin.__len__())]
-            [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in listeAConserver]  #  Remise en état initial
+            malt += ["Master="+self.maitreSansChemin]
+            try:
+                i = self.photosSansChemin.index(self.maitreSansChemin)  # il faut limiter l'éxécution aux photos "proches"  de l'image maître si besoin
+                listeAConserver = self.photosSansChemin[max(0,i-self.photosUtilesAutourDuMaitre.get()):min(i+1+self.photosUtilesAutourDuMaitre.get(),self.photosSansChemin.__len__())]
+                [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in listeAConserver]  #  Renomme les photos à ne pas traiter
+                self.ajoutLigne("Nombre de photos autour de la maîtresse : "+str(self.photosUtilesAutourDuMaitre.get())+"\n"+
+                                str(listeAConserver.__len__())+" photos traitées par Malt : \n"+"\n".join(listeAConserver)+"\n")
+            except Exception as e:
+                self.ajoutLigne("\nErreur lors de la recherche des photos proches de la maitresse "+self.maitreSansChemin+".\nToutes les photos sont conservées.\n"+
+                      "Erreur : "+str(e)+"\n")
+
                      
         self.lanceCommande(malt,
                            filtre=self.filtreMalt,
@@ -4494,7 +4553,6 @@ class Interface(ttk.Frame):
             return ligne        
 
     def reinitialiseMaitreEtMasque(self):                                                       # on conserve si la photo appartient au nouveau lot
-        self.masque                     =   str()                                               # nom du fichier image représentant le masque sur l'image maîtresse
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
         self.maitre                     =   str()        
         self.maitreSansChemin           =   str()                                               # image maîtresse        
@@ -4510,7 +4568,6 @@ class Interface(ttk.Frame):
 
     def reinitialiseMaitreEtMasqueDisparus(self):                                               # on conserve les options si la photo appartient au nouveau lot (photos = liste avec chemins)
 
-        self.masque                     =   str()                                               # nom du fichier image représentant le masque sur l'image maîtresse
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
         self.maitre                     =   str()        
         self.maitreSansChemin           =   str()                                               # image maîtresse        
@@ -4591,7 +4648,7 @@ class Interface(ttk.Frame):
                     
         C3DC = [self.mm3d,
                 "C3DC",
-                "QuickMac",
+                self.modeC3DC.get(),
                 ".*"+self.extensionChoisie,
                 self.orientation(),
                 "Masq3D="+self.masque3DSansChemin,
@@ -5147,7 +5204,7 @@ class Interface(ttk.Frame):
                 "         Attention : Cette étape n'est pas effective pour toutes les versions de MicMac. La version mercurial 5508 fonctionne.\n\n"+\
                 "         Une fois les images sélectionnées le chantier est créé : utiliser le menu MicMac comme pour un chantier normal.\n\n"+\
                 "menu Outils :\n\n"+\
-                "       - Affiche le nom et la focale de l'appareil photo : fabricant, modéle et focale de la première photo.\n"+\
+                "       - Affiche le nom et la focale de l'appareil photo : fabricant, modèle et focale de la première photo.\n"+\
                 "         Il y a 2 types de focales : focale effective et focale équivalente 35 mm.\n"+\
                 "         Indique si l'appareil photo est connu dans '/XML MicMac/DicoCamera.xml'.\n\n"+\
                 "       - Affiche toutes les focales des photos : focales et focales equivalentes en 35mm.\n"+\
@@ -5320,6 +5377,8 @@ class Interface(ttk.Frame):
               "Diffusion le 29/02/2016\n"+\
               "\nVersion 2.30\n"+\
               chr(9)+chr(9)+"- Modification possible des options par défaut dans le menu outils.\n"+\
+              "\nVersion 2.40\n"+\
+              chr(9)+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC.\n"+\
               "Diffusion le 18/03/2016\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
@@ -5396,7 +5455,7 @@ class Interface(ttk.Frame):
                          self.etatDuChantier,
                          self.dicoPointsGPSEnPlace,                       
                          self.maitre,
-                         self.masque,
+                         self.mercurialMicMac,
                          self.idPointGPS,
                          self.dicoLigneHorizontale,
                          self.dicoLigneVerticale,
@@ -5415,7 +5474,8 @@ class Interface(ttk.Frame):
                          self.typeDuChantier,
                          self.listeDesMaitresses,
                          self.listeDesMasques,
-                         self.densification
+                         self.densification,
+                         self.modeC3DC.get()
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -5503,8 +5563,8 @@ class Interface(ttk.Frame):
             self.maitreSansExtension     =   r[18]
             self.etatDuChantier             =   r[19]
             self.dicoPointsGPSEnPlace       =   r[20]         
-            self.maitre                     =   r[21]
-            self.masque                     =   r[22]
+            self.maitre                     =   r[21]       # 22 disparu
+            self.mercurialMicMacChantier    =   r[22]
             self.idPointGPS                 =   r[23]
             self.dicoLigneHorizontale       =   r[24]
             self.dicoLigneVerticale         =   r[25]
@@ -5524,6 +5584,8 @@ class Interface(ttk.Frame):
             self.listeDesMaitresses         =   r[39]
             self.listeDesMasques            =   r[40]
             self.densification              =   r[41]
+            self.modeC3DC.set               (r[42])
+            
         except Exception as e: print("Erreur restauration param chantier : ",str(e))    
 
         try: self.definirFichiersTrace()                 # attention : peut planter a juste titre si reptravail
@@ -5712,20 +5774,19 @@ class Interface(ttk.Frame):
     def supprimeRepertoires(self):
         self.menageEcran()
         if len(self.tousLesChantiers)==0:
-                texte='\nTous les répertoires de travail sont déjà supprimés.\n'
+                texte='\nTous les chantiers sont déjà supprimés.\n'
                 self.encadre(texte,nouveauDepart='non')
                 return          
         supprime = list()
         conserve = list()
         texte = str()
         attention = str()
-        self.tousLesChantiers.sort(key=os.path.basename)                                    # tri suivant le nom du chantier
         self.choisirUnePhoto(self.tousLesChantiers,
                              titre='Chantiers à supprimer', 
                              mode='extended',
                              message="Multiselection possible.",
                              boutonDeux="Annuler",
-                             objets='repertoires')      # renvoi  : self.selectionPhotosAvecChemi
+                             objets='repertoires')      # renvoi  : self.selectionPhotosAvecChemin
         if len(self.selectionPhotosAvecChemin)==0:
             return
         
@@ -5907,6 +5968,7 @@ class Interface(ttk.Frame):
         if len(self.photosAvecChemin)>0:
             self.ajoutLigne(heure()+ "\n\nChoix des photos :\n"+"\n".join(self.photosAvecChemin))
         self.ajoutLigne("\n\nrépertoire du chantier :\n"+self.repTravail+"\n\n")
+        self.ajoutLigne("Version MicMac : "+self.mercurialMicMac+"\n")
         self.ecritureTraceMicMac()
         
             
@@ -5947,8 +6009,9 @@ class Interface(ttk.Frame):
 
 
     def effaceBufferTrace(self):
-        
-        self.texte201.delete("0.0",'end')
+        try:
+            self.texte201.delete("0.0",'end')
+        except: pass
         self.lignePourTrace = str()
         self.ligneFiltre = str()
 
@@ -6011,7 +6074,7 @@ class Interface(ttk.Frame):
         self.dicoInfoBullesAAfficher = bulles                               # pour passer l'info à afficherLesInfosBullesDuDico
         self.fermerVisuPhoto()                                              # pour éviter les fenêtres multiples
         self.listeChoisir = list(set(listeAvecChemin))                      # liste de choix par copie de la liste ou du tuple paramètre, sans doublons
-        self.listeChoisir.sort()                                            #tri alpha
+        self.listeChoisir.sort(key=os.path.basename)                                            # tri alpha
         listeSansChemin = [os.path.basename(e) for e in self.listeChoisir]       
         self.topVisuPhoto = tkinter.Toplevel(fenetre,relief='sunken')               # fenêtre principale de choix de la photo (maitre, ou autre)
         self.topVisuPhoto.title(titre)
@@ -6133,8 +6196,13 @@ class Interface(ttk.Frame):
         if verifierSiExecutable(self.ffmpeg)==False:
             self.encadre("L'outil ffmpeg n'est pas installé sur votre ordinateur. Traitement des vidéo GoPro impossible.",nouveauDepart='non')
             return
+        
+        repIni = ""                                     # répertoire initial de la boite de dialogue
+        if os.path.isdir(self.repertoireDesPhotos):
+            repIni = self.repertoireDesPhotos
+        
         video = tkinter.filedialog.askopenfilename(title="Choisir la video issue d'un appareil "+self.goProMaker.get()+" "+self.goProNomCamera.get()+" (sinon modifier les options)",
-                                                  initialdir=self.repertoireDesPhotos,
+                                                  initialdir=repIni,
                                                   filetypes=[("Video",("*.mp4","*.MP4","*.MOV","*.mov")),("Tous","*")],
                                                   multiple=False)
         
@@ -6800,7 +6868,11 @@ class Interface(ttk.Frame):
 
         self.informerExif(self.exiftool,self.photosSansChemin,listeTag)
         self.item3000.pack_forget()     # pour éviter la question par menageEcran
-        self.encadre("Exifs mis à jour",nouveauDepart="non")
+        self.encadreEtTrace("Exifs mis à jour\n"+
+                            "Fabricant = "+self.exifMaker.get()+"\n"+
+                            "Modèle = "+self.exifNomCamera.get()+"\n"+
+                            "Focale = "+self.exifFocale.get()+"\n"+
+                            "Focale eq 35mm = "+self.exifFocale35.get()+"\n")
 
     def exifKO(self):
         self.item3000.pack_forget()     # pour éviter la question par menageEcran        
@@ -6913,7 +6985,8 @@ class Interface(ttk.Frame):
                                        "Les options par défaut concernent :\n\n"+
                                        "Tapioca : All, MulScale, line ,les échelles et delta\n\n"+
                                        "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n\n"+
-                                       "Malt    : zoom final, nombre de photos autour de la maîtresse\n\n",
+                                       "Malt    : zoom final, nombre de photos autour de la maîtresse\n\n"+
+                                       "C3DC    : mode (Statue ou QuickMac)\n\n",                                       
                                        b1="Revenir aux options par défaut d'AperoDeDenis",
                                        b2="Utiliser les options du chantier en cours",
                                        b3="Ne rien changer")
@@ -6967,7 +7040,8 @@ class Interface(ttk.Frame):
                             self.arretApresTapas.get(),
                             self.photosUtilesAutourDuMaitre.get(),
                             self.calibSeule.get(),
-                            self.zoomF.get()),     
+                            self.zoomF.get(),
+                            self.modeC3DC.get()),     
                         sauvegarde3)
             sauvegarde3.close()
         except Exception as e:              # Controle que le programme a accès en écriture dans le répertoire d'installation
@@ -6995,6 +7069,7 @@ class Interface(ttk.Frame):
             self.photosUtilesAutourDuMaitre.set(r[10])
             self.calibSeule.set(r[11])
             self.zoomF.set(r[12])
+            self.modeC3DC.set(r[13])
         except Exception as e:
             print("erreur restauration options : "+str(e))
 
@@ -7068,12 +7143,12 @@ def pv(variable):       # affiche le nom de la variable, sa classe et sa valeur 
     print('\n------------------')
     
 def heure():        #  time.struct_time(tm_year=2015, tm_mon=4, tm_mday=7, tm_hour=22, tm_min=56, tm_sec=23, tm_wday=1, tm_yday=97, tm_isdst=1)
-        return "le "+str(time.localtime()[2])+"/"+str(time.localtime()[1])+"/"+str(time.localtime()[0])+" à "+str(time.localtime()[3])+":"+str(time.localtime()[4])
+        return "le "+str(time.localtime()[2])+"/"+str(time.localtime()[1])+"/"+str(time.localtime()[0])+" à "+str(time.localtime()[3])+":"+str(time.localtime()[4])+":"+str(time.localtime()[5])
 
 def supprimeFichier(fichier):
     try:    os.remove(fichier)
     except Exception as e:
-        return str(e)
+        return "Erreur suppression fichier :"+str(e)
 
 def supprimeMasque(repertoire,masque):
     for e in os.listdir(repertoire):
@@ -7142,10 +7217,11 @@ def zipdir(path):                                                   # path = che
 
             
                 
-def afficheChemin(texte):                               #avant d'afficher un chemin on s'assure que le séparateur est bien le bon suivant l'OS
-    texte = str(texte)
-    texte = os.path.normcase(os.path.normpath((texte)))
-    return str(texte.replace(interface.separateurAutre,interface.separateurChemin))
+def afficheChemin(texte):                               # avant d'afficher un chemin on s'assure que le séparateur est bien le bon suivant l'OS
+    # normcase supprimé le 26 avril 2016 : affectait les noms de fichiers en minuscule
+    texte = str(texte)   
+    texte = os.path.normpath(texte)
+    return texte.replace(interface.separateurAutre,interface.separateurChemin)
 
 def format2Colonnes(col1,col2,largeurCol1EnPixels):
     lab=tkinter.Label(text=col1)
@@ -7304,7 +7380,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.34"
+version = " V 2.40"
 continuer = True
 messageDepart = str()
 compteur = 0
