@@ -9,6 +9,9 @@
 # le 26 avril 2016
 # - affichage des heures avec les secondes
 # - Controle que le nom du répertoire bin de micmac ne comporte pas d'espace.
+#v 2.41
+# correction d'un bogue sur la suppression des points gps
+# autorise 30 points gps
 
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
@@ -416,10 +419,18 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         fenetre.wait_window(self.root)
                                             
     def placerBoutons(self,listePoints):                        # Place les boutons correspondants aux points de listePoints
+        textePoint = "Placer le point "                         # on raccourcit les textes si il y bcp de points
+        padding = 5
+        if listePoints.__len__()>5:
+            textePoint = "Point "
+            padding = 3
+        if listePoints.__len__()>10:
+            textePoint = ""
+            padding = 1
         for e in listePoints:                                   # un bouton pour chaque référence de la liste des boutons;
-            b = ttk.Button(self.frame2, text="Placer le point "+e[0],cursor="plus",command = lambda i = (e[0],e[1]) :self.activerBouton(i))              
+            b = ttk.Button(self.frame2, text=textePoint+e[0],cursor="plus",width=0,command = lambda i = (e[0],e[1]) :self.activerBouton(i))
             self.dicoBoutons.update({e[0]:b})                      # mémo dans un dico du nom du point / références du bouton
-            b.pack(side="left",padx=5)
+            b.pack(side="left",padx=padding)
 
         
     def bouton1(self,event):                                    # l'utilisateur appuie sur le bouton 1 de la souris
@@ -523,7 +534,7 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
       
     def activerBouton(self,boutonChoisi):                                                               # appui sur un bouton "ajouter un point"
         self.boutonActif.state(["!active","!focus","!pressed",'!selected'])                             # RAZ état de l'ancien bouton
-        if self.boutonActif==self.dicoBoutons[boutonChoisi[0]]:                                            # réappuie sur le bouton actif : on le désactive  et on quitte
+        if self.boutonActif==self.dicoBoutons[boutonChoisi[0]]:                                         # réappuie sur le bouton actif : on le désactive  et on quitte
             self.frame.config(cursor="arrow")            
             self.boutonActif = ttk.Button()
             return                                                                                      # dans ce cas, c'est fini      
@@ -3561,8 +3572,8 @@ class Interface(ttk.Frame):
         self.listeWidgetGPS = list()							# liste des widgets affichés, qui sera abondée au fur et à mesure par copie de self.listePointsGPS		
         for n,x,y,z,actif,ident in self.listePointsGPS:					# affichage de tous les widgets nom,x,y,z,actif ou supprimé (booléen), identifiant
             if actif:                                                                   # listePointsGPS : liste de tuples (nom du point, x gps, y gps, z gps, booléen actif, identifiant)
-                self.affichePointCalibrationGPS(n,x,y,z,ident)					# ajoute une ligne d'affichage
-        self.item653.pack(side='left',padx=20)							# affichage des boutons en bas d'onglet
+                self.affichePointCalibrationGPS(n,x,y,z,ident)				# ajoute une ligne d'affichage
+        self.item653.pack(side='left',padx=20)					    	# affichage des boutons en bas d'onglet
         self.item654.pack(side='left',padx=20)
         self.item655.pack(side='left',padx=20)
         
@@ -3597,10 +3608,11 @@ class Interface(ttk.Frame):
 
     def ajoutPointCalibrationGPS(self):
         self.actualiseListePointsGPS()
-        if self.listePointsGPS.__len__()>5:                     
-            self.infoBulle("Soyez raisonnable : pas plus de 5 points GPS !")
+        if [ e[0] for e in self.listePointsGPS if e[4]].__len__()>30:                     
+            self.infoBulle("Soyez raisonnable : pas plus de 30 points GPS !")
             return
-        self.listePointsGPS.append(["","","","",True,self.idPointGPS])      # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        nom = chr(65+self.listePointsGPS.__len__())
+        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS])      # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
         self.idPointGPS += 1						    # identifiant du point suivant
         self.optionsReperes()						    # affichage avec le nouveau point
         self.actualiseListePointsGPS()
@@ -3620,6 +3632,7 @@ class Interface(ttk.Frame):
                                                  titre='Points à supprimer',
                                                  mode='extended',
                                                  message="Multiselection possible.",
+                                                 objets='points',
                                                  boutonDeux="Annuler")
         self.messageSiPasDeFichier = 1
 
@@ -7380,7 +7393,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.40"
+version = " V 2.41"
 continuer = True
 messageDepart = str()
 compteur = 0
