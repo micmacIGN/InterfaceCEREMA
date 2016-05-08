@@ -12,7 +12,9 @@
 #v 2.41
 # correction d'un bogue sur la suppression des points gps
 # autorise 30 points gps
-
+# 2.42
+# suppression bogue suppression de points gps multiples
+# gcpbascule aprés tapas ET toujours avant malt
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -419,8 +421,8 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         fenetre.wait_window(self.root)
                                             
     def placerBoutons(self,listePoints):                        # Place les boutons correspondants aux points de listePoints
-        textePoint = "Placer le point "                         # on raccourcit les textes si il y bcp de points
-        padding = 5
+        textePoint = "Placer le point "                         # on raccourcit les textes si il y bcp de points  (30 max))
+        padding = 5                                             # version 2.41
         if listePoints.__len__()>5:
             textePoint = "Point "
             padding = 3
@@ -2906,7 +2908,7 @@ class Interface(ttk.Frame):
 
         self.onglets.pack(fill='none', padx=2, pady=0)              # on active la boite à onglet
         self.item450.pack()                                         # et les 2 boutons en bas
-        self.onglets.select(selection)                       # onglet sélectionné par défaut
+        self.onglets.select(selection)                              # onglet sélectionné par défaut
       
         fenetre.wait_window(self.onglets)                           # boucle d'attente : la fenêtre pricncipale attend la fin de l'onglet
         
@@ -3294,7 +3296,6 @@ class Interface(ttk.Frame):
     #"""""""""""""""""""""""   Options de TAPIOCA
         
     def optionsTapioca(self):                     # utilisé dans la syntaxe : Tapioca Line Files Size delta ArgOpt=  (ce qui exclut implicitement la syntaxe multiscale)
-
         self.item460.pack_forget()
         self.item470.pack_forget()
         self.item480.pack_forget()
@@ -3330,7 +3331,6 @@ class Interface(ttk.Frame):
     #""""""""""""""""""""""""   Options de Malt        
 
     def optionsMalt(self):
-
         self.item710.pack_forget()
         self.item730.pack_forget()  
         if self.modeMalt.get()=='GeomImage':
@@ -3535,18 +3535,22 @@ class Interface(ttk.Frame):
         
         self.item650 = ttk.Frame(	self.onglets,		# création du cadre d'accueil de l'onglet
 					height=5,
-					relief='sunken')		
+					relief='sunken')	    
+
 
         # message en haut de fenêtre
         
         self.item670 = ttk.Frame(self.item650,height=10,relief='sunken')
-        self.item671=ttk.Label(self.item670,text="3 points minimum, chaque point doit être placé sur au moins 2 photos",justify='left')
-        self.item671.pack(pady=10,padx=10,ipady=2,ipadx=2)        
+        texte = "3 points minimum, chaque point doit être placé sur au moins 2 photos\n\n"
+        texte+= "La calibration par points GPS se fait aprés Tapas et avant Malt.\n"
+        texte+= "Elle est prioritaire sur la calibration par axe, plan et métrique."
+        self.item671=ttk.Label(self.item670,text=texte,justify='left')
+        self.item671.pack(pady=10,padx=10,ipady=2,ipadx=2,fill="y")        
         self.item670.pack(side='top')
 
 
         if self.listePointsGPS.__len__()==0:			# ajout d'une ligne de saisie blanche si aucun point :
-            self.listePointsGPS.append(["","","","",True,self.idPointGPS]) # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+            self.listePointsGPS.append(["A","","","",True,self.idPointGPS]) # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
             self.idPointGPS += 1
         # affichage des entêtes de colonne
         self.item660 = ttk.Frame(self.item650,height=5,relief='sunken')
@@ -3568,21 +3572,25 @@ class Interface(ttk.Frame):
 
         
         # Affichage de la liste des points actuellement saisis:
-
+        self.item680 = ttk.Frame(self.item650,height=10,relief='sunken') 
         self.listeWidgetGPS = list()							# liste des widgets affichés, qui sera abondée au fur et à mesure par copie de self.listePointsGPS		
+        self.listePointsGPS.sort(key=lambda e: e[0])                                    # tri par ordre alpha du nom
+
         for n,x,y,z,actif,ident in self.listePointsGPS:					# affichage de tous les widgets nom,x,y,z,actif ou supprimé (booléen), identifiant
             if actif:                                                                   # listePointsGPS : liste de tuples (nom du point, x gps, y gps, z gps, booléen actif, identifiant)
                 self.affichePointCalibrationGPS(n,x,y,z,ident)				# ajoute une ligne d'affichage
+
+        self.item680.pack()
         self.item653.pack(side='left',padx=20)					    	# affichage des boutons en bas d'onglet
         self.item654.pack(side='left',padx=20)
         self.item655.pack(side='left',padx=20)
-        
+
         self.onglets.add(self.item650, text="GPS")                             # affichage onglet
-        self.onglets.select(self.item650)                    			# active l'onglet  
 		
     def affichePointCalibrationGPS(self,n,x,y,z,ident):
         
-        f = ttk.Frame(self.item650,height=5,relief='sunken')			# cadre d'accueil de la ligne
+        f = ttk.Frame(self.item680,height=5,relief='sunken')			# cadre d'accueil de la ligne
+        
         self.listeWidgetGPS.append(
 				    (f,						# cadre : [0]
                                     ttk.Entry(f),				# zones de saisie de [1] à [4]
@@ -3607,14 +3615,18 @@ class Interface(ttk.Frame):
                                         
 
     def ajoutPointCalibrationGPS(self):
+        if self.onglets.tab(self.onglets.select(), "text")=="GPS" and not self.item452.winfo_viewable():                       # controle la visibilité des boutons " valider les options" et "annuler"
+            self.infoBulle("Agrandissez la fenêtre avant d'ajouter un point GPS !\n(ou si impossible : supprimer un point)")
+            return
         self.actualiseListePointsGPS()
-        if [ e[0] for e in self.listePointsGPS if e[4]].__len__()>30:                     
+        if [ e[0] for e in self.listePointsGPS if e[4]].__len__()>=30:                     
             self.infoBulle("Soyez raisonnable : pas plus de 30 points GPS !")
             return
         nom = chr(65+self.listePointsGPS.__len__())
-        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS])      # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
         self.idPointGPS += 1						    # identifiant du point suivant
         self.optionsReperes()						    # affichage avec le nouveau point
+        self.onglets.select(self.item650)                    		    # active l'onglet (il a été supprimé puis recréé par optionsReperes)  
         self.actualiseListePointsGPS()
         
     def supprPointsGPS(self):
@@ -3642,10 +3654,10 @@ class Interface(ttk.Frame):
             return
 
         listeIdentifiantsASupprimer = [g[1] for g in listeIdentifiants if g[0] in self.selectionPhotosAvecChemin]
-        
-        for i in self.listePointsGPS:                       #on met le flag i[4] à zéro : pour conserver le lien avec les points placés ??
+        listeIni = list(self.listePointsGPS)
+        for i in listeIni:                       # on met le flag i[4] à zéro : pour conserver le lien avec les points placés ??
             if i[5] in listeIdentifiantsASupprimer:
-                self.listePointsGPS.remove(i)
+                self.listePointsGPS.remove(i)                
                 i[4] = False
                 self.listePointsGPS.append(i)
         dico = dict(self.dicoPointsGPSEnPlace)              # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y        
@@ -3654,7 +3666,7 @@ class Interface(ttk.Frame):
                 del self.dicoPointsGPSEnPlace[keys]
                         
         self.optionsReperes()
-    
+        self.onglets.select(self.item650)                   # active l'onglet (il a été supprimé puis recréé par optionsReperes) 
         
     def actualiseListePointsGPS(self):                      # actualise les valeurs saisies pour les points GPS
         # n'éxécuter que s'il y a eu saisie de points gps : self.listeWidgetGPS existe !
@@ -3722,7 +3734,7 @@ class Interface(ttk.Frame):
         ensemble=set(e[0] for e in self.listePointsGPS if e[4])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
         liste=list(e[0] for e in self.listePointsGPS if e[4])
         if ensemble.__len__()!=liste.__len__():
-            texte = "Attention : Des points portent le même nom."
+            texte = "Attention : Des points portent le même nom : corriger !"
         if "" in ensemble:
             texte = "Attention : un point n'a pas de nom. "+texte
         if texte!="":
@@ -4121,7 +4133,6 @@ class Interface(ttk.Frame):
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
             return
 
-
         # Si un fichier de calibration valide est présent on lance apero
 
         if self.controleCalibration():              # calibration OK = True
@@ -4129,6 +4140,15 @@ class Interface(ttk.Frame):
                 
         if self.etatCalibration!=str():             # calibration incomplète s'il y a un message, motif dans etatCalibration
                 self.ajoutLigne(heure()+"Calibration incomplète : "+self.etatCalibration)
+
+
+        # calibrage de l'orientation suivant des points GPS, un axe ox, un plan déterminé par un masque
+        # si il existe un fichier XML de points d'appuis : self.mesureAppuis
+              
+        if os.path.exists(self.mesureAppuis):
+            
+            self.lanceBascule()         # des points GPS : on calibre dessus, cela remplace la calibration précédente
+            
 
         # troisième module : Apericloud  crée le nuage 3D des points homologues puis visualisation :
         
@@ -5377,22 +5397,20 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+"- Traitement des vidéos (par exemple GoPro) : décompactage, sélection, mise à jour de l'exif\n"+\
               chr(9)+chr(9)+"- Ajout de deux contrôles sur le lot des photos : mêmes dimensions, même focale.\n"+\
               chr(9)+chr(9)+"- Ajout d'un item 'historique' dans le menu Aide.\n"+\
-              "\nVersion 2.01\n"+\
-              chr(9)+chr(9)+"- Ajout d'un item du menu édition fusionnant les images 3D.\n"+\
-              "Diffusion restreinte à la DTer NC le 04/02/2016\n"+\
               "\nVersion 2.10\n"+\
+              chr(9)+chr(9)+"- Ajout d'un item du menu édition fusionnant les images 3D.\n"+\
               chr(9)+chr(9)+"- Plusieurs images maîtresses, plusieurs masques.\n"+\
               chr(9)+chr(9)+"- Conversion automatique des fichiers PNG, BMP, GIF, TIF en JPG\n"+\
               chr(9)+chr(9)+"- Ajout d'un item du menu Outils permettant de modifier les exifs\n"+\
               "Diffusion restreinte à la DTer NC le 16/02/2016\n"+\
-              "\nVersion 2.20\n"+\
-              chr(9)+chr(9)+"- Maintien des options compatibles lors du choix de nouvelles photos.\n"+\
-              "Diffusion le 29/02/2016\n"+\
-              "\nVersion 2.30\n"+\
-              chr(9)+chr(9)+"- Modification possible des options par défaut dans le menu outils.\n"+\
-              "\nVersion 2.40\n"+\
-              chr(9)+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC.\n"+\
-              "Diffusion le 18/03/2016\n"+\
+              "\nVersion 2.20 :"+\
+              chr(9)+chr(9)+"- Maintien des options compatibles lors du choix de nouvelles photos. février 2016\n"+\
+              "\nVersion 2.30 : "+\
+              chr(9)+chr(9)+"- Modification des options par défaut dans le menu outils.\n"+\
+              "\nVersion 2.40 :"+\
+              chr(9)+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC. avril 2016\n"+\
+              "\nVersion 2.42 :"+\
+              chr(9)+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). mai 2016\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         
@@ -7305,7 +7323,7 @@ def iconeGrainSel():
     return f.name
 '''
 
-# liste des fenetres sous windows
+# liste des fenetres sous windows, pour éviter de relancer l'appli si déjà lancée
 
 def foreach_window(hwnd, lParam):
     if IsWindowVisible(hwnd):
@@ -7393,7 +7411,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.41"
+version = " V 2.42"
 continuer = True
 messageDepart = str()
 compteur = 0
