@@ -3549,9 +3549,6 @@ class Interface(ttk.Frame):
         self.item670.pack(side='top')
 
 
-        if self.listePointsGPS.__len__()==0:			# ajout d'une ligne de saisie blanche si aucun point :
-            self.listePointsGPS.append(["A","","","",True,self.idPointGPS]) # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
-            self.idPointGPS += 1
         # affichage des entêtes de colonne
         self.item660 = ttk.Frame(self.item650,height=5,relief='sunken')
         self.item661 = ttk.Label(self.item660,text='point').pack(side='left',pady=10,padx=60,fill="both")
