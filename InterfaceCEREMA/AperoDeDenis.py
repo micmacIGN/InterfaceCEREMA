@@ -15,9 +15,16 @@
 # 2.42
 # suppression bogue suppression de points gps multiples
 # gcpbascule aprés tapas ET toujours avant malt
+# 2.43
+# les conséquences du choix de nouvelles photos sont modifiées de trois façons :
+# - si des emplacements de points GPS doivent être supprimés alors il y a demande à l'utilisateur
+# - le nettoyage du chantier est moins brutal : les fichiers exp (exports) et ply sont conservés.
+# - le chantier est enregistré avant de rendre la main (si l'utilsiateur ne validait pas un enregistrement ultérieur le chantier devenait inaccessible)
+# ajout de import tkinter.messagebox pour le message d'avertissement si AperoDeDenis est dèjà lancé sous windows
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
+import tkinter.messagebox                   # pour le message avertissant que AperoDedenis est déjà lancé
 import tkinter.ttk as ttk                   # amélioration de certains widgets de tkinter : le comportement est géré indépendamment de l'apparence : c'est mieux ! mais différent !
 import pickle                               # pour la persistence
 import os.path                              # pour les noms de fichier
@@ -2571,18 +2578,19 @@ class Interface(ttk.Frame):
             reinitialationAFaire = True
             if self.troisBoutons("Nouvelles photos pour le meme chantier",
                                  "Choisir de nouvelles photos réinitialisera le chantier.\n"+
-                                "Les résultats en cours seront effacés.\n"+
+                                "Les traces et l'arborescence des calculs seront effacées.\n"+
                                 "Les options compatibles avec les nouvelles photos seront conservées.\n",
                                 "Abandon",
                                 "Réinitialiser le chantier") == 0:
                 self.encadre("Abandon, le chantier n'est pas modifié.",nouveauDepart='non')
                 return
+
             
         repIni = ""                                     # répertoire initial de la boite de dialogue
         if os.path.isdir(self.repertoireDesPhotos):
             repIni = self.repertoireDesPhotos
             
-        photos=tkinter.filedialog.askopenfilename(title='Choisir des JPEG',
+        photos=tkinter.filedialog.askopenfilename(title='Choisir des photos',
                                                   initialdir=repIni,
                                                   filetypes=[("Photos",("*.JPG","*.jpg","*.BMP","*.bmp","*.TIF","*.tif")),("Tous","*")],
                                                   multiple=True)
@@ -2617,6 +2625,26 @@ class Interface(ttk.Frame):
         if self.nombreDExtensionDifferentes(photos)==0:
             self.encadre("Aucune extension acceptable pour des images. Abandon.",nouveauDepart="non")
             return            
+
+
+        # si des points GPS placés sur d'anciennes photos : vont-ils être supprimés ?
+        
+        NbPointsSupprimes = int()
+        if self.dicoPointsGPSEnPlace.__len__()>0:
+            photosAvecPointsGPS = set([os.path.basename(e[1]) for e in self.dicoPointsGPSEnPlace.keys()])
+            photosChoisies = [os.path.basename(e) for e in photos]
+            for e in photosAvecPointsGPS:
+                if e not in photosChoisies:
+                    NbPointsSupprimes+=1        # le compte n'y est pas (si positif)
+            if NbPointsSupprimes>0:
+                if self.troisBoutons("ATTENTION !","ATTENTION : Des points GPS ont été précedemment placés sur des photos non choisies pour ce chantier.\n"+
+                                         "Les emplacements de ces points vont être supprimés si vous validez cette sélection de photos.",
+                              b1='Valider la sélection de photos',
+                              b2='Abandonner')==1:
+                    return
+                
+
+        # Nouvelle sélection valide
         
         self.extensionChoisie = self.lesExtensions[0]       # l'extension est OK
 
@@ -2626,7 +2654,8 @@ class Interface(ttk.Frame):
 
         # crée le repertoire de travail, copie les photos et renvoit le nombre de fichiers photos "aceptables",
         # met à 1 l'état du chantier crée self.photosAvecChemin et self.photosSansChemin
-
+        # ATTENTION : Supprime l'arborescence et certains résultats.
+        
         retourExtraire = self.extrairePhotoEtCopier(photos)    
 
         if retourExtraire.__class__()=='':              # si le retour est un texte alors erreur, probablement création du répertoire impossible
@@ -2662,7 +2691,7 @@ class Interface(ttk.Frame):
         #  - s'il y a une visualisation en cours des photos ou du masque on la ferme
 
 
-        self.reinitialiseMaitreEtMasqueDisparus()
+        self.reinitialiseMaitreEtMasqueDisparus()           #fait un grand ménage
         self.photosPourCalibrationIntrinseque = [e for e in self.photosPourCalibrationIntrinseque if e in photos]
             
         if reinitialationAFaire:
@@ -2674,6 +2703,9 @@ class Interface(ttk.Frame):
             self.ecritureTraceMicMac()            
 
 
+        # sauvegarde = recréation du fichier param.sav qui a été supprimé
+
+        self.enregistreChantier()
 
         # affiche etat avec message :
 
@@ -2684,6 +2716,7 @@ class Interface(ttk.Frame):
 
 
     ################################## COPIER LES FICHIERS DANS LE REPERTOIRE DE TRAVAIL ###########################################################       
+    ################################## ATTENTION : FAIT UN GRAND MENAGE : supprime toute l'arborescence de travail et des fichiers dans le chantier dont param.sav ###############       
     
     def extrairePhotoEtCopier(self,photos): # création repertoire du chantier,  copie les photos OK, chdir. retour : nombre de photos ou message d'erreur
                                             #  photosAvecChemin photosSansChemin                                  
@@ -2721,7 +2754,10 @@ class Interface(ttk.Frame):
         # on conserve les options déjà saisies, mais pas les résultats de traitement qui n'ont plus de sens
         # suppression de tous sous le répertoire actuel : sauf photos sélectionnées et paramètres saisis
         aConserver = list(self.photosSansChemin)
-        aConserver += [e for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]==".xml"]
+        aConserver += [e for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]==".xml"] # garde les xml (paramètres)
+        aConserver += [e for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]==".exp"] # garde les exports
+        aConserver += [e for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]==".ply"] # garde les ply
+        aConserver += [e for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]==".txt"] # garde les traces          
         aConserver.append(self.monImage_PlanTif)
         aConserver += self.listeDesMasques
         supprimeArborescenceSauf(self.repTravail,aConserver)     
@@ -4639,8 +4675,10 @@ class Interface(ttk.Frame):
 
 
         #Points GPS
-        # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y              
-
+        # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
+        # Suppression des points GPS placés sur des photos non choisies dans le nouveau choix
+        # l'utilisateur a été prévenu
+        
         if self.dicoPointsGPSEnPlace.__len__()>0:
             photosAvecPointsGPS = set([e[1] for e in self.dicoPointsGPSEnPlace.keys()])
             for e in photosAvecPointsGPS:
@@ -5406,7 +5444,7 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+"- Modification des options par défaut dans le menu outils.\n"+\
               "\nVersion 2.40 :"+\
               chr(9)+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC. avril 2016\n"+\
-              "\nVersion 2.42 :"+\
+              "\nVersion 2.43 :"+\
               chr(9)+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). mai 2016\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
@@ -7408,7 +7446,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.42"
+version = " V 2.43"
 continuer = True
 messageDepart = str()
 compteur = 0
