@@ -21,6 +21,8 @@
 # - le nettoyage du chantier est moins brutal : les fichiers exp (exports) et ply sont conservés.
 # - le chantier est enregistré avant de rendre la main (si l'utilsiateur ne validait pas un enregistrement ultérieur le chantier devenait inaccessible)
 # ajout de import tkinter.messagebox pour le message d'avertissement si AperoDeDenis est dèjà lancé sous windows
+# 2.44
+# Accepte les virgules comme séparateur décimal pour les points gps : remplacement des virgules saisies dans les coordonnées gps par des points
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -3712,9 +3714,9 @@ class Interface(ttk.Frame):
                     self.listePointsGPS.remove(i)
                     i[0] = nom.get()
                     i[0] = i[0].replace(" ","_")            # pour corriger une erreur : l'espace est interdit dans les tag d'item de canvas !
-                    i[1] = x.get()
-                    i[2] = y.get()
-                    i[3] = z.get()					
+                    i[1] = x.get().replace(",",".")         # remplace la virgule éventuelle par un point
+                    i[2] = y.get().replace(",",".")
+                    i[3] = z.get().replace(",",".")					
                     self.listePointsGPS.append(i)
                     
                 for e,v in dico.items():
@@ -5444,8 +5446,8 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+"- Modification des options par défaut dans le menu outils.\n"+\
               "\nVersion 2.40 :"+\
               chr(9)+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC. avril 2016\n"+\
-              "\nVersion 2.43 :"+\
-              chr(9)+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). mai 2016\n"+\
+              "\nVersion 2.44 :"+\
+              chr(9)+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté. mai 2016\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         
@@ -7446,7 +7448,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.43"
+version = " V 2.44"
 continuer = True
 messageDepart = str()
 compteur = 0
