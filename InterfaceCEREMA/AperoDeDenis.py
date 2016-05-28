@@ -23,7 +23,9 @@
 # ajout de import tkinter.messagebox pour le message d'avertissement si AperoDeDenis est dèjà lancé sous windows
 # 2.44
 # Accepte les virgules comme séparateur décimal pour les points gps : remplacement des virgules saisies dans les coordonnées gps par des points
-
+#2.45
+# accepte la virgule pour la distance de la calibration métrique (remplace virguule par point)
+# nouveau bouton : lance la calibration gps 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
 import tkinter.messagebox                   # pour le message avertissant que AperoDedenis est déjà lancé
@@ -811,7 +813,7 @@ class Interface(ttk.Frame):
         self.masque3DSansChemin         =   "AperiCloud_selectionInfo.xml"                      # nom du fichier XML du masque 3D, fabriqué par 
         self.masque3DBisSansChemin      =   "AperiCloud_polyg3d.xml"                            # nom du second fichier XML pour le masque 3D
         self.dicoAppuis                 =   "Dico-Appuis.xml"                                   # nom du fichier XML des points d'appui (nom, X,Y,Z,incertitude) pour Bascule
-        self.mesureAppuis               =   "Mesure-Appuis.xml"                                 # nom du XML positionnant les points d'appuis dans les photos
+        self.mesureAppuis               =   "Mesure-Appuis.xml"                                 # nom du XML positionnant les points d'appuis GPS dans les photos
         self.miseAEchelle               =   "MiseAEchelle.xml"                                  # pour l'axe des x, le plan 
         self.dicoCameraUserRelatif      =   "include/XML User/DicoCamera.xml"                   # relatif au répertoire MicMac
         self.dicoCameraGlobalRelatif    =   "include/XML_MicMac/DicoCamera.xml"                 # relatif au répertoire MicMac
@@ -2866,13 +2868,13 @@ class Interface(ttk.Frame):
             if retour==-1:                                      # -1 : fermeture fenêtre, abandon
                 self.afficheEtat()
                 return
-            if retour==2:                                       # 0 : ne rien faire
+            if retour==2:                                       # 0 : ne rien faire             (b3))
                 self.afficheEtat()
                 return
-            if retour==0:                                       # 1 : on nettoie, on passe à l'état 2
+            if retour==0:                                       # 1 : on nettoie, on passe à l'état 2  (b1))
                 self.nettoyerChantier()
 
-            if retour==1:                                       # lancer malt
+            if retour==1:                                       # modifier les options de malt C3DC et points GPS      (b2))
                 self.etatDuChantier = 4
 
 
@@ -2979,10 +2981,11 @@ class Interface(ttk.Frame):
         supprimeFichier(self.mesureAppuis)
         self.actualiseListePointsGPS()                              # met a jour proprement la liste des 6-tuples (nom,x,y,z,actif,identifiantgps)
         if self.dicoPointsGPSEnPlace.__len__()==0:                  # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
-            return
-        if self.controlePoints():
+            return False
+        if self.controlePoints():                                   # retour True si problème !
+            print("Points GPS vérifiés par controlePoints : non conformes. Vérifiez.")
             self.encadre("Points GPS non conformes. Vérifiez.",nouveauDepart='non')
-            return
+            return False
         os.chdir(self.repTravail)
         with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: #écriture de la description de chaque point GPS
             infile.write(self.dicoAppuisDebut)
@@ -3019,13 +3022,17 @@ class Interface(ttk.Frame):
                         infile.write(point)
                 infile.write(self.mesureAppuisFinPhoto)
                 infile.write(self.mesureAppuisFin)
-
+        return True
+    
     def controlePointsGPS(self):                # controle pour affiche etat : informer de la situation : si vrai alors self.etatPointsGPS sera affiché
         #si pas de chantier, pas de problème mais retour False :  pas de calibration
         self.etatPointsGPS = str()
         if self.repTravail==self.repertoireData:
             return False
-        listePointsActifs = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] and e[0]!="" ] # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+
+        # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        listePointsActifs = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] and e[0]!="" ]
+
 
         if len(listePointsActifs)>0:
             self.etatPointsGPS = ("\n"+str(len(self.dicoPointsGPSEnPlace))+" points GPS placés\n"+ # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
@@ -3040,7 +3047,7 @@ class Interface(ttk.Frame):
             self.etatPointsGPS+="Saisie incomplète : les points ne seront pas pris en compte\n"
             return False
         
-    def controleCalibration(self):                   # controle de saisie globale du repère, arrêt à la première erreur, True si pas d'erreur, sinon message
+    def controleCalibration(self):  # controle de saisie globale du repère axe, plan métrique, arrêt à la première erreur, True si pas d'erreur, sinon message
         #si pas de chantier, pas de problème mais retour False :  pas de calibration
         self.etatCalibration = str()
         if self.repTravail==self.repertoireData:
@@ -3091,6 +3098,10 @@ class Interface(ttk.Frame):
 
         existe = False                          # par défaut : pas de xml, true si il existe une des variables "reperes"
         xml = self.miseAEchelleXml
+
+        # remplace la virgule possible dans self.distance par un point :
+
+        self.distance.set(self.distance.get().replace(",","."))     # on remplace la virgule éventuelle par un point
 
         # Pattern des fichiers à traiter : 
         
@@ -3600,11 +3611,12 @@ class Interface(ttk.Frame):
         self.item653=ttk.Button(self.item650,text='Ajouter un point',command=self.ajoutPointCalibrationGPS)
         self.item654=ttk.Button(self.item650,text='Supprimer des points',command=self.supprPointsGPS)                  
         self.item655=ttk.Button(self.item650,text='Placer les points',command=self.placerPointsGPS)
-
+        self.item656=ttk.Button(self.item650,text='Appliquer au \nnuage non densifié',command=self.appliquerPointsGPS)
+        
         self.item653.pack_forget()											#on oublie les boutons du bas s'ils étaient affichés
         self.item654.pack_forget()
         self.item655.pack_forget()
-
+        self.item656.pack_forget()
         
         # Affichage de la liste des points actuellement saisis:
         self.item680 = ttk.Frame(self.item650,height=10,relief='sunken') 
@@ -3619,7 +3631,8 @@ class Interface(ttk.Frame):
         self.item653.pack(side='left',padx=20)					    	# affichage des boutons en bas d'onglet
         self.item654.pack(side='left',padx=20)
         self.item655.pack(side='left',padx=20)
-
+        self.item656.pack(side='left',padx=20)
+        
         self.onglets.add(self.item650, text="GPS")                             # affichage onglet
 		
     def affichePointCalibrationGPS(self,n,x,y,z,ident):
@@ -3773,10 +3786,34 @@ class Interface(ttk.Frame):
         if "" in ensemble:
             texte = "Attention : un point n'a pas de nom. "+texte
         if texte!="":
+            print("controle points : "+texte)
             self.infoBulle(texte)
             return True
         return False
 
+
+    def appliquerPointsGPS(self):
+
+        if not os.path.exists(os.path.join(self.repTravail,"Ori-Arbitrary")):
+            self.infoBulle("Lancer d'abord tapioca/tapas\npour obtenir un nuage non densifié.")
+            return
+ 
+        if not self.finCalibrationGPSOK():          # création des fichiers xml qui vont bien (dicoAppuis, mesureAppuis)
+            self.infoBulle("Points GPS non conformes :\n"+self.etatPointsGPS)
+            return
+        
+        self.infoBulle("Patienter :\nle nuage est en cours de calibration.")
+        self.lanceBascule()                 # calibration suivant les points GPS
+        
+       # Apericloud  crée le nuage 3D des points homologues puis visualisation :
+        
+        self.lanceApericloud()              # création d'un nuage de points 3D
+        self.lanceApericloudMeshlab()       # affiche le nuage 3D si il existe
+
+        try: self.bulle.destroy()
+        except: pass  
+        
+############################ Calibration par axe, plan et métrique
            
     def ligneHorizontale(self):
         liste = (("Origine Ox",1),("Extrémité Ox",2))           # liste de tuple nom du point et identifiant du widget
@@ -4168,7 +4205,7 @@ class Interface(ttk.Frame):
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
             return
 
-        # Si un fichier de calibration valide est présent on lance apero
+        # Si un fichier de calibration par axe plan et métrique est valide on lance apero, même s'il y a une calibration par points GPS (sera bon si GPS échoue)
 
         if self.controleCalibration():              # calibration OK = True
                 self.lanceApero()
@@ -4230,7 +4267,7 @@ class Interface(ttk.Frame):
             self.encadre(ligne,nouveauDepart='non')
             return
                
-        # calibrage de l'orientation suivant des points GPS, un axe ox, un plan déterminé par un masque
+        # calibrage de l'orientation suivant des points GPS (possiblement modifiés aprés tapas)
         # si il existe un fichier XML de points d'appuis : self.mesureAppuis
               
         if os.path.exists(self.mesureAppuis):
@@ -4507,7 +4544,7 @@ class Interface(ttk.Frame):
             return ligne      
         return
 
-    # ------------------ APERO
+    # ------------------ APERO : orientation par axe, plan et métrique, le nom de l'orientation est "echelle3" (attention : polysème)
 
     def lanceApero(self):
 
@@ -4515,10 +4552,14 @@ class Interface(ttk.Frame):
                  "Apero",
                  os.path.basename(self.miseAEchelle)]
         self.lanceCommande(apero,
-                           info="Fixe l'orientation (axe et plan) et met à l'échelle en fonction des options 'calibration'")
+                           info="Fixe l'orientation (axe,plan et métrique) suivant les options de 'calibration'")
 
         
-    # ------------------ APERICLOUD -----------------------
+    # ------------------ APERICLOUD :  -----------------------
+    # l'orientation en entrée est soit :
+    #  - Arbitrary (pas de calibration)
+    #  - echelle3 (calibration par axe plan et métrique
+    #  - bascul (calibration par points gps)
     
     def lanceApericloud(self):
            
@@ -4526,7 +4567,7 @@ class Interface(ttk.Frame):
                     "AperiCloud",
                     '.*'+self.extensionChoisie,
                     self.orientation(),
-                    "Out=AperiCloud.ply",
+                    "Out=AperiCloud.ply",       # c'est d'ailleurs la valeur par défaut pour AperiCloud
                     "ExpTxt="+self.exptxt]
         self.lanceCommande(apericloud,
                            filtre=self.filtreApericloud,
@@ -4567,8 +4608,8 @@ class Interface(ttk.Frame):
         GCPBascule = [  self.mm3d,
                         "GCPBascule",
                         '.*'+self.extensionChoisie,
-                        self.orientation(),
-                        "bascul",
+                        "Arbitrary",                        # orientation obtenue aprés tapas, nuage non densifié
+                        "bascul",                           # Orientation calibrée par les points GPS, utilisé par Mlat ou C3DC
                         os.path.basename(self.dicoAppuis),                             
                         os.path.basename(self.mesureAppuis)]
         self.lanceCommande(GCPBascule) 
@@ -5218,7 +5259,7 @@ class Interface(ttk.Frame):
                 "         Remarque  : \n"+\
                 "                     Le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils)\n\n"+\
                 "       - Options : choisir les options des modules Tapioca, Tapas (nuage non densifié)  puis de Malt (nuage densifié) : \n\n"+\
-                "         Les 3 options suivantes concernent le calcul du nuage de points NON densifié :\n\n"+\
+                "         Les options suivantes concernent le calcul du nuage de points NON densifié :\n\n"+\
                 "                    - Tapioca : options et sous options associées (échelles, fichier xml)\n"+\
                 "                    - Tapas   : Choix d'un mode de calcul, possibilité d'arrêter le traitement après tapas.\n"+\
                 "                                La calibration intrinsèque permet de lancer  Tapas sur un premier lot de photos.\n"+\
@@ -5226,6 +5267,9 @@ class Interface(ttk.Frame):
                 "                                L'arrêt après Tapas est nécessaire pour décrire le masque 2D ou 3D.\n"+\
                 "                                Produit une image 3D non densifiée avec position des appareils photos.\n"+\
                 "                    - Calibration : définir un axe, une zone plane, une distance pour définir le repère du chantier.\n\n"+\
+                "                    - GPS : Définir les points de calage GPS qui permettent de géolocaliser la scène.\n\n"+\
+                "                            Pour être utilisé chaque point, minimum 3, doit être placé sur au moins 2 photos.\n\n"+\
+                "                            Cette option est utilisée pour le nuage de point non densifié ET pour le nuage densifié.\n\n"+\
                 "         Les 3 options suivantes concernent le calcul du nuage de points densifié :\n\n"+\
                 "                    - Malt    : choix du mode et du niveau de densification.\n"+\
                 "                                Si le mode est GeomImage : \n"+\
@@ -5246,7 +5290,8 @@ class Interface(ttk.Frame):
                 "                                Le masque limite la zone en 3 dimensions de l'image finale.\n"+\
                 "                                L'outil de saisie est issu de micmac.\n\n"+\
                 "                    - GPS     : Définir les points de calage GPS qui permettent de géolocaliser la scène.\n"+\
-                "                                Pour être utilisé chaque point doit être placé sur au moins 2 photos.\n\n"+\
+                "                                Pour être utilisé chaque point, minimum 3, doit être placé sur au moins 2 photos.\n\n"+\
+                "                                Le bouton 'appliquer' permet de calibrer le modèle non densifié immédiatement.\n\n"+\
                 "       - Lancer MicMac : Enregistre le chantier et lance le traitement avec les options par défaut ou choisies par l'item 'options'.\n"+\
                 "                         Relance micmac si l'arrêt a été demandé après tapas.\n"+\
                 "                         Lancer micmac bloque les photos et les options du chantier.\n"+\
@@ -5446,8 +5491,9 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+"- Modification des options par défaut dans le menu outils.\n"+\
               "\nVersion 2.40 :"+\
               chr(9)+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC. avril 2016\n"+\
-              "\nVersion 2.44 :"+\
+              "\nVersion 2.45 :"+\
               chr(9)+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté. mai 2016\n"+\
+              chr(9)+chr(9)+"- Possiblité d'appliquer la calibration GPS sans relancer malt. mai 2016\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         
@@ -5785,6 +5831,9 @@ class Interface(ttk.Frame):
            self.logo1.pack_forget()
         if self.logoIgn.winfo_manager()=="pack":
            self.logoIgn.pack_forget()
+
+        try: self.bulle.destroy()
+        except: pass             
            
 ##
 ##    def listeFrames(self):                                          # CREE LA LISTE DE TOUS LES FRAMES de la fenetre self
@@ -6717,21 +6766,21 @@ class Interface(ttk.Frame):
         self.topRepertoire.destroy()
         self.retourChoixRepertoire="Abandon utilisateur."
 
-    ############################## Répertoire Orientation et répertoire des points Homologues
+    ############################## Répertoire Orientation en cours ou futur et répertoire des points Homologues
 
     def orientation(self):                              # définit le répertoire qui contient l'orientation la plus récente : 
-                                                        # soit Arbitrary soit echelle3 soit bascul soit GoPro
+                                                        # soit Arbitrary aprés tapas(même si absent) soit echelle3 aprés calibration par axe, plan et métrique
+                                                        # soit bascul aprés calibration par points GPS 
 
-        if os.path.exists(os.path.join(self.repTravail,"Ori-bascul")):
+        if os.path.exists(os.path.join(self.repTravail,"Ori-bascul")):      # orientation obtenue aprés Tapas et GCPbascule (points GPS OK)
             return "bascul"
-
-        if os.path.exists(os.path.join(self.repTravail,"Ori-echelle3")):
+        
+        if os.path.exists(os.path.join(self.repTravail,"Ori-echelle3")):    # # orientation obtenue aprés Tapas et calibration (points GPS OK)
             return "echelle3"
-
-        if os.path.exists(os.path.join(self.repTravail,"Ori-GoPro")):
-            return "GoPro"
                 
         return "Arbitrary"
+
+    ########## pour renommer homol    
 
     def repertoireHomol(self,homol):
                                                     # le paramètre permet d'utiliser un autre répertoire
@@ -6745,7 +6794,7 @@ class Interface(ttk.Frame):
         except Exception as e: print("erreur renommage "+homol+" en Homol : ",str(e))
 
 
-    def retourHomol(self):      # pour l'insatant inutilisé
+    def retourHomol(self):      # pour l'instant inutilisé
         
         if self.homolActuel==str(): return
         try: os.rename("Homol",self.homolActuel)
@@ -7448,7 +7497,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.44"
+version = " V 2.45"
 continuer = True
 messageDepart = str()
 compteur = 0
