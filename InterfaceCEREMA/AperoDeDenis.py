@@ -23,9 +23,12 @@
 # ajout de import tkinter.messagebox pour le message d'avertissement si AperoDeDenis est dèjà lancé sous windows
 # 2.44
 # Accepte les virgules comme séparateur décimal pour les points gps : remplacement des virgules saisies dans les coordonnées gps par des points
-#2.45
+# 2.45
 # accepte la virgule pour la distance de la calibration métrique (remplace virguule par point)
-# nouveau bouton : lance la calibration gps 
+# nouveau bouton : lance la calibration gps
+# 2.5
+# ajout de tawny après Malt, avec saisie libre des options
+
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
 import tkinter.messagebox                   # pour le message avertissant que AperoDedenis est déjà lancé
@@ -887,8 +890,10 @@ class Interface(ttk.Frame):
 
         # Pour Malt
 
-        self.zoomF              =  tkinter.StringVar() 
-        self.photosUtilesAutourDuMaitre = tkinter.IntVar()
+        self.zoomF              =  tkinter.StringVar()                  # niveau de zoom final pour malt : 8,4,2,1 1 le plus dense
+        self.photosUtilesAutourDuMaitre = tkinter.IntVar()              # pour le mode geomimage seul : nombre de photos avant/aprés autour de la maitresse
+        self.tawny              =   tkinter.BooleanVar()                # pour le mode Orthophoto seul : lancer ou non tawny
+        self.tawnyParam         =   tkinter.StringVar()                 # paramètres manuel de tawny
 
         # pour C3DC
 
@@ -1085,6 +1090,21 @@ class Interface(ttk.Frame):
         self.modesMalt = [('UrbanMNE pour photos urbaines','UrbanMNE'),
                           ("GeomImage pour photos du sol ou d'objets",'GeomImage'),
                           ('Ortho pour orthophotos','Ortho')]
+
+        self.TawnyListeparam = (
+                                "* [Name=DEq] INT :: {Degree of equalization (Def=1)}\n"+
+                                "* [Name=DEq] INT :: {Degree of equalization (Def=1)}\n"+
+                                "* [Name=DEqXY] Pt2di :: {Degree of equalization, if diff in X and Y}\n"+
+                                "* [Name=AddCste] bool :: {Add unknown constant for equalization (Def=false)\n"+
+                                "* [Name=DegRap] INT :: {Degree of rappel to initial values, Def = 0}\n"+
+                                "* [Name=DegRapXY] Pt2di :: {Degree of rappel to initial values, Def = 0}\n"+
+                                "* [Name=RGP] bool :: {Rappel glob on physically equalized, Def = true}\n"+
+                                "* [Name=DynG] REAL :: {Global Dynamic (to correct saturation problems)}\n"+
+                                "* [Name=ImPrio] string :: {Pattern of image with high prio, def=.*}\n"+
+                                "* [Name=SzV] INT :: {Sz of Window for equalization (Def=1, means 3x3)}\n"+
+                                "* [Name=CorThr] REAL :: {Threshold of correlation to validate"
+                               )
+
         for t,m in self.modesMalt:
             b = ttk.Radiobutton(self.item700, text=t, variable=self.modeMalt, value=m, command=self.optionsMalt)
             b.pack(anchor='w')
@@ -1104,6 +1124,12 @@ class Interface(ttk.Frame):
         self.item730 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour maitre et masque du masque        self.item702.pack(ipady=2,pady=10)
         self.item732 = ttk.Label(self.item730,text="Nombre de photos utiles en + et en - autour de l'image maitresse :")
         self.item733 = ttk.Entry(self.item730,width=5,textvariable=self.photosUtilesAutourDuMaitre)        
+        self.item740 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour maitre et masque du masque        self.item702.pack(ipady=2,pady=10)
+        self.item741 = ttk.Checkbutton(self.item740, variable=self.tawny, text="Lancer tawny après MALT")
+        self.item742 = ttk.Label(self.item740,text="Saisir si besoin les paramètres facultatifs, exemple :\nDEq=2 DegRap=1 ")
+        self.item743 = ttk.Entry(self.item740,width=45,textvariable=self.tawnyParam)
+        self.item744 = ttk.Label(self.item740,text="Liste des paramètres facultatifs nommés :\n"+self.TawnyListeparam
+                                 )        
         self.item701.pack()
         self.item702.pack()         
         self.item703.pack()                
@@ -1114,8 +1140,10 @@ class Interface(ttk.Frame):
         self.item720.pack(pady=10)        
         self.item732.pack(side='left')
         self.item733.pack(side='left')        
-
-        
+        self.item741.pack()
+        self.item742.pack()
+        self.item743.pack()
+        self.item744.pack()        
         # C3DC
         
         self.item800 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")
@@ -1608,6 +1636,14 @@ class Interface(ttk.Frame):
         self.nbEncadre                  =       0       # utilisé pour relancer la fenetre
         self.suffixeExport              =       "_export"  # ne pas modifierr : rendra incompatible la nouvelle version
 
+        self.messageSauvegardeOptions   =       ("Quelles options par défaut utiliser pour les nouveaux chantiers ?\n"+
+                                                "Les options par défaut concernent :\n"+
+                                                "Tapioca : All, MulScale, line ,les échelles et delta\n"+
+                                                "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n"+
+                                                "Malt    : mode, zoom final, nombre de photos autour de la maîtresse\n"+
+                                                "Tawny et ses options en saisie libre\n"+
+                                                "C3DC    : mode (Statue ou QuickMac)\n\n")
+
     ####################### initialiseValeursParDefaut du défaut : nouveau chantier, On choisira de nouvelles photos : on oublie ce qui précéde, sauf les paramètres généraux de aperodedenis (param micmac)
        
     def initialiseValeursParDefaut(self):
@@ -1657,7 +1693,7 @@ class Interface(ttk.Frame):
         self.echelle2.set('300')        # echelle base pour MulScale (si 2 photos n'ont qu'un seul point homologues a cette échelle la paire est ignorées dans l'étape suivante
         self.echelle3.set('1200')       # echelle haute pour MulScale 
         self.echelle4.set('1200')       # echelle pour Line
-        self.delta.set('3')               # delta en + et en = pour Line
+        self.delta.set('3')             # delta en + et en = pour Line
 
     # TAPAS
 
@@ -1671,6 +1707,8 @@ class Interface(ttk.Frame):
 
         self.modeMalt.set('GeomImage')
         self.photosUtilesAutourDuMaitre.set(4)                  # 4 autour de l'image maîtresse (en + et en - soit 9 photos examinées)
+        self.tawny.set(0)                                       # pas de lancement par défaut de Tawny aprés Malt Ortho
+        self.tawnyParam.set("")                                 # paramètres pour tawny 
         self.zoomF.set('4')                                     # doit être "1","2","4" ou "8" (1 le plus détaillé, 8 le plus rapide)
         self.etapeNuage                 = "5"                   # par défaut (très mystérieux!)
         self.modele3DEnCours            = "modele3D.ply"        # Nom du self.modele3DEnCours courant
@@ -2120,9 +2158,12 @@ class Interface(ttk.Frame):
                     if self.listeDesMasques.__len__()>1:
                         texte = texte+"\n"+str(self.listeDesMasques.__len__())+" masques\n"
                     texte = texte+"2 fois "+str(self.photosUtilesAutourDuMaitre.get())+" photos utiles autour de la maîtresse"+"\n"
+
+                if self.modeMalt.get()=="Ortho":
+                    if self.tawny.get():
+                        texte = texte+"\nTawny lancé aprés Malt"+"\n"
                     
-                if self.zoomF.get()!="1":
-                    texte = texte+"\narrêt au zoom : "+self.zoomF.get()+"\n"
+                texte = texte+"\narrêt au zoom : "+self.zoomF.get()+"\n"
                      
             # état du chantier :
             
@@ -3182,7 +3223,7 @@ class Interface(ttk.Frame):
                                                 # et que echelle1 < echelle2
                                                 # et enfin que echelle 1 et 2 sont au max = taille la plus grande de l'image
                                                 # ce controle peut-être appelé avant de lancer micMac
-                                                # Retour : true si Ok, message d'erreur sinon (string)
+                                                # Retour : true si Ok, message d'erreur sinon (string) pas d'avertissement sans conséquence.
         texte  = str()  # message informatif (pas toujours !)
         erreur = str()  # message erreur 
 
@@ -3381,11 +3422,14 @@ class Interface(ttk.Frame):
 
     def optionsMalt(self):
         self.item710.pack_forget()
-        self.item730.pack_forget()  
+        self.item730.pack_forget()
+        self.item740.pack_forget()          
         if self.modeMalt.get()=='GeomImage':
             self.item710.pack(pady=10)
             self.item730.pack(pady=10)            
-        
+        if self.modeMalt.get()=='Ortho':
+            self.item740.pack(pady=5)
+            
     def imageMaitresse(self):
 
         # préparation des infos bulles
@@ -4334,6 +4378,7 @@ class Interface(ttk.Frame):
         
         if self.modeMalt.get()!="GeomImage":
             self.lanceMalt()
+            self.lanceTawny()
             self.tousLesNuages()
             
              # création de modele3D.ply (self.modele3DEnCours= dernier ply généré par tousLesNuages)
@@ -4748,8 +4793,48 @@ class Interface(ttk.Frame):
         self.finOptionsOK        ()                                                             # mise à jours des fichiers xml liès aux options
         self.miseAJourItem701_703()                                                             # met à jour les windgets de l'onglet Malt
 
-    
-    
+    # ------------------ Tawny : aprés Malt, si self.modeMalt.get() = Ortho et self.tawny.get() = Vrai -----------------------
+
+    def lanceTawny(self):
+
+        if self.modeMalt.get() != "Ortho":
+            return
+        if not self.tawny.get():
+            return
+        '''Tawny -help
+        *****************************
+        * Help for Elise Arg main *
+        *****************************
+        Unnamed args :
+        * string :: {Directory where are the datas}
+        Named args :
+        * [Name=DEq] INT :: {Degree of equalization (Def=1)}
+        * [Name=DEq] INT :: {Degree of equalization (Def=1)}
+        * [Name=DEqXY] Pt2di :: {Degree of equalization, if diff in X and Y}
+        * [Name=AddCste] bool :: {Add unknown constant for equalization (Def=false)}
+        * [Name=DegRap] INT :: {Degree of rappel to initial values, Def = 0}
+        * [Name=DegRapXY] Pt2di :: {Degree of rappel to initial values, Def = 0}
+        * [Name=RGP] bool :: {Rappel glob on physically equalized, Def = true}
+        * [Name=DynG] REAL :: {Global Dynamic (to correct saturation problems)}
+        * [Name=ImPrio] string :: {Pattern of image with high prio, def=.*}
+        * [Name=SzV] INT :: {Sz of Window for equalization (Def=1, means 3x3)}
+        * [Name=CorThr] REAL :: {Threshold of correlation to validate'''
+        tawny = [self.mm3d,
+                "Tawny",
+                "Ortho-MEC-Malt/",
+                self.tawnyParam.get()] 
+        self.lanceCommande(tawny,
+                           filtre=self.filtreTawny,
+                           info="lance Tawny")
+
+    def filtreTawny(self,ligne):
+        if "Don't understand" in ligne:
+            return ligne
+        if "FATAL ERROR" in ligne:
+            return ligne     
+        if "KBOX" in ligne:
+            return ligne
+        
     # ------------------ C3DC : alternative à Malt avec un masque 3D -----------------------
         
     def lanceC3DC(self):
@@ -5461,8 +5546,7 @@ class Interface(ttk.Frame):
               "----------------------------------------------------------"+\
               "\nVersion 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.\n"+\
               "\nVersion 1.55 : Sous Windows le fichier paramètre est placé sous le répertoire APPDATA de l'utilisateur,\n"+\
-              chr(9)+chr(9)+"ce qui règle les questions relatives aux droits d'accès en écriture.\n"+\
-              "Mise en ligne le 04/12/2015.\n"+\
+              chr(9)+chr(9)+"ce qui règle les questions relatives aux droits d'accès en écriture. Mise en ligne le 04/12/2015.\n"+\
               "\nVersion 1.60 : Ajout des fonctions :\n"+\
               chr(9)+chr(9)+"- Qualité des photos lors du dernier traitement\n"+\
               chr(9)+chr(9)+"- Exporter le chantier en cours\n"+\
@@ -5479,21 +5563,17 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+"- Traitement des vidéos (par exemple GoPro) : décompactage, sélection, mise à jour de l'exif\n"+\
               chr(9)+chr(9)+"- Ajout de deux contrôles sur le lot des photos : mêmes dimensions, même focale.\n"+\
               chr(9)+chr(9)+"- Ajout d'un item 'historique' dans le menu Aide.\n"+\
-              "\nVersion 2.10\n"+\
-              chr(9)+chr(9)+"- Ajout d'un item du menu édition fusionnant les images 3D.\n"+\
+              "\nVersion 2.10"+chr(9)+"- Ajout d'un item du menu édition fusionnant les images 3D.\n"+\
               chr(9)+chr(9)+"- Plusieurs images maîtresses, plusieurs masques.\n"+\
               chr(9)+chr(9)+"- Conversion automatique des fichiers PNG, BMP, GIF, TIF en JPG\n"+\
-              chr(9)+chr(9)+"- Ajout d'un item du menu Outils permettant de modifier les exifs\n"+\
-              "Diffusion restreinte à la DTer NC le 16/02/2016\n"+\
-              "\nVersion 2.20 :"+\
-              chr(9)+chr(9)+"- Maintien des options compatibles lors du choix de nouvelles photos. février 2016\n"+\
+              chr(9)+chr(9)+"- Ajout d'un item du menu Outils permettant de modifier les exifs. Diffusion restreinte à la DTer NC le 16/02/2016\n"+\
+              "\nVersion 2.20 :"+chr(9)+"- Maintien des options compatibles lors du choix de nouvelles photos. Février 2016\n"+\
               "\nVersion 2.30 : "+\
-              chr(9)+chr(9)+"- Modification des options par défaut dans le menu outils.\n"+\
-              "\nVersion 2.40 :"+\
-              chr(9)+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC. avril 2016\n"+\
-              "\nVersion 2.45 :"+\
-              chr(9)+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté. mai 2016\n"+\
-              chr(9)+chr(9)+"- Possiblité d'appliquer la calibration GPS sans relancer malt. mai 2016\n"+\
+              chr(9)+"- Modification des options par défaut dans le menu outils.\n"+\
+              "\nVersion 2.40 :"+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC. Avril 2016\n"+\
+              "\nVersion 2.45 :"+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.\n"+\
+              chr(9)+chr(9)+"- Possiblité d'appliquer la calibration GPS sans relancer malt. Mai 2016\n"+\
+              "\nVersion 2.5 :"+chr(9)+"- Ajout de Tawny aprés Malt en mode Ortho, avec saisie libre des options. Juin 2016\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         
@@ -5589,7 +5669,9 @@ class Interface(ttk.Frame):
                          self.listeDesMaitresses,
                          self.listeDesMasques,
                          self.densification,
-                         self.modeC3DC.get()
+                         self.modeC3DC.get(),
+                         self.tawny.get(),
+                         self.tawnyParam.get()                         
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -5699,7 +5781,8 @@ class Interface(ttk.Frame):
             self.listeDesMasques            =   r[40]
             self.densification              =   r[41]
             self.modeC3DC.set               (r[42])
-            
+            self.tawny.set                  (r[43])
+            self.tawnyParam.set             (r[44])            
         except Exception as e: print("Erreur restauration param chantier : ",str(e))    
 
         try: self.definirFichiersTrace()                 # attention : peut planter a juste titre si reptravail
@@ -7098,16 +7181,11 @@ class Interface(ttk.Frame):
     def majOptionsParDefaut(self):                  # Si les options ont déjà été modifiées
         if os.path.exists(self.fichierSauvOptions):
             retour = self.troisBoutons(titre="Modifier les options par défaut",
-                                       question="Quelles options par défaut utiliser pour les nouveaux chantiers ?\n\n"+
-                                       "Les options par défaut concernent :\n\n"+
-                                       "Tapioca : All, MulScale, line ,les échelles et delta\n\n"+
-                                       "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n\n"+
-                                       "Malt    : zoom final, nombre de photos autour de la maîtresse\n\n"+
-                                       "C3DC    : mode (Statue ou QuickMac)\n\n",                                       
+                                       question=self.messageSauvegardeOptions,                                       
                                        b1="Revenir aux options par défaut d'AperoDeDenis",
                                        b2="Utiliser les options du chantier en cours",
                                        b3="Ne rien changer")
-            if retour == 0:
+            if retour == 0: 
                 supprimeFichier(self.fichierSauvOptions)
                 self.encadre("Options par défaut réinitialisées")
             elif retour == 1:
@@ -7121,11 +7199,7 @@ class Interface(ttk.Frame):
                 
         else:                                   # Si les options n'ont pas été modifiées
             retour = self.troisBoutons(titre="Modifier les options par défaut",
-                                       question="Quelles options par défaut utiliser pour les nouveaux chantiers ?\n\n"+
-                                       "Les options par défaut concernent :\n\n"+
-                                       "Tapioca : All, MulScale, line ,les échelles et delta\n\n"+
-                                       "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n\n"+
-                                       "Malt    : zoom final, nombre de photos autour de la maîtresse\n\n"+
+                                       question=self.messageSauvegardeOptions+
                                        "Les options par défaut actuelles sont les options par défaut d'AperoDeDenis",                                      
                                        b1="Utiliser les options du chantier en cours",
                                        b2="Ne rien changer")
@@ -7158,7 +7232,10 @@ class Interface(ttk.Frame):
                             self.photosUtilesAutourDuMaitre.get(),
                             self.calibSeule.get(),
                             self.zoomF.get(),
-                            self.modeC3DC.get()),     
+                            self.modeC3DC.get(),
+                            self.tawny.get(),
+                            self.tawnyParam.get()                            
+                            ),
                         sauvegarde3)
             sauvegarde3.close()
         except Exception as e:              # Controle que le programme a accès en écriture dans le répertoire d'installation
@@ -7187,6 +7264,8 @@ class Interface(ttk.Frame):
             self.calibSeule.set(r[11])
             self.zoomF.set(r[12])
             self.modeC3DC.set(r[13])
+            self.tawny.set(r[14])
+            self.tawnyParam.set(r[15])              
         except Exception as e:
             print("erreur restauration options : "+str(e))
 
