@@ -1093,7 +1093,6 @@ class Interface(ttk.Frame):
 
         self.TawnyListeparam = (
                                 "* [Name=DEq] INT :: {Degree of equalization (Def=1)}\n"+
-                                "* [Name=DEq] INT :: {Degree of equalization (Def=1)}\n"+
                                 "* [Name=DEqXY] Pt2di :: {Degree of equalization, if diff in X and Y}\n"+
                                 "* [Name=AddCste] bool :: {Add unknown constant for equalization (Def=false)\n"+
                                 "* [Name=DegRap] INT :: {Degree of rappel to initial values, Def = 0}\n"+
@@ -1126,7 +1125,7 @@ class Interface(ttk.Frame):
         self.item733 = ttk.Entry(self.item730,width=5,textvariable=self.photosUtilesAutourDuMaitre)        
         self.item740 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour maitre et masque du masque        self.item702.pack(ipady=2,pady=10)
         self.item741 = ttk.Checkbutton(self.item740, variable=self.tawny, text="Lancer tawny après MALT")
-        self.item742 = ttk.Label(self.item740,text="Saisir si besoin les paramètres facultatifs, exemple :\nDEq=2 DegRap=1 ")
+        self.item742 = ttk.Label(self.item740,text="Saisir si besoin les paramètres facultatifs, exemple :\nDEq=2 DegRapXY=[4,1]")
         self.item743 = ttk.Entry(self.item740,width=45,textvariable=self.tawnyParam)
         self.item744 = ttk.Label(self.item740,text="Liste des paramètres facultatifs nommés :\n"+self.TawnyListeparam
                                  )        
@@ -4809,7 +4808,6 @@ class Interface(ttk.Frame):
         * string :: {Directory where are the datas}
         Named args :
         * [Name=DEq] INT :: {Degree of equalization (Def=1)}
-        * [Name=DEq] INT :: {Degree of equalization (Def=1)}
         * [Name=DEqXY] Pt2di :: {Degree of equalization, if diff in X and Y}
         * [Name=AddCste] bool :: {Add unknown constant for equalization (Def=false)}
         * [Name=DegRap] INT :: {Degree of rappel to initial values, Def = 0}
@@ -4831,7 +4829,7 @@ class Interface(ttk.Frame):
         if "Don't understand" in ligne:
             return ligne
         if "FATAL ERROR" in ligne:
-            return ligne     
+            return ligne+" : Voir la trace complète."    
         if "KBOX" in ligne:
             return ligne
         
@@ -7576,7 +7574,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.45"
+version = " V 2.5"
 continuer = True
 messageDepart = str()
 compteur = 0
