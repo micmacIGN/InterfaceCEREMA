@@ -3,3 +3,5 @@ sudo apt-get install python3-tk python3-pil python3-imaging-tk
 
 lancer l'appli
 python3 AperoDeDenis.py
+
+le fichier .rpm permet d'installer l'application mais nécessite que python3 soit la version de python par défaut.
