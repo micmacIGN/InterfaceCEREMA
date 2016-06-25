@@ -26,8 +26,10 @@
 # 2.45
 # accepte la virgule pour la distance de la calibration métrique (remplace virguule par point)
 # nouveau bouton : lance la calibration gps
-# 2.5
+#
 # ajout de tawny après Malt, avec saisie libre des options
+# 2.50
+# Active/désactive le tacky message de lancement
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -607,40 +609,42 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
 class Interface(ttk.Frame):
         
     ################################## INITIALISATIONS - MENU - VALEURS PAR DEFAUT - EXIT ###########################################################
-    
+
+        
     def __init__(self, fenetre, **kwargs):
  
         # initialise les "constantes"
 
         self.initialiseConstantes()
 
-        #affiche le logo durant 5 secondes
-        try:
-            global compteur
-            if compteur==1:
-                self.canvasLogo1 = tkinter.Canvas(self.logo1,width = 560, height = 200)       # Canvas pour revevoir l'image
-                self.canvasLogo1.pack(fill='both',expand = 1)
-                self.logo1.pack()
-                self.imageLogo = Image.open(self.logoCerema) 
-                self.img = self.imageLogo.resize((560,200))
-                self.imgTk = ImageTk.PhotoImage(self.img)
-                self.imgTk_id = self.canvasLogo1.create_image(0,0,image = self.imgTk,anchor="nw") # affichage effectif de la photo dans canvasPhoto
-                fenetreIcone(fenetre)
-                for i in range(len(self.titreFenetre+" : Une interface graphique pour MicMac...")+8):
-                    fenetre.title((self.titreFenetre+" : Une interface graphique pour MicMac...")[0:i])        
-                    fenetre.update()
-                    time.sleep(0.1)
-                self.logo1.pack_forget()
-        except Exception as e:
-            print("Erreur initialisation de la fenêtre principale : ",str(e))
-
         # initialise les variables "chantier"
                 
         self.initialiseValeursParDefaut()               # valeurs par défaut pour un nouveau chantier (utile si pas encore de chantier)                                                                                                                       # pour les paramètres du chantier sous le répertoire chantier, aprés lancement Micmac
         
-        # On restaure la session précédente
+        # On restaure les paramètres et la session précédente
         
         self.restaureParamEnCours()                                                             # restaure les paramètres locaux par défaut
+
+        #affiche le logo durant 5 secondes, sauf demande expresse
+        if self.tacky:
+            try:
+                global compteur
+                if compteur==1:
+                    self.canvasLogo1 = tkinter.Canvas(self.logo1,width = 560, height = 200)       # Canvas pour revevoir l'image
+                    self.canvasLogo1.pack(fill='both',expand = 1)
+                    self.logo1.pack()
+                    self.imageLogo = Image.open(self.logoCerema) 
+                    self.img = self.imageLogo.resize((560,200))
+                    self.imgTk = ImageTk.PhotoImage(self.img)
+                    self.imgTk_id = self.canvasLogo1.create_image(0,0,image = self.imgTk,anchor="nw") # affichage effectif de la photo dans canvasPhoto
+                    fenetreIcone(fenetre)
+                    for i in range(len(self.titreFenetre+" : Une interface graphique pour MicMac...")+8):
+                        fenetre.title((self.titreFenetre+" : Une interface graphique pour MicMac...")[0:i])        
+                        fenetre.update()
+                        time.sleep(0.1)
+                    self.logo1.pack_forget()
+            except Exception as e:
+                print("Erreur initialisation de la fenêtre principale : ",str(e))
 
         # Fenêtre principale : fenetre
        
@@ -732,14 +736,23 @@ class Interface(ttk.Frame):
         
         # Paramétrage       
 
-        menuParametres = tkinter.Menu(mainMenu,tearoff = 0)
+        def updateParam():
+            if self.tacky:
+                menuParametres.entryconfig(8, label="Désactiver le 'tacky' message de lancement")
+            else:
+                menuParametres.entryconfig(8, label="Activer le 'tacky' message de lancement")
+                
+        menuParametres = tkinter.Menu(mainMenu,tearoff = 0,postcommand=updateParam)
         menuParametres.add_command(label="Afficher les paramètres", command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
-        menuParametres.add_separator()         
+        
         menuParametres.add_command(label="Associer le répertoire bin de MicMac", command=self.repMicmac)   ## Ajout d'une option au menu fils menuFile
         menuParametres.add_command(label="Associer 'exiftool'", command=self.repExiftool)                   ## Exiftool : sous MicMac\binaire-aux si Windows, mais sinon ???   
         menuParametres.add_command(label="Associer 'convert' d'ImageMagick", command=self.repConvert)       ## convert : sous MicMac\binaire-aux si Windows, mais sinon ???   
         menuParametres.add_command(label="Associer 'ffmpeg (décompacte les vidéos)", command=self.repFfmpeg)                        ## ffmpeg : sous MicMac\binaire-aux si Windows, mais sinon ???
         menuParametres.add_command(label="Associer 'Meshlab' ou 'CloudCompare'", command=self.repMeslab)    ## Meslab   
+        menuParametres.add_separator() 
+        menuParametres.add_command(label="Désactive/Active le tacky message de lancement...",command=self.modifierTacky)    ## Meslab   
+
       
         # Aide
         
@@ -769,6 +782,7 @@ class Interface(ttk.Frame):
         fenetre.protocol("WM_DELETE_WINDOW", self.quitter)
 
         # zone de test éventuel :
+
 
     #initialise les valeurs par défaut au lancement de l'outil
         
@@ -1642,7 +1656,8 @@ class Interface(ttk.Frame):
                                                 "Malt    : mode, zoom final, nombre de photos autour de la maîtresse\n"+
                                                 "Tawny et ses options en saisie libre\n"+
                                                 "C3DC    : mode (Statue ou QuickMac)\n\n")
-
+        self.tacky                      = True  # Suite au message de Luc Girod sur le forum le 21 juin 17h
+        
     ####################### initialiseValeursParDefaut du défaut : nouveau chantier, On choisira de nouvelles photos : on oublie ce qui précéde, sauf les paramètres généraux de aperodedenis (param micmac)
        
     def initialiseValeursParDefaut(self):
@@ -2609,6 +2624,12 @@ class Interface(ttk.Frame):
         texte="\nProgramme ffmpeg :\n\n"+afficheChemin(self.ffmpeg)
         self.encadre(texte,nouveauDepart='non')
 
+    def modifierTacky(self):
+        self.tacky = not self.tacky
+        if self.tacky:
+            self.encadre("Tacky message au lancement activé")
+        else:
+            self.encadre("Tacky message au lancement désactivé")            
  
     ################################## LE MENU MICMAC : Choisir les photos, les options, le traitement ##########################################################
 
@@ -5430,6 +5451,7 @@ class Interface(ttk.Frame):
                 "       - Désigner l'application convert d'ImageMagick, utile pour convertir les gif, tif et bmp en jpg (elle se trouve sous micMac\\binaire-aux).\n\n"+\
                 "       - Désigner l'application ouvrant les fichiers .PLY. Ce peut être  Meshlab, CloudCompare ou autre.\n"+\
                 "         Sous Windows Meshlab se trouve sous un répertoire nommé VCG.\n\n"+\
+                "       - Activer/désactiver le 'tacky' message de lancement\n"+\
                 "menu Aide :\n\n"+\
                 "       - Pour commencer : à lire lors de la prise en main de l'interface.\n\n"+\
                 "       - Aide : le détail des items de menu.\n\n"+\
@@ -5571,7 +5593,7 @@ class Interface(ttk.Frame):
               "\nVersion 2.40 :"+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC. Avril 2016\n"+\
               "\nVersion 2.45 :"+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.\n"+\
               chr(9)+chr(9)+"- Possiblité d'appliquer la calibration GPS sans relancer malt. Mai 2016\n"+\
-              "\nVersion 2.5 :"+chr(9)+"- Ajout de Tawny aprés Malt en mode Ortho, avec saisie libre des options. Juin 2016\n"+\
+              "\nVersion 2.50 :"+chr(9)+"- Ajout de Tawny aprés Malt en mode Ortho, désactivation du message de lancement. Juin 2016\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         
@@ -5689,7 +5711,8 @@ class Interface(ttk.Frame):
                          self.tousLesChantiers,
                          self.exiftool,
                          self.mm3d,
-                         self.convertMagick
+                         self.convertMagick,
+                         self.tacky
                          ),     
                         sauvegarde2)
             sauvegarde2.close()
@@ -5705,8 +5728,8 @@ class Interface(ttk.Frame):
             fin(1)
 
 
-    ###### Restauration paramètres : la restauration d'un chantier peut concerner un chantier archivé, dans ce cas on restaure un fichier dont le nom est passé en paramètre
-                 
+    ###### Restauration paramètres :
+            
     def restaureParamEnCours(self):
 
         try:
@@ -5721,6 +5744,7 @@ class Interface(ttk.Frame):
             self.exiftool                   =   r2[4]
             self.mm3d                       =   r2[5]                               # spécifique linux/windows
             self.convertMagick              =   r2[6]
+            self.tacky                      =   r2[7]
             
         except Exception as e: print("Erreur restauration param généraux : ",str(e))
         
@@ -5728,7 +5752,10 @@ class Interface(ttk.Frame):
         self.ffmpeg         = os.path.join(self.micMac,"ffmpeg")
         self.mercurialMicMac= mercurialMm3d(self.mm3d)
         self.mm3dOK         = verifMm3d(self.mm3d)                # Booléen indiquant si la version de MicMac permet la saisie de masque 3D         
-        
+
+    ######  la restauration d'un chantier peut concerner un chantier archivé,
+    #      dans ce cas on restaure un fichier dont le nom est passé en paramètre
+                        
     def restaureParamChantier(self,fichier):                                        # permet de restaurer les paramètres d'un chantier si besoin
         
         try:                                                                        # s'il y a une sauvegarde alors on la restaure
@@ -7574,7 +7601,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.5"
+version = " V 2.50"
 continuer = True
 messageDepart = str()
 compteur = 0
