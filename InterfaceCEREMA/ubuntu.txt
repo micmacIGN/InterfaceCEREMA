@@ -5,3 +5,6 @@ lancer l'appli
 python3 AperoDeDenis.py
 
 le fichier .rpm permet d'installer l'application mais nécessite que python3 soit la version de python par défaut.
+
+L'installation du paquet .rpm peut générer un message "paquet de mauvaise qualité". 
+Vous pouvez cependant installer l'interface sans risque.
