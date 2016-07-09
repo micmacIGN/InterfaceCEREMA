@@ -30,6 +30,8 @@
 # ajout de tawny après Malt, avec saisie libre des options
 # 2.50
 # Active/désactive le tacky message de lancement
+# 2.6
+# saisie de l'incertitude sur la position des points GPS
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -52,7 +54,6 @@ import inspect
 import zipfile
 import zlib
 import ctypes
-
 
 ########################### Classe pour tracer les masques
 
@@ -3051,11 +3052,12 @@ class Interface(ttk.Frame):
         with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: #écriture de la description de chaque point GPS
             infile.write(self.dicoAppuisDebut)
             self.actualiseListePointsGPS()
-            for Nom,X,Y,Z,num,ident in self.listePointsGPS:        # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+            for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
                 point=self.dicoAppuis1Point.replace("Nom",Nom)
                 point=point.replace("X",X)
                 point=point.replace("Y",Y)
-                point=point.replace("Z",Z)            
+                point=point.replace("Z",Z)
+                point=point.replace("10 10 10",incertitude)                     
                 infile.write(point)
             infile.write(self.dicoAppuisFin)
 
@@ -3091,9 +3093,25 @@ class Interface(ttk.Frame):
         if self.repTravail==self.repertoireData:
             return False
 
-        # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        if os.path.exists(os.path.join(self.repTravail,self.mesureAppuis))==False:
+            self.etatPointsGPS+="Saisie incomplète : les points ne seront pas pris en compte\n"
+            return False
+        
+        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
         listePointsActifs = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] and e[0]!="" ]
 
+        # ICI : controler ques les x,y,z et incertitudes sont bien des valeurs numériques
+        '''listeSaisies = [ (e[1],e[2],e[3],e[6]) for e in self.listePointsGPS if e[4] and e[0]!="" ]
+        car = "([0-9]( ))*"
+
+
+        for e in listeSaisies:
+            tout="".join(e)
+            print(tout)
+            print(re.fullmatch(car,tout))
+            if re.match(car,tout)!=None:
+                self.etatPointsGPS+="Saisie incorrecte pour le point "+e[0]+" : présence d'un caractère alphabetique\n"
+                return False'''                         
 
         if len(listePointsActifs)>0:
             self.etatPointsGPS = ("\n"+str(len(self.dicoPointsGPSEnPlace))+" points GPS placés\n"+ # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
@@ -3104,10 +3122,11 @@ class Interface(ttk.Frame):
                  self.etatPointsGPS += "Attention : chaque points doit être sur 2 photos au moins.\n"
             return True
 
-        if os.path.exists(os.path.join(self.repTravail,self.mesureAppuis))==False:
-            self.etatPointsGPS+="Saisie incomplète : les points ne seront pas pris en compte\n"
-            return False
-        
+
+
+
+                
+                         
     def controleCalibration(self):  # controle de saisie globale du repère axe, plan métrique, arrêt à la première erreur, True si pas d'erreur, sinon message
         #si pas de chantier, pas de problème mais retour False :  pas de calibration
         self.etatCalibration = str()
@@ -3664,10 +3683,11 @@ class Interface(ttk.Frame):
 
         # affichage des entêtes de colonne
         self.item660 = ttk.Frame(self.item650,height=5,relief='sunken')
-        self.item661 = ttk.Label(self.item660,text='point').pack(side='left',pady=10,padx=60,fill="both")
-        self.item662 = ttk.Label(self.item660,text='X').pack(side='left',pady=10,padx=40)                  
-        self.item663 = ttk.Label(self.item660,text='Y').pack(side='left',pady=10,padx=70)
-        self.item664 = ttk.Label(self.item660,text='Z').pack(side='left',pady=10,padx=70)
+        self.item661 = ttk.Label(self.item660,text='point').pack(side='left',pady=10,padx=40,fill="both")
+        self.item662 = ttk.Label(self.item660,text='X').pack(side='left',pady=10,padx=60)                  
+        self.item663 = ttk.Label(self.item660,text='Y').pack(side='left',pady=10,padx=60)
+        self.item664 = ttk.Label(self.item660,text='Z').pack(side='left',pady=10,padx=60)
+        self.item665 = ttk.Label(self.item660,text='Incertitude').pack(side='left',pady=10,padx=30)        
         self.item660.pack(side="top")
         
         # préparation des boutons en bas de liste
@@ -3687,9 +3707,9 @@ class Interface(ttk.Frame):
         self.listeWidgetGPS = list()							# liste des widgets affichés, qui sera abondée au fur et à mesure par copie de self.listePointsGPS		
         self.listePointsGPS.sort(key=lambda e: e[0])                                    # tri par ordre alpha du nom
 
-        for n,x,y,z,actif,ident in self.listePointsGPS:					# affichage de tous les widgets nom,x,y,z,actif ou supprimé (booléen), identifiant
+        for n,x,y,z,actif,ident,incertitude in self.listePointsGPS:					# affichage de tous les widgets nom,x,y,z,actif ou supprimé (booléen), identifiant
             if actif:                                                                   # listePointsGPS : liste de tuples (nom du point, x gps, y gps, z gps, booléen actif, identifiant)
-                self.affichePointCalibrationGPS(n,x,y,z,ident)				# ajoute une ligne d'affichage
+                self.affichePointCalibrationGPS(n,x,y,z,ident,incertitude)				# ajoute une ligne d'affichage
 
         self.item680.pack()
         self.item653.pack(side='left',padx=20)					    	# affichage des boutons en bas d'onglet
@@ -3699,7 +3719,7 @@ class Interface(ttk.Frame):
         
         self.onglets.add(self.item650, text="GPS")                             # affichage onglet
 		
-    def affichePointCalibrationGPS(self,n,x,y,z,ident):
+    def affichePointCalibrationGPS(self,n,x,y,z,ident,incertitude):
         
         f = ttk.Frame(self.item680,height=5,relief='sunken')			# cadre d'accueil de la ligne
         
@@ -3709,8 +3729,10 @@ class Interface(ttk.Frame):
                                     ttk.Entry(f),
                                     ttk.Entry(f),
                                     ttk.Entry(f),
-                                    ident)
-				    )
+                                    ident,
+                                    ttk.Entry(f)
+                                    )
+				   )
 
         self.listeWidgetGPS[-1][0].pack(side='top')
         self.listeWidgetGPS[-1][1].pack(side='left',padx=5)
@@ -3718,12 +3740,13 @@ class Interface(ttk.Frame):
         self.listeWidgetGPS[-1][2].pack(side='left')        
         self.listeWidgetGPS[-1][3].pack(side='left')
         self.listeWidgetGPS[-1][4].pack(side='left')
+        self.listeWidgetGPS[-1][6].pack(side='left')
 		
         self.listeWidgetGPS[-1][1].insert(0,n)              				        # affichage de la valeur dans le widget                  
         self.listeWidgetGPS[-1][2].insert(0,x)
         self.listeWidgetGPS[-1][3].insert(0,y)
         self.listeWidgetGPS[-1][4].insert(0,z)   
-   
+        self.listeWidgetGPS[-1][6].insert(0,incertitude)      
                                         
 
     def ajoutPointCalibrationGPS(self):
@@ -3735,7 +3758,7 @@ class Interface(ttk.Frame):
             self.infoBulle("Soyez raisonnable : pas plus de 30 points GPS !")
             return
         nom = chr(65+self.listePointsGPS.__len__())
-        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS,"10 10 10"])     # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant,incertitude)
         self.idPointGPS += 1						    # identifiant du point suivant
         self.optionsReperes()						    # affichage avec le nouveau point
         self.onglets.select(self.item650)                    		    # active l'onglet (il a été supprimé puis recréé par optionsReperes)  
@@ -3785,7 +3808,7 @@ class Interface(ttk.Frame):
         try: self.bulle.destroy()
         except: pass
         dico = dict(self.dicoPointsGPSEnPlace)              # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
-        for a,nom,x,y,z,ident in self.listeWidgetGPS:
+        for a,nom,x,y,z,ident,incertitude in self.listeWidgetGPS:
             for i in self.listePointsGPS:                   # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
                 if i[5] == ident:
                     self.listePointsGPS.remove(i)
@@ -3793,7 +3816,8 @@ class Interface(ttk.Frame):
                     i[0] = i[0].replace(" ","_")            # pour corriger une erreur : l'espace est interdit dans les tag d'item de canvas !
                     i[1] = x.get().replace(",",".")         # remplace la virgule éventuelle par un point
                     i[2] = y.get().replace(",",".")
-                    i[3] = z.get().replace(",",".")					
+                    i[3] = z.get().replace(",",".")
+                    i[6] = incertitude.get().replace(",",".")
                     self.listePointsGPS.append(i)
                     
                 for e,v in dico.items():
@@ -3816,7 +3840,7 @@ class Interface(ttk.Frame):
 
         if self.controlePoints():
             return
-        liste = list ([(n,ident) for n,x,y,z,actif,ident in self.listePointsGPS if actif])    # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        liste = list ([(n,ident) for n,x,y,z,actif,ident,incertitude in self.listePointsGPS if actif])    # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
         self.messageSiPasDeFichier  = 0                                             #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
         self.choisirUnePhoto(
                              self.photosAvecChemin,
@@ -7601,7 +7625,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.50"
+version = " V 2.60"
 continuer = True
 messageDepart = str()
 compteur = 0
