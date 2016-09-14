@@ -62,4 +62,6 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
              Version 2.60 : juillet 2016
               - saisie des incertitudes sur la position des points gps
 
+	     Version 2.61
+              - correction d'un bogue de compatibilité ascendante sur les points GPS
        
