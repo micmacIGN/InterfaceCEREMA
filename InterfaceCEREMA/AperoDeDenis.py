@@ -32,6 +32,8 @@
 # Active/désactive le tacky message de lancement
 # 2.6
 # saisie de l'incertitude sur la position des points GPS
+# 2.61
+# correction d'un bogue de compatibilité ascendante (changement de structure de la liste des points gps. Le 14/09/2016
 
 import tkinter                              # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -656,7 +658,7 @@ class Interface(ttk.Frame):
         self.style.theme_use('clam')
         fenetreIcone(fenetre)
         fenetre.title(self.titreFenetre)                                                        # Nom de la fenêtre
-        fenetre.geometry("600x600+100+200")          
+        fenetre.geometry("800x700+100+200")                                                     # fenentre.geometry("%dx%d%+d%+d" % (L,H,X,Y))
 
         # construction des item du menu
 
@@ -3088,44 +3090,29 @@ class Interface(ttk.Frame):
         return True
     
     def controlePointsGPS(self):                # controle pour affiche etat : informer de la situation : si vrai alors self.etatPointsGPS sera affiché
-        #si pas de chantier, pas de problème mais retour False :  pas de calibration
+        # si pas de chantier, pas de problème mais retour False :  pas de calibration
         self.etatPointsGPS = str()
         if self.repTravail==self.repertoireData:
             return False
-
-        if os.path.exists(os.path.join(self.repTravail,self.mesureAppuis))==False:
-            self.etatPointsGPS+="Saisie incomplète : les points ne seront pas pris en compte\n"
-            return False
-        
+       
         # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
         listePointsActifs = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] and e[0]!="" ]
 
-        # ICI : controler ques les x,y,z et incertitudes sont bien des valeurs numériques
-        '''listeSaisies = [ (e[1],e[2],e[3],e[6]) for e in self.listePointsGPS if e[4] and e[0]!="" ]
-        car = "([0-9]( ))*"
-
-
-        for e in listeSaisies:
-            tout="".join(e)
-            print(tout)
-            print(re.fullmatch(car,tout))
-            if re.match(car,tout)!=None:
-                self.etatPointsGPS+="Saisie incorrecte pour le point "+e[0]+" : présence d'un caractère alphabetique\n"
-                return False'''                         
+        # ICI : on pourrait controler que les x,y,z et incertitudes sont bien des valeurs numériques                     
 
         if len(listePointsActifs)>0:
-            self.etatPointsGPS = ("\n"+str(len(self.dicoPointsGPSEnPlace))+" points GPS placés\n"+ # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
+            self.etatPointsGPS += ("\n"+str(len(self.dicoPointsGPSEnPlace))+" points GPS placés\n"+ # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
                                   "pour "+str(len(listePointsActifs))+" points GPS définis\n")
             if len(listePointsActifs)<3:
                  self.etatPointsGPS += "Attention : Il faut au moins 3 points pour qu'ils soient pris en compte.\n"   
             if len(self.dicoPointsGPSEnPlace)<2*len(listePointsActifs):
                  self.etatPointsGPS += "Attention : chaque points doit être sur 2 photos au moins.\n"
-            return True
 
 
+        if os.path.exists(os.path.join(self.repTravail,self.mesureAppuis))==False:
+            self.etatPointsGPS+="Saisie incomplète : les points ne seront pas pris en compte\n"
 
-
-                
+        return True
                          
     def controleCalibration(self):  # controle de saisie globale du repère axe, plan métrique, arrêt à la première erreur, True si pas d'erreur, sinon message
         #si pas de chantier, pas de problème mais retour False :  pas de calibration
@@ -5715,7 +5702,8 @@ class Interface(ttk.Frame):
                          self.densification,
                          self.modeC3DC.get(),
                          self.tawny.get(),
-                         self.tawnyParam.get()                         
+                         self.tawnyParam.get(),
+                         version
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -5736,7 +5724,8 @@ class Interface(ttk.Frame):
                          self.exiftool,
                          self.mm3d,
                          self.convertMagick,
-                         self.tacky
+                         self.tacky,
+                         version
                          ),     
                         sauvegarde2)
             sauvegarde2.close()
@@ -5760,16 +5749,16 @@ class Interface(ttk.Frame):
             self.restaureParamChantier(self.fichierParamChantierEnCours)
             sauvegarde2 = open(self.fichierParamMicmac,mode='rb')
             r2=pickle.load(sauvegarde2)
-            sauvegarde2.close()
+            sauvegarde2.close()     
             self.micMac                     =   r2[0]
-            self.meshlab                    =   r2[1]
-            self.indiceTravail              =   r2[2]
-            self.tousLesChantiers           =   r2[3]
-            self.exiftool                   =   r2[4]
-            self.mm3d                       =   r2[5]                               # spécifique linux/windows
-            self.convertMagick              =   r2[6]
+            self.meshlab                    =   r2[1]           
+            self.indiceTravail              =   r2[2]           
+            self.tousLesChantiers           =   r2[3]           
+            self.exiftool                   =   r2[4]            
+            self.mm3d                       =   r2[5]                               # spécifique linux/windows            
+            self.convertMagick              =   r2[6]           
             self.tacky                      =   r2[7]
-            
+            # r2[8] est la version : inutile pour l'instant (v2.61)
         except Exception as e: print("Erreur restauration param généraux : ",str(e))
         
         self.CameraXML      = os.path.join(os.path.dirname(self.micMac),self.dicoCameraGlobalRelatif)
@@ -5815,8 +5804,8 @@ class Interface(ttk.Frame):
             self.dicoLigneVerticale         =   r[25]
             self.dicoCalibre                =   r[26]
             self.distance.set               (r[27])
-            self.monImage_MaitrePlan        =   r[28]                                               # Nom de l'image maîtresse du plan repere (sans extension)
-            self.monImage_PlanTif           =   r[29]                                               # nom du masque correspondant
+            self.monImage_MaitrePlan        =   r[28]       # Nom de l'image maîtresse du plan repere (sans extension)
+            self.monImage_PlanTif           =   r[29]       # nom du masque correspondant
             self.etatSauvegarde             =   r[30]
             self.modeCheckedTapas.set       (r[31])
             self.echelle4.set               (r[32])
@@ -5831,8 +5820,16 @@ class Interface(ttk.Frame):
             self.densification              =   r[41]
             self.modeC3DC.set               (r[42])
             self.tawny.set                  (r[43])
-            self.tawnyParam.set             (r[44])            
+            self.tawnyParam.set             (r[44])
+            # r[45] est la version : inutile pour l'instant (v2.61]
         except Exception as e: print("Erreur restauration param chantier : ",str(e))    
+
+    # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GPS
+    # passage vers la version 2.60 de la liste des points GPS (un item de plus dans le tuple)
+    
+        if self.listePointsGPS.__len__()>0:
+            if self.listePointsGPS[0].__len__()==6:
+                self.listePointsGPS=[[a,nom,x,y,z,ident,"10 10 10"] for a,nom,x,y,z,ident in self.listePointsGPS]
 
         try: self.definirFichiersTrace()                 # attention : peut planter a juste titre si reptravail
         except: print("erreur définir fichier trace, est normale lors d'une importation.")
@@ -7283,7 +7280,8 @@ class Interface(ttk.Frame):
                             self.zoomF.get(),
                             self.modeC3DC.get(),
                             self.tawny.get(),
-                            self.tawnyParam.get()                            
+                            self.tawnyParam.get(),
+                            version
                             ),
                         sauvegarde3)
             sauvegarde3.close()
@@ -7314,7 +7312,8 @@ class Interface(ttk.Frame):
             self.zoomF.set(r[12])
             self.modeC3DC.set(r[13])
             self.tawny.set(r[14])
-            self.tawnyParam.set(r[15])              
+            self.tawnyParam.set(r[15])
+            # R16 est la version d'aperodedenis, inutile pour l'instant
         except Exception as e:
             print("erreur restauration options : "+str(e))
 
@@ -7342,7 +7341,7 @@ class Interface(ttk.Frame):
            if "fenetre" in globals():
                 time.sleep(0.2)
                 try:
-                        fenetre.destroy()                                # relance une nouvelle "interface"
+                    fenetre.destroy()                                # relance une nouvelle "interface"
                 except: pass
             
     # quitter
@@ -7625,7 +7624,7 @@ def monStyle():
 
 # Variables globales
 
-version = " V 2.60"
+version = " V 2.61"
 continuer = True
 messageDepart = str()
 compteur = 0
