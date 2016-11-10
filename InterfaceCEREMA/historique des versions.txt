@@ -64,4 +64,11 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
 
 	     Version 2.61
               - correction d'un bogue de compatibilité ascendante sur les points GPS
+
+	     Version 3.00 : novembre 2016
+	      - version bilingue : ajout de la langue anglaise, par Alexandre Courallet
+
+	     Version 3.10 : 
+              - Ajout d'un item permettant de sélectionner les meilleures photos suivant les points 			homologues (compléte et différe du choix des meilleures images vidéos)
+
        
