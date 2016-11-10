@@ -1,0 +1,5306 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) YEAR ORGANIZATION
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: \n"
+"POT-Creation-Date: 2016-11-09 11:50+0100\n"
+"PO-Revision-Date: 2016-11-09 11:52+0100\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: fr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: pygettext.py 1.5\n"
+"X-Generator: Poedit 1.8.11\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
+
+#: aperodedenis301.py:228
+msgid " lancement d'aperodedenis"
+msgstr ""
+
+#: aperodedenis301.py:245 aperodedenis301.py:2529 aperodedenis301.py:3126
+#: aperodedenis301.py:3147 aperodedenis301.py:3167 aperodedenis301.py:3188
+#: aperodedenis301.py:3273 aperodedenis301.py:7185
+msgid "Tous"
+msgstr ""
+
+#: aperodedenis301.py:246
+msgid "Ply à lire"
+msgstr ""
+
+#: aperodedenis301.py:249
+msgid "Fichier à lire : "
+msgstr ""
+
+#: aperodedenis301.py:255
+msgid "Il ne s'agit pas d'un fichier ply issu de MicMac !"
+msgstr ""
+
+#: aperodedenis301.py:258
+msgid "Fichier à écrire : "
+msgstr ""
+
+#: aperodedenis301.py:270
+msgid "nombre de points : "
+msgstr ""
+
+#: aperodedenis301.py:281
+msgid " le format attendu est : fffBBB"
+msgstr ""
+
+#: aperodedenis301.py:281
+msgid ""
+"Le format des données indique qu'il ne s'agit pas d'un ply généré par "
+"MicMac. Le format trouvé est : "
+msgstr ""
+
+#: aperodedenis301.py:284
+msgid "Longueur du fichier : "
+msgstr ""
+
+#: aperodedenis301.py:285
+msgid "format du fichier > = big_endian, < = little_endian :"
+msgstr ""
+
+#: aperodedenis301.py:286
+msgid " longueur : "
+msgstr ""
+
+#: aperodedenis301.py:286
+msgid "Format des données : "
+msgstr ""
+
+#: aperodedenis301.py:288
+msgid "patience : écriture du fichier xyz en cours"
+msgstr ""
+
+#: aperodedenis301.py:293
+msgid " fin = "
+msgstr ""
+
+#: aperodedenis301.py:293
+msgid " longueur = "
+msgstr ""
+
+#: aperodedenis301.py:293
+msgid "Plage des données : début = "
+msgstr ""
+
+#: aperodedenis301.py:297
+msgid ""
+"Erreur lors du décodage des données, le ply ne provient pas de micmac. "
+"Erreur : "
+msgstr ""
+
+#: aperodedenis301.py:312 aperodedenis301.py:381
+msgid "nom du fichier contenant les données : à déterminer"
+msgstr ""
+
+#: aperodedenis301.py:361
+msgid " pas du maillaige : "
+msgstr ""
+
+#: aperodedenis301.py:504
+msgid "profil n°"
+msgstr ""
+
+#: aperodedenis301.py:516
+msgid "Tracer le masque"
+msgstr ""
+
+#: aperodedenis301.py:518
+msgid "Saisie sur la photo : "
+msgstr ""
+
+#: aperodedenis301.py:567 aperodedenis301.py:864
+msgid "Valider"
+msgstr ""
+
+#: aperodedenis301.py:568 aperodedenis301.py:866 aperodedenis301.py:3261
+#: aperodedenis301.py:4746 aperodedenis301.py:4766 aperodedenis301.py:4777
+#: aperodedenis301.py:4788 aperodedenis301.py:4804 aperodedenis301.py:4825
+#: aperodedenis301.py:5813 aperodedenis301.py:7553
+msgid "Abandon"
+msgstr ""
+
+#: aperodedenis301.py:571
+msgid "molette de la souris = zoom,"
+msgstr ""
+
+#: aperodedenis301.py:572
+msgid "utilisable avant ET pendant le tracé"
+msgstr ""
+
+#: aperodedenis301.py:573
+msgid "glisser-déposer actif avant le tracé="
+msgstr ""
+
+#: aperodedenis301.py:574
+msgid "Tracer :"
+msgstr ""
+
+#: aperodedenis301.py:575
+msgid ""
+"Clic gauche : ajouter un point;\n"
+" double clic gauche : fermer le polygone,"
+msgstr ""
+
+#: aperodedenis301.py:576
+msgid "Touche Del pour supprimer un point ou le polygone,"
+msgstr ""
+
+#: aperodedenis301.py:652
+msgid "Il faut au moins 2 points dans le polygone."
+msgstr ""
+
+#: aperodedenis301.py:682 aperodedenis301.py:954
+msgid "Zoom maximum atteint"
+msgstr ""
+
+#: aperodedenis301.py:768
+msgid "Erreur suppression d'info bulle : "
+msgstr ""
+
+#: aperodedenis301.py:817
+msgid "Calibration GPS "
+msgstr ""
+
+#: aperodedenis301.py:818
+msgid "Position des points sur la photo  : "
+msgstr ""
+
+#: aperodedenis301.py:865
+msgid "Supprimer tous les points"
+msgstr ""
+
+#: aperodedenis301.py:872
+msgid "Changer la couleur des libellés"
+msgstr ""
+
+#: aperodedenis301.py:879
+msgid "Utiliser la molette pour zoomer/dezoomer pendant la saisie."
+msgstr ""
+
+#: aperodedenis301.py:896
+msgid "Placer le point "
+msgstr ""
+
+#: aperodedenis301.py:899
+msgid "Point "
+msgstr ""
+
+#: aperodedenis301.py:1101 aperodedenis301.py:1102
+msgid " : une interface graphique pour MicMac..."
+msgstr ""
+
+#: aperodedenis301.py:1106
+msgid "Fermeture inatendue de la fenêtre."
+msgstr ""
+
+#: aperodedenis301.py:1109
+msgid "Erreur initialisation de la fenêtre principale : "
+msgstr ""
+
+#: aperodedenis301.py:1129 aperodedenis301.py:5783
+msgid "Nouveau chantier"
+msgstr ""
+
+#: aperodedenis301.py:1130
+msgid "Ouvrir un chantier"
+msgstr ""
+
+#: aperodedenis301.py:1132
+msgid "Enregistrer le chantier en cours"
+msgstr ""
+
+#: aperodedenis301.py:1133
+msgid "Renommer ou déplacer le chantier en cours"
+msgstr ""
+
+#: aperodedenis301.py:1135
+msgid "Exporter le chantier en cours"
+msgstr ""
+
+#: aperodedenis301.py:1136
+msgid "Importer un chantier"
+msgstr ""
+
+#: aperodedenis301.py:1138
+msgid "Du ménage !"
+msgstr ""
+
+#: aperodedenis301.py:1140
+msgid "Quitter"
+msgstr ""
+
+#: aperodedenis301.py:1145
+msgid "Afficher l'état du chantier"
+msgstr ""
+
+#: aperodedenis301.py:1147
+msgid "Visualiser toutes les photos sélectionnées"
+msgstr ""
+
+#: aperodedenis301.py:1148
+msgid "Visualiser les points GPS"
+msgstr ""
+
+#: aperodedenis301.py:1149
+msgid "Visualiser les maîtresses et les masques"
+msgstr ""
+
+#: aperodedenis301.py:1150
+msgid "Visualiser le masque 3D"
+msgstr ""
+
+#: aperodedenis301.py:1151
+msgid "Visualiser la ligne horizontale/verticale"
+msgstr ""
+
+#: aperodedenis301.py:1152
+msgid "Visualiser la zone plane"
+msgstr ""
+
+#: aperodedenis301.py:1153
+msgid "Visualiser la distance"
+msgstr ""
+
+#: aperodedenis301.py:1154
+msgid "Visualiser les photos pour la calibration intrinsèque"
+msgstr ""
+
+#: aperodedenis301.py:1156
+msgid "Afficher la trace complète du chantier"
+msgstr ""
+
+#: aperodedenis301.py:1157
+msgid "Afficher la trace synthétique du chantier"
+msgstr ""
+
+#: aperodedenis301.py:1159
+msgid "Afficher l'image 3D non densifiée"
+msgstr ""
+
+#: aperodedenis301.py:1160
+msgid "Afficher l'image 3D densifiée"
+msgstr ""
+
+#: aperodedenis301.py:1162
+msgid "Lister-Visualiser les images 3D"
+msgstr ""
+
+#: aperodedenis301.py:1163
+msgid "Fusionner des images 3D"
+msgstr ""
+
+#: aperodedenis301.py:1170 aperodedenis301.py:3271
+msgid "Choisir des photos"
+msgstr ""
+
+#: aperodedenis301.py:1171
+msgid "Options"
+msgstr ""
+
+#: aperodedenis301.py:1173
+msgid "Lancer MicMac"
+msgstr ""
+
+#: aperodedenis301.py:1178
+msgid "Options (GoPro par défaut)"
+msgstr ""
+
+#: aperodedenis301.py:1180
+msgid "Nouveau chantier : choisir une vidéo GoPro, ou autre"
+msgstr ""
+
+#: aperodedenis301.py:1181
+msgid "Sélection des meilleures images"
+msgstr ""
+
+#: aperodedenis301.py:1187
+msgid "Nom et focale de l'appareil photo"
+msgstr ""
+
+#: aperodedenis301.py:1188
+msgid "Toutes les focales des photos"
+msgstr ""
+
+#: aperodedenis301.py:1189
+msgid "Mettre à jour DicoCamera.xml"
+msgstr ""
+
+#: aperodedenis301.py:1191
+msgid "Qualité des photos du dernier traitement"
+msgstr ""
+
+#: aperodedenis301.py:1192
+msgid "Sélectionner les N meilleures photos"
+msgstr ""
+
+#: aperodedenis301.py:1194
+msgid "Qualité des photos 'line'"
+msgstr ""
+
+#: aperodedenis301.py:1195
+msgid "Qualité des photos 'All' "
+msgstr ""
+
+#: aperodedenis301.py:1197
+msgid "Modifier l'exif des photos"
+msgstr ""
+
+#: aperodedenis301.py:1199 aperodedenis301.py:8147 aperodedenis301.py:8165
+msgid "Modifier les options par défaut"
+msgstr ""
+
+#: aperodedenis301.py:1205
+msgid "Désactiver le 'tacky' message de lancement"
+msgstr ""
+
+#: aperodedenis301.py:1207
+msgid "Activer le 'tacky' message de lancement"
+msgstr ""
+
+#: aperodedenis301.py:1210
+msgid "Afficher les paramètres"
+msgstr ""
+
+#: aperodedenis301.py:1212
+msgid "Associer le répertoire bin de MicMac"
+msgstr ""
+
+#: aperodedenis301.py:1213
+msgid "Associer 'exiftool'"
+msgstr ""
+
+#: aperodedenis301.py:1214
+msgid "Associer 'convert' d'ImageMagick"
+msgstr ""
+
+#: aperodedenis301.py:1215
+msgid "Associer 'ffmpeg (décompacte les vidéos)"
+msgstr ""
+
+#: aperodedenis301.py:1216
+msgid "Associer 'Meshlab' ou 'CloudCompare'"
+msgstr ""
+
+#: aperodedenis301.py:1218
+msgid "Changer la langue"
+msgstr ""
+
+#: aperodedenis301.py:1220
+msgid "Désactive/Active le tacky message de lancement..."
+msgstr ""
+
+#: aperodedenis301.py:1225
+msgid "Affichage de la surface interpolée"
+msgstr ""
+
+#: aperodedenis301.py:1226
+msgid "Calcul des indices"
+msgstr ""
+
+#: aperodedenis301.py:1227
+msgid "Calcul de la PMP"
+msgstr ""
+
+#: aperodedenis301.py:1232
+msgid "Pour commencer..."
+msgstr ""
+
+#: aperodedenis301.py:1233 aperodedenis301.py:1247
+msgid "Aide"
+msgstr ""
+
+#: aperodedenis301.py:1234
+msgid "Quelques conseils"
+msgstr ""
+
+#: aperodedenis301.py:1235
+msgid "Historique"
+msgstr ""
+
+#: aperodedenis301.py:1236
+msgid "A Propos"
+msgstr ""
+
+#: aperodedenis301.py:1240
+msgid "Fichier"
+msgstr ""
+
+#: aperodedenis301.py:1241
+msgid "Edition"
+msgstr ""
+
+#: aperodedenis301.py:1243
+msgid "Vidéo"
+msgstr ""
+
+#: aperodedenis301.py:1244
+msgid "Outils"
+msgstr ""
+
+#: aperodedenis301.py:1245
+msgid "Paramétrage"
+msgstr ""
+
+#: aperodedenis301.py:1276
+msgid "Pas de répertoire désigné pour MicMac\\bin"
+msgstr ""
+
+#: aperodedenis301.py:1277
+msgid "Pas de fichier désigné pour ouvrir les .PLY"
+msgstr ""
+
+#: aperodedenis301.py:1278
+msgid "Pas de chemin pour ExifTool"
+msgstr ""
+
+#: aperodedenis301.py:1279
+msgid "Pas de fichier pour mm3d"
+msgstr ""
+
+#: aperodedenis301.py:1280
+msgid "Pas de fichier pour ffmpeg"
+msgstr ""
+
+#: aperodedenis301.py:1281
+msgid "Pas de version MicMac"
+msgstr ""
+
+#: aperodedenis301.py:1283
+msgid "Pas de version Image Magick"
+msgstr ""
+
+#: aperodedenis301.py:1410 aperodedenis301.py:1430
+msgid "Echelle image (-1 pour l'image entière) :"
+msgstr ""
+
+#: aperodedenis301.py:1418
+msgid "Echelle image réduite : "
+msgstr ""
+
+#: aperodedenis301.py:1422
+msgid "Seconde Echelle (-1 pour l'image entière) :"
+msgstr ""
+
+#: aperodedenis301.py:1432
+msgid "Delta (nombre d'images se recouvrant, avant et après) : "
+msgstr ""
+
+#: aperodedenis301.py:1460
+msgid "Choisir quelques photos pour la calibration intrinsèques"
+msgstr ""
+
+#: aperodedenis301.py:1463
+msgid " N'utiliser ces photos que pour la calibration"
+msgstr ""
+
+#: aperodedenis301.py:1463
+msgid "(exemple : focales différentes)"
+msgstr ""
+
+#: aperodedenis301.py:1464
+msgid "Toutes ces photos doivent avoir la même focale,"
+msgstr ""
+
+#: aperodedenis301.py:1464
+msgid "éventuellement différente de la focale des autres photos."
+msgstr ""
+
+#: aperodedenis301.py:1466
+msgid "Arrêter le traitement après TAPAS"
+msgstr ""
+
+#: aperodedenis301.py:1487 aperodedenis301.py:1522
+msgid "Choisir entre :"
+msgstr ""
+
+#: aperodedenis301.py:1490
+msgid "Ligne horizontale"
+msgstr ""
+
+#: aperodedenis301.py:1494 aperodedenis301.py:1529
+msgid "ou"
+msgstr ""
+
+#: aperodedenis301.py:1497
+msgid "Ligne verticale"
+msgstr ""
+
+#: aperodedenis301.py:1510 aperodedenis301.py:1544
+msgid "ET :"
+msgstr ""
+
+#: aperodedenis301.py:1525
+msgid "Zone plane horizontale"
+msgstr ""
+
+#: aperodedenis301.py:1532
+msgid "Zone plane verticale"
+msgstr ""
+
+#: aperodedenis301.py:1555
+msgid "Distance entre les 2 points :"
+msgstr ""
+
+#: aperodedenis301.py:1560
+msgid "Placer 2 points identiques sur 2 photos"
+msgstr ""
+
+#: aperodedenis301.py:1570
+msgid "Pour annuler la calibration mettre la distance = 0"
+msgstr ""
+
+#: aperodedenis301.py:1577
+msgid "UrbanMNE pour photos urbaines"
+msgstr ""
+
+#: aperodedenis301.py:1578
+msgid "GeomImage pour photos du sol ou d'objets"
+msgstr ""
+
+#: aperodedenis301.py:1579
+msgid "Ortho pour orthophotos"
+msgstr ""
+
+#: aperodedenis301.py:1603 aperodedenis301.py:4100
+msgid "Choisir les maîtresses"
+msgstr ""
+
+#: aperodedenis301.py:1605
+msgid "Tracer les masques"
+msgstr ""
+
+#: aperodedenis301.py:1606
+msgid "Attention : Le masque 3D de C3DC a la priorité sur Malt"
+msgstr ""
+
+#: aperodedenis301.py:1606
+msgid "Pour supprimer un masque : supprimer la maitresse"
+msgstr ""
+
+#: aperodedenis301.py:1608
+msgid "Zoom final : 8, 4, 2 ou 1 (8=le plus rapide, 1=le plus précis)"
+msgstr ""
+
+#: aperodedenis301.py:1611
+msgid "Nombre de photos utiles en + et en - autour de l'image maitresse :"
+msgstr ""
+
+#: aperodedenis301.py:1614
+msgid "Lancer tawny après MALT"
+msgstr ""
+
+#: aperodedenis301.py:1615
+msgid "Saisir si besoin les paramètres facultatifs, exemple :"
+msgstr ""
+
+#: aperodedenis301.py:1617
+msgid "Liste des paramètres facultatifs nommés :"
+msgstr ""
+
+#: aperodedenis301.py:1638
+msgid "Statue - avec drapage"
+msgstr ""
+
+#: aperodedenis301.py:1639
+msgid "QuickMac - rapide, sans drapage"
+msgstr ""
+
+#: aperodedenis301.py:1645
+msgid "Tracer le masque 3D sur le nuage AperiCloud"
+msgstr ""
+
+#: aperodedenis301.py:1647
+msgid "Supprimer le masque 3D"
+msgstr ""
+
+#: aperodedenis301.py:1650
+msgid "Dans l'outil : "
+msgstr ""
+
+#: aperodedenis301.py:1651
+msgid "Définir le masque : F9 "
+msgstr ""
+
+#: aperodedenis301.py:1652
+msgid "Ajouter un point : clic gauche"
+msgstr ""
+
+#: aperodedenis301.py:1653
+msgid "Fermer le polygone : clic droit"
+msgstr ""
+
+#: aperodedenis301.py:1654
+msgid "Sélectionner : touche espace"
+msgstr ""
+
+#: aperodedenis301.py:1655
+msgid "Sauver le masque : Ctrl S."
+msgstr ""
+
+#: aperodedenis301.py:1656
+msgid "Quitter : Ctrl Q."
+msgstr ""
+
+#: aperodedenis301.py:1657
+msgid "Agrandir les points : Maj +"
+msgstr ""
+
+#: aperodedenis301.py:1658
+msgid "Saisie simultanée de plusieurs masques disjoints possible"
+msgstr ""
+
+#: aperodedenis301.py:1659
+msgid "C3DC a la priorité sur le masque 2D de Malt"
+msgstr ""
+
+#: aperodedenis301.py:1677
+msgid " Valider les options"
+msgstr ""
+
+#: aperodedenis301.py:1680 aperodedenis301.py:1702 aperodedenis301.py:1760
+#: aperodedenis301.py:1807 aperodedenis301.py:1881 aperodedenis301.py:1908
+msgid " Annuler"
+msgstr ""
+
+#: aperodedenis301.py:1693
+msgid "Indiquer les dimensions du capteur, en mm."
+msgstr ""
+
+#: aperodedenis301.py:1694
+msgid "par exemple :"
+msgstr ""
+
+#: aperodedenis301.py:1695
+msgid "Le site :"
+msgstr ""
+
+#: aperodedenis301.py:1696
+msgid "fournit les dimensions de tous les appareils photos."
+msgstr ""
+
+#: aperodedenis301.py:1699 aperodedenis301.py:1757 aperodedenis301.py:1905
+msgid " Valider"
+msgstr ""
+
+#: aperodedenis301.py:1735 aperodedenis301.py:1861
+msgid "Marque de l'appareil : "
+msgstr ""
+
+#: aperodedenis301.py:1739
+msgid "Nom de la camera : "
+msgstr ""
+
+#: aperodedenis301.py:1743 aperodedenis301.py:1869
+msgid "Focale en mm:"
+msgstr ""
+
+#: aperodedenis301.py:1747 aperodedenis301.py:1873
+msgid "Focale équivalente 35mm :"
+msgstr ""
+
+#: aperodedenis301.py:1751
+msgid "Nombre d'images à conserver par seconde :"
+msgstr ""
+
+#: aperodedenis301.py:1793 aperodedenis301.py:1816
+msgid "linéaire"
+msgstr ""
+
+#: aperodedenis301.py:1794
+msgid "cubique"
+msgstr ""
+
+#: aperodedenis301.py:1797
+msgid " Choisir la méthode d'interpolation "
+msgstr ""
+
+#: aperodedenis301.py:1799
+msgid " Choisir le pas du maillage "
+msgstr ""
+
+#: aperodedenis301.py:1804 aperodedenis301.py:1837
+msgid "Valider "
+msgstr ""
+
+#: aperodedenis301.py:1833
+msgid "Choisir profil à afficher "
+msgstr ""
+
+#: aperodedenis301.py:1840
+msgid "Annuler "
+msgstr ""
+
+#: aperodedenis301.py:1861
+msgid "Modification des Exif"
+msgstr ""
+
+#: aperodedenis301.py:1865
+msgid "Modèle de l'appareil: "
+msgstr ""
+
+#: aperodedenis301.py:1878
+msgid "Valider et mettre à jour"
+msgstr ""
+
+#: aperodedenis301.py:1900
+msgid "Indiquer le nombre de photos à retenir."
+msgstr ""
+
+#: aperodedenis301.py:1901
+msgid ""
+"Un nouveau chantier sera créé avec les photos ayant, par paire, le plus de "
+"points homologues"
+msgstr ""
+
+#: aperodedenis301.py:1902
+msgid "Ce choix est différent du nombre moyen de points homologues par photo."
+msgstr ""
+
+#: aperodedenis301.py:1923
+msgid "MicMac est une réalisation de l'IGN"
+msgstr ""
+
+#: aperodedenis301.py:2210
+msgid "Quelles options par défaut utiliser pour les nouveaux chantiers ?"
+msgstr ""
+
+#: aperodedenis301.py:2211
+msgid "Les options par défaut concernent :"
+msgstr ""
+
+#: aperodedenis301.py:2212
+msgid "Tapioca : All, MulScale, line ,les échelles et delta"
+msgstr ""
+
+#: aperodedenis301.py:2213
+msgid "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas"
+msgstr ""
+
+#: aperodedenis301.py:2214
+msgid "Malt    : mode, zoom final, nombre de photos autour de la maîtresse"
+msgstr ""
+
+#: aperodedenis301.py:2215
+msgid "Tawny et ses options en saisie libre"
+msgstr ""
+
+#: aperodedenis301.py:2216
+msgid "C3DC    : mode (Statue ou QuickMac)"
+msgstr ""
+
+#: aperodedenis301.py:2252
+msgid "Pas de répertoire pour les photos"
+msgstr ""
+
+#: aperodedenis301.py:2344 aperodedenis301.py:2366
+msgid "Enregistrer le chantier ?"
+msgstr ""
+
+#: aperodedenis301.py:2345 aperodedenis301.py:2367
+msgid "Chantier non encore enregistré. Voulez-vous l'enregistrer ?"
+msgstr ""
+
+#: aperodedenis301.py:2346 aperodedenis301.py:2354 aperodedenis301.py:2368
+#: aperodedenis301.py:2375 aperodedenis301.py:8272
+msgid "Enregistrer"
+msgstr ""
+
+#: aperodedenis301.py:2347 aperodedenis301.py:2355 aperodedenis301.py:2369
+#: aperodedenis301.py:2376 aperodedenis301.py:8272
+msgid "Ne pas enregistrer."
+msgstr ""
+
+#: aperodedenis301.py:2349 aperodedenis301.py:2357 aperodedenis301.py:2371
+#: aperodedenis301.py:2378 aperodedenis301.py:8274
+msgid "Chantier précédent enregistré : %s"
+msgstr ""
+
+#: aperodedenis301.py:2352 aperodedenis301.py:2373 aperodedenis301.py:8270
+msgid "Enregistrer le chantier %s ?"
+msgstr ""
+
+#: aperodedenis301.py:2353 aperodedenis301.py:2374 aperodedenis301.py:8271
+msgid ""
+"Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?"
+msgstr ""
+
+#: aperodedenis301.py:2379
+msgid "Choisir un chantier."
+msgstr ""
+
+#: aperodedenis301.py:2381
+msgid "Aucun chantier choisi."
+msgstr ""
+
+#: aperodedenis301.py:2389
+msgid "Chantier choisi %s corrompu. Abandon."
+msgstr ""
+
+#: aperodedenis301.py:2393
+msgid "Chantier enregistré"
+msgstr ""
+
+#: aperodedenis301.py:2398
+msgid "Indiquer les photos à traiter avant d'enregistrer le chantier."
+msgstr ""
+
+#: aperodedenis301.py:2408
+msgid "Commencer par choisir les photos"
+msgstr ""
+
+#: aperodedenis301.py:2408
+msgid "Il n'a pas encore de nom, il ne peut être renommé."
+msgstr ""
+
+#: aperodedenis301.py:2408
+msgid "Le chantier est en cours de définition."
+msgstr ""
+
+#: aperodedenis301.py:2410
+msgid "Nouveau nom ou nouveau chemin pour le chantier %s :"
+msgstr ""
+
+#: aperodedenis301.py:2411
+msgid "Tout chemin relatif au chemin actuel est valide"
+msgstr ""
+
+#: aperodedenis301.py:2412
+msgid "Un chemin absolu sur la même unité disque est valide"
+msgstr ""
+
+#: aperodedenis301.py:2413
+msgid "Aucun fichier de l'arborescence du chantier ne doit être ouvert."
+msgstr ""
+
+#: aperodedenis301.py:2424
+msgid "Le nom du nouveau chantier %s existe déjà. Abandon."
+msgstr ""
+
+#: aperodedenis301.py:2427
+msgid "Le nouveau répertoire "
+msgstr ""
+
+#: aperodedenis301.py:2427
+msgid "Utiliser l'Export-Import."
+msgstr ""
+
+#: aperodedenis301.py:2427
+msgid "implique un changement de disque."
+msgstr ""
+
+#: aperodedenis301.py:2430
+msgid "pour le chantier est déjà utilisé."
+msgstr ""
+
+#: aperodedenis301.py:2430 aperodedenis301.py:2433
+msgid "Choisissez un autre nom."
+msgstr ""
+
+#: aperodedenis301.py:2430 aperodedenis301.py:2433
+msgid "Le répertoire"
+msgstr ""
+
+#: aperodedenis301.py:2433
+msgid "désigne un sous-répertoire du chantier en cours."
+msgstr ""
+
+#: aperodedenis301.py:2445
+msgid "Le renommage du chantier ne peut se faire actuellement,"
+msgstr ""
+
+#: aperodedenis301.py:2445
+msgid "soit le nom fourni est incorrect,"
+msgstr ""
+
+#: aperodedenis301.py:2446
+msgid "soit un fichier du chantier est ouvert par une autre application."
+msgstr ""
+
+#: aperodedenis301.py:2447
+msgid "erreur : "
+msgstr ""
+
+#: aperodedenis301.py:2447
+msgid "soit l'explorateur explore l'arborescence."
+msgstr ""
+
+#: aperodedenis301.py:2462
+msgid "Chantier :"
+msgstr ""
+
+#: aperodedenis301.py:2462
+msgid "Répertoire : "
+msgstr ""
+
+#: aperodedenis301.py:2462
+msgid "renommé en :"
+msgstr ""
+
+#: aperodedenis301.py:2518
+msgid "Pas de chantier en cours"
+msgstr ""
+
+#: aperodedenis301.py:2520
+msgid "Patience : chantier en cours d'archivage..."
+msgstr ""
+
+#: aperodedenis301.py:2522
+msgid "Archive "
+msgstr ""
+
+#: aperodedenis301.py:2522
+msgid "Taille ="
+msgstr ""
+
+#: aperodedenis301.py:2522
+msgid "créée sous "
+msgstr ""
+
+#: aperodedenis301.py:2527
+msgid "Choisir le nom de l'archive à importer."
+msgstr ""
+
+#: aperodedenis301.py:2529
+msgid "Export"
+msgstr ""
+
+#: aperodedenis301.py:2530
+msgid "Chantier à importer"
+msgstr ""
+
+#: aperodedenis301.py:2532
+msgid "Importation abandonnée."
+msgstr ""
+
+#: aperodedenis301.py:2535
+msgid " n'est pas un fichier d'export valide"
+msgstr ""
+
+#: aperodedenis301.py:2536
+msgid "ou alors, sous ubuntu,il lui manque le droit d'exécution."
+msgstr ""
+
+#: aperodedenis301.py:2540
+msgid "Choisir le répertoire dans lequel recopier le chantier."
+msgstr ""
+
+#: aperodedenis301.py:2544
+msgid " n'est pas un répertoire valide."
+msgstr ""
+
+#: aperodedenis301.py:2547
+msgid "Patience !"
+msgstr ""
+
+#: aperodedenis301.py:2547
+msgid "Recopie en cours dans"
+msgstr ""
+
+#: aperodedenis301.py:2555
+msgid "Le répertoire destination"
+msgstr ""
+
+#: aperodedenis301.py:2555
+msgid "existe déjà. Abandon"
+msgstr ""
+
+#: aperodedenis301.py:2566 aperodedenis301.py:2575
+msgid "Erreur copie lors d'un import : "
+msgstr ""
+
+#: aperodedenis301.py:2567 aperodedenis301.py:2576
+msgid "L'importation a échouée. Erreur : "
+msgstr ""
+
+#: aperodedenis301.py:2591
+msgid " absent"
+msgstr ""
+
+#: aperodedenis301.py:2607
+msgid "Chantier importé :"
+msgstr ""
+
+#: aperodedenis301.py:2607
+msgid "Répertoire :"
+msgstr ""
+
+#: aperodedenis301.py:2607
+msgid "Vous pouvez le renommer si  besoin."
+msgstr ""
+
+#: aperodedenis301.py:2610
+msgid "Version de MicMac avant l'import : %s"
+msgstr ""
+
+#: aperodedenis301.py:2611
+msgid "Version de MicMac : %s"
+msgstr ""
+
+#: aperodedenis301.py:2614
+msgid "erreur affichage version lors de l'import d'un chantier : "
+msgstr ""
+
+#: aperodedenis301.py:2616
+msgid "Anomalie lors de l'importation : "
+msgstr ""
+
+#: aperodedenis301.py:2624
+msgid "erreur copie fichier param chantier : %(param)s vers %(rep)s erreur="
+msgstr ""
+
+#: aperodedenis301.py:2627
+msgid "Erreur lors de la copie du fichier paramètre chantier"
+msgstr ""
+
+#: aperodedenis301.py:2627
+msgid "erreur :"
+msgstr ""
+
+#: aperodedenis301.py:2627
+msgid "vers"
+msgstr ""
+
+#: aperodedenis301.py:2648
+msgid "Répertoire des photos :"
+msgstr ""
+
+#: aperodedenis301.py:2650
+msgid "Répertoire de la vidéo :"
+msgstr ""
+
+#: aperodedenis301.py:2652
+msgid "Aucune photo sélectionnée."
+msgstr ""
+
+#: aperodedenis301.py:2655
+msgid " photos sélectionnées"
+msgstr ""
+
+#: aperodedenis301.py:2655
+msgid "(sans calibration si tapas executé) : "
+msgstr ""
+
+#: aperodedenis301.py:2657
+msgid " photos sélectionnées : "
+msgstr ""
+
+#: aperodedenis301.py:2660
+msgid "ATTENTION : plusieurs extensions différentes dans les photos choisies !"
+msgstr ""
+
+#: aperodedenis301.py:2660
+msgid "Le traitement ne se fera que sur un type de fichier."
+msgstr ""
+
+#: aperodedenis301.py:2665 aperodedenis301.py:2679 aperodedenis301.py:2718
+msgid "Mode : "
+msgstr ""
+
+#: aperodedenis301.py:2667 aperodedenis301.py:2669
+msgid "Echelle 1 : "
+msgstr ""
+
+#: aperodedenis301.py:2670
+msgid "Echelle 2 : "
+msgstr ""
+
+#: aperodedenis301.py:2672
+msgid "Echelle : "
+msgstr ""
+
+#: aperodedenis301.py:2673
+msgid "Delta : "
+msgstr ""
+
+#: aperodedenis301.py:2681
+msgid "Nombre de photos pour calibration intrinsèque : "
+msgstr ""
+
+#: aperodedenis301.py:2683
+msgid "Ces photos servent uniquement à la calibration."
+msgstr ""
+
+#: aperodedenis301.py:2685
+msgid "Arrêt demandé après Tapas"
+msgstr ""
+
+#: aperodedenis301.py:2691
+msgid "Calibration présente"
+msgstr ""
+
+#: aperodedenis301.py:2694
+msgid "Calibration annulée : distance=0"
+msgstr ""
+
+#: aperodedenis301.py:2696
+msgid "Calibration incomplète :"
+msgstr ""
+
+#: aperodedenis301.py:2708
+msgid "C3DC : Masque 3D"
+msgstr ""
+
+#: aperodedenis301.py:2712
+msgid "La version installée de Micmac n'autorise pas les masques en 3D"
+msgstr ""
+
+#: aperodedenis301.py:2721
+msgid "Pas d'image maîtresse"
+msgstr ""
+
+#: aperodedenis301.py:2723
+msgid "Image maîtresse : "
+msgstr ""
+
+#: aperodedenis301.py:2725 aperodedenis301.py:4137
+msgid " images maîtresses"
+msgstr ""
+
+#: aperodedenis301.py:2727
+msgid "1 masque"
+msgstr ""
+
+#: aperodedenis301.py:2729 aperodedenis301.py:4140
+msgid "Pas de masque."
+msgstr ""
+
+#: aperodedenis301.py:2731 aperodedenis301.py:4146
+msgid " masques"
+msgstr ""
+
+#: aperodedenis301.py:2732
+msgid "2 fois %s photos utiles autour de la maîtresse"
+msgstr ""
+
+#: aperodedenis301.py:2736
+msgid "Tawny lancé aprés Malt"
+msgstr ""
+
+#: aperodedenis301.py:2738
+msgid "arrêt au zoom : "
+msgstr ""
+
+#: aperodedenis301.py:2743
+msgid "Chantier en cours de définition."
+msgstr ""
+
+#: aperodedenis301.py:2747
+msgid "Chantier : "
+msgstr ""
+
+#: aperodedenis301.py:2754
+msgid "Chemin du chantier :"
+msgstr ""
+
+#: aperodedenis301.py:2756
+msgid "Chantier en attente d'enregistrement."
+msgstr ""
+
+#: aperodedenis301.py:2758
+msgid "Chantier enregistré."
+msgstr ""
+
+#: aperodedenis301.py:2760
+msgid "Options du chantier modifiables."
+msgstr ""
+
+#: aperodedenis301.py:2762
+msgid "Chantier interrompu suite à erreur."
+msgstr ""
+
+#: aperodedenis301.py:2762
+msgid "Relancer micmac."
+msgstr ""
+
+#: aperodedenis301.py:2764
+msgid "Options de Malt/C3DC modifiables."
+msgstr ""
+
+#: aperodedenis301.py:2766
+msgid "Chantier terminé."
+msgstr ""
+
+#: aperodedenis301.py:2768
+msgid "Chantier exécuté puis débloqué."
+msgstr ""
+
+#: aperodedenis301.py:2774
+msgid "Nuage de point non densifié généré après Tapas."
+msgstr ""
+
+#: aperodedenis301.py:2778
+msgid "Nuage de point densifié généré après %s"
+msgstr ""
+
+#: aperodedenis301.py:2781
+msgid "Aucun nuage de point généré."
+msgstr ""
+
+#: aperodedenis301.py:2788
+msgid "Les caractéristiques du chantier précédent"
+msgstr ""
+
+#: aperodedenis301.py:2788
+msgid "n'ont pas pu être lues correctement."
+msgstr ""
+
+#: aperodedenis301.py:2789
+msgid ""
+"Le fichier des paramètres est probablement incorrect ou vous avez changé la "
+"version de l'interface."
+msgstr ""
+
+#: aperodedenis301.py:2790
+msgid "Certaines fonctions seront peut_être défaillantes."
+msgstr ""
+
+#: aperodedenis301.py:2791
+msgid "Désolé pour l'incident."
+msgstr ""
+
+#: aperodedenis301.py:2792 aperodedenis301.py:5375
+msgid "Erreur : "
+msgstr ""
+
+#: aperodedenis301.py:2820 aperodedenis301.py:2821 aperodedenis301.py:2824
+msgid "Toutes les photos"
+msgstr ""
+
+#: aperodedenis301.py:2823
+msgid "Toutes les photos utiles"
+msgstr ""
+
+#: aperodedenis301.py:2824
+msgid "sans les %s photos pour calibration intrinseque"
+msgstr ""
+
+#: aperodedenis301.py:2830 aperodedenis301.py:2841 aperodedenis301.py:2851
+#: aperodedenis301.py:2868 aperodedenis301.py:2892 aperodedenis301.py:2916
+#: aperodedenis301.py:2931 aperodedenis301.py:2942 aperodedenis301.py:7784
+#: aperodedenis301.py:7801
+msgid "Fermer"
+msgstr ""
+
+#: aperodedenis301.py:2835
+msgid "Aucun point GPS saisi."
+msgstr ""
+
+#: aperodedenis301.py:2838
+msgid "Affichage des photos avec points GPS"
+msgstr ""
+
+#: aperodedenis301.py:2840
+msgid "seules les photos avec points sont montrées."
+msgstr ""
+
+#: aperodedenis301.py:2848
+msgid "Liste des images maîtresses et des masques"
+msgstr ""
+
+#: aperodedenis301.py:2850
+msgid "Images maîtresses et masques"
+msgstr ""
+
+#: aperodedenis301.py:2854
+msgid "Pas de maîtresses définies pour ce chantier"
+msgstr ""
+
+#: aperodedenis301.py:2859
+msgid "Pas de masque 3D pour ce chantier."
+msgstr ""
+
+#: aperodedenis301.py:2866
+msgid "Visaliser le masque 3D"
+msgstr ""
+
+#: aperodedenis301.py:2870
+msgid "Affichage du masque 3D :"
+msgstr ""
+
+#: aperodedenis301.py:2871
+msgid "Les points blancs du nuage sont dans le masque"
+msgstr ""
+
+#: aperodedenis301.py:2872
+msgid "Ce masque C3DC a la priorité sur le masque 2D de Malt"
+msgstr ""
+
+#: aperodedenis301.py:2873
+msgid "ATTENTION : FERMER la fenêtre 3D pour continuer"
+msgstr ""
+
+#: aperodedenis301.py:2885
+msgid "horizontale"
+msgstr ""
+
+#: aperodedenis301.py:2887
+msgid "verticale"
+msgstr ""
+
+#: aperodedenis301.py:2889
+msgid "Visualiser l'image maîtresse et le plan horizontal ou vertical"
+msgstr ""
+
+#: aperodedenis301.py:2891
+msgid "Zone plane "
+msgstr ""
+
+#: aperodedenis301.py:2897
+msgid "Pas de plan horizontal ou vertical défini pour ce chantier"
+msgstr ""
+
+#: aperodedenis301.py:2907
+msgid "HORIZONTALE"
+msgstr ""
+
+#: aperodedenis301.py:2910
+msgid "VERTICALE"
+msgstr ""
+
+#: aperodedenis301.py:2913
+msgid "Affichage des photos avec ligne horizontale ou verticale"
+msgstr ""
+
+#: aperodedenis301.py:2915
+msgid "ligne "
+msgstr ""
+
+#: aperodedenis301.py:2919
+msgid "Pas de ligne horizontale ou verticale définie pour ce chantier"
+msgstr ""
+
+#: aperodedenis301.py:2923
+msgid "Pas de distance définie pour ce chantier."
+msgstr ""
+
+#: aperodedenis301.py:2928
+msgid "Visualiser les photos avec distance"
+msgstr ""
+
+#: aperodedenis301.py:2930
+msgid "Valeur de la distance : "
+msgstr ""
+
+#: aperodedenis301.py:2936
+msgid "Pas de photos pour la calibration intrinsèque par Tapas."
+msgstr ""
+
+#: aperodedenis301.py:2939
+msgid "Les photos pour calibration intrinsèque (Tapas)"
+msgstr ""
+
+#: aperodedenis301.py:2941
+msgid "Calibration intrinsèque"
+msgstr ""
+
+#: aperodedenis301.py:2966
+msgid "Pas de trace de la trace !"
+msgstr ""
+
+#: aperodedenis301.py:2977
+msgid "Pas de nuage de points aprés Tapas."
+msgstr ""
+
+#: aperodedenis301.py:2979
+msgid "Programme pour ouvrir les .PLY non trouvéé."
+msgstr ""
+
+#: aperodedenis301.py:2984 aperodedenis301.py:5030
+msgid "Pas de nuage de points aprés Malt ou C3DC."
+msgstr ""
+
+#: aperodedenis301.py:2986 aperodedenis301.py:5032
+msgid "Programme pour ouvrir les .PLY non trouvé."
+msgstr ""
+
+#: aperodedenis301.py:2992
+msgid "Répertoire bin de MicMac : "
+msgstr ""
+
+#: aperodedenis301.py:2994
+msgid "Version MicMac :"
+msgstr ""
+
+#: aperodedenis301.py:2996
+msgid "Outil exiftool :"
+msgstr ""
+
+#: aperodedenis301.py:2998
+msgid "Outil convert d'ImageMagick :"
+msgstr ""
+
+#: aperodedenis301.py:3000
+msgid "Outil pour afficher les .ply :"
+msgstr ""
+
+#: aperodedenis301.py:3002
+msgid "Outil pour décompacter les vidéos (ffmpeg):"
+msgstr ""
+
+#: aperodedenis301.py:3004
+msgid "Répertoire d'AperoDeDenis :"
+msgstr ""
+
+#: aperodedenis301.py:3006
+msgid "Répertoire des paramètres :"
+msgstr ""
+
+#: aperodedenis301.py:3016
+msgid "Répertoire bin sous MICMAC : "
+msgstr ""
+
+#: aperodedenis301.py:3024
+msgid "Désigner le répertoire bin sous Micmac "
+msgstr ""
+
+#: aperodedenis301.py:3027 aperodedenis301.py:3034
+msgid "Répertoire bin de Micmac :"
+msgstr ""
+
+#: aperodedenis301.py:3027 aperodedenis301.py:3034 aperodedenis301.py:3129
+#: aperodedenis301.py:3150 aperodedenis301.py:3170 aperodedenis301.py:3191
+msgid "Abandon, pas de changement."
+msgstr ""
+
+#: aperodedenis301.py:3032
+msgid ""
+"Le chemin du répertoire bin de micmac ne doit pas comporter le caractère "
+"'espace'."
+msgstr ""
+
+#: aperodedenis301.py:3033
+msgid "Renommer le répertoire de MicMac."
+msgstr ""
+
+#: aperodedenis301.py:3048 aperodedenis301.py:3075
+msgid "Le répertoire %s ne contient pas le fichier mm3d.exe. Abandon"
+msgstr ""
+
+#: aperodedenis301.py:3088
+msgid "Nouveau répertoire de Micmac :"
+msgstr ""
+
+#: aperodedenis301.py:3093
+msgid "Le programme mm3d est présent mais ne peut s'exécuter."
+msgstr ""
+
+#: aperodedenis301.py:3093
+msgid "Vérifier si la version est compatible avec le système. :"
+msgstr ""
+
+#: aperodedenis301.py:3095
+msgid "Abandon."
+msgstr ""
+
+#: aperodedenis301.py:3095
+msgid "Le programme mm3d est absent du répertoire choisi :"
+msgstr ""
+
+#: aperodedenis301.py:3095
+msgid "Répertoire bin sous MicMac incorrect."
+msgstr ""
+
+#: aperodedenis301.py:3100
+msgid "Chemin de exiftool :"
+msgstr ""
+
+#: aperodedenis301.py:3102
+msgid "Chemin de convert d'image Magick :"
+msgstr ""
+
+#: aperodedenis301.py:3111
+msgid "Pas de version identifiée de MicMac"
+msgstr ""
+
+#: aperodedenis301.py:3112
+msgid "Nouvelle version de MicMac : "
+msgstr ""
+
+#: aperodedenis301.py:3119
+msgid "Pas de chemin pour le programme exiftool"
+msgstr ""
+
+#: aperodedenis301.py:3121 aperodedenis301.py:3134
+msgid "Programme exiftool :"
+msgstr ""
+
+#: aperodedenis301.py:3127
+msgid "Recherche exiftool"
+msgstr ""
+
+#: aperodedenis301.py:3129
+msgid "Fichier exiftool inchangé :"
+msgstr ""
+
+#: aperodedenis301.py:3140
+msgid "Pas de chemin pour le programme convert d'ImageMagick"
+msgstr ""
+
+#: aperodedenis301.py:3142 aperodedenis301.py:3155
+msgid "Programme convert :"
+msgstr ""
+
+#: aperodedenis301.py:3148
+msgid "Recherche convert"
+msgstr ""
+
+#: aperodedenis301.py:3150
+msgid "Fichier convert inchangé :"
+msgstr ""
+
+#: aperodedenis301.py:3161
+msgid "Pas de chemin pour le programme ouvrant les .PLY"
+msgstr ""
+
+#: aperodedenis301.py:3163 aperodedenis301.py:3175
+msgid "Programme ouvrant les .PLY :"
+msgstr ""
+
+#: aperodedenis301.py:3167
+msgid "meshlab ou CloudCompare"
+msgstr ""
+
+#: aperodedenis301.py:3168
+msgid "Recherche fichier Meshlab sous VCG, ou CloudCompare"
+msgstr ""
+
+#: aperodedenis301.py:3170
+msgid "Fichier Meshlab ou cloud compare :"
+msgstr ""
+
+#: aperodedenis301.py:3181
+msgid "Pas de chemin pour le programme Ffmpeg"
+msgstr ""
+
+#: aperodedenis301.py:3183 aperodedenis301.py:3196
+msgid "Programme ffmpeg :"
+msgstr ""
+
+#: aperodedenis301.py:3189
+msgid "Recherche ffmpeg"
+msgstr ""
+
+#: aperodedenis301.py:3191
+msgid "Fichier ffmpeg inchangé :"
+msgstr ""
+
+#: aperodedenis301.py:3202
+msgid "Tacky message au lancement activé"
+msgstr ""
+
+#: aperodedenis301.py:3204
+msgid "Tacky message au lancement désactivé"
+msgstr ""
+
+#: aperodedenis301.py:3208
+msgid "Sélectionnez la langue à utiliser. L'application sera redémarée."
+msgstr ""
+
+#: aperodedenis301.py:3216
+msgid "Appliquer"
+msgstr ""
+
+#: aperodedenis301.py:3219 aperodedenis301.py:3225
+msgid "Français"
+msgstr ""
+
+#: aperodedenis301.py:3220
+msgid "Anglais"
+msgstr ""
+
+#: aperodedenis301.py:3245
+msgid ""
+"Avant de choisir les photos associer le répertoire bin de micmac (Menu "
+"Paramétrage\\associer le répertoire bin de MicMac)."
+msgstr ""
+
+#: aperodedenis301.py:3249
+msgid ""
+"Avant de choisir les photos associer le chemin du programme exiftool (Menu "
+"trage\\Associer exiftool)."
+msgstr ""
+
+#: aperodedenis301.py:3257
+msgid "Nouvelles photos pour le meme chantier"
+msgstr ""
+
+#: aperodedenis301.py:3258
+msgid "Choisir de nouvelles photos réinitialisera le chantier."
+msgstr ""
+
+#: aperodedenis301.py:3259
+msgid "Les traces et l'arborescence des calculs seront effacées."
+msgstr ""
+
+#: aperodedenis301.py:3260
+msgid "Les options compatibles avec les nouvelles photos seront conservées."
+msgstr ""
+
+#: aperodedenis301.py:3262
+msgid "Réinitialiser le chantier"
+msgstr ""
+
+#: aperodedenis301.py:3263
+msgid "Abandon, le chantier n'est pas modifié."
+msgstr ""
+
+#: aperodedenis301.py:3273
+msgid "Photos"
+msgstr ""
+
+#: aperodedenis301.py:3277
+msgid "Abandon, aucune sélection de fichier image,"
+msgstr ""
+
+#: aperodedenis301.py:3277 aperodedenis301.py:3341 aperodedenis301.py:5798
+msgid "le répertoire et les photos restent inchangés."
+msgstr ""
+
+#: aperodedenis301.py:3281 aperodedenis301.py:3304
+msgid "Aucune extension acceptable pour des images. Abandon."
+msgstr ""
+
+#: aperodedenis301.py:3285
+msgid "Impossible dans cette version. Abandon."
+msgstr ""
+
+#: aperodedenis301.py:3285
+msgid "Plusieurs extensions différentes :"
+msgstr ""
+
+#: aperodedenis301.py:3290
+msgid "Info : format des photos"
+msgstr ""
+
+#: aperodedenis301.py:3290
+msgid "La version actuelle ne traite que les photos au format JPG,"
+msgstr ""
+
+#: aperodedenis301.py:3290
+msgid "or le format des photos est : "
+msgstr ""
+
+#: aperodedenis301.py:3291
+msgid "les photos vont être converties au format JPG."
+msgstr ""
+
+#: aperodedenis301.py:3292
+msgid "Convertir en JPG"
+msgstr ""
+
+#: aperodedenis301.py:3293 aperodedenis301.py:3321
+msgid "Abandonner"
+msgstr ""
+
+#: aperodedenis301.py:3296
+msgid "(Menu Paramétrage)"
+msgstr ""
+
+#: aperodedenis301.py:3296
+msgid "Désigner l'outil de conversation 'convert' d'ImageMagick"
+msgstr ""
+
+#: aperodedenis301.py:3318
+msgid "ATTENTION !"
+msgstr ""
+
+#: aperodedenis301.py:3318
+msgid ""
+"ATTENTION : des points GPS ont été précedemment placés sur des photos non "
+"choisies pour ce chantier."
+msgstr ""
+
+#: aperodedenis301.py:3319
+msgid ""
+"Les emplacements de ces points vont être supprimés si vous validez cette "
+"sélection de photos."
+msgstr ""
+
+#: aperodedenis301.py:3320
+msgid "Valider la sélection de photos"
+msgstr ""
+
+#: aperodedenis301.py:3329
+msgid "Copie des photos en cours... Patience"
+msgstr ""
+
+#: aperodedenis301.py:3338 aperodedenis301.py:5795
+msgid "Impossible de créer le répertoire de travail."
+msgstr ""
+
+#: aperodedenis301.py:3338 aperodedenis301.py:5795
+msgid "Vérifier les droits en écriture sous le répertoire des photos"
+msgstr ""
+
+#: aperodedenis301.py:3341 aperodedenis301.py:5798
+msgid "Aucun JPG, PNG, BMP, TIF, ou GIF  sélectionné,"
+msgstr ""
+
+#: aperodedenis301.py:3354
+msgid "L'outil exiftool n'est pas localisé : controle des photos impossible."
+msgstr ""
+
+#: aperodedenis301.py:3354 aperodedenis301.py:8122
+msgid "Désigner le fichier exiftool (menu paramétrage)."
+msgstr ""
+
+#: aperodedenis301.py:3356
+msgid "Les focales sont absentes des exif."
+msgstr ""
+
+#: aperodedenis301.py:3356
+msgid "Mettez à jour les exifs avant de lancer MicMac."
+msgstr ""
+
+#: aperodedenis301.py:3357
+msgid "Utiliser le menu Outils/Modifier l'exif des photos."
+msgstr ""
+
+#: aperodedenis301.py:3359
+msgid "Attention : Les focales des photos ou ne sont pas toutes identiques."
+msgstr ""
+
+#: aperodedenis301.py:3362
+msgid "Attention : les dimensions des photos ne sont pas toutes identiques."
+msgstr ""
+
+#: aperodedenis301.py:3363
+msgid "Le traitement par MicMac ne sera peut-être pas possible."
+msgstr ""
+
+#: aperodedenis301.py:3375
+msgid "De nouvelles photos ont été sélectionnés sur un chantier pré-existant."
+msgstr ""
+
+#: aperodedenis301.py:3376
+msgid ""
+"Les anciennes options compatibles avec les nouvelles photos ont été "
+"conservées."
+msgstr ""
+
+#: aperodedenis301.py:3426
+msgid "Causes possibles : manque d'espace disque ou droits insuffisants."
+msgstr ""
+
+#: aperodedenis301.py:3426
+msgid "dans le répertoire "
+msgstr ""
+
+#: aperodedenis301.py:3426
+msgid "erreur lors de la copie du fichier"
+msgstr ""
+
+#: aperodedenis301.py:3426
+msgid "libellé de l'erreur :"
+msgstr ""
+
+#: aperodedenis301.py:3476
+msgid "erreur controle des photos : "
+msgstr ""
+
+#: aperodedenis301.py:3506
+msgid "Impossible de créer le répertoire de travail : erreur = "
+msgstr ""
+
+#: aperodedenis301.py:3520
+msgid "Le chantier est interrompu suite à incident. "
+msgstr ""
+
+#: aperodedenis301.py:3521
+msgid ""
+"Si besoin créer un nouveau chantier ou débloquer le chantier en lancant "
+"micmac."
+msgstr ""
+
+#: aperodedenis301.py:3531
+msgid "Le chantier %(x)s est terminé."
+msgstr ""
+
+#: aperodedenis301.py:3532
+msgid "Le chantier est terminé après "
+msgstr ""
+
+#: aperodedenis301.py:3533
+msgid "Vous pouvez :"
+msgstr ""
+
+#: aperodedenis301.py:3534
+msgid " - Nettoyer le chantier pour modifier les options de Tapioca et Tapas"
+msgstr ""
+
+#: aperodedenis301.py:3535
+msgid ""
+" - Conserver les traitements de Tapioca/Tapas pour modifier les options de "
+"Malt ou C3DC"
+msgstr ""
+
+#: aperodedenis301.py:3536
+msgid " - Ne rien faire."
+msgstr ""
+
+#: aperodedenis301.py:3537
+msgid "Modifier les options de Tapioca et Tapas"
+msgstr ""
+
+#: aperodedenis301.py:3538
+msgid "Modifier les options de Malt ou C3DC"
+msgstr ""
+
+#: aperodedenis301.py:3539
+msgid "Ne rien faire"
+msgstr ""
+
+#: aperodedenis301.py:3567 aperodedenis301.py:4060
+msgid "Nombre de photos choisies : "
+msgstr ""
+
+#: aperodedenis301.py:3593
+msgid "Suppression du masque 3D : la version de MicMac ne comporte pas C3DC"
+msgstr ""
+
+#: aperodedenis301.py:3602
+msgid "lancer Micmac pour en constituer un."
+msgstr ""
+
+#: aperodedenis301.py:3602
+msgid "pas de fichier AperiCloud.ply pour construire le masque :"
+msgstr ""
+
+#: aperodedenis301.py:3607 aperodedenis301.py:4256
+msgid "Masque 3D créé"
+msgstr ""
+
+#: aperodedenis301.py:3609
+msgid "Pas de masque 3D"
+msgstr ""
+
+#: aperodedenis301.py:3644 aperodedenis301.py:5111
+msgid "Option incorrecte :"
+msgstr ""
+
+#: aperodedenis301.py:3658
+msgid "Points GPS non conformes. Nom est absent ou en double. Vérifiez."
+msgstr ""
+
+#: aperodedenis301.py:3665 aperodedenis301.py:5970
+msgid "Nom"
+msgstr ""
+
+#: aperodedenis301.py:3684
+msgid "NomPhoto"
+msgstr ""
+
+#: aperodedenis301.py:3686 aperodedenis301.py:3691
+msgid "NomPoint"
+msgstr ""
+
+#: aperodedenis301.py:3712
+msgid "Pas de points GPS."
+msgstr ""
+
+#: aperodedenis301.py:3716
+msgid "%s points GPS placés"
+msgstr ""
+
+#: aperodedenis301.py:3717
+msgid "pour %s points GPS définis"
+msgstr ""
+
+#: aperodedenis301.py:3719
+msgid ""
+"Attention : il faut au moins 3 points pour qu'ils soient pris en compte."
+msgstr ""
+
+#: aperodedenis301.py:3722
+msgid "Attention : chaque points doit être sur 2 photos au moins."
+msgstr ""
+
+#: aperodedenis301.py:3725
+msgid "Saisie incomplète : les points ne seront pas pris en compte"
+msgstr ""
+
+#: aperodedenis301.py:3740
+msgid "La ligne horizontale ou verticale ne comporte pas 2 points"
+msgstr ""
+
+#: aperodedenis301.py:3743
+msgid "Pas de maitre plan horizontal ou vertical"
+msgstr ""
+
+#: aperodedenis301.py:3747
+msgid "Pas de plan horizontal ou vertical"
+msgstr ""
+
+#: aperodedenis301.py:3752
+msgid "%(x)s Distance %(y)s invalide."
+msgstr ""
+
+#: aperodedenis301.py:3754
+msgid "Calibration annulée."
+msgstr ""
+
+#: aperodedenis301.py:3756
+msgid "%s Pas de distance."
+msgstr ""
+
+#: aperodedenis301.py:3762
+msgid "La distance n'est pas mesurée par 2 points repérés sur 2 photos."
+msgstr ""
+
+#: aperodedenis301.py:3765 aperodedenis301.py:3768
+msgid "La photo avec distance %s est absente."
+msgstr ""
+
+#: aperodedenis301.py:3770
+msgid "Pas de distance pour la calibration."
+msgstr ""
+
+#: aperodedenis301.py:3787
+msgid "Fichiers"
+msgstr ""
+
+#: aperodedenis301.py:3878
+msgid ""
+"L'échelle pour le mode All de Tapioca est invalide, une valeur par défaut, "
+"%s, est affectée."
+msgstr ""
+
+#: aperodedenis301.py:3882
+msgid "Echelle pour le mode All de Tapioca trop petite :"
+msgstr ""
+
+#: aperodedenis301.py:3882 aperodedenis301.py:3921
+msgid "Minimum = 50"
+msgstr ""
+
+#: aperodedenis301.py:3894
+msgid ""
+"L'échelle 1 pour MulScale de Tapioca est invalide, une valeur par défaut, "
+"%s, est affectée."
+msgstr ""
+
+#: aperodedenis301.py:3898
+msgid "Elle est mise à 300."
+msgstr ""
+
+#: aperodedenis301.py:3898
+msgid "L'échelle 1 de MulScale ne doit pas être -1."
+msgstr ""
+
+#: aperodedenis301.py:3905
+msgid "L'échelle 1 pour le mode MulScale de Tapioca est trop petite : "
+msgstr ""
+
+#: aperodedenis301.py:3905
+msgid "Minimum = 50, maximum conseillé : 300"
+msgstr ""
+
+#: aperodedenis301.py:3917
+msgid ""
+"L'échelle 2 pour le mode  MulScale de Tapioca est invalide, une valeur par "
+"défaut, %s, est affectée."
+msgstr ""
+
+#: aperodedenis301.py:3921
+msgid "L'échelle 2 pour le mode MulScale de Tapioca est trop petite :"
+msgstr ""
+
+#: aperodedenis301.py:3929
+msgid "L'échelle 2 de MulScale pour tapioca"
+msgstr ""
+
+#: aperodedenis301.py:3929
+msgid "plus petite que l'échelle 1 :"
+msgstr ""
+
+#: aperodedenis301.py:3941
+msgid ""
+"L'échelle pour le mode Line de tapioca est invalide, une valeur par défaut, "
+"%s, est affectée."
+msgstr ""
+
+#: aperodedenis301.py:3945
+msgid "Echelle pour le mode Line de tapioca trop petite : "
+msgstr ""
+
+#: aperodedenis301.py:3957
+msgid "La valeur de delta pour le mode Line de Tapioca est invalide,"
+msgstr ""
+
+#: aperodedenis301.py:3957
+msgid "une valeur par défaut, %s, est affectée."
+msgstr ""
+
+#: aperodedenis301.py:3961
+msgid "Delta trop petit :"
+msgstr ""
+
+#: aperodedenis301.py:3961
+msgid "Minimum = 1"
+msgstr ""
+
+#: aperodedenis301.py:3968
+msgid "Le zoom final pour MALT n'est pas 1,2,4 ou 8 : %s"
+msgstr ""
+
+#: aperodedenis301.py:3982
+msgid ""
+"Le nombre de photos utiles autour de l'image maîtresse est trop petit : %s"
+msgstr ""
+
+#: aperodedenis301.py:3982 aperodedenis301.py:3984
+msgid "Malt mode Geomimage :"
+msgstr ""
+
+#: aperodedenis301.py:3984
+msgid "Il est mis à 1."
+msgstr ""
+
+#: aperodedenis301.py:3984
+msgid ""
+"Le nombre de photos utiles autour de l'image centrale n'est pas numérique : "
+msgstr ""
+
+#: aperodedenis301.py:3992
+msgid "La photo %s n'existe plus."
+msgstr ""
+
+#: aperodedenis301.py:3997
+msgid "Inutile et ralenti le traitement. Modifier."
+msgstr ""
+
+#: aperodedenis301.py:4001
+msgid ", est plus grande que la dimension maxi de la photo : "
+msgstr ""
+
+#: aperodedenis301.py:4001
+msgid "L'échelle pour le mode All de tapioca = "
+msgstr ""
+
+#: aperodedenis301.py:4005
+msgid "L'échelle 2 pour le mode MulScale de tapioca= "
+msgstr ""
+
+#: aperodedenis301.py:4005 aperodedenis301.py:4009
+msgid "est plus grande que la dimension maxi de la photo :"
+msgstr ""
+
+#: aperodedenis301.py:4009
+msgid "L'échelle pour le mode Line de tapioca = "
+msgstr ""
+
+#: aperodedenis301.py:4044 aperodedenis301.py:4152 aperodedenis301.py:4448
+#: aperodedenis301.py:4534 aperodedenis301.py:4575 aperodedenis301.py:4616
+#: aperodedenis301.py:4647 aperodedenis301.py:4678
+msgid "Choisir d'abord les photos du chantier."
+msgstr ""
+
+#: aperodedenis301.py:4048
+msgid "Pour calibrer l'appareil photo"
+msgstr ""
+
+#: aperodedenis301.py:4049
+msgid "Quelques photos, convergentes, d'angles écartés"
+msgstr ""
+
+#: aperodedenis301.py:4049
+msgid "en jaune la calibration actuelle"
+msgstr ""
+
+#: aperodedenis301.py:4050
+msgid "Supprimer"
+msgstr ""
+
+#: aperodedenis301.py:4053
+msgid "Pas de photos de calibration intrinseque."
+msgstr ""
+
+#: aperodedenis301.py:4057
+msgid "Choix inchangé."
+msgstr ""
+
+#: aperodedenis301.py:4086
+msgid "Image maitresse avec masque"
+msgstr ""
+
+#: aperodedenis301.py:4101
+msgid "Choisir une ou plusieurs image(s) maîtresse(s)"
+msgstr ""
+
+#: aperodedenis301.py:4101
+msgid "Une info bulle informe de la présence d'un masque"
+msgstr ""
+
+#: aperodedenis301.py:4101
+msgid "en jaune : les maitresses actuelles"
+msgstr ""
+
+#: aperodedenis301.py:4102
+msgid "Supprimer les images maîtresses"
+msgstr ""
+
+#: aperodedenis301.py:4113
+msgid "Abandon. Choix inchangé."
+msgstr ""
+
+#: aperodedenis301.py:4132
+msgid "Image maitresse obligatoire pour GeomImage."
+msgstr ""
+
+#: aperodedenis301.py:4134
+msgid "image maîtresse = "
+msgstr ""
+
+#: aperodedenis301.py:4143
+msgid "un seul masque : "
+msgstr ""
+
+#: aperodedenis301.py:4148
+msgid "erreur dans miseAJour701_703 : "
+msgstr ""
+
+#: aperodedenis301.py:4157 aperodedenis301.py:4187
+msgid "Il faut au moins une image maîtresse pour définir un masque."
+msgstr ""
+
+#: aperodedenis301.py:4164
+msgid "Un masque existe déjà"
+msgstr ""
+
+#: aperodedenis301.py:4166 aperodedenis301.py:4197
+msgid "Choisir l'image pour le masque"
+msgstr ""
+
+#: aperodedenis301.py:4167
+msgid ""
+"Choisir une image maîtresse pour le masque\n"
+"en jaune = un masque existe"
+msgstr ""
+
+#: aperodedenis301.py:4198
+msgid "Choisir une image maîtresse pour le masque"
+msgstr ""
+
+#: aperodedenis301.py:4216
+msgid "pas de masque"
+msgstr ""
+
+#: aperodedenis301.py:4218
+msgid "Il faut une image maîtresse pour définir un masque."
+msgstr ""
+
+#: aperodedenis301.py:4258
+msgid "Abandon : pas de masque créé."
+msgstr ""
+
+#: aperodedenis301.py:4265
+msgid "Masque 3D supprimé."
+msgstr ""
+
+#: aperodedenis301.py:4285
+msgid "3 points minimum, chaque point doit être placé sur au moins 2 photos"
+msgstr ""
+
+#: aperodedenis301.py:4286
+msgid "La calibration par points GPS se fait aprés Tapas et avant Malt."
+msgstr ""
+
+#: aperodedenis301.py:4287
+msgid "Elle est prioritaire sur la calibration par axe, plan et métrique."
+msgstr ""
+
+#: aperodedenis301.py:4299
+msgid "Incertitude"
+msgstr ""
+
+#: aperodedenis301.py:4304
+msgid "Ajouter un point"
+msgstr ""
+
+#: aperodedenis301.py:4305
+msgid "Supprimer des points"
+msgstr ""
+
+#: aperodedenis301.py:4306
+msgid "Placer les points"
+msgstr ""
+
+#: aperodedenis301.py:4307
+msgid "Appliquer au "
+msgstr ""
+
+#: aperodedenis301.py:4307
+msgid "nuage non densifié"
+msgstr ""
+
+#: aperodedenis301.py:4363
+msgid "(ou si impossible : supprimer un point)"
+msgstr ""
+
+#: aperodedenis301.py:4363
+msgid "Agrandissez la fenêtre avant d'ajouter un point GPS !"
+msgstr ""
+
+#: aperodedenis301.py:4367
+msgid "Soyez raisonnable : pas plus de 30 points GPS !"
+msgstr ""
+
+#: aperodedenis301.py:4380
+msgid "Aucun point à supprimer !"
+msgstr ""
+
+#: aperodedenis301.py:4388
+msgid "Points à supprimer"
+msgstr ""
+
+#: aperodedenis301.py:4390 aperodedenis301.py:6766
+msgid "Multiselection possible."
+msgstr ""
+
+#: aperodedenis301.py:4392 aperodedenis301.py:6767 aperodedenis301.py:6776
+#: aperodedenis301.py:6782 aperodedenis301.py:7598 aperodedenis301.py:8474
+msgid "Annuler"
+msgstr ""
+
+#: aperodedenis301.py:4460
+msgid "Choisir une photo pour placer les points GPS : "
+msgstr ""
+
+#: aperodedenis301.py:4471
+msgid "avant"
+msgstr ""
+
+#: aperodedenis301.py:4479
+msgid "aprés ="
+msgstr ""
+
+#: aperodedenis301.py:4490
+msgid "Attention : des points portent le même nom : corriger !"
+msgstr ""
+
+#: aperodedenis301.py:4492
+msgid "Attention : un point n'a pas de nom. "
+msgstr ""
+
+#: aperodedenis301.py:4494
+msgid "controle points : "
+msgstr ""
+
+#: aperodedenis301.py:4505
+msgid "Lancer d'abord tapioca/tapas"
+msgstr ""
+
+#: aperodedenis301.py:4505
+msgid "pour obtenir un nuage non densifié."
+msgstr ""
+
+#: aperodedenis301.py:4512 aperodedenis301.py:4516
+msgid "Points GPS non conformes :"
+msgstr ""
+
+#: aperodedenis301.py:4519
+msgid "Patienter :"
+msgstr ""
+
+#: aperodedenis301.py:4519
+msgid "le nuage est en cours de calibration"
+msgstr ""
+
+#: aperodedenis301.py:4536
+msgid "Extrémité Ox"
+msgstr ""
+
+#: aperodedenis301.py:4536
+msgid "Origine Ox"
+msgstr ""
+
+#: aperodedenis301.py:4543
+msgid "Placer une ligne horizontale sur une seule photo : "
+msgstr ""
+
+#: aperodedenis301.py:4567
+msgid "il faut  placer les 2 points."
+msgstr ""
+
+#: aperodedenis301.py:4583
+msgid "Placer une ligne verticale sur une seule photo :  : "
+msgstr ""
+
+#: aperodedenis301.py:4594
+msgid "Extrémité Oy"
+msgstr ""
+
+#: aperodedenis301.py:4594
+msgid "Origine Oy"
+msgstr ""
+
+#: aperodedenis301.py:4608
+msgid "il faut  placer exactement 2 points."
+msgstr ""
+
+#: aperodedenis301.py:4620 aperodedenis301.py:4651
+msgid "Plan vertical"
+msgstr ""
+
+#: aperodedenis301.py:4622 aperodedenis301.py:4653
+msgid "Plan horizontal"
+msgstr ""
+
+#: aperodedenis301.py:4625
+msgid "Une photo pour placer le plan vertical : "
+msgstr ""
+
+#: aperodedenis301.py:4643
+msgid "Délimiter un plan vertical"
+msgstr ""
+
+#: aperodedenis301.py:4656
+msgid "Une photo pour placer le plan horizontal : "
+msgstr ""
+
+#: aperodedenis301.py:4674
+msgid "Délimiter un plan horizontal"
+msgstr ""
+
+#: aperodedenis301.py:4684
+msgid "Choisir deux fois une photo pour placer les 2 points  : "
+msgstr ""
+
+#: aperodedenis301.py:4700
+msgid ""
+"Il y a dèjà 2 images avec des points 'distance'. Supprimer les points sur "
+"une des 2 images."
+msgstr ""
+
+#: aperodedenis301.py:4717
+msgid "Le chantier %(chant)s est terminé après %(densif)s"
+msgstr ""
+
+#: aperodedenis301.py:4718
+msgid "Vous pouvez modifier les options puis relancer MicMac."
+msgstr ""
+
+#: aperodedenis301.py:4737
+msgid "Options incorrectes : corriger"
+msgstr ""
+
+#: aperodedenis301.py:4743
+msgid "Avec 2 photos MicMac construira difficilement un nuage de point dense."
+msgstr ""
+
+#: aperodedenis301.py:4743
+msgid "Utiliser l'échelle -1 dans Tapioca pour obtenir un nuage optimal."
+msgstr ""
+
+#: aperodedenis301.py:4744
+msgid "Avertissement : 2 photos seulement"
+msgstr ""
+
+#: aperodedenis301.py:4746 aperodedenis301.py:4766 aperodedenis301.py:4777
+#: aperodedenis301.py:4788
+msgid "Continuer"
+msgstr ""
+
+#: aperodedenis301.py:4759
+msgid ""
+"Controle des photos en cours....\n"
+"Patienter jusqu'à la fin du controle."
+msgstr ""
+
+#: aperodedenis301.py:4763
+msgid "Les dimensions des photos ne sont pas toutes identiques."
+msgstr ""
+
+#: aperodedenis301.py:4764
+msgid "Le traitement par MicMac est incertain."
+msgstr ""
+
+#: aperodedenis301.py:4766 aperodedenis301.py:4788
+msgid "Avertissement"
+msgstr ""
+
+#: aperodedenis301.py:4773
+msgid "Absence de focales"
+msgstr ""
+
+#: aperodedenis301.py:4774
+msgid "Certaines photos n'ont pas de focales."
+msgstr ""
+
+#: aperodedenis301.py:4775
+msgid "Le traitement echouera probablement."
+msgstr ""
+
+#: aperodedenis301.py:4776
+msgid "Mettre à jour les exifs (menu Outils)"
+msgstr ""
+
+#: aperodedenis301.py:4785
+msgid "Les focales des photos ne sont pas toutes identiques."
+msgstr ""
+
+#: aperodedenis301.py:4786
+msgid ""
+"Le traitement par MicMac est possible en utilisant une focale pour la "
+"calibration intrinsèque de Tapas."
+msgstr ""
+
+#: aperodedenis301.py:4787
+msgid "Cependant vous pouvez essayer sans cela."
+msgstr ""
+
+#: aperodedenis301.py:4794
+msgid "Pas assez de photos pour le traitement : il en faut au moins 2."
+msgstr ""
+
+#: aperodedenis301.py:4801
+msgid "Le chantier %s a été interrompu en cours d'exécution."
+msgstr ""
+
+#: aperodedenis301.py:4802
+msgid "Le chantier est interrompu."
+msgstr ""
+
+#: aperodedenis301.py:4802
+msgid "Vous pouvez le débloquer,"
+msgstr ""
+
+#: aperodedenis301.py:4803
+msgid "ce qui permettra de modifier les options et de le relancer."
+msgstr ""
+
+#: aperodedenis301.py:4804
+msgid "Débloquer le chantier"
+msgstr ""
+
+#: aperodedenis301.py:4810
+msgid "Chantier %s de nouveau modifiable, paramètrable et exécutable."
+msgstr ""
+
+#: aperodedenis301.py:4818
+msgid "Continuer le chantier %s après tapas ?"
+msgstr ""
+
+#: aperodedenis301.py:4819
+msgid "Le chantier est arrêté après tapas. Vous pouvez :"
+msgstr ""
+
+#: aperodedenis301.py:4820
+msgid " - lancer Malt, ou C3DC, pour obtenir un nuage dense"
+msgstr ""
+
+#: aperodedenis301.py:4821
+msgid " - débloquer le chantier pour modifier les paramètres de Tapioca/tapas"
+msgstr ""
+
+#: aperodedenis301.py:4822
+msgid " - ne rien faire"
+msgstr ""
+
+#: aperodedenis301.py:4823
+msgid "Lancer "
+msgstr ""
+
+#: aperodedenis301.py:4824
+msgid "Débloquer le chantier - garder les résultats"
+msgstr ""
+
+#: aperodedenis301.py:4827
+msgid "abandon de Malt"
+msgstr ""
+
+#: aperodedenis301.py:4831
+msgid ""
+" Reprise du chantier %s arrêté aprés TAPAS - La trace depuis l'origine sera "
+"disponible dans le menu édition."
+msgstr ""
+
+#: aperodedenis301.py:4899 aperodedenis301.py:4908
+msgid "Pourquoi MicMac s'arrête : "
+msgstr ""
+
+#: aperodedenis301.py:4908
+msgid "Aucun point en correspondance sur 2 images n'a été trouvé par Tapioca."
+msgstr ""
+
+#: aperodedenis301.py:4909
+msgid "Parmi les raisons de cet échec il peut y avoir :"
+msgstr ""
+
+#: aperodedenis301.py:4910
+msgid ""
+"soit l'exif des photos ne comporte pas la focale ou plusieurs focales sont "
+"présentes"
+msgstr ""
+
+#: aperodedenis301.py:4911
+msgid "Soit l'appareil photo est inconnu de Micmac"
+msgstr ""
+
+#: aperodedenis301.py:4912
+msgid "soit la qualité des photos est en cause."
+msgstr ""
+
+#: aperodedenis301.py:4913
+msgid "Utiliser les items du menu 'outils' pour vérifier ces points."
+msgstr ""
+
+#: aperodedenis301.py:4924
+msgid "Pas d'orientation trouvé par tapas."
+msgstr ""
+
+#: aperodedenis301.py:4924
+msgid "Pourquoi MicMac s'arrête :"
+msgstr ""
+
+#: aperodedenis301.py:4924
+msgid "Prises de vues non positionnées."
+msgstr ""
+
+#: aperodedenis301.py:4925
+msgid "Consulter l'aide (quelques conseils),"
+msgstr ""
+
+#: aperodedenis301.py:4925
+msgid "consulter la trace."
+msgstr ""
+
+#: aperodedenis301.py:4926
+msgid "Verifier la qualité des photos (item du menu outil)"
+msgstr ""
+
+#: aperodedenis301.py:4940
+msgid "Calibration incomplète : "
+msgstr ""
+
+#: aperodedenis301.py:4966
+msgid ". Lancer MicMac pour reprendre le traitement."
+msgstr ""
+
+#: aperodedenis301.py:4966
+msgid "Arrêt après Tapas "
+msgstr ""
+
+#: aperodedenis301.py:4967
+msgid "Arrêt aprés Tapas sur demande utilisateur"
+msgstr ""
+
+#: aperodedenis301.py:4980
+msgid "Tapas n'a pas généré de nuage de points."
+msgstr ""
+
+#: aperodedenis301.py:4981 aperodedenis301.py:4988
+msgid "Le traitement ne peut se poursuivre."
+msgstr ""
+
+#: aperodedenis301.py:4982
+msgid ""
+"Vérifier la qualité des photos, modifier les paramètres et relancer tapioca-"
+"tapas"
+msgstr ""
+
+#: aperodedenis301.py:4987
+msgid "Pas de masque 3D, ou d'image maîtresse pour Malt."
+msgstr ""
+
+#: aperodedenis301.py:4989
+msgid "Définir une image maîtresse"
+msgstr ""
+
+#: aperodedenis301.py:4990
+msgid "ou Changer le mode 'GeomImage' qui impose une image maîtresse"
+msgstr ""
+
+#: aperodedenis301.py:4991
+msgid "ou définir un masque 3D"
+msgstr ""
+
+#: aperodedenis301.py:4992
+msgid "Pour cela utiliser l'item option/Malt ou option/C3DC du menu MicMac"
+msgstr ""
+
+#: aperodedenis301.py:5011
+msgid "Le fichier modele3D.ply précédent est renommé en "
+msgstr ""
+
+#: aperodedenis301.py:5013
+msgid "erreur renommage ancien modele_3d en "
+msgstr ""
+
+#: aperodedenis301.py:5014
+msgid ""
+"Le fichier Modele3D.ply précédent n'a pu être renommé. Il sera remplacé."
+msgstr ""
+
+#: aperodedenis301.py:5033
+msgid "Fin du traitement MicMac "
+msgstr ""
+
+#: aperodedenis301.py:5043
+msgid "Tapas non effectué, lancer Micmac depuis le menu. Etat du chantier = "
+msgstr ""
+
+#: aperodedenis301.py:5049
+msgid "Pourquoi MicMac est arrêté :"
+msgstr ""
+
+#: aperodedenis301.py:5050
+msgid "Pas d'image maîtresse."
+msgstr ""
+
+#: aperodedenis301.py:5051
+msgid "Celle-ci est nécessaire pour l'option choisie geomImage de Malt."
+msgstr ""
+
+#: aperodedenis301.py:5052
+msgid ""
+"Pour corriger modifier les options de Malt ou choississez un masque 3D avec "
+"C3DC."
+msgstr ""
+
+#: aperodedenis301.py:5053
+msgid "Corriger."
+msgstr ""
+
+#: aperodedenis301.py:5068
+msgid "Erreur copie modele3D.ply"
+msgstr ""
+
+#: aperodedenis301.py:5087
+msgid "erreur malt GeomImage copy de nuage en modele3D : "
+msgstr ""
+
+#: aperodedenis301.py:5087 aperodedenis301.py:5090
+msgid " pour : "
+msgstr ""
+
+#: aperodedenis301.py:5090
+msgid "erreur malt GeomImage fusion des nuages en modele3D : "
+msgstr ""
+
+#: aperodedenis301.py:5103
+msgid "Aucune photo choisie. Abandon."
+msgstr ""
+
+#: aperodedenis301.py:5107
+msgid "Une seule photo choisie. Abandon."
+msgstr ""
+
+#: aperodedenis301.py:5113
+msgid "TRACE DETAILLEE"
+msgstr ""
+
+#: aperodedenis301.py:5114
+msgid "TRACE SYNTHETIQUE"
+msgstr ""
+
+#: aperodedenis301.py:5116
+msgid "DEBUT DU TRAITEMENT MICMAC à "
+msgstr ""
+
+#: aperodedenis301.py:5119
+msgid "Photos choisies :"
+msgstr ""
+
+#: aperodedenis301.py:5120
+msgid "Ces photos sont recopiées dans le répertoire du chantier :"
+msgstr ""
+
+#: aperodedenis301.py:5176 aperodedenis301.py:5182
+msgid ""
+"Recherche des points remarquables et des correspondances sur une image de "
+"taille %s pixels."
+msgstr ""
+
+#: aperodedenis301.py:5180
+msgid ""
+"Recherche des points remarquables et des correspondances sur l'image entière."
+msgstr ""
+
+#: aperodedenis301.py:5193
+msgid "Une seule photo pour la calibration intrinsèque : insuffisant."
+msgstr ""
+
+#: aperodedenis301.py:5197
+msgid "Calibration intrinsèque lancée sur les photos : "
+msgstr ""
+
+#: aperodedenis301.py:5211
+msgid ""
+"Calibration intrinsèque, pour trouver les réglages de l'appareil photo sur "
+"quelques photos"
+msgstr ""
+
+#: aperodedenis301.py:5211
+msgid "Recherche d'un point de convergence au centre de l'image."
+msgstr ""
+
+#: aperodedenis301.py:5217
+msgid "La calibration intrinsèque n'a pas permis de trouver une orientation."
+msgstr ""
+
+#: aperodedenis301.py:5220
+msgid "Calibration intrinsèque effectuée."
+msgstr ""
+
+#: aperodedenis301.py:5224
+msgid ""
+"Une seule photo pour Tapas sans les photos de calibration : insuffisant."
+msgstr ""
+
+#: aperodedenis301.py:5253
+msgid "Recherche l'orientation des prises de vues"
+msgstr ""
+
+#: aperodedenis301.py:5265
+msgid "Calibration, pour trouver les réglages intrinsèques de l'appareil photo"
+msgstr ""
+
+#: aperodedenis301.py:5265
+msgid "Recherche l'orientation des prises de vue."
+msgstr ""
+
+#: aperodedenis301.py:5282
+msgid ""
+"Fixe l'orientation (axe,plan et métrique) suivant les options de "
+"'calibration'"
+msgstr ""
+
+#: aperodedenis301.py:5301
+msgid "Création d'un nuage de points grossier."
+msgstr ""
+
+#: aperodedenis301.py:5301
+msgid "Positionne les appareils photos autour du sujet."
+msgstr ""
+
+#: aperodedenis301.py:5307
+msgid "ligne avec meta : "
+msgstr ""
+
+#: aperodedenis301.py:5308
+msgid ""
+"ATTENTION : des metadonnées nécessaires sont absentes des photos. Vérifier "
+"l'exif."
+msgstr ""
+
+#: aperodedenis301.py:5319
+msgid "Ouverture du nuage de points après Apericloud"
+msgstr ""
+
+#: aperodedenis301.py:5322
+msgid "Pas de fichier AperiCloud.ply généré."
+msgstr ""
+
+#: aperodedenis301.py:5324
+msgid ""
+"Consulter l'aide (quelques conseils),\n"
+"Consulter la trace."
+msgstr ""
+
+#: aperodedenis301.py:5331
+msgid ""
+"Prise en compte des points GPS : nécessite au minimum 3 points, chacun sur 2 "
+"photos"
+msgstr ""
+
+#: aperodedenis301.py:5333
+msgid ""
+"Le nombre minimum de points placés sur les photos n'est pas atteint. Abandon."
+msgstr ""
+
+#: aperodedenis301.py:5351
+msgid "Préparation du lancement de Malt"
+msgstr ""
+
+#: aperodedenis301.py:5371
+msgid "Nombre de photos autour de la maîtresse : "
+msgstr ""
+
+#: aperodedenis301.py:5372
+msgid " photos traitées par Malt :"
+msgstr ""
+
+#: aperodedenis301.py:5374
+msgid "Erreur lors de la recherche des photos proches de la maitresse %s."
+msgstr ""
+
+#: aperodedenis301.py:5374
+msgid "Toutes les photos sont conservées."
+msgstr ""
+
+#: aperodedenis301.py:5380 aperodedenis301.py:5535 aperodedenis301.py:7385
+msgid "ATTENTION : cette procédure est longue : patience !"
+msgstr ""
+
+#: aperodedenis301.py:5509
+msgid "lance Tawny"
+msgstr ""
+
+#: aperodedenis301.py:5515
+msgid " : voir la trace complète."
+msgstr ""
+
+#: aperodedenis301.py:5615
+msgid "Echec du traitement MICMAC"
+msgstr ""
+
+#: aperodedenis301.py:5615
+msgid "Pas de fichier %s généré."
+msgstr ""
+
+#: aperodedenis301.py:5623
+msgid "Nuage de points %s généré."
+msgstr ""
+
+#: aperodedenis301.py:5649
+msgid "Détermine un indice de qualité des photos en mode 'line'"
+msgstr ""
+
+#: aperodedenis301.py:5650 aperodedenis301.py:5681
+msgid "Le résultat sera inscrit dans le fichier trace synthétique"
+msgstr ""
+
+#: aperodedenis301.py:5650 aperodedenis301.py:5681 aperodedenis301.py:5757
+msgid "Patience..."
+msgstr ""
+
+#: aperodedenis301.py:5652
+msgid "Debut de la recherche sur la qualité des photos mode 'Line'."
+msgstr ""
+
+#: aperodedenis301.py:5680
+msgid "Détermine un indice de qualité des photos en mode 'All' ou 'MulScale'"
+msgstr ""
+
+#: aperodedenis301.py:5683
+msgid ""
+"Debut de la recherche sur la qualité des photos, mode 'All' ou 'MulScale'."
+msgstr ""
+
+#: aperodedenis301.py:5731 aperodedenis301.py:7725
+msgid "Classement des photos par nombre de points homologues :"
+msgstr ""
+
+#: aperodedenis301.py:5733
+msgid " score = "
+msgstr ""
+
+#: aperodedenis301.py:5733
+msgid "photo "
+msgstr ""
+
+#: aperodedenis301.py:5736 aperodedenis301.py:7732
+msgid "Aucune photo n'a de point analogue avec une autre."
+msgstr ""
+
+#: aperodedenis301.py:5740
+msgid "Qualité des photos suite au traitement : "
+msgstr ""
+
+#: aperodedenis301.py:5741 aperodedenis301.py:7647 aperodedenis301.py:7652
+#: aperodedenis301.py:7660
+msgid "Homol"
+msgstr ""
+
+#: aperodedenis301.py:5753
+msgid "Fin d'examen de qualité des photos."
+msgstr ""
+
+#: aperodedenis301.py:5757
+msgid "Copie des photos dans un répertoire de test."
+msgstr ""
+
+#: aperodedenis301.py:5781
+msgid "Nombre de photos retenues : "
+msgstr ""
+
+#: aperodedenis301.py:5783
+msgid "Créer un nouveau chantier avec les photos : "
+msgstr ""
+
+#: aperodedenis301.py:5783
+msgid "Les paramètres de Tapioca/Malt seront optimisés."
+msgstr ""
+
+#: aperodedenis301.py:5822
+msgid "Caractéristiques de l'appareil photo : "
+msgstr ""
+
+#: aperodedenis301.py:5825
+msgid "fabricant : "
+msgstr ""
+
+#: aperodedenis301.py:5829
+msgid "Nom de l'appareil photo inacessible."
+msgstr ""
+
+#: aperodedenis301.py:5831
+msgid "Nom de l'appareil photo : "
+msgstr ""
+
+#: aperodedenis301.py:5837
+msgid "Pas de focale dans l'exif."
+msgstr ""
+
+#: aperodedenis301.py:5839
+msgid "Focale : "
+msgstr ""
+
+#: aperodedenis301.py:5842
+msgid "Pas de focale équivalente 35 mm dans l'exif :"
+msgstr ""
+
+#: aperodedenis301.py:5842
+msgid "Présence de la taille du capteur dans DicoCamera nécesssaire."
+msgstr ""
+
+#: aperodedenis301.py:5845
+msgid "Focale équivalente 35 mm absente de l'exif"
+msgstr ""
+
+#: aperodedenis301.py:5847
+msgid "Focale équivalente 35 mm : "
+msgstr ""
+
+#: aperodedenis301.py:5850 aperodedenis301.py:5951
+msgid ""
+"DicoCamera.xml non trouvé : paramètrer au préalable le chemin de MicMac\\bin."
+msgstr ""
+
+#: aperodedenis301.py:5854
+msgid "L'appareil est inconnu dans DicoCamera.XML."
+msgstr ""
+
+#: aperodedenis301.py:5856
+msgid "L'appareil est connu dans DicoCamera.XML."
+msgstr ""
+
+#: aperodedenis301.py:5857
+msgid "Taille du capteur en mm : "
+msgstr ""
+
+#: aperodedenis301.py:5863
+msgid "Appareil photo :"
+msgstr ""
+
+#: aperodedenis301.py:5885
+msgid "Erreur dans exiftool : "
+msgstr ""
+
+#: aperodedenis301.py:5887
+msgid "erreur tagExif : "
+msgstr ""
+
+#: aperodedenis301.py:5948
+msgid "Pas trouvé de nom d'appareil photo dans l'exif."
+msgstr ""
+
+#: aperodedenis301.py:5954
+msgid ""
+"Le fichier DicoCamera.xml contient la taille du capteur pour l'appareil :"
+msgstr ""
+
+#: aperodedenis301.py:5955
+msgid "taille  = "
+msgstr ""
+
+#: aperodedenis301.py:5956
+msgid "Modification non prévue dans cette version de l'outil AperoDeDenis"
+msgstr ""
+
+#: aperodedenis301.py:5960
+msgid "Pour l'appareil "
+msgstr ""
+
+#: aperodedenis301.py:5965
+msgid "Paramètrer au préalable le chemin de MicMac\\bin."
+msgstr ""
+
+#: aperodedenis301.py:5969
+msgid "NomCourt"
+msgstr ""
+
+#: aperodedenis301.py:5971
+msgid "tailleEnMM"
+msgstr ""
+
+#: aperodedenis301.py:5986
+msgid "Erreur lors de l'écriture de DicoCamera.xml"
+msgstr ""
+
+#: aperodedenis301.py:5986
+msgid "Une sauvegarde a été créée : DicoCamerra.xml.sav"
+msgstr ""
+
+#: aperodedenis301.py:5989 aperodedenis301.py:5996
+msgid "Dimensions du capteur non mis à jour"
+msgstr ""
+
+#: aperodedenis301.py:5992
+msgid "Dimensions du capteur mis à jour"
+msgstr ""
+
+#: aperodedenis301.py:6006
+msgid "Toutes les focales : "
+msgstr ""
+
+#: aperodedenis301.py:6016
+msgid "Interface graphique pour lancer les modules de MICMAC."
+msgstr ""
+
+#: aperodedenis301.py:6017
+msgid "Utilisable sous Linux, Windows, Mac OS."
+msgstr ""
+
+#: aperodedenis301.py:6018
+msgid "Logiciel libre diffusé sous licence CeCILL-B."
+msgstr ""
+
+#: aperodedenis301.py:6020
+msgid ""
+"La barre de titre présente le nom du chantier et la version de l'outil. Une "
+"* indique que le chantier est à sauvegarder."
+msgstr ""
+
+#: aperodedenis301.py:6021
+msgid "Menu Fichier :"
+msgstr ""
+
+#: aperodedenis301.py:6022
+msgid ""
+"       - Nouveau chantier : constitution d'un 'chantier' comportant les "
+"photos, les options d'exécution de Micmac et"
+msgstr ""
+
+#: aperodedenis301.py:6023
+msgid "         les résultats des traitements."
+msgstr ""
+
+#: aperodedenis301.py:6024
+msgid "         Les paramètres du chantier sont conservés dans le fichier "
+msgstr ""
+
+#: aperodedenis301.py:6025
+msgid ""
+"         Enregistrer le chantier crée une arborescence dont la racine est le "
+"répertoire des photos et le nom du chantier."
+msgstr ""
+
+#: aperodedenis301.py:6026
+msgid ""
+"       - Ouvrir un chantier : revenir sur un ancien chantier pour le "
+"poursuivre ou consulter les résultats."
+msgstr ""
+
+#: aperodedenis301.py:6027
+msgid ""
+"       - Enregistrer le chantier : enregistre le chantier en cours sans "
+"l'exécuter."
+msgstr ""
+
+#: aperodedenis301.py:6028
+msgid ""
+"         Une * dans la barre de titre indique que le chantier a été modifié."
+msgstr ""
+
+#: aperodedenis301.py:6029
+msgid ""
+"         Le chantier en cours, même non enregistré, est conservé lors de la "
+"fermeture de l'application."
+msgstr ""
+
+#: aperodedenis301.py:6030
+msgid "       - Renommer le chantier : personnalise le nom du chantier."
+msgstr ""
+
+#: aperodedenis301.py:6031
+msgid ""
+"         Le chantier est déplacé dans l'arborescence en indiquant un chemin "
+"absolu ou relatif."
+msgstr ""
+
+#: aperodedenis301.py:6032
+msgid ""
+"         Par exemple : 'D:\\MonPremierChantier' nomme 'MonPremierChantier' "
+"sous la racine du disque D."
+msgstr ""
+
+#: aperodedenis301.py:6033
+msgid ""
+"         Attention : le changement de disque n'est pas possible dans cette "
+"version de l'outil."
+msgstr ""
+
+#: aperodedenis301.py:6034
+msgid ""
+"       - Exporter le chantier en cours : création d'une archive du chantier, "
+"qui permet :"
+msgstr ""
+
+#: aperodedenis301.py:6035
+msgid "            - de conserver le chantier en l'état, pour y revenir."
+msgstr ""
+
+#: aperodedenis301.py:6036
+msgid ""
+"            - de l'importer sous un autre répertoire, un autre disque, un "
+"autre ordinateur, un autre système d'exploitation"
+msgstr ""
+
+#: aperodedenis301.py:6037
+msgid "       - Importer un chantier :"
+msgstr ""
+
+#: aperodedenis301.py:6038
+msgid ""
+"            - copie le chantier sauvegardé dans un nouvel environnement "
+"(ordinateur, système d'exploitation)"
+msgstr ""
+
+#: aperodedenis301.py:6039
+msgid ""
+"            - un exemple d'intérêt : copier un chantier aprés tapas, lancer "
+"malt avec des options variées sans perdre l'original."
+msgstr ""
+
+#: aperodedenis301.py:6040
+msgid ""
+"       - Du ménage ! : supprimer les chantiers : chaque chantier crée une "
+"arborescence de travail."
+msgstr ""
+
+#: aperodedenis301.py:6041
+msgid "         Cet item permet de supprimer les répertoires devenus inutiles."
+msgstr ""
+
+#: aperodedenis301.py:6042
+msgid ""
+"         Aprés un message demandant confirmation la suppression est "
+"définitive, sans récupération possible :"
+msgstr ""
+
+#: aperodedenis301.py:6043
+msgid ""
+"         toute l'arborescence est supprimée, même les archives exportées."
+msgstr ""
+
+#: aperodedenis301.py:6044
+msgid ""
+"       - Quitter : quitte l'application, le chantier en cours est conservé "
+"et sera ouvert lors de la prochaine exécution."
+msgstr ""
+
+#: aperodedenis301.py:6045
+msgid "Menu Edition :"
+msgstr ""
+
+#: aperodedenis301.py:6046
+msgid ""
+"       - Afficher l'état du chantier : affiche les paramètres du chantier et "
+"son état d'exécution."
+msgstr ""
+
+#: aperodedenis301.py:6047
+msgid ""
+"         Par défaut l'état du chantier est affiché lors du lancement de "
+"l'application."
+msgstr ""
+
+#: aperodedenis301.py:6048
+msgid ""
+"         Cet item est utile après un message ou l'affichage d'une trace."
+msgstr ""
+
+#: aperodedenis301.py:6049
+msgid ""
+"       - Plusieurs items permettent de consulter les photos, les traces et "
+"les vues 3D du chantier en cours."
+msgstr ""
+
+#: aperodedenis301.py:6050
+msgid ""
+"            Visualiser toutes les photos sélectionnées : visualise les photos"
+msgstr ""
+
+#: aperodedenis301.py:6051
+msgid ""
+"            Visualiser les points GPS                  : visu des seules "
+"photos avec points GPS."
+msgstr ""
+
+#: aperodedenis301.py:6052
+msgid ""
+"            Visualiser le masque 3D                    : visualise le masque "
+"3D"
+msgstr ""
+
+#: aperodedenis301.py:6053
+msgid ""
+"            Visualiser le masque 2D et l'image maitre  : visualise le masque "
+"2D s'il existe et de l'image maître."
+msgstr ""
+
+#: aperodedenis301.py:6054
+msgid ""
+"            Visualiser la ligne horizontale/verticale  : visualise le repère "
+"Ox ou Oy."
+msgstr ""
+
+#: aperodedenis301.py:6055
+msgid ""
+"            Visualiser la zone plane                   : visualise la zone "
+"plane"
+msgstr ""
+
+#: aperodedenis301.py:6056
+msgid ""
+"            Visualiser la distance                     : visualise de la "
+"distance et les points associés."
+msgstr ""
+
+#: aperodedenis301.py:6058
+msgid ""
+"            Afficher la trace complete du chantier     : visualise la trace "
+"complète, standard micmac"
+msgstr ""
+
+#: aperodedenis301.py:6059
+msgid ""
+"            Afficher la trace synthétique du chantier  : visualise la trace "
+"filtrée par aperoDeDenis, moins bavarde"
+msgstr ""
+
+#: aperodedenis301.py:6061
+msgid ""
+"            Afficher l'image 3D non densifiée          : lance l'outil pour "
+"ouvrir les .PLY sur l'image 3D produite par Tapas"
+msgstr ""
+
+#: aperodedenis301.py:6062
+msgid ""
+"            Afficher l'image 3D densifiée              : lance l'outil pour "
+"ouvrir les .PLY sur l'image 3D produite par Malt ou C3DC"
+msgstr ""
+
+#: aperodedenis301.py:6064
+msgid ""
+"            Lister Visualiser les images 3D            : liste la pyramide "
+"des images 3D, créées à chaque étape de Malt"
+msgstr ""
+
+#: aperodedenis301.py:6065
+msgid ""
+"            Fusionner des images 3D                    : permet de fusionner "
+"plusieurs PLY en un seul"
+msgstr ""
+
+#: aperodedenis301.py:6066
+msgid "Menu MicMac :"
+msgstr ""
+
+#: aperodedenis301.py:6067
+msgid ""
+"       - Choisir les photos : permet choisir les photos JPG, GIF, TIF ou BMP "
+"pour le traitement."
+msgstr ""
+
+#: aperodedenis301.py:6068
+msgid ""
+"         Remarque  : les photos GIF et BMP seront converties en JPG "
+"(nécessite la présence de l'outil convert)."
+msgstr ""
+
+#: aperodedenis301.py:6069
+msgid ""
+"         Un EXIF avec la focale utilisée pour la prise de vue est "
+"nécessaire : si besoin l'ajouter (menu Outil/ajout exif)."
+msgstr ""
+
+#: aperodedenis301.py:6070
+msgid "         Remarque  : "
+msgstr ""
+
+#: aperodedenis301.py:6071
+msgid ""
+"                     Le fichier DicoCamera.xml doit comporter la taille du "
+"capteur de l'appareil (voir menu Outils)"
+msgstr ""
+
+#: aperodedenis301.py:6072
+msgid ""
+"       - Options : choisir les options des modules Tapioca, Tapas (nuage non "
+"densifié)  puis de Malt (nuage densifié) : "
+msgstr ""
+
+#: aperodedenis301.py:6073
+msgid ""
+"         Les options suivantes concernent le calcul du nuage de points NON "
+"densifié :"
+msgstr ""
+
+#: aperodedenis301.py:6074
+msgid ""
+"                    - Tapioca : options et sous options associées (échelles, "
+"fichier xml)"
+msgstr ""
+
+#: aperodedenis301.py:6075
+msgid ""
+"                    - Tapas   : choix d'un mode de calcul, possibilité "
+"d'arrêter le traitement après tapas."
+msgstr ""
+
+#: aperodedenis301.py:6076
+msgid ""
+"                                La calibration intrinsèque permet de lancer  "
+"Tapas sur un premier lot de photos."
+msgstr ""
+
+#: aperodedenis301.py:6077
+msgid ""
+"                                Typiquement sur les photos de plus grande "
+"focale si il y a 2 focales différentes."
+msgstr ""
+
+#: aperodedenis301.py:6078
+msgid ""
+"                                L'arrêt après Tapas est nécessaire pour "
+"décrire le masque 2D ou 3D."
+msgstr ""
+
+#: aperodedenis301.py:6079
+msgid ""
+"                                Produit une image 3D non densifiée avec "
+"position des appareils photos."
+msgstr ""
+
+#: aperodedenis301.py:6080
+msgid ""
+"                    - Calibration : définir un axe, une zone plane, une "
+"distance pour définir le repère du chantier."
+msgstr ""
+
+#: aperodedenis301.py:6081
+msgid ""
+"                    - GPS : définir les points de calage GPS qui permettent "
+"de géolocaliser la scène."
+msgstr ""
+
+#: aperodedenis301.py:6082
+msgid ""
+"                            Pour être utilisé chaque point, minimum 3, doit "
+"être placé sur au moins 2 photos."
+msgstr ""
+
+#: aperodedenis301.py:6083
+msgid ""
+"                            Cette option est utilisée pour le nuage de point "
+"non densifié ET pour le nuage densifié."
+msgstr ""
+
+#: aperodedenis301.py:6084
+msgid ""
+"         Les 3 options suivantes concernent le calcul du nuage de points "
+"densifié :"
+msgstr ""
+
+#: aperodedenis301.py:6085
+msgid ""
+"                    - Malt    : choix du mode et du niveau de densification."
+msgstr ""
+
+#: aperodedenis301.py:6086
+msgid "                                Si le mode est GeomImage : "
+msgstr ""
+
+#: aperodedenis301.py:6087
+msgid ""
+"                                  désigner une ou plusieurs images maîtresses"
+msgstr ""
+
+#: aperodedenis301.py:6088
+msgid ""
+"                                  dessiner si besoin le ou les masques "
+"associés."
+msgstr ""
+
+#: aperodedenis301.py:6089
+msgid ""
+"                                  Seuls les points visibles sur les images "
+"maitres seront sur l'image 3D finale."
+msgstr ""
+
+#: aperodedenis301.py:6090
+msgid ""
+"                                  Le masque limite la zone utile de l'image "
+"3D finale."
+msgstr ""
+
+#: aperodedenis301.py:6091
+msgid ""
+"                                  La molette permet de zoomer et le clic "
+"droit maintenu de déplacer l'image."
+msgstr ""
+
+#: aperodedenis301.py:6092
+msgid ""
+"                                  Supprimer une image maîtresse de la liste "
+"réinitialise le masque."
+msgstr ""
+
+#: aperodedenis301.py:6093
+msgid ""
+"                                  Nombre de photos utiles autour de l'image "
+"maîtresse :"
+msgstr ""
+
+#: aperodedenis301.py:6094
+msgid ""
+"                                    Permet de limiter les recherches aux "
+"images entourant chaque image maîtresse."
+msgstr ""
+
+#: aperodedenis301.py:6095
+msgid ""
+"                               Choix du niveau de densification final : "
+"8,4,2 ou 1."
+msgstr ""
+
+#: aperodedenis301.py:6096
+msgid "                                  Le niveau 1 est le plus dense. "
+msgstr ""
+
+#: aperodedenis301.py:6097
+msgid ""
+"                                  La géométrie est revue à chaque niveau et "
+"de plus en plus précise : "
+msgstr ""
+
+#: aperodedenis301.py:6098
+msgid ""
+"                                    la densification s'accroît, et la "
+"géométrie s'affine aussi."
+msgstr ""
+
+#: aperodedenis301.py:6099
+msgid ""
+"                    - C3DC    : dessiner le masque 3D sur le nuage de points "
+"AperiCloud généré par Tapas.."
+msgstr ""
+
+#: aperodedenis301.py:6100
+msgid ""
+"                                Les touches fonctions à utiliser sont "
+"décrites dans l'onglet."
+msgstr ""
+
+#: aperodedenis301.py:6101
+msgid ""
+"                                Le masque limite la zone en 3 dimensions de "
+"l'image finale."
+msgstr ""
+
+#: aperodedenis301.py:6102
+msgid "                                L'outil de saisie est issu de micmac."
+msgstr ""
+
+#: aperodedenis301.py:6103
+msgid ""
+"                    - GPS     : définir les points de calage GPS qui "
+"permettent de géolocaliser la scène."
+msgstr ""
+
+#: aperodedenis301.py:6104
+msgid ""
+"                                Pour être utilisé chaque point, minimum 3, "
+"doit être placé sur au moins 2 photos."
+msgstr ""
+
+#: aperodedenis301.py:6105
+msgid ""
+"                                Le bouton 'appliquer' permet de calibrer le "
+"modèle non densifié immédiatement."
+msgstr ""
+
+#: aperodedenis301.py:6106
+msgid ""
+"       - Lancer MicMac : enregistre le chantier et lance le traitement avec "
+"les options par défaut ou choisies par l'item 'options'."
+msgstr ""
+
+#: aperodedenis301.py:6107
+msgid ""
+"                         Relance micmac si l'arrêt a été demandé après tapas."
+msgstr ""
+
+#: aperodedenis301.py:6108
+msgid ""
+"                         Lancer micmac bloque les photos et les options du "
+"chantier."
+msgstr ""
+
+#: aperodedenis301.py:6109
+msgid ""
+"                         Pour débloquer le chantier il faut lancer micmac à "
+"nouveau et choisir le débloquage."
+msgstr ""
+
+#: aperodedenis301.py:6110
+msgid ""
+"                         Le débloquage permet de relancer Malt sans relancer "
+"tapioca/tapas : "
+msgstr ""
+
+#: aperodedenis301.py:6111
+msgid ""
+"                         le fichier modele3D.ply est conservé sous un autre "
+"nom."
+msgstr ""
+
+#: aperodedenis301.py:6112
+msgid "menu Vidéo :"
+msgstr ""
+
+#: aperodedenis301.py:6113
+msgid ""
+"       - Options : indiquer le nom de la camera (GoPro, smartphone...), sa "
+"focale, sa focale equivalente 35mm"
+msgstr ""
+
+#: aperodedenis301.py:6114
+msgid "         et le nombre d'images à conserver par seconde de film"
+msgstr ""
+
+#: aperodedenis301.py:6115
+msgid ""
+"         Le nom permet de faire le lien avec DicoCamera.xml qui contient la "
+"taille du capteur."
+msgstr ""
+
+#: aperodedenis301.py:6116
+msgid "         Les focales seront recopiées dans l'exif des images."
+msgstr ""
+
+#: aperodedenis301.py:6117
+msgid ""
+"         Le nombre d'images par seconde sera utilisé pour la sélection des "
+"meilleures images."
+msgstr ""
+
+#: aperodedenis301.py:6118
+msgid "         Remarque :"
+msgstr ""
+
+#: aperodedenis301.py:6119
+msgid ""
+"           Il faut indiquer dans DicoCamera la taille du capteur "
+"effectivement utilisée par la fonction camera,"
+msgstr ""
+
+#: aperodedenis301.py:6120
+msgid ""
+"           taille qui peut être inférieure à la taille du capteur utilisée "
+"pour les photos."
+msgstr ""
+
+#: aperodedenis301.py:6121
+msgid "           Voir par exemple pour une camera Gopro :"
+msgstr ""
+
+#: aperodedenis301.py:6123
+msgid ""
+"       - Nouveau chantier : choisir une video : choisir un fichier video "
+"issu d'une camera ou d'une GoPro."
+msgstr ""
+
+#: aperodedenis301.py:6124
+msgid ""
+"         La vidéo sera décompactée en images, l'exif sera créé avec les "
+"informations en options."
+msgstr ""
+
+#: aperodedenis301.py:6125
+msgid ""
+"         Cette étape nécessite la présence de l'outil ffmpeg sous le "
+"répertoire bin de MicMac (dépend de la version de MicMac)."
+msgstr ""
+
+#: aperodedenis301.py:6126
+msgid ""
+"         Un nouveau chantier est créé avec les options suivante : Line pour "
+"Tapioca et FishEyeBasic pour Tapas."
+msgstr ""
+
+#: aperodedenis301.py:6127
+msgid ""
+"       - Sélection des images : il est raisonnable de ne garder que quelques "
+"images par seconde de film."
+msgstr ""
+
+#: aperodedenis301.py:6128
+msgid ""
+"         Le nombre d'images conservées par seconde est indiqué dans les "
+"options."
+msgstr ""
+
+#: aperodedenis301.py:6129
+msgid ""
+"         Chaque seconde de film les 'meilleures' images seront retenues, les "
+"autres effacées."
+msgstr ""
+
+#: aperodedenis301.py:6130
+msgid ""
+"         Attention : cette étape n'est pas effective pour toutes les "
+"versions de MicMac. La version mercurial 5508 fonctionne."
+msgstr ""
+
+#: aperodedenis301.py:6131
+msgid ""
+"         Une fois les images sélectionnées le chantier est créé : utiliser "
+"le menu MicMac comme pour un chantier normal."
+msgstr ""
+
+#: aperodedenis301.py:6132
+msgid "menu Outils :"
+msgstr ""
+
+#: aperodedenis301.py:6133
+msgid ""
+"       - Affiche le nom et la focale de l'appareil photo : fabricant, modèle "
+"et focale de la première photo."
+msgstr ""
+
+#: aperodedenis301.py:6134
+msgid ""
+"         Il y a 2 types de focales : focale effective et focale équivalente "
+"35 mm."
+msgstr ""
+
+#: aperodedenis301.py:6135
+msgid ""
+"         Indique si l'appareil photo est connu dans '/XML MicMac/DicoCamera."
+"xml'."
+msgstr ""
+
+#: aperodedenis301.py:6136
+msgid ""
+"       - Affiche toutes les focales des photos : focales et focales "
+"equivalentes en 35mm."
+msgstr ""
+
+#: aperodedenis301.py:6137
+msgid ""
+"         Si les focales ne sont pas identiques pour toutes les photos : "
+"utiliser la calibration intrinséque de tapas."
+msgstr ""
+
+#: aperodedenis301.py:6138
+msgid ""
+"       - Mettre à jour DicoCamera.xml : ajouter la taille du capteur dans '/"
+"XML MicMac/DicoCamera.xml'."
+msgstr ""
+
+#: aperodedenis301.py:6139
+msgid ""
+"         La taille du capteur dans DicoCamera.xml est requise si la focale "
+"équivalente 35mm est absente de l'exif."
+msgstr ""
+
+#: aperodedenis301.py:6140
+msgid ""
+"         La taille du capteur facilite les calculs et améliore les résultats."
+msgstr ""
+
+#: aperodedenis301.py:6141
+msgid ""
+"         La taille du capteur se trouve sur le site du fabricant ou sur "
+"http://www.dpreview.com."
+msgstr ""
+
+#: aperodedenis301.py:6142
+msgid ""
+"       - Qualité des photos du dernier traitement : calcule le nombre moyen "
+"de points homologues par photo."
+msgstr ""
+
+#: aperodedenis301.py:6143
+msgid ""
+"         Si des photos présentent des moyennes très faibles elles peuvent "
+"faire échouer le traitement."
+msgstr ""
+
+#: aperodedenis301.py:6144
+msgid ""
+"       - Qualité des photos 'Line' : calcule le nombre moyen de points "
+"homologues par photo en mode 'Line', taille 1000."
+msgstr ""
+
+#: aperodedenis301.py:6145
+msgid ""
+"       - Qualité des photos 'MulScale ou All' : calcule le nombre moyen de "
+"points homologues par photo, taille 1000.'."
+msgstr ""
+
+#: aperodedenis301.py:6146
+msgid ""
+"         Ce nombre informe sur la qualité relative des photos au sein du "
+"chantier."
+msgstr ""
+
+#: aperodedenis301.py:6147
+msgid ""
+"         La présence de photos avec peu de points homologues peut faire "
+"échouer le traitement."
+msgstr ""
+
+#: aperodedenis301.py:6148
+msgid ""
+"         Il est parfois préférable de traiter peu de photos mais de bonne "
+"qualité."
+msgstr ""
+
+#: aperodedenis301.py:6149
+msgid ""
+"       - Modifier l'exif des photos : permet la création et la modification "
+"des exifs des photos du chantier."
+msgstr ""
+
+#: aperodedenis301.py:6150
+msgid "menu Paramétrage :"
+msgstr ""
+
+#: aperodedenis301.py:6151
+msgid ""
+"       - Affiche les paramètres : visualise les chemins de micmac\\bin, "
+"d'exiftool, du fichier pour visualiser les .ply (Meshlab ou Cloud Compare),"
+msgstr ""
+
+#: aperodedenis301.py:6152
+msgid ""
+"         ainsi que le répertoire où se trouve les fichiers paramètres de "
+"l'interface."
+msgstr ""
+
+#: aperodedenis301.py:6153
+msgid ""
+"         Ces paramètres sont sauvegardés de façon permanente dans le "
+"fichier :"
+msgstr ""
+
+#: aperodedenis301.py:6155
+msgid ""
+"       - Désigner le répertoire MicMac\\bin : répertoire où se trouvent les "
+"modules de MicMac "
+msgstr ""
+
+#: aperodedenis301.py:6156
+msgid ""
+"         Si plusieurs versions sont installées cet item permet de changer "
+"facilement la version de MicMac utilisée."
+msgstr ""
+
+#: aperodedenis301.py:6157
+msgid ""
+"       - Désigner l'application exiftool, utile pour modifier les exif (elle "
+"se trouve sous micMac\\binaire-aux)."
+msgstr ""
+
+#: aperodedenis301.py:6158
+msgid ""
+"       - Désigner l'application convert d'ImageMagick, utile pour convertir "
+"les gif, tif et bmp en jpg (elle se trouve sous micMac\\binaire-aux)."
+msgstr ""
+
+#: aperodedenis301.py:6159
+msgid ""
+"       - Désigner l'application ouvrant les fichiers .PLY. Ce peut être  "
+"Meshlab, CloudCompare ou autre."
+msgstr ""
+
+#: aperodedenis301.py:6160
+msgid "         Sous Windows Meshlab se trouve sous un répertoire nommé VCG."
+msgstr ""
+
+#: aperodedenis301.py:6161
+msgid "       - Activer/désactiver le 'tacky' message de lancement"
+msgstr ""
+
+#: aperodedenis301.py:6162
+msgid "menu Aide :"
+msgstr ""
+
+#: aperodedenis301.py:6163
+msgid ""
+"       - Pour commencer : à lire lors de la prise en main de l'interface."
+msgstr ""
+
+#: aperodedenis301.py:6164
+msgid "       - Aide : le détail des items de menu."
+msgstr ""
+
+#: aperodedenis301.py:6165
+msgid "       - Quelques conseils : sur la prise de vue et les options."
+msgstr ""
+
+#: aperodedenis301.py:6166
+msgid "       - Historique : les nouveautés de chaque version."
+msgstr ""
+
+#: aperodedenis301.py:6167
+msgid "       - A propos"
+msgstr ""
+
+#: aperodedenis301.py:6168
+msgid " Quelques précisions :"
+msgstr ""
+
+#: aperodedenis301.py:6169
+msgid ""
+" Cette version a été développée sous Windows XP et Seven avec micmac rev "
+"5508 d'avril 2015."
+msgstr ""
+
+#: aperodedenis301.py:6170
+msgid ""
+" L'utilisation d'autres versions de Micmac a été testée, jusqu'à la version "
+"6219."
+msgstr ""
+
+#: aperodedenis301.py:6171
+msgid " Le fonctionnement sous Ubuntu Trusty a été vérifié."
+msgstr ""
+
+#: aperodedenis301.py:6172
+msgid " Consulter la documentation de MicMac, outil réalisé par l'IGN."
+msgstr ""
+
+#: aperodedenis301.py:6173
+msgid " Consulter le guide d'installation et de prise en main d'AperoDeDenis."
+msgstr ""
+
+#: aperodedenis301.py:6182
+msgid ""
+"Interface graphique pour lancer les modules de MICMAC : quelques conseils."
+msgstr ""
+
+#: aperodedenis301.py:6183
+msgid "Prises de vue  :"
+msgstr ""
+
+#: aperodedenis301.py:6184
+msgid ""
+"                - Le sujet doit être immobile durant toutes la séance de "
+"prise de vue."
+msgstr ""
+
+#: aperodedenis301.py:6185
+msgid ""
+"                - Le sujet doit être bien éclairé, la prise de vue en plein "
+"jour doit être recherchée."
+msgstr ""
+
+#: aperodedenis301.py:6186
+msgid ""
+"                - Les photos doivent être nettes, attention à la profondeur "
+"de champ :"
+msgstr ""
+
+#: aperodedenis301.py:6187
+msgid ""
+"                  utiliser la plus petite ouverture possible (nombre F le "
+"plus grand, par exemple 22)."
+msgstr ""
+
+#: aperodedenis301.py:6188
+msgid ""
+"                - Les photos de personnes ou d'objet en mouvement sont "
+"déconseillées"
+msgstr ""
+
+#: aperodedenis301.py:6189
+msgid ""
+"                - Les surfaces lisses ou réfléchissantes sont défavorables."
+msgstr ""
+
+#: aperodedenis301.py:6190
+msgid ""
+"                - Si le sujet est central prendre une photo tous les 20°, "
+"soit 9 photos pour un 'demi-tour', 18 pour un tour complet."
+msgstr ""
+
+#: aperodedenis301.py:6191
+msgid ""
+"                - Si le sujet est en 'ligne' le recouvrement entre photos "
+"doit être des 2/3."
+msgstr ""
+
+#: aperodedenis301.py:6192
+msgid ""
+"                - Tester la 'qualité' des photos au sein du chantier (voir "
+"les items du menu Outils)."
+msgstr ""
+
+#: aperodedenis301.py:6193
+msgid ""
+"                  les photos ayant un mauvais score (voir le menu Outils/"
+"Qualité des photos 'All') doivent être supprimées du chantier : elle peuvent "
+"faire échouer le traitement."
+msgstr ""
+
+#: aperodedenis301.py:6194
+msgid ""
+"                - La présence des dimensions du capteur de l'appareil dans "
+"DIcoCamera.xml améliore le traitement."
+msgstr ""
+
+#: aperodedenis301.py:6195
+msgid ""
+"                  Cette présence est obligatoire si l'exif ne présente pas "
+"la focale équivalente 35mm."
+msgstr ""
+
+#: aperodedenis301.py:6196
+msgid ""
+"                  Pour ajouter la taille du capteur utiliser le menu "
+"'Outils//mettre à jour DicoCamera'."
+msgstr ""
+
+#: aperodedenis301.py:6197
+msgid "                 Précautions :    "
+msgstr ""
+
+#: aperodedenis301.py:6198
+msgid ""
+"                 Ne pas utiliser la fonction autofocus. Deux focales "
+"différentes maximum pour un même chantier."
+msgstr ""
+
+#: aperodedenis301.py:6199
+msgid ""
+"                 Si il y a 2 focales différentes utiliser la calibration "
+"intrinsèque de Tapas."
+msgstr ""
+
+#: aperodedenis301.py:6200
+msgid ""
+"                 Eviter aussi la fonction 'anti tremblement' qui agit en "
+"modfiant la position du capteur."
+msgstr ""
+
+#: aperodedenis301.py:6201
+msgid "Options :"
+msgstr ""
+
+#: aperodedenis301.py:6202
+msgid ""
+"               - Tapioca : si le sujet est central conserver les paramètres "
+"par défaut."
+msgstr ""
+
+#: aperodedenis301.py:6203
+msgid ""
+"                           L'échelle est la taille réduite de l'image (en "
+"pixels, ou -1 pour l'image entière) pour la recherche des points homologues."
+msgstr ""
+
+#: aperodedenis301.py:6204
+msgid ""
+"                           Si le sujet est en ligne choisir 'line' dans les "
+"options de Tapioca, "
+msgstr ""
+
+#: aperodedenis301.py:6205
+msgid ""
+"                                                   puis delta = 1, si les "
+"photos se recouvrent à moitiè, "
+msgstr ""
+
+#: aperodedenis301.py:6206
+msgid ""
+"                                                   ou   delta = 2 voire +, "
+"si le recouvrement est plus important."
+msgstr ""
+
+#: aperodedenis301.py:6207
+msgid ""
+"                           L'option ALl recherche les points homologues sur "
+"toutes les paires de photos (ce qui peut faire beaucoup !)"
+msgstr ""
+
+#: aperodedenis301.py:6208
+msgid ""
+"                           L'option MulScale recherche les points homologues "
+"en 2 temps :"
+msgstr ""
+
+#: aperodedenis301.py:6209
+msgid ""
+"                             1) sur toutes les paires avec une taille de "
+"photo réduite (typiquement 300)"
+msgstr ""
+
+#: aperodedenis301.py:6210
+msgid ""
+"                             2) Seules les paires de photos ayant eu au "
+"moins 2 points homologues à cette échelle seront"
+msgstr ""
+
+#: aperodedenis301.py:6211
+msgid ""
+"                                retenues pour rechercher les points "
+"homologues à la seconde échelle. Gain de temps important possible."
+msgstr ""
+
+#: aperodedenis301.py:6212
+msgid ""
+"               - Tapas : si l'appareil photo est un compact ou un smartphone "
+"choisir RadialBasic, "
+msgstr ""
+
+#: aperodedenis301.py:6213
+msgid ""
+"                         si l'appareil photo est un reflex haut de gamme "
+"choisir RadialExtended "
+msgstr ""
+
+#: aperodedenis301.py:6214
+msgid ""
+"                         si l'appareil photo est de moyenne gamme choisir "
+"RadialStd"
+msgstr ""
+
+#: aperodedenis301.py:6215
+msgid ""
+"                         si les photos ont 2 focales alors choisir toutes "
+"celles qui ont la plus grande focale pour la calibration intrinsèque."
+msgstr ""
+
+#: aperodedenis301.py:6216
+msgid ""
+"                         L'arrêt aprés Tapas est conseillé : la "
+"visualisation du nuage de points non densifié"
+msgstr ""
+
+#: aperodedenis301.py:6217
+msgid ""
+"                         permet de définir un masque, 2D ou 3D, pour l'étape "
+"suivante."
+msgstr ""
+
+#: aperodedenis301.py:6218
+msgid ""
+"               - Calibration : permet de définir un repère et une métrique "
+"(axe, plan et distance, tous obligatoires)."
+msgstr ""
+
+#: aperodedenis301.py:6219
+msgid ""
+"               - Malt : pour le mode GeomImage indiquer une ou plusieurs "
+"images maîtresses."
+msgstr ""
+
+#: aperodedenis301.py:6220
+msgid ""
+"                        Seuls les points visibles sur ces images seront "
+"conservés dans le nuage de points."
+msgstr ""
+
+#: aperodedenis301.py:6221
+msgid ""
+"                        Sur ces images maîtresses tracer les masque "
+"délimitant la partie 'utile' de la photo."
+msgstr ""
+
+#: aperodedenis301.py:6222
+msgid ""
+"                        Le résultat sera mis en couleur suivant les images "
+"maitresses."
+msgstr ""
+
+#: aperodedenis301.py:6223
+msgid ""
+"                        (éviter trop de recouvrement entre les maîtresses !)."
+msgstr ""
+
+#: aperodedenis301.py:6224
+msgid ""
+"                        Le traitement avec masque sera accéléré et le "
+"résultat plus 'propre'."
+msgstr ""
+
+#: aperodedenis301.py:6225
+msgid ""
+"               - C3DC : propose de définir un masque en 3D qui conservera "
+"tout le volume concerné."
+msgstr ""
+
+#: aperodedenis301.py:6226
+msgid ""
+"                        Alternative à Malt, le traitement est beaucoup plus "
+"rapide. Nécessite la dernière version de MicMac."
+msgstr ""
+
+#: aperodedenis301.py:6227
+msgid ""
+"               - GPS  : définir au moins 3 points cotés et les placer sur 2 "
+"photos. La trace indique s'ils sont pris en compte"
+msgstr ""
+
+#: aperodedenis301.py:6228
+msgid "Si MicMac ne trouve pas d'orientation ou pas de nuage de points :"
+msgstr ""
+
+#: aperodedenis301.py:6229
+msgid ""
+"               - Examiner la qualité des photos (utiliser le menu outils/"
+"Qualité des photos): ."
+msgstr ""
+
+#: aperodedenis301.py:6230
+msgid ""
+"                        1) Eliminer les photos ayant les plus mauvais scores"
+msgstr ""
+
+#: aperodedenis301.py:6231
+msgid ""
+"                        2) si ce n'est pas suffisant ne garder que les "
+"meilleures photos (typiquement : moins de 10)"
+msgstr ""
+
+#: aperodedenis301.py:6232
+msgid ""
+"                           Penser que des photos floues ou avec un sujet "
+"brillant, lisse, mobile, transparent, vivant sont défavorables."
+msgstr ""
+
+#: aperodedenis301.py:6233
+msgid ""
+"                        3) Augmenter l'échelle des photos pour tapioca, "
+"mettre -1 au lieu de la valeur par défaut."
+msgstr ""
+
+#: aperodedenis301.py:6234
+msgid ""
+"                        4) modifier le type d'appareil pour Tapas (radialstd "
+"ou radialbasic)"
+msgstr ""
+
+#: aperodedenis301.py:6235
+msgid ""
+"                        5) vérifier la taille du capteur dans dicocamera, "
+"nécessaire si la focale equivalente 35 mm est absente de l'exif"
+msgstr ""
+
+#: aperodedenis301.py:6236
+msgid ""
+"                        6) examiner la trace synthétique et la trace "
+"complète : MicMac donne quelques informations"
+msgstr ""
+
+#: aperodedenis301.py:6237
+msgid ""
+"                        7) consulter le forum micmac (http://forum-micmac."
+"forumprod.com)"
+msgstr ""
+
+#: aperodedenis301.py:6238
+msgid ""
+"                        8) faites appel à l'assistance de l'interface (voir "
+"adresse dans l'a-propos)"
+msgstr ""
+
+#: aperodedenis301.py:6247
+msgid "   Pour commencer avec l'interface graphique MicMac :"
+msgstr ""
+
+#: aperodedenis301.py:6248
+msgid "   Tout d'abord : installer MicMac."
+msgstr ""
+
+#: aperodedenis301.py:6249
+msgid ""
+"   Puis : installer Meshlab ou CloudCompare (pour afficher les nuages de "
+"points)"
+msgstr ""
+
+#: aperodedenis301.py:6250
+msgid "   Ensuite, dans cette interface graphique :"
+msgstr ""
+
+#: aperodedenis301.py:6251
+msgid ""
+"1) Paramètrer l'interface : indiquer ou se trouvent le répertoire bin de "
+"MicMac et l'éxécutable Meshlab ou CloudCompare."
+msgstr ""
+
+#: aperodedenis301.py:6252
+msgid ""
+"   Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick "
+"(en principe sous MicMac\\binaire-aux)."
+msgstr ""
+
+#: aperodedenis301.py:6253
+msgid ""
+"2) Choisir quelques photos, par exemple du jeu d'essai gravillons, au moins "
+"3 mais pas plus de 6 pour commencer (menu MicMac)."
+msgstr ""
+
+#: aperodedenis301.py:6254
+msgid "3) Lancer MicMac en laissant les paramètres par défaut (menu MicMac)."
+msgstr ""
+
+#: aperodedenis301.py:6255
+msgid ""
+"   Si tout va bien une vue en 3D non densifiée doit s'afficher, patience : "
+"cela peut être long."
+msgstr ""
+
+#: aperodedenis301.py:6256
+msgid ""
+"4) Si tout va bien alors modifier les options pour la suite du traitement "
+"(Malt ou C3DC) (voir la doc)."
+msgstr ""
+
+#: aperodedenis301.py:6257
+msgid "   Puis re lancer MicMac pour obtenir une vue 3D densifiée."
+msgstr ""
+
+#: aperodedenis301.py:6258
+msgid ""
+"5) Si tout ne va pas bien re 'lancer MicMac' et annuler le traitement, puis :"
+msgstr ""
+
+#: aperodedenis301.py:6259
+msgid "   Lire 'quelques conseils' (menu Aide)."
+msgstr ""
+
+#: aperodedenis301.py:6260
+msgid "   Tester la qualité des photos (menu Outils)."
+msgstr ""
+
+#: aperodedenis301.py:6261
+msgid "   Examiner les traces (menu Edition),"
+msgstr ""
+
+#: aperodedenis301.py:6262
+msgid "   Consulter l'aide (menu Aide),"
+msgstr ""
+
+#: aperodedenis301.py:6263
+msgid ""
+"   Consulter le guide d'installation et de prise en main de l'interface."
+msgstr ""
+
+#: aperodedenis301.py:6264
+msgid "   Consulter le forum MicMac sur le net, consulter la doc MicMac."
+msgstr ""
+
+#: aperodedenis301.py:6265
+msgid "6) Si une solution apparaît : modifier les options (menu MicMac)."
+msgstr ""
+
+#: aperodedenis301.py:6266
+msgid "   puis relancer le traitement."
+msgstr ""
+
+#: aperodedenis301.py:6267
+msgid ""
+"7) Si le problème persiste faire appel à l'assistance de l'interface "
+"(adresse mail dans l'A-propos)"
+msgstr ""
+
+#: aperodedenis301.py:6272
+msgid "Historique des versions diffusées sur le site de l'IGN"
+msgstr ""
+
+#: aperodedenis301.py:6274
+msgid ""
+"Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015."
+msgstr ""
+
+#: aperodedenis301.py:6275
+msgid ""
+"Version 1.55 : sous Windows le fichier paramètre est placé sous le "
+"répertoire APPDATA de l'utilisateur,"
+msgstr ""
+
+#: aperodedenis301.py:6276
+msgid ""
+"ce qui règle les questions relatives aux droits d'accès en écriture. Mise en "
+"ligne le 04/12/2015."
+msgstr ""
+
+#: aperodedenis301.py:6277
+msgid "Version 1.60 : ajout des fonctions :"
+msgstr ""
+
+#: aperodedenis301.py:6278
+msgid "- Qualité des photos lors du dernier traitement"
+msgstr ""
+
+#: aperodedenis301.py:6279
+msgid "- Exporter le chantier en cours"
+msgstr ""
+
+#: aperodedenis301.py:6280
+msgid ""
+"- Importer un chantier (permet de recopier le chantier sur un autre "
+"répertoire, disque, ordinateur, système d'exploitation)"
+msgstr ""
+
+#: aperodedenis301.py:6281
+msgid "- Les fichiers 'trace' sont enregistrés au format utf-8."
+msgstr ""
+
+#: aperodedenis301.py:6282
+msgid "Version 2.00 : ajout des fonctions :"
+msgstr ""
+
+#: aperodedenis301.py:6283
+msgid "- Choix de photos pour la calibration intrinsèque par Tapas."
+msgstr ""
+
+#: aperodedenis301.py:6284
+msgid ""
+"- Possibilité de relancer Malt sans relancer Tapioca/Tapas tout en "
+"conservant les images 3D générées."
+msgstr ""
+
+#: aperodedenis301.py:6285
+msgid ""
+"- Conservation de plusieurs fichiers modele3D.ply après Malt pour un même "
+"chantier."
+msgstr ""
+
+#: aperodedenis301.py:6286
+msgid ""
+"- Choix du niveau de zoom d'arrêt de la procédure Malt : de 1 (par défaut) à "
+"8."
+msgstr ""
+
+#: aperodedenis301.py:6287
+msgid ""
+"- Création de tous les fichiers .ply correspondants à tous les niveaux de "
+"zoom calculés."
+msgstr ""
+
+#: aperodedenis301.py:6288
+msgid ""
+"- Ajout d'un item du menu édition listant et visualisant toutes les images "
+"3D générées."
+msgstr ""
+
+#: aperodedenis301.py:6289
+msgid ""
+"- Choix du nombre de photos à retenir autour de l'image maître pour Malt."
+msgstr ""
+
+#: aperodedenis301.py:6290
+msgid ""
+"- Traitement des vidéos (par exemple GoPro) : décompactage, sélection, mise "
+"à jour de l'exif"
+msgstr ""
+
+#: aperodedenis301.py:6291
+msgid ""
+"- Ajout de deux contrôles sur le lot des photos : mêmes dimensions, même "
+"focale."
+msgstr ""
+
+#: aperodedenis301.py:6292
+msgid "- Ajout d'un item 'historique' dans le menu Aide."
+msgstr ""
+
+#: aperodedenis301.py:6293
+msgid "- Ajout d'un item du menu édition fusionnant les images 3D."
+msgstr ""
+
+#: aperodedenis301.py:6293
+msgid "Version 2.10"
+msgstr ""
+
+#: aperodedenis301.py:6294
+msgid "- Plusieurs images maîtresses, plusieurs masques."
+msgstr ""
+
+#: aperodedenis301.py:6295
+msgid "- Conversion automatique des fichiers PNG, BMP, GIF, TIF en JPG"
+msgstr ""
+
+#: aperodedenis301.py:6296
+msgid ""
+"- Ajout d'un item du menu Outils permettant de modifier les exifs. Diffusion "
+"restreinte à la DTer NC le 16/02/2016"
+msgstr ""
+
+#: aperodedenis301.py:6297
+msgid ""
+"- Maintien des options compatibles lors du choix de nouvelles photos. "
+"Février 2016"
+msgstr ""
+
+#: aperodedenis301.py:6297
+msgid "Version 2.20 :"
+msgstr ""
+
+#: aperodedenis301.py:6298
+msgid "Version 2.30 : "
+msgstr ""
+
+#: aperodedenis301.py:6299
+msgid "- Modification des options par défaut dans le menu outils."
+msgstr ""
+
+#: aperodedenis301.py:6300
+msgid "- Choix de l'option (Statue ou QuickMac) pour C3DC. Avril 2016"
+msgstr ""
+
+#: aperodedenis301.py:6300
+msgid "Version 2.40 :"
+msgstr ""
+
+#: aperodedenis301.py:6301
+msgid ""
+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule "
+"est un séparateur décimal accepté."
+msgstr ""
+
+#: aperodedenis301.py:6301
+msgid "Version 2.45 :"
+msgstr ""
+
+#: aperodedenis301.py:6302
+msgid ""
+"- Possiblité d'appliquer la calibration GPS sans relancer malt. Mai 2016"
+msgstr ""
+
+#: aperodedenis301.py:6303
+msgid ""
+"- Ajout de Tawny aprés Malt en mode Ortho, désactivation du message de "
+"lancement. Juin 2016"
+msgstr ""
+
+#: aperodedenis301.py:6303
+msgid "Version 2.50 :"
+msgstr ""
+
+#: aperodedenis301.py:6310
+msgid "Laboratoire Régional de Rouen"
+msgstr ""
+
+#: aperodedenis301.py:6310
+msgid "Réalisation Denis Jouin 2015-2016"
+msgstr ""
+
+#: aperodedenis301.py:6311
+msgid "Direction Territoriale Normandie Centre"
+msgstr ""
+
+#: aperodedenis301.py:6327
+msgid "erreur canvas logo cerema : "
+msgstr ""
+
+#: aperodedenis301.py:6409
+msgid "erreur sauveParamChantier : "
+msgstr ""
+
+#: aperodedenis301.py:6433
+msgid "erreur sauveParamMicMac : "
+msgstr ""
+
+#: aperodedenis301.py:6434
+msgid ""
+"L'interface doit être installée dans un répertoire ou vous avez les droits "
+"d'écriture."
+msgstr ""
+
+#: aperodedenis301.py:6435
+msgid ""
+"Installer l'interface AperoDeDenis à un emplacement ou vous avez ce droit."
+msgstr ""
+
+#: aperodedenis301.py:6436
+msgid "Répertoire actuel : "
+msgstr ""
+
+#: aperodedenis301.py:6437
+msgid "Erreur rencontrée : "
+msgstr ""
+
+#: aperodedenis301.py:6438
+msgid "Problème d'installation"
+msgstr ""
+
+#: aperodedenis301.py:6473
+msgid "Erreur restauration param généraux : "
+msgstr ""
+
+#: aperodedenis301.py:6549
+msgid "Erreur restauration param chantier : "
+msgstr ""
+
+#: aperodedenis301.py:6559
+msgid "erreur définir fichier trace, est normale lors d'une importation."
+msgstr ""
+
+#: aperodedenis301.py:6720
+msgid "Enregistrer les options saisies ?"
+msgstr ""
+
+#: aperodedenis301.py:6720
+msgid "Fermer les options."
+msgstr ""
+
+#: aperodedenis301.py:6720 aperodedenis301.py:6733 aperodedenis301.py:6745
+msgid "abandon"
+msgstr ""
+
+#: aperodedenis301.py:6720 aperodedenis301.py:6733 aperodedenis301.py:6745
+msgid "enregistrer"
+msgstr ""
+
+#: aperodedenis301.py:6733
+msgid "Enregistrer les options vidéos saisies ?"
+msgstr ""
+
+#: aperodedenis301.py:6733
+msgid "Fermer les options vidéo."
+msgstr ""
+
+#: aperodedenis301.py:6745
+msgid "Enregistrer les valeurs saisies ?"
+msgstr ""
+
+#: aperodedenis301.py:6745
+msgid "Fermer la modification des exifs."
+msgstr ""
+
+#: aperodedenis301.py:6756
+msgid "Tous les chantiers sont déjà supprimés."
+msgstr ""
+
+#: aperodedenis301.py:6764
+msgid "Chantiers à supprimer"
+msgstr ""
+
+#: aperodedenis301.py:6768
+msgid "repertoires"
+msgstr ""
+
+#: aperodedenis301.py:6773 aperodedenis301.py:6780
+msgid "Suppression des répertoires de travail superflus"
+msgstr ""
+
+#: aperodedenis301.py:6774
+msgid "Le répertoire suivant va être supprimé, sans mise en corbeille :"
+msgstr ""
+
+#: aperodedenis301.py:6775
+msgid "Confirmez"
+msgstr ""
+
+#: aperodedenis301.py:6779
+msgid "ATTENTION : le chantier en cours va être supprimé."
+msgstr ""
+
+#: aperodedenis301.py:6781
+msgid "Vont être supprimés les répertoires suivants, sans mise en corbeille :"
+msgstr ""
+
+#: aperodedenis301.py:6782
+msgid "Confimez"
+msgstr ""
+
+#: aperodedenis301.py:6785
+msgid "Suppression en cours...."
+msgstr ""
+
+#: aperodedenis301.py:6790
+msgid "Le précédent chantier %s est en cours de suppression."
+msgstr ""
+
+#: aperodedenis301.py:6806
+msgid "Repertoires supprimés :"
+msgstr ""
+
+#: aperodedenis301.py:6806 aperodedenis301.py:6808
+msgid "Compte rendu de la suppression :"
+msgstr ""
+
+#: aperodedenis301.py:6808
+msgid "Aucun répertoire supprimé."
+msgstr ""
+
+#: aperodedenis301.py:6811
+msgid "Tous les chantiers demandés sont supprimés."
+msgstr ""
+
+#: aperodedenis301.py:6813
+msgid "Il reste un chantier impossible à supprimer maintenant : "
+msgstr ""
+
+#: aperodedenis301.py:6815
+msgid "Il reste des chantiers impossibles à supprimer maintenant : "
+msgstr ""
+
+#: aperodedenis301.py:6821
+msgid "Choisir"
+msgstr ""
+
+#: aperodedenis301.py:6821
+msgid "Choisir : "
+msgstr ""
+
+#: aperodedenis301.py:6889
+msgid " : lancement de "
+msgstr ""
+
+#: aperodedenis301.py:6899
+msgid "erreur lors de l'éxécution de la commande :"
+msgstr ""
+
+#: aperodedenis301.py:6900 aperodedenis301.py:6908 aperodedenis301.py:6930
+msgid " : fin de "
+msgstr ""
+
+#: aperodedenis301.py:6907
+msgid "erreur lors de l'éxécution de la commande."
+msgstr ""
+
+#: aperodedenis301.py:6923
+msgid "erreur lecture output : "
+msgstr ""
+
+#: aperodedenis301.py:6945
+msgid "Trace complète"
+msgstr ""
+
+#: aperodedenis301.py:6946
+msgid "Trace synthétique"
+msgstr ""
+
+#: aperodedenis301.py:6949
+msgid "Choix des photos :"
+msgstr ""
+
+#: aperodedenis301.py:6950
+msgid "répertoire du chantier :"
+msgstr ""
+
+#: aperodedenis301.py:6951
+msgid "Version MicMac : "
+msgstr ""
+
+#: aperodedenis301.py:7010
+msgid "erreur ecritureTraceMicMac : "
+msgstr ""
+
+#: aperodedenis301.py:7026
+msgid "Choisir une photo"
+msgstr ""
+
+#: aperodedenis301.py:7027
+msgid "Cliquer pour choisir une ou plusieurs photos : "
+msgstr ""
+
+#: aperodedenis301.py:7029 aperodedenis301.py:8472
+msgid "OK"
+msgstr ""
+
+#: aperodedenis301.py:7035
+msgid "Pas de photos pour cette demande."
+msgstr ""
+
+#: aperodedenis301.py:7047
+msgid "Dossier corrompu. Traitement interrompu."
+msgstr ""
+
+#: aperodedenis301.py:7047
+msgid "Les fichiers suivants sont absents du disque :"
+msgstr ""
+
+#: aperodedenis301.py:7146
+msgid "Options GoPro modifiées"
+msgstr ""
+
+#: aperodedenis301.py:7158
+msgid "Abandon : options GoPro inchangées."
+msgstr ""
+
+#: aperodedenis301.py:7176
+msgid ""
+"L'outil ffmpeg n'est pas installé sur votre ordinateur. Traitement des vidéo "
+"GoPro impossible."
+msgstr ""
+
+#: aperodedenis301.py:7183
+msgid ""
+"Choisir la video issue d'un appareil %(GoProMaker)s %(GoProName)s (sinon "
+"modifier les options)"
+msgstr ""
+
+#: aperodedenis301.py:7185
+msgid "Video"
+msgstr ""
+
+#: aperodedenis301.py:7189
+msgid ""
+"Abandon, aucune sélection,\n"
+" le chantier reste inchangé."
+msgstr ""
+
+#: aperodedenis301.py:7193
+msgid ""
+"La version actuelle ne traite que les videos au format MP4, or le format des "
+"photos est %s. Désolé."
+msgstr ""
+
+#: aperodedenis301.py:7212
+msgid "Décompacte la vidéo"
+msgstr ""
+
+#: aperodedenis301.py:7217
+msgid "Il convient de l'ajouter."
+msgstr ""
+
+#: aperodedenis301.py:7217
+msgid "L'outil ffmpeg est absent du répertoire %s."
+msgstr ""
+
+#: aperodedenis301.py:7224
+msgid "Aucune image décompactée : consulter la trace."
+msgstr ""
+
+#: aperodedenis301.py:7251
+msgid "Les images de la video sont décompactées sous le répertoire :"
+msgstr ""
+
+#: aperodedenis301.py:7252
+msgid "Il y a %s images décompactées."
+msgstr ""
+
+#: aperodedenis301.py:7253
+msgid ""
+"Lancer 'Sélection des images' pour sélectionner %s images par seconde de "
+"film."
+msgstr ""
+
+#: aperodedenis301.py:7254
+msgid "La sélection choisira les 'meilleures' images"
+msgstr ""
+
+#: aperodedenis301.py:7255
+msgid ""
+"Les options Tapioca et Tapas ont été positionnées pour des images GoPro : "
+"modifier si besoin"
+msgstr ""
+
+#: aperodedenis301.py:7265
+msgid "met à jour l'exif des JPG décompactés :"
+msgstr ""
+
+#: aperodedenis301.py:7299
+msgid "Cette sélection de photos est réservé  aux chantiers vidéos"
+msgstr ""
+
+#: aperodedenis301.py:7308 aperodedenis301.py:7346
+msgid "Sélection d'un sous ensemble des images GoPro décompactées."
+msgstr ""
+
+#: aperodedenis301.py:7320 aperodedenis301.py:7359
+msgid " a supprimer : "
+msgstr ""
+
+#: aperodedenis301.py:7328
+msgid "Vous pouvez utiliser le menu 'outils/qualité des photos line'"
+msgstr ""
+
+#: aperodedenis301.py:7328
+msgid "puis effectuer une sélection manuelle."
+msgstr ""
+
+#: aperodedenis301.py:7328 aperodedenis301.py:7367
+msgid "Aucune sélection effectuée."
+msgstr ""
+
+#: aperodedenis301.py:7328 aperodedenis301.py:7367 aperodedenis301.py:7688
+msgid "Consulter la trace."
+msgstr ""
+
+#: aperodedenis301.py:7330 aperodedenis301.py:7369
+msgid "Images sélectionnées."
+msgstr ""
+
+#: aperodedenis301.py:7330 aperodedenis301.py:7369
+msgid "Vous pouvez lancer Micmac."
+msgstr ""
+
+#: aperodedenis301.py:7337
+msgid "Cette sélection de photos est réservé  aux chantiers photos"
+msgstr ""
+
+#: aperodedenis301.py:7367
+msgid ""
+"Vous pouvez utiliser le menu 'outils/qualité des photos line'\n"
+"puis effectuer une sélection manuelle."
+msgstr ""
+
+#: aperodedenis301.py:7407
+msgid "Trouvé : "
+msgstr ""
+
+#: aperodedenis301.py:7409
+msgid "Non trouvé : "
+msgstr ""
+
+#: aperodedenis301.py:7429
+msgid " Pas de fichier pour "
+msgstr ""
+
+#: aperodedenis301.py:7448
+msgid "erreur infobulle : "
+msgstr ""
+
+#: aperodedenis301.py:7495
+msgid "Aucun point placé sur cette photo"
+msgstr ""
+
+#: aperodedenis301.py:7497
+msgid "Un point placé sur cette photo"
+msgstr ""
+
+#: aperodedenis301.py:7499
+msgid " points placés sur cette photo"
+msgstr ""
+
+#: aperodedenis301.py:7565
+msgid "Aucun chantier mémorisé."
+msgstr ""
+
+#: aperodedenis301.py:7573
+msgid "Choisir le chantier à ouvrir :"
+msgstr ""
+
+#: aperodedenis301.py:7575
+msgid "vertical"
+msgstr ""
+
+#: aperodedenis301.py:7576
+msgid "horizontal"
+msgstr ""
+
+#: aperodedenis301.py:7596
+msgid "Ouvrir"
+msgstr ""
+
+#: aperodedenis301.py:7601
+msgid " le fichier %s est absent."
+msgstr ""
+
+#: aperodedenis301.py:7601
+msgid "Il y a des chantiers incomplets,"
+msgstr ""
+
+#: aperodedenis301.py:7602
+msgid "Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :"
+msgstr ""
+
+#: aperodedenis301.py:7627
+msgid "Abandon utilisateur."
+msgstr ""
+
+#: aperodedenis301.py:7647 aperodedenis301.py:7664
+msgid "HomolTemporaire"
+msgstr ""
+
+#: aperodedenis301.py:7649
+msgid "erreur renommage Homol en HomolTemporaire : "
+msgstr ""
+
+#: aperodedenis301.py:7654
+msgid "erreur renommage %s en Homol : "
+msgstr ""
+
+#: aperodedenis301.py:7662
+msgid "erreur renommage Homol en : %s : "
+msgstr ""
+
+#: aperodedenis301.py:7666
+msgid "erreur renommage HomolTemporaire en Homol : "
+msgstr ""
+
+#: aperodedenis301.py:7677
+msgid "dernier traitement : "
+msgstr ""
+
+#: aperodedenis301.py:7685
+msgid "Lancer MicMac avant de pouvoir évaluer la qualité des photos."
+msgstr ""
+
+#: aperodedenis301.py:7688
+msgid "Le traitement n'a donné aucun point homologue."
+msgstr ""
+
+#: aperodedenis301.py:7726
+msgid "Photo"
+msgstr ""
+
+#: aperodedenis301.py:7726
+msgid "nb photos en correspondance"
+msgstr ""
+
+#: aperodedenis301.py:7726
+msgid "score"
+msgstr ""
+
+#: aperodedenis301.py:7734
+msgid " : fin de la recherche sur la qualité des photos."
+msgstr ""
+
+#: aperodedenis301.py:7750
+msgid "Lancer d'abord Tapioca/Tapas"
+msgstr ""
+
+#: aperodedenis301.py:7778 aperodedenis301.py:7795
+msgid "Aucun nuage de points dans ce chantier."
+msgstr ""
+
+#: aperodedenis301.py:7781
+msgid "Liste des nuages de points du chantier"
+msgstr ""
+
+#: aperodedenis301.py:7782
+msgid "les nuages (fichiers ply) :"
+msgstr ""
+
+#: aperodedenis301.py:7783
+msgid "Visualiser"
+msgstr ""
+
+#: aperodedenis301.py:7798
+msgid "Fusion de nuages"
+msgstr ""
+
+#: aperodedenis301.py:7799
+msgid "Choisir les fichiers à fusionner :"
+msgstr ""
+
+#: aperodedenis301.py:7800
+msgid "Fusionner et visualiser"
+msgstr ""
+
+#: aperodedenis301.py:7806 aperodedenis301.py:7821
+msgid "Choisir au moins 2 nuages pour la fusion."
+msgstr ""
+
+#: aperodedenis301.py:7833
+msgid "Nuage fusionné :"
+msgstr ""
+
+#: aperodedenis301.py:7833
+msgid "ajouté à la liste des nuages."
+msgstr ""
+
+#: aperodedenis301.py:7833
+msgid "résultat de la fusion de :"
+msgstr ""
+
+#: aperodedenis301.py:7845 aperodedenis301.py:7865 aperodedenis301.py:7904
+#: aperodedenis301.py:7918 aperodedenis301.py:7952
+msgid "Saisir une valeur numérique"
+msgstr ""
+
+#: aperodedenis301.py:7851 aperodedenis301.py:7871 aperodedenis301.py:7924
+msgid "Passage en coordonnées xyz"
+msgstr ""
+
+#: aperodedenis301.py:7853 aperodedenis301.py:7856 aperodedenis301.py:7873
+#: aperodedenis301.py:7926
+msgid "Création de la grille ..."
+msgstr ""
+
+#: aperodedenis301.py:7881 aperodedenis301.py:7931
+msgid "Le calcul peut durer quelques minutes ..."
+msgstr ""
+
+#: aperodedenis301.py:7887
+msgid "Rugosité moyenne quadratique : "
+msgstr ""
+
+#: aperodedenis301.py:7888
+msgid "Tortuosité moyenne : "
+msgstr ""
+
+#: aperodedenis301.py:7889 aperodedenis301.py:7937
+msgid "nombre de profils utilisés : "
+msgstr ""
+
+#: aperodedenis301.py:7890 aperodedenis301.py:7899 aperodedenis301.py:7906
+#: aperodedenis301.py:7938 aperodedenis301.py:7947 aperodedenis301.py:7954
+msgid "id profil entre : "
+msgstr ""
+
+#: aperodedenis301.py:7898 aperodedenis301.py:7946
+msgid "Choisir une valeur valide "
+msgstr ""
+
+#: aperodedenis301.py:7935
+msgid "Profondeur moyenne de profil (moyenne) : "
+msgstr ""
+
+#: aperodedenis301.py:7936
+msgid "Profondeur de texture équivalente : "
+msgstr ""
+
+#: aperodedenis301.py:7986
+msgid "Paramètres mis à jour"
+msgstr ""
+
+#: aperodedenis301.py:7987
+msgid "Méthode = "
+msgstr ""
+
+#: aperodedenis301.py:7988
+msgid "Pas du maillage = "
+msgstr ""
+
+#: aperodedenis301.py:8035
+msgid "Exifs mis à jour"
+msgstr ""
+
+#: aperodedenis301.py:8036
+msgid "Fabricant = "
+msgstr ""
+
+#: aperodedenis301.py:8037
+msgid "Modèle = "
+msgstr ""
+
+#: aperodedenis301.py:8038
+msgid "Focale = "
+msgstr ""
+
+#: aperodedenis301.py:8039
+msgid "Focale eq 35mm = "
+msgstr ""
+
+#: aperodedenis301.py:8043
+msgid "Abandon de la mise à jour des exifs"
+msgstr ""
+
+#: aperodedenis301.py:8053
+msgid "Aucune photo à mettre à jour."
+msgstr ""
+
+#: aperodedenis301.py:8056
+msgid ""
+"La liste des fichiers comporte plusieurs extensions différentes : abandon."
+msgstr ""
+
+#: aperodedenis301.py:8061
+msgid ""
+"La version actuelle ne traite que les exif des photos au format JPG, or le "
+"format des photos est %s. Désolé, abandon."
+msgstr ""
+
+#: aperodedenis301.py:8067
+msgid "Le fichier %s n'existe pas. Abandon"
+msgstr ""
+
+#: aperodedenis301.py:8071
+msgid "met à jour l'exif de "
+msgstr ""
+
+#: aperodedenis301.py:8097
+msgid "Choisir des photos au préalable."
+msgstr ""
+
+#: aperodedenis301.py:8101
+msgid "Attention  les photos suivantes sont absentes sur disque : "
+msgstr ""
+
+#: aperodedenis301.py:8101
+msgid "Elles sont supprimées."
+msgstr ""
+
+#: aperodedenis301.py:8106
+msgid "Problème de fichiers"
+msgstr ""
+
+#: aperodedenis301.py:8110
+msgid "Bonjour !"
+msgstr ""
+
+#: aperodedenis301.py:8110
+msgid "Commencer par indiquer où se trouve MicMac :"
+msgstr ""
+
+#: aperodedenis301.py:8111
+msgid " - menu Paramétrage/Associer le répertoire bin de MicMac"
+msgstr ""
+
+#: aperodedenis301.py:8112
+msgid "Ensuite consulter l'aide, item 'pour commencer'."
+msgstr ""
+
+#: aperodedenis301.py:8113
+msgid "Si besoin :"
+msgstr ""
+
+#: aperodedenis301.py:8114
+msgid ""
+" - Associer convert et exiftool s'ils ne sont pas trouvés automatiquement "
+"sous micmac/binaire-aux"
+msgstr ""
+
+#: aperodedenis301.py:8115
+msgid ""
+" - Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de "
+"points 3D"
+msgstr ""
+
+#: aperodedenis301.py:8116
+msgid " - Consulter la notice d'installation et de prise en main"
+msgstr ""
+
+#: aperodedenis301.py:8127
+msgid "Désigner le fichier convert, ou avconv, d'image Magick"
+msgstr ""
+
+#: aperodedenis301.py:8127
+msgid "en principe sous micmac\\binaire-aux (menu paramétrage)."
+msgstr ""
+
+#: aperodedenis301.py:8132
+msgid ""
+"Désigner le fichier ffmpeg en principe sous micmac\\binaire-aux (menu "
+"paramétrage)."
+msgstr ""
+
+#: aperodedenis301.py:8149
+msgid "Revenir aux options par défaut d'AperoDeDenis"
+msgstr ""
+
+#: aperodedenis301.py:8150 aperodedenis301.py:8168
+msgid "Utiliser les options du chantier en cours"
+msgstr ""
+
+#: aperodedenis301.py:8151 aperodedenis301.py:8169
+msgid "Ne rien changer"
+msgstr ""
+
+#: aperodedenis301.py:8154
+msgid "Options par défaut réinitialisées"
+msgstr ""
+
+#: aperodedenis301.py:8158 aperodedenis301.py:8173
+msgid "Les options par défaut seront  désormais celles du chantier en cours"
+msgstr ""
+
+#: aperodedenis301.py:8167
+msgid ""
+"Les options par défaut actuelles sont les options par défaut d'AperoDeDenis"
+msgstr ""
+
+#: aperodedenis301.py:8182
+msgid ""
+"Options par défaut non sauvegardées car les options du chantier en cours "
+"sont invalides :"
+msgstr ""
+
+#: aperodedenis301.py:8207
+msgid "erreur sauveOptions : "
+msgstr ""
+
+#: aperodedenis301.py:8208
+msgid "Erreur rencontrée lors de la sauvegarde des options : "
+msgstr ""
+
+#: aperodedenis301.py:8236
+msgid "erreur restauration options : "
+msgstr ""
+
+#: aperodedenis301.py:8275
+msgid "fin normale d'aperodedenis."
+msgstr ""
+
+#: aperodedenis301.py:8293
+msgid "fonction"
+msgstr ""
+
+#: aperodedenis301.py:8294
+msgid "valeur en retour : "
+msgstr ""
+
+#: aperodedenis301.py:8297
+msgid "variable"
+msgstr ""
+
+#: aperodedenis301.py:8298
+msgid "valeur : "
+msgstr ""
+
+#: aperodedenis301.py:8299
+msgid "Détail de la %(typeVar)s : %(nomVar)s"
+msgstr ""
+
+#: aperodedenis301.py:8300
+msgid "Identifiant : "
+msgstr ""
+
+#: aperodedenis301.py:8301
+msgid "Type : "
+msgstr ""
+
+#: aperodedenis301.py:8302
+msgid "class = "
+msgstr ""
+
+#: aperodedenis301.py:8303
+msgid "Les attributs : "
+msgstr ""
+
+#: aperodedenis301.py:8311
+msgid "Erreur suppression fichier :"
+msgstr ""
+
+#: aperodedenis301.py:8334
+msgid "erreur ajout : "
+msgstr ""
+
+#: aperodedenis301.py:8349
+msgid "erreur remove = "
+msgstr ""
+
+#: aperodedenis301.py:8375
+msgid "erreur zip = "
+msgstr ""
+
+#: aperodedenis301.py:8407
+msgid "erreur mercurial : %(e)s pour mm3D=%(mm3D)s"
+msgstr ""
+
+#: aperodedenis301.py:8408
+msgid "pas de version identifiée de MicMac"
+msgstr ""
+
+#: aperodedenis301.py:8417
+msgid "erreur verifier si executable : "
+msgstr ""
+
+#: aperodedenis301.py:8460
+msgid "Nouveau nom pour le chantier : "
+msgstr ""
+
+#: aperodedenis301.py:8497
+msgid "Question"
+msgstr ""
