@@ -35,7 +35,11 @@
 # 2.61
 # correction d'un bogue de compatibilité ascendante (changement de structure de la liste des points gps. Le 14/09/2016
 
-import tkinter                              # gestion des fenêtre, des boutons ,des menus
+# a faire : corriger le mode d'obtention de ALL ou Line dans le calcul des indices de qualité
+# v 3.00 : bilingue (début novembre 2016)
+# V 3.10 : sélection des meilleures photos
+
+from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
 import tkinter.messagebox                   # pour le message avertissant que AperoDedenis est déjà lancé
 import tkinter.ttk as ttk                   # amélioration de certains widgets de tkinter : le comportement est géré indépendamment de l'apparence : c'est mieux ! mais différent !
@@ -56,13 +60,462 @@ import inspect
 import zipfile
 import zlib
 import ctypes
+import gettext
+
+'''################################################################################
+#   Librairies utilisées pour le module de calcul des indices  surfaciques     #
+################################################################################
+
+import math                                 # Pour utiliser la fonction racine carrée
+import csv                                  # Pour la lecture de la grille à partir du fichier
+import numpy as np
+from scipy.interpolate import griddata      # Pour l'interpolation
+import matplotlib.pyplot as plt             # Pour l'affichage des profils utilisés
+from mpl_toolkits.mplot3d import Axes3D     # Pour l'affichage des surfaces
+from matplotlib import cm                   # Pour choisir la couleur de des surfaces lors de l'affichage'''
+
+################################## Classe : Choix de la langue en cas d'absence dans les paramètres ###########################"
+
+
+def foreach_window(hwnd, lParam):
+    if IsWindowVisible(hwnd):
+        length = GetWindowTextLength(hwnd)
+        buff = ctypes.create_unicode_buffer(length + 1)
+        GetWindowText(hwnd, buff, length + 1)
+        titles.append(buff.value)
+    return True
+
+def heure():        #  time.struct_time(tm_year=2015, tm_mon=4, tm_mday=7, tm_hour=22, tm_min=56, tm_sec=23, tm_wday=1, tm_yday=97, tm_isdst=1)
+        return ("le %(jour)s/%(mois)s/%(annee)s à %(heure)s:%(minutes)s:%(secondes)s") % {"jour" : str(time.localtime()[2]), "mois" : str(time.localtime()[1]), "annee" : str(time.localtime()[0]), "heure" : str(time.localtime()[3]), "minutes" : str(time.localtime()[4]), "secondes": str(time.localtime()[5])}
+
+class InitialiserLangue(tkinter.Frame):
+    def __init__(self, frame, **kwargs):
+        self.frame = tkinter.Frame
+        self.frame.__init__(self, frame, **kwargs)
+        frame.geometry("400x200")
+        photo = tkinter.PhotoImage(data=iconeTexte)
+        frame.tk.call('wm', 'iconphoto', frame._w, photo)
+        self.pack(fill=tkinter.BOTH)
+        frame.title("")
+        global langue
+        langue = "NA"
+        
+        self.message = tkinter.Label(self, text="Choisissez une langue\nSelect your language")
+        self.message.pack()
+
+        self.bouton_francais = tkinter.Button(self, text = "Français/French", command = self.langueFrancaise)
+
+        self.bouton_anglais = tkinter.Button(self, text = "Anglais/English", command = self.langueAnglaise)
+        self.bouton_francais.pack(side = tkinter.LEFT)
+        self.bouton_anglais.pack(side = tkinter.RIGHT)
+
+        frame.protocol("WM_DELETE_WINDOW", self.arret)
+        
+    def arret(self):
+        frame.destroy()
+        print("Fermeture inatendue de la fenêtre / Unexpected closure of the window")
+        sys.exit()
+
+
+    def langueFrancaise(self):
+        global langue
+        langue = "fr"
+        frame.destroy()
+        
+
+    def langueAnglaise(self):
+        global langue
+        langue = "en"
+        frame.destroy()
+
+
+################################# Outils de traduction ######################################################
+def chargerLangue():
+    try:
+        sauvegarde2 = open(os.path.join(repertoire_data, "ParamMicmac.sav"),mode='rb')
+        r2=pickle.load(sauvegarde2)
+        sauvegarde2.close()
+        langue                      =   r2[9]
+        return(langue)
+            
+    except Exception as e:
+        return "null"
+
+
+################################## INITIALISATION DU PROGRAMME ###########################################################
+
+# Variables globales
+
+version = " V 3.10"
+continuer = True
+messageDepart = str()
+compteur = 0
+iconeTexte = "R0lGODlhIAAgAIcAMQQCBJSGJNTSPHQKBMTCpGxKBPziXJxmJIR6BOTCXPTybDwCBHR2TMTGhPTmjOzmpJxuBMy+pIRyLDweDPz+1MTGjOzuhDwmBMRaFPz+pHx6LKRiLPzibDQiDMzKZIxqTKR6NOy2fHxCBNTCdEwaBISGTPzqfBwCBPTmpJRuLMzCjKxqBPTmnKxuBOzqnNzGXJQ2BHxGBIx2FIR+fMzGfOTmtMS+vIRyPPz67PTubBQCBJyGJMTCtPzqVKRmHPzSfFQWBIRuTJxuFEQeBPz+vHx2RKxiLNTKXMzCnPzqZAQKBHROBHx6JPz+hPzihPTqfEwqLJxqLJR+XOS+bEwiBMzGhPzenAwCBIyKNNzKTMzCpHxyTOzqpIxyLEwqBJxmRMzKbKx6PIQ+BNTGdISCXMzGjIxCBNS6vPz+/PzqXKRqHPzeZGQOBPzqdPzmjMzOVGwSBMTGpGxGHIR6FPTyfKRuDMy+tDwiBPz+5MTGnEQqBPz+tIR2NKRmLDQiJMzOXJx6VEwWDIx6fPyubLR6FCwCBHRCHIx+BMy6vOS+hPzedPzilIxuPIR2PJSGNJR2hFQaBJRqPKxmFJyCNFwSBIR2JPTqjJQ+BPTqlOzmtKRuFNTOTHRKBIyGTCQCBNzGbJw2BIRGBPz+zPz+lFQiBHxyXMy6zPzmVMzKdPz+7PzuTEQiBHx6PPzuZPzmfKRyBAQGBHQOBJxqJMTKhDwqBKR+NEweBMzGnHRSBPTufMzKhAwGBIRCBPzuXIR+FPzmlFwWBMTCrPTydHR2VOzmrMy+rIRyNPz+3MTGlOzujPz+rHx6NDQiFIxqVNTCfPzqhPTmrMzClIRyRPTudMTCvKRmJIRuVJxuHEQeDPz+xNTKZOS+dIyKPOzqrIxyNNTGfISCZMzGlKRqJDwiDKRmNMzOZPzefPTqnOzmvMzKfPz+9PzubPzmhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAIAAgAAcI/gABCBxIsKDBgwgTKlxI8MoVHVcYShT4cMIdHRAnKtRxwZIlGsa+eIqo0eAVCey0/fHATgSkEyRLUrwCjUg6MH9yHXECZKRMih0IVKjAZY+FUexCGAryU+AWPHiQVchTJsO0F26waNAASyaDVKkodCOAzMERDxb2uEiGJaZEcOrUUdDF5du2KZiq5EEGxsEQHROvlEqFRxSLADIKWPmGLFgeD09A2HKbUAc2JGUSxYDAScYYLqJE6bKwKY2XVRgpFzwxpNOiKNXqOBnTrUI4ZN2U5VCVZlKQOw5VUzTmwtEGYIyiEQDLgwcBLsqyCKNBjIsEWycQwlpGowslSoC0/qAZj0bdsVmoLCjTJSrbNyurhAOYlc0YpQWRpJwxVf5YmWQeoNIAHuqkcgw0KnBlECzdNNAFEJTY8gEUjyASgSi/vJCLI9DcslwceFSByS4HlZBMALL0pMMEzQTyxQa8qAFBFJM4kE4Nxxg4Ai0HLfNHG6SoYYsnhRQJBDBGqBGDDyI4sQMYZYCFQheUwaKBAr28UkcoK8DAhidgDmGLLCJIMogZTqCCRyploJARQRq8ccgSBpyyBgYDBIKRDid0YQ4hMEjyggsE8IBMFQ5cENMVdyCgwCZJNLEGKHlC9NAdbfTSQxJPVNAcMlx4kChgADjEhAe5ePCHKz/EUkhGfRjJIIAA08wSBw/mqeDCHtKQKtAuLrRHxCeKmLGBJ3ueoEcbROTIw3jF4ACVarAMEwc6RCRgDghyTKDDRU44k0p56lBjwyN+SFQEH3w4wkKbc1gSjXjqFGNNKSXBou8uy5TQgHrH8EDNDOPIpxEDeeSRCThNLaRvwxBHLFFAADs="
+
+
+# recherche du répertoire d'installation de "aperodedenis" (différent suivant les systèmes et les versions de système)
+
+repertoire_script=os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
+if not os.path.isdir(repertoire_script):
+    repertoire_script = os.path.dirname(os.path.abspath(__file__))
+if not os.path.isdir(repertoire_script):
+    repertoire_script = os.path.dirname(sys.argv[0])
+if not os.path.isdir(repertoire_script):
+    repertoire_script = os.getcwd()
+if not os.path.isdir(repertoire_script):
+    repertoire_script = os.getcwd()
+
+if os.name=="nt":   
+
+    # lancement unique d'aperodedenis sous WINDOWS : (pas trouvé d'équivalent sous Linux/Ubuntu)
+    # liste des fenetres sous windows, pour éviter de relancer l'appli si déjà lancée    
+    EnumWindows = ctypes.windll.user32.EnumWindows
+    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
+    GetWindowText = ctypes.windll.user32.GetWindowTextW
+    GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
+    IsWindowVisible = ctypes.windll.user32.IsWindowVisible 
+    titles = []
+    EnumWindows(EnumWindowsProc(foreach_window), 0)     # liste des fenetres ouvertes dans titles 
+    
+    # apero déjà ouvert ?
+    liste = [e for e in titles  if "AperoDeDenis V "in e]
+    if liste.__len__():
+        texte = "AperoDeDenis est déjà lancé dans la fenêtre :\n\n"+liste[0]+"\n\n"+\
+                "La version actuelle d'AperoDeDenis n'autorise qu'une seule instance du programme.\n"+\
+                "Valider pour quitter."
+        tkinter.messagebox.showwarning("AperoDeDenis : Avertissement",texte)
+        fin()
+    # Répertoire de travail
+    
+    repertoire_data = os.path.join(os.getenv('APPDATA'),'AperoDeDenis')
+    try: os.mkdir(repertoire_data)
+    except: pass
+    if not os.path.isdir(repertoire_data):
+        repertoire_data = repertoire_script
+    langue = chargerLangue()
+    if (langue != "en" and langue != "fr"):
+        frame = tkinter.Tk()
+        initialiserLangue = InitialiserLangue(frame)
+        initialiserLangue.mainloop()
+
+
+else:           # sous Linux
+    
+    if not os.path.isdir(repertoire_script):
+        repertoire_script = os.getenv('HOME')
+    repertoire_data = repertoire_script
+    try: os.mkdir(repertoire_data)
+    except: pass
+    if not os.path.isdir(repertoire_data):
+        repertoire_data = repertoire_script
+    langue = chargerLangue()
+    if(langue != "en" and langue != "fr"):
+        frame = tkinter.Tk()
+        initialiserLangue = InitialiserLangue(frame)
+        initialiserLangue.mainloop()
+repertoire_langue = os.path.join( repertoire_script, 'locale')
+try:
+    traduction = gettext.translation('AperoDeDenis', localedir = repertoire_langue, languages=[langue])
+    traduction.install()
+except:
+    def _(a=str(),b=str()):
+        return a+b
+
+
+
+# Message indiquant le lancement de l'outil dans le shell
+
+print(heure()+_(" lancement d'aperodedenis")+version+".")
+
+
+############################ FIN DE L'INITIALISATION #########################################################
+
+################################################################################
+#                  Classes pour le calcul d'indices de surfaces                #
+################################################################################
+
+
+################# Passge du fichier .ply aux coordonnées xyz ###################
+class Ply2XYZ():
+    def __init__(self, **kwargs):
+            endian = "@"                                                    # valeur par défaut : endian du système
+            fmt = str()                                                     # format de codage des données dans le ply ce format est utilisé par struct
+            i = int()
+            self.fichierPly = tkinter.filedialog.askopenfilename(
+                                                filetypes=[("Ply","*.ply"),(_("Tous"),"*")],multiple=False,
+                                                title = _("Ply à lire"))       # choix du fichier
+            if self.fichierPly==str():                                      # si pas de fichier choisi par l'utilisateur : on quitte
+                return
+            print(_("Fichier à lire : "),self.fichierPly)
+            with open(self.fichierPly, 'rb') as infile:                     # lecture du fichier en mode "binaire"
+                ligne = infile.read()
+
+            lignes =ligne.splitlines()                                      # coupure du flux bianire en "lignes"
+            if lignes[0]!=b'ply':                                           # vérification que le tag "ply" est présent en entête de fichier
+                    print(_("Il ne s'agit pas d'un fichier ply issu de MicMac !"))
+                    return                                                  # Abandon si pas fichier ply
+            self.fichierPlyXYZ = os.path.splitext(self.fichierPly)[0]+".xyz"# nom du fichier xyz qui sera écrit
+            print(_("Fichier à écrire : "),self.fichierPlyXYZ)                 # information sur le nom du fichier
+            for e in lignes:                                                # décodage des lignes d'entête qui indique la structure du fichier
+                i+=1
+                if e==b'end_header':
+                    break                                                   # tag de fin d'entête on connait la structure, fin du décodage de la structure
+                s=str(e)
+                if "little_endian" in s:                                    # boutisme
+                        endian="<"
+                if "big_endian" in s:
+                        endian=">"
+                if "element vertex" in s:                                   # nombre de points
+                        nombre_points = int(s.split(" ")[-1][0:-1])
+                        print(_("nombre de points : "),str(nombre_points))
+                if "property" in s:                                         # property : liste les éléments de la structure des données pour chaque point
+                        if s.split(" ")[1]=="float":                        # Micmac n'utilsie que les valeurs float et uchar
+                           fmt += "f"                                       # indique qu'il y a un float à lire
+                        elif s.split(" ")[1]=="uchar":
+                           fmt += "B"                                       # indique qu'il y a un octet à lire
+                        elif s.split(" ")[1]!="list":                       # la valeur list est aussi utilisée, s'il s'agit d'une autre valeur : abandon
+                            print("format non prévu pour les ply issus de micmac, abandon : ",s.split(" ")[1])
+                            return
+                print("ligne ",str(i)," : ",e)
+            if fmt!="fffBBB":                                               # il doit y avoir trois flottant (x,y,z) et 3 octets (Rouge, vert, bleu) sinon pas MicMac
+                print(_("Le format des données indique qu'il ne s'agit pas d'un ply généré par MicMac. Le format trouvé est : "),fmt,_(" le format attendu est : fffBBB"))
+                return
+            fmt = endian+fmt                                                # le format est complété par le boutisme
+            print(_("Longueur du fichier : "),str(ligne.__len__()))
+            print(_("format du fichier > = big_endian, < = little_endian :"),endian)
+            print(_("Format des données : "),fmt,_(" longueur : "),str(struct.calcsize(fmt)))
+
+            print(_("patience : écriture du fichier xyz en cours"))
+            debutData = ligne.find(b"end_header",0,1000)+11                 # on extrait la zone des données utiles dans la varible "ligne" : début = aprés l'entête
+            longueurData = nombre_points*struct.calcsize(fmt)               # on prend juste la longueur nécessaire (nombre de point * longueur des données du point)
+            finData = debutData + longueurData
+            plageData = ligne[debutData:finData]                            # extraction
+            print(_("Plage des données : début = "),str(debutData),_(" fin = "),str(finData),_(" longueur = "),str(longueurData))
+            try:
+                lesXYZ = [(str(x),str(y),str(z)) for (x,y,z,r,v,b) in struct.iter_unpack(fmt,plageData).__iter__() ] # list comprehension extrayant les xyz de la structure décodée
+            except Exception as e:
+                print(_("Erreur lors du décodage des données, le ply ne provient pas de micmac. Erreur : "),e)
+                return
+            with open (self.fichierPlyXYZ,"w") as outfile:                  # ouverture du fichier de sortie
+                for e in lesXYZ:                                            # pour chaque élément de la liste des xyz
+                    outfile.write(" ".join(e)+"\n")                         # écriture des éléments x y et z séparé par un espace (si on veut une virgule mettre "," au lieu de " "
+            print("Fichier %s écrit sur disque") % (self.fichierPlyXYZ)        # message final
+    def fname_out(self):
+        return  os.path.splitext(self.fichierPly)[0]+".xyz"
+
+####################### Création de grille régulière ###########################
+
+class Grille(object):
+
+    # Constructeur
+    def __init__(self):
+        self.nom= _("nom du fichier contenant les données : à déterminer")
+
+    # accesseurs // property
+    def _set_nom(self, nomFichier):
+        self.nom = nomFichier
+
+    def _get_nom(self):
+        return self.nom
+
+    #Méthodes
+    #création de la grille régulière
+
+    def creer_grille(self,methode,step):
+        mat = np.genfromtxt(self._get_nom(), delimiter=' ')
+        points = mat[:,:2]
+        values = mat[:,2]
+        # les limites (x,y) de mes données
+
+        min_x = min(mat[:,0])
+        max_x = max(mat[:,0])
+
+        min_y = min(mat[:,1])
+        max_y = max(mat[:,1])
+        # générer un maillaige avec un pas régulier, création de la grille régulière
+
+        grid_x, grid_y = np.mgrid[min_x:max_x+step:step, min_y:max_y+step:step]
+        grid_z = griddata(points, values, (grid_x, grid_y), method=methode, fill_value=-9999)
+        return grid_z
+
+    def affiche_grille(self, methode, step):
+
+        mat = np.genfromtxt(self._get_nom(), delimiter=' ')
+        points = mat[:,:2]
+        values = mat[:,2]
+        # les limites (x,y) de mes données
+
+        min_x = min(mat[:,0])
+        max_x = max(mat[:,0])
+
+        min_y = min(mat[:,1])
+        max_y = max(mat[:,1])
+
+        # générer un maillaige avec un pas régulier, création de la grille régulière
+        grid_x, grid_y = np.mgrid[min_x:max_x+step:step, min_y:max_y+step:step]
+        grid_z = griddata(points, values, (grid_x, grid_y), method=methode)
+        # Création du modèle 3D : Axes, légende, couleur...
+        fig = plt.figure()
+        ax = fig.add_subplot(111, projection='3d')
+        ax.plot_surface(grid_x, grid_y, grid_z, cmap=cm.coolwarm)
+        ax.set_title(methode+_(" pas du maillaige : ")+str(step))
+        ax.set_xlabel('X Label')
+        ax.set_ylabel('Y Label')
+        ax.set_zlabel('Z Label')
+        plt.show()
+        return
+
+    #sauvegarder_grille dans un fichier
+    def sauvegarder_grille(self, obj, grille, step):
+        return np.savetxt(os.path.splitext(obj.fichierPly)[0]+'_regular_'+str(step).replace(".","")+'.txt',grille, fmt='%.18e', delimiter=' ', newline='\r\n', header='')
+    # Récupérer le nom du fichier de la grille
+    def nomFichier_sortie(self, obj, step):
+        return os.path.splitext(obj.fichierPly)[0]+'_regular_'+str(step).replace(".", "")+'.txt'
+
+################## Manipulation des données et traitement ######################
+
+class Conteneur(object):
+
+    # Constructeur
+    def __init__(self):
+        self.nom = _("nom du fichier contenant les données : à déterminer")
+
+
+    # accesseurs // property
+    def _set_nom(self, nomFichier):
+        self.nom = nomFichier
+    def _get_nom(self):
+        return self.nom
+
+
+    # Méthodes
+    def charger_data(self):                                                     # on ne charge pas les points avec -9999 comme valeur (correspond à nan)
+        fname = open(self._get_nom())
+        lignes = csv.reader(fname, delimiter=' ')
+        hauteurs = {}
+        cle = 1
+        for line in lignes:
+            valeur = [float(i) for i in line[:len(line)-1] if float(i) != -9999]  # chaque ligne est une liste, on ne prend que les valeurs différentes de -9999
+            if(len(valeur) != 0):
+                hauteurs[cle] = valeur
+            else :
+                hauteurs[cle] = None                                            # si valeur est vide on lui donne None comme valeur
+            cle += 1
+        fname.close()
+        return hauteurs
+
+    def charger_all(self):                                                     # on prend toutes les valeurs
+        fname = open(self._get_nom())
+        lignes = csv.reader(fname, delimiter=' ')
+        hauteurs = {}
+        cle = 1
+        for line in lignes:
+            valeur =  [float(i) for i in line[:len(line)-1] ]
+            hauteurs[cle] = valeur
+            cle += 1
+        fname.close()
+        return hauteurs
+
+    #calcul de la moyenne des valeurs d'un tableau
+    def moyenne(self, tab):
+        return sum(tab)/len(tab)
+
+    #Moyenne de l'écart type des hauteurs = Rq = rugosité moyenne quadratique
+    def ecart_type(self):
+        hauteurs = self.charger_data()
+        valeur = []                                                             # On stocke Rq de chaque profil dans cette liste
+        for val in hauteurs.values():
+            if(val != None):
+                mean = self.moyenne(val)
+                temp = list(map(lambda x : x*x, [(i-mean) for i in val]))
+                valeur.append(math.sqrt(self.moyenne(temp)))
+        rugo = self.moyenne(valeur)                                          # on fait la moyenne des Rq
+        epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-rugo) for i in valeur])))/len(valeur)) # Ecart-type des Rq
+        return [rugo, epsilon]
+
+    # pmp_profil : profondeur moyenne de profil
+    def pmp_profil(self, profil, tableau):
+        pivot = int(len(profil)/2)
+        pic1 = max(profil[:pivot+1])                            # le plus haut pic dans la 1ére moitié du profil
+        pic2 = max(profil[pivot+1:])                            # le plus haut pic dans la 2éme moitié du profil
+        resultat = 0.5*(pic1+pic2) - self.moyenne(tableau)      # Moyenne des 2 pics - profil moyen
+        return resultat
+
+    # pmp
+    def pmp(self):
+        tableau_val =[]
+        keys = []
+        hauteurs = self.charger_all()                                           # Dictionnaire avec toutes les valeurs
+        for cle in range(1, len(hauteurs)+1) :
+            profil = hauteurs.get(cle)
+            taux = profil.count(-9999)/len(profil)
+            if ( taux < 0.2):                                 # On ne prend pas les profils avec plus de 20% (de -9999)  de l'information contenue dans profil
+                keys.append(cle)
+                work = [x for x in profil if x != -9999]                        # cle = identifiant du profil (utilisé pour l'affichage des profils utilisés)
+                tableau_val.append(self.pmp_profil(profil,work))                # On stocke les pmp de chaque profil dans un tableau
+        moyenne_pmp = self.moyenne(tableau_val)                                  # Moyenne des pmp
+        epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-moyenne_pmp) for i in tableau_val])))/len(tableau_val)) # Ecart-type des pmp
+        return [moyenne_pmp, epsilon, keys]
+
+    # tortuosité de profil : longueur réelle du profil / la longeur entre les extrémités
+    def tortuosity_profil(self,pas,tableau):
+        j = len(tableau)-1                                                      # Dans cette méthode on ne prend pas en compte les cellules où on a -9999
+        i = 0
+        while(tableau[j] == -9999 or tableau[i] == -9999):
+            if(tableau[j] == -9999) :
+                j -= 1
+            if(tableau[i] == -9999):
+                i += 1
+        calc_inter = (tableau[j]-tableau[i])**2 + (pas*(j - i))**2              # (y1-y2)**2+(x1-x2)**2
+        longueur_extremit = math.sqrt(calc_inter)                               # Distance euclidienne
+        longueur_profil = 0
+        while(i < j):
+            l = i + 1
+            while(tableau[l] == -9999):
+                l += 1
+            temp = (tableau[l]-tableau[i])**2 + (pas*(l-i))**2
+            longueur_profil += math.sqrt(temp)
+            i = l
+        return longueur_profil/longueur_extremit
+
+    # tortuosité
+    def tortuosity(self, pas):
+        tortuosite = []
+        keys = []
+        hauteurs = self.charger_all()
+        for cle in range(1,len(hauteurs)+1):
+            profil = hauteurs.get(cle)
+            taux = profil.count(-9999)/len(profil)
+            if (taux < 0.2):
+                keys.append(cle)                                                # cle = identifiant du profil (utilisé pour l'affichage des profils utilisés)
+                tortuosite.append(self.tortuosity_profil(pas,profil))           # On stocke la tortuosité de chaque profil dans un tableau
+        epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-self.moyenne(tortuosite)) for i in tortuosite])))/len(tortuosite)) # Ecart-type des tortuosité
+        return [self.moyenne(tortuosite), epsilon, keys]
+    # Afficher un profil utilisé dans les calculs de : PMP, Tortuosité
+    def affiche_profil(self, cle, step):
+        def nan(x):
+            if(x== -9999):
+                x = 0
+            return x
+        hauteurs = self.charger_all()
+        profil = [nan(x) for x  in hauteurs.get(cle) ]
+        x = np.array([i*step for i in range(len(profil))])
+        profil = np.array(profil)
+        plt.plot(x, profil, label=_("profil n°")+str(cle))
+        plt.legend()
+        plt.show()
+        return
+
+########################### Variables globales 2 #################################
+donnee = Conteneur()
+grid = Grille()
 
 ########################### Classe pour tracer les masques
 
 class TracePolygone():
-    def __init__(self, fenetre, image, masque,labelBouton='Tracer le masque'):  # fenetre : root de l'appli ; image : fichier image sur lequel tracer le polygone ; masque = nom du fichier à créer
+    def __init__(self, fenetre, image, masque,labelBouton=_('Tracer le masque')):  # fenetre : root de l'appli ; image : fichier image sur lequel tracer le polygone ; masque = nom du fichier à créer
         self.root = tkinter.Toplevel()                      #fenêtre spécifique à la saisie du masque
-        self.root.title("Saisie sur la photo : "+image)     # titre
+        self.root.title(_("Saisie sur la photo : ")+image)     # titre
         fenetreIcone(self.root)
         self.root.geometry( "900x900" )                     # Taille
         self.dimMaxiCanvas = 600                            # dimension max du canvas accueillant l'image       
@@ -111,16 +564,16 @@ class TracePolygone():
         self.root.bind("a",self.delete)
 
         self.frame2 = ttk.Frame(self.root, borderwidth = 2,relief = 'sunken')                        # cadre pour la photo et les boutons
-        self.boutonQuitter = ttk.Button(self.frame2, text="Valider",command = self.quitter)
-        self.boutonAbandon = ttk.Button(self.frame2, text="Abandon",command = self.abandon)        
+        self.boutonQuitter = ttk.Button(self.frame2, text=_("Valider"),command = self.quitter)
+        self.boutonAbandon = ttk.Button(self.frame2, text=_("Abandon"),command = self.abandon)        
         self.boutonTracer = ttk.Button(self.frame2, text=labelBouton,command = self.tracerMasqueBis)
         self.boutonAide = ttk.Label (self.frame2,
-                                     text=  "\nmolette de la souris = zoom,\n"+\
-                                            "utilisable avant ET pendant le tracé\n"+\
-                                            "glisser-déposer actif avant le tracé\n\n"+\
-                                            "Tracer :\n"+\
-                                            "Clic gauche : ajouter un point;\n double clic gauche : fermer le polygone,\n"+\
-                                            "Touche Del pour supprimer un point ou le polygone,\n")       
+                                     text=  "\n" + _("molette de la souris = zoom,") + "\n"+\
+                                            _("utilisable avant ET pendant le tracé") + "\n"+\
+                                            _("glisser-déposer actif avant le tracé=") + "\n\n"+\
+                                            _("Tracer :") + "\n"+\
+                                            _("Clic gauche : ajouter un point;\n double clic gauche : fermer le polygone,") +"\n"+\
+                                            _("Touche Del pour supprimer un point ou le polygone,") + "\n")      
         self.boutonAide.pack(side='left',pady=2,padx=2)
         self.boutonTracer.pack(side='left',pady=2,padx=8)
         self.boutonQuitter.pack(side='left',pady=2,padx=8)
@@ -196,7 +649,7 @@ class TracePolygone():
         if event.widget!=self.canvas: return                    # si le clic n'est pas sur l'image (canvas=frame=image) on ne fait rien
         if self.frame.cget("cursor").string=="plus":            # le cursor "plus" indique l'ajout d'un point : on clot
             if self.listePointsJPG.__len__()<=1:                #polygone avec trop peu de point
-                self.infoBulle(event,"Il faut au moins 2 points dans le polygone.")
+                self.infoBulle(event,_("Il faut au moins 2 points dans le polygone."))
                 return            
             self.tracerMasqueBis()                              # on désactive le bouton de tracé
             self.afficherPolygone()
@@ -226,7 +679,7 @@ class TracePolygone():
 
     def redrawZoom(self, event):                                # l'utilisateur zoom avant avec la molette de la souris : mémo du zoom précédent   
         if self.scale>self.maxScale:                            # si l'échelle passe à plusieurs pixels écran pour un pixel image on arrête
-             self.infoBulle(event,texte="Zoom maximum atteint") # l'utilisateur est informé
+             self.infoBulle(event,texte=_("Zoom maximum atteint")) # l'utilisateur est informé
              return
         self.listeSauveImages.append((self.xNW,self.yNW,self.xSE,self.ySE,self.img,self.scale)) # sauvegarde pour retour arrière (redrawDeZoom)       
         self.positionNouveauZoom(event.x,event.y)               # calcule les positions du centre, du coin nw pour le nouveau zoom
@@ -312,7 +765,7 @@ class TracePolygone():
         i = ImageDraw.Draw(self.imageFichier)
         l,h = i.textsize(texte,font=None)
         try: self.bulle.destroy()
-        except Exception as e: print("Erreur suppression d'info bulle : ",str(e))
+        except Exception as e: print(_("Erreur suppression d'info bulle : "),str(e))
         self.bulle = tkinter.Toplevel()                                 # nouvelle fenêtre pour l'info bulle
         self.bulle.overrideredirect(1)                                  # sans le bordel tout autour
         self.bulle.geometry("%dx%d%+d%+d" % (l+10,h+6,event.x_root+15,event.y_root))  # position du coin nw de la fenêtre par rapport au curseur
@@ -361,8 +814,8 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
             
         self.file = image                   # nom de la photo avec chemin (au moins relatif)        
         self.root = tkinter.Toplevel()
-        self.root.title( "Calibration GPS "+image)
-        self.root.title("Position des points sur la photo  : "+image)       # titre
+        self.root.title( _("Calibration GPS ")+image)
+        self.root.title(_("Position des points sur la photo  : ")+image)       # titre
         fenetreIcone(self.root)
         self.root.geometry( "900x900" )    
         self.dimMaxiCanvas = 600            # dimension max du canvas accueillant l'image
@@ -408,22 +861,22 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         # boutons de controle :
         
         self.frame3 = ttk.Frame(self.root,borderwidth = 2,relief = "sunken")
-        self.boutonQuitter = ttk.Button(self.frame3, text="Valider",command = self.quitter)
-        self.boutonSupprimerTousLesPoints = ttk.Button(self.frame3, text="Supprimer tous les points",command = self.supprimerTousLesPoints)
-        self.boutonAbandon = ttk.Button(self.frame3, text="Abandon",command = self.abandon)
+        self.boutonQuitter = ttk.Button(self.frame3, text=_("Valider"),command = self.quitter)
+        self.boutonSupprimerTousLesPoints = ttk.Button(self.frame3, text=_("Supprimer tous les points"),command = self.supprimerTousLesPoints)
+        self.boutonAbandon = ttk.Button(self.frame3, text=_("Abandon"),command = self.abandon)
         self.boutonQuitter.pack(side='left',pady=2,ipady=2)
         self.boutonSupprimerTousLesPoints.pack(side='left',pady=2,ipady=2,padx=5)
         self.boutonAbandon.pack(side='left',pady=2,ipady=2,padx=5)
         self.frame3.pack(pady=10)
         self.frame4 = ttk.Frame(self.root,borderwidth = 2,relief = "sunken")        
-        self.boutonchangerCouleurTexte = ttk.Button(self.frame4, text="Changer la couleur des libellés",command = self.changerCouleurTexte)        
+        self.boutonchangerCouleurTexte = ttk.Button(self.frame4, text=_("Changer la couleur des libellés"),command = self.changerCouleurTexte)        
         self.boutonchangerCouleurTexte.pack(pady=2,ipady=2,padx=5)
         self.frame4.pack(pady=10)
 
         # message d'inforamtion
 
         self.frame5 = ttk.Frame(self.root,borderwidth = 2)
-        ttk.Label(self.frame5,text="Utiliser la molette pour zoomer/dezoomer pendant la saisie.").pack()
+        ttk.Label(self.frame5,text=_("Utiliser la molette pour zoomer/dezoomer pendant la saisie.")).pack()
         self.frame5.pack()
         
         # évènements
@@ -440,10 +893,10 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         fenetre.wait_window(self.root)
                                             
     def placerBoutons(self,listePoints):                        # Place les boutons correspondants aux points de listePoints
-        textePoint = "Placer le point "                         # on raccourcit les textes si il y bcp de points  (30 max))
+        textePoint = _("Placer le point ")                         # on raccourcit les textes si il y bcp de points  (30 max))
         padding = 5                                             # version 2.41
         if listePoints.__len__()>5:
-            textePoint = "Point "
+            textePoint = _("Point ")
             padding = 3
         if listePoints.__len__()>10:
             textePoint = ""
@@ -498,7 +951,7 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
                 
     def redrawZoom(self, event):                                # l'utilisateur zoom avant avec la molette de la souris : mémo du zoom précédent   
         if self.scale>self.maxScale:                                        # si l'échelle passe à plusieurs pixels écran pour un pixel image on arrête
-             self.infoBulle(event,texte="Zoom maximum atteint")                         # l'utilisateur est informé
+             self.infoBulle(event,texte=_("Zoom maximum atteint"))                         # l'utilisateur est informé
              return
         self.listeSauveImages.append((self.xNW,self.yNW,self.xSE,self.ySE,self.img,self.scale)) # sauvegarde pour retour arrière (redrawDeZoom)       
         self.positionNouveauZoom(event.x,event.y)                                               # calcule les positions du centre, du coin nw pour le nouveau zoom
@@ -600,12 +1053,14 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         self.dicoPointsJPG = self.retourSiAbandon
         self.quitter()
 
-    def supprimerTousLesPoints(self):
-        aSupprimer = dict(self.dicoPointsJPG)
-        for cle in aSupprimer:
+    def supprimerTousLesPoints(self):                                   # suppression de la localisation de tous les points GPS présents sur l'image self.file
+        aSupprimer = dict(self.dicoPointsJPG)                           # self.dicoPointsJPG[(self.boutonChoisi,self.file,self.numBoutonChoisi)] = (self.xJPG,self.yJPG)
+        for cle in aSupprimer:                                          # 
             if cle[1]==self.file:
                del self.dicoPointsJPG[cle]
         self.afficheImage()
+        print("self.file=",self.file)
+        print("dicoPointsGPSEnPlace=",self.dicoPointsGPSEnPlace)        # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
         
 ################# Classe Principale : la fenêtre maître de l'application, le menu, l'IHM
 
@@ -641,13 +1096,17 @@ class Interface(ttk.Frame):
                     self.imgTk = ImageTk.PhotoImage(self.img)
                     self.imgTk_id = self.canvasLogo1.create_image(0,0,image = self.imgTk,anchor="nw") # affichage effectif de la photo dans canvasPhoto
                     fenetreIcone(fenetre)
-                    for i in range(len(self.titreFenetre+" : Une interface graphique pour MicMac...")+8):
-                        fenetre.title((self.titreFenetre+" : Une interface graphique pour MicMac...")[0:i])        
-                        fenetre.update()
-                        time.sleep(0.1)
-                    self.logo1.pack_forget()
+
+                    try:
+                        for i in range(len(self.titreFenetre+_(" : une interface graphique pour MicMac..."))+8):
+                            fenetre.title((self.titreFenetre+_(" : une interface graphique pour MicMac..."))[0:i])        
+                            fenetre.update()
+                            time.sleep(0.1)
+                    except:
+                        print(_("Fermeture inatendue de la fenêtre."))
+                    
             except Exception as e:
-                print("Erreur initialisation de la fenêtre principale : ",str(e))
+                print(_("Erreur initialisation de la fenêtre principale : ")),str(e)
 
         # Fenêtre principale : fenetre
        
@@ -667,114 +1126,125 @@ class Interface(ttk.Frame):
         # Fichier
         
         menuFichier = tkinter.Menu(mainMenu,tearoff = 0)                                        ## menu fils : menuFichier, par défaut tearOff = 1, détachable 
-        menuFichier.add_command(label="Nouveau chantier", command=self.nouveauChantier)           
-        menuFichier.add_command(label="Ouvrir un chantier", command=self.ouvreChantier)
+        menuFichier.add_command(label=_("Nouveau chantier"), command=self.nouveauChantier)           
+        menuFichier.add_command(label=_("Ouvrir un chantier"), command=self.ouvreChantier)
         menuFichier.add_separator()        
-        menuFichier.add_command(label="Enregistrer le chantier en cours", command=self.enregistreChantierAvecMessage)
-        menuFichier.add_command(label="Renommer ou déplacer le chantier en cours", command=self.renommeChantier)         
+        menuFichier.add_command(label=_("Enregistrer le chantier en cours"), command=self.enregistreChantierAvecMessage)
+        menuFichier.add_command(label=_("Renommer ou déplacer le chantier en cours"), command=self.renommeChantier)         
         menuFichier.add_separator()
-        menuFichier.add_command(label="Exporter le chantier en cours", command=self.exporteChantier)
-        menuFichier.add_command(label="Importer un chantier", command=self.importeChantier)         
+        menuFichier.add_command(label=_("Exporter le chantier en cours"), command=self.exporteChantier)
+        menuFichier.add_command(label=_("Importer un chantier"), command=self.importeChantier)         
         menuFichier.add_separator()        
-        menuFichier.add_command(label="Du ménage !", command=self.supprimeRepertoires)        
+        menuFichier.add_command(label=_("Du ménage !"), command=self.supprimeRepertoires)        
         menuFichier.add_separator()        
-        menuFichier.add_command(label="Quitter", command=self.quitter)
+        menuFichier.add_command(label=_("Quitter"), command=self.quitter)
 
         # Edition
 
         menuEdition = tkinter.Menu(mainMenu,tearoff = 0)                                        ## menu fils : menuFichier, par défaut tearOff = 1, détachable
-        menuEdition.add_command(label="Afficher l'état du chantier", command=self.afficheEtat)
+        menuEdition.add_command(label=_("Afficher l'état du chantier"), command=self.afficheEtat)
         menuEdition.add_separator()        
-        menuEdition.add_command(label="Visualiser toutes les photos sélectionnées", command=self.afficherToutesLesPhotos)
-        menuEdition.add_command(label="Visualiser les points GPS", command=self.afficherLesPointsGPS)        
-        menuEdition.add_command(label="Visualiser les maîtresses et les masques", command=self.afficherLesMaitresses)        
-        menuEdition.add_command(label="Visualiser le masque 3D", command=self.afficheMasqueC3DC)
-        menuEdition.add_command(label="Visualiser la ligne horizontale/verticale", command=self.afficherLigneHV)
-        menuEdition.add_command(label="Visualiser la zone plane", command=self.afficherZonePlane)
-        menuEdition.add_command(label="Visualiser la distance", command=self.afficherDistance)
-        menuEdition.add_command(label="Visualiser les photos pour la calibration intrinsèque", command=self.afficherCalibIntrinseque)
+        menuEdition.add_command(label=_("Visualiser toutes les photos sélectionnées"), command=self.afficherToutesLesPhotos)
+        menuEdition.add_command(label=_("Visualiser les points GPS"), command=self.afficherLesPointsGPS)        
+        menuEdition.add_command(label=_("Visualiser les maîtresses et les masques"), command=self.afficherLesMaitresses)        
+        menuEdition.add_command(label=_("Visualiser le masque 3D"), command=self.afficheMasqueC3DC)
+        menuEdition.add_command(label=_("Visualiser la ligne horizontale/verticale"), command=self.afficherLigneHV)
+        menuEdition.add_command(label=_("Visualiser la zone plane"), command=self.afficherZonePlane)
+        menuEdition.add_command(label=_("Visualiser la distance"), command=self.afficherDistance)
+        menuEdition.add_command(label=_("Visualiser les photos pour la calibration intrinsèque"), command=self.afficherCalibIntrinseque)
         menuEdition.add_separator()
-        menuEdition.add_command(label="Afficher la trace complète du chantier", command=self.lectureTraceMicMac)
-        menuEdition.add_command(label="Afficher la trace synthétique du chantier", command=self.lectureTraceSynthetiqueMicMac)
+        menuEdition.add_command(label=_("Afficher la trace complète du chantier"), command=self.lectureTraceMicMac)
+        menuEdition.add_command(label=_("Afficher la trace synthétique du chantier"), command=self.lectureTraceSynthetiqueMicMac)
         menuEdition.add_separator()
-        menuEdition.add_command(label="Afficher l'image 3D non densifiée", command=self.afficheApericloud)      
-        menuEdition.add_command(label="Afficher l'image 3D densifiée", command=self.affiche3DNuage)
+        menuEdition.add_command(label=_("Afficher l'image 3D non densifiée"), command=self.afficheApericloud)      
+        menuEdition.add_command(label=_("Afficher l'image 3D densifiée"), command=self.affiche3DNuage)
         menuEdition.add_separator()        
-        menuEdition.add_command(label="Lister-Visualiser les images 3D", command=self.lister3DPly)
-        menuEdition.add_command(label="Fusionner des images 3D", command=self.choisirPuisFusionnerPly)
+        menuEdition.add_command(label=_("Lister-Visualiser les images 3D"), command=self.lister3DPly)
+        menuEdition.add_command(label=_("Fusionner des images 3D"), command=self.choisirPuisFusionnerPly)
         
         # menuMaintenance.add_command(label="Vérifier les dépendances",command=self.verifierDependances)
 
         # MicMac
                 
         menuMicMac = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
-        menuMicMac.add_command(label="Choisir des photos", command=self.lesPhotos)
-        menuMicMac.add_command(label="Options", command=self.optionsOnglet)
+        menuMicMac.add_command(label=_("Choisir des photos"), command=self.lesPhotos)
+        menuMicMac.add_command(label=_("Options"), command=self.optionsOnglet)
         menuMicMac.add_separator()     
-        menuMicMac.add_command(label="Lancer MicMac", command=self.lanceMicMac)                 ## Ajout d'une option au menu fils menuFile
+        menuMicMac.add_command(label=_("Lancer MicMac"), command=self.lanceMicMac)                 ## Ajout d'une option au menu fils menuFile
 
         # GoPro
                 
         menuGoPro = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
-        menuGoPro.add_command(label="Options (GoPro par défaut)", command=self.optionsGoPro)
+        menuGoPro.add_command(label=_("Options (GoPro par défaut)"), command=self.optionsGoPro)
         menuGoPro.add_separator()          
-        menuGoPro.add_command(label="Nouveau chantier : Choisir une video GoPro, ou autre", command=self.laVideo)   
-        menuGoPro.add_command(label="Sélection des meilleures images", command=self.selectionGoPro)        ## Sélection des "meilleures images" avec le taux passé en paramètre
+        menuGoPro.add_command(label=_("Nouveau chantier : choisir une vidéo GoPro, ou autre"), command=self.laVideo)   
+        menuGoPro.add_command(label=_("Sélection des meilleures images"), command=self.selectionGoPro)        ## Sélection des "meilleures images" avec le taux passé en paramètre
 
         # Outils
 
         menuOutils = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
 
-        menuOutils.add_command(label="Nom et focale de l'appareil photo", command=self.OutilAppareilPhoto)
-        menuOutils.add_command(label="Toutes les focales des photos", command=self.toutesLesFocales)          
-        menuOutils.add_command(label="Mettre à jour DicoCamera.xml", command=self.miseAJourDicoCamera)        
+        menuOutils.add_command(label=_("Nom et focale de l'appareil photo"), command=self.OutilAppareilPhoto)
+        menuOutils.add_command(label=_("Toutes les focales des photos"), command=self.toutesLesFocales)          
+        menuOutils.add_command(label=_("Mettre à jour DicoCamera.xml"), command=self.miseAJourDicoCamera)        
         menuOutils.add_separator()
-        menuOutils.add_command(label="Qualité des photos du dernier traitement", command=self.nombrePointsHomologues)        
-        menuOutils.add_command(label="Qualité des photos 'line'", command=self.OutilQualitePhotosLine)        
-        menuOutils.add_command(label="Qualité des photos 'All' ", command=self.OutilQualitePhotosAll)
+        menuOutils.add_command(label=_("Qualité des photos du dernier traitement"), command=self.nombrePointsHomologues)
+        menuOutils.add_command(label=_("Sélectionner les N meilleures photos"), command=self.OutilMeilleuresPhotos)
+        menuOutils.add_separator()        
+        menuOutils.add_command(label=_("Qualité des photos 'line'"), command=self.OutilQualitePhotosLine)        
+        menuOutils.add_command(label=_("Qualité des photos 'All' "), command=self.OutilQualitePhotosAll)    
         menuOutils.add_separator()
-        menuOutils.add_command(label="Modifier l'exif des photos", command=self.majExif)
+        menuOutils.add_command(label=_("Modifier l'exif des photos"), command=self.majExif)
         menuOutils.add_separator()
-        menuOutils.add_command(label="Modifier les options par défaut", command=self.majOptionsParDefaut)
+        menuOutils.add_command(label=_("Modifier les options par défaut"), command=self.majOptionsParDefaut)
         
         # Paramétrage       
 
         def updateParam():
             if self.tacky:
-                menuParametres.entryconfig(8, label="Désactiver le 'tacky' message de lancement")
+                menuParametres.entryconfig(10, label=_("Désactiver le 'tacky' message de lancement"))
             else:
-                menuParametres.entryconfig(8, label="Activer le 'tacky' message de lancement")
+                menuParametres.entryconfig(10, label=_("Activer le 'tacky' message de lancement"))
                 
         menuParametres = tkinter.Menu(mainMenu,tearoff = 0,postcommand=updateParam)
-        menuParametres.add_command(label="Afficher les paramètres", command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
-        
-        menuParametres.add_command(label="Associer le répertoire bin de MicMac", command=self.repMicmac)   ## Ajout d'une option au menu fils menuFile
-        menuParametres.add_command(label="Associer 'exiftool'", command=self.repExiftool)                   ## Exiftool : sous MicMac\binaire-aux si Windows, mais sinon ???   
-        menuParametres.add_command(label="Associer 'convert' d'ImageMagick", command=self.repConvert)       ## convert : sous MicMac\binaire-aux si Windows, mais sinon ???   
-        menuParametres.add_command(label="Associer 'ffmpeg (décompacte les vidéos)", command=self.repFfmpeg)                        ## ffmpeg : sous MicMac\binaire-aux si Windows, mais sinon ???
-        menuParametres.add_command(label="Associer 'Meshlab' ou 'CloudCompare'", command=self.repMeslab)    ## Meslab   
+        menuParametres.add_command(label=_("Afficher les paramètres"), command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
+        menuParametres.add_separator()        
+        menuParametres.add_command(label=_("Associer le répertoire bin de MicMac"), command=self.repMicmac)   ## Ajout d'une option au menu fils menuFile
+        menuParametres.add_command(label=_("Associer 'exiftool'"), command=self.repExiftool)                   ## Exiftool : sous MicMac\binaire-aux si Windows, mais sinon ???   
+        menuParametres.add_command(label=_("Associer 'convert' d'ImageMagick"), command=self.repConvert)       ## convert : sous MicMac\binaire-aux si Windows, mais sinon ???   
+        menuParametres.add_command(label=_("Associer 'ffmpeg (décompacte les vidéos)"), command=self.repFfmpeg)                        ## ffmpeg : sous MicMac\binaire-aux si Windows, mais sinon ???
+        menuParametres.add_command(label=_("Associer 'Meshlab' ou 'CloudCompare'"), command=self.repMeslab)    ## Meslab
+        menuParametres.add_separator()
+        menuParametres.add_command(label=_("Changer la langue"), command = self.modifierLangue)
         menuParametres.add_separator() 
-        menuParametres.add_command(label="Désactive/Active le tacky message de lancement...",command=self.modifierTacky)    ## Meslab   
+        menuParametres.add_command(label=_("Désactive/Active le tacky message de lancement..."),command=self.modifierTacky)    ## Meslab
 
+        # Indices surfaciques
+
+        menuIndices =  tkinter.Menu(mainMenu,tearoff = 0)
+        menuIndices.add_command(label=_("Affichage de la surface interpolée"), command=self.afficheSurf)
+        menuIndices.add_command(label=_("Calcul des indices"), command=self.calculIndices)
+        menuIndices.add_command(label=_("Calcul de la PMP"), command=self.calculPmp)
       
         # Aide
         
         menuAide = tkinter.Menu(mainMenu,tearoff = 0)                                           ## menu fils : menuFichier, par défaut tearOff = 1, détachable
-        menuAide.add_command(label="Pour commencer...", command=self.commencer)           
-        menuAide.add_command(label="Aide", command=self.aide)           
-        menuAide.add_command(label="Quelques conseils", command=self.conseils)
-        menuAide.add_command(label="Historique", command=self.historiqueDesVersions)
-        menuAide.add_command(label="A Propos", command=self.aPropos) 
+        menuAide.add_command(label=_("Pour commencer..."), command=self.commencer)           
+        menuAide.add_command(label=_("Aide"), command=self.aide)           
+        menuAide.add_command(label=_("Quelques conseils"), command=self.conseils)
+        menuAide.add_command(label=_("Historique"), command=self.historiqueDesVersions)
+        menuAide.add_command(label=_("A Propos"), command=self.aPropos) 
         
         # ajout des items dans le menu principal :
         
-        mainMenu.add_cascade(label = "Fichier",menu=menuFichier)
-        mainMenu.add_cascade(label = "Edition",menu=menuEdition)        
+        mainMenu.add_cascade(label = _("Fichier"),menu=menuFichier)
+        mainMenu.add_cascade(label = _("Edition"),menu=menuEdition)        
         mainMenu.add_cascade(label = "MicMac",menu=menuMicMac)
-        mainMenu.add_cascade(label = "Vidéo",menu=menuGoPro)                              
-        mainMenu.add_cascade(label = "Outils",menu=menuOutils)
-        mainMenu.add_cascade(label = "Paramétrage",menu=menuParametres)        
-        mainMenu.add_cascade(label = "Aide",menu=menuAide)
+        mainMenu.add_cascade(label = _("Vidéo"),menu=menuGoPro)                              
+        mainMenu.add_cascade(label = _("Outils"),menu=menuOutils)
+        mainMenu.add_cascade(label = _("Paramétrage"),menu=menuParametres)
+        '''mainMenu.add_cascade(label = _("Indices_surfaciques"),menu=menuIndices)''' #Non fonctionnel pour le moment
+        mainMenu.add_cascade(label = _("Aide"),menu=menuAide)
         
         # affichage du menu principal dans la fenêtre
 
@@ -803,15 +1273,15 @@ class Interface(ttk.Frame):
         self.indiceTravail              =   0                                                   # lors de l'installation, valeur initial de l'indice des répertoires de travail
 
         # Les 3 chemins utiles : mecmac\bin, meshlab et exiftool :  
-
-        self.micMac                     =   'Pas de répertoire désigné pour MicMac\\bin'        # oar défaut il n'y a pas de répertoire micMac, sauf si restauration ligne suivante
-        self.meshlab                    =   'Pas de fichier désigné pour ouvrir les .PLY'
-        self.exiftool                   =   "Pas de chemin pour ExifTool"
-        self.mm3d                       =   "Pas de fichier pour mm3d"                          # lanceur des commandes micmac
-        self.ffmpeg                     =   "Pas de fichier pour ffmpeg"                        # outil d'extraction des images à partir de video
-        self.mercurialMicMac            =   "Pas de version MicMac"
+        self.micMac                     =   _('Pas de répertoire désigné pour MicMac\\bin')        # oar défaut il n'y a pas de répertoire micMac, sauf si restauration ligne suivante
+        self.meshlab                    =   _('Pas de fichier désigné pour ouvrir les .PLY')
+        self.exiftool                   =   _("Pas de chemin pour ExifTool")
+        self.mm3d                       =   _("Pas de fichier pour mm3d")                          # lanceur des commandes micmac
+        self.ffmpeg                     =   _("Pas de fichier pour ffmpeg")                        # outil d'extraction des images à partir de video
+        self.mercurialMicMac            =   _("Pas de version MicMac")
         self.mercurialMicMacChantier    =   ""      
-        self.convertMagick              =   "Pas de version Image Magick"                       # pour convertir les formats
+        self.convertMagick              =   _("Pas de version Image Magick")                       # pour convertir les formats
+        self.noRep = [self.micMac, self.meshlab, self.exiftool, self.mm3d, self.convertMagick]
 
         # le controle des photos
 
@@ -937,7 +1407,7 @@ class Interface(ttk.Frame):
         # tapioca Echelle 1 All
         
         self.item480  = ttk.Frame(self.item400,height=50,relief='sunken',padding="0.3cm")        
-        self.item481  = ttk.Label(self.item480, text="Echelle image (-1 pour l'image entière) :")
+        self.item481  = ttk.Label(self.item480, text=_("Echelle image (-1 pour l'image entière) :"))
         self.item482  = ttk.Entry(self.item480,textvariable=self.echelle1)
         self.item481.pack()
         self.item482.pack()
@@ -945,11 +1415,11 @@ class Interface(ttk.Frame):
         # tapioca Echelle2 et 3 (MultiScale) 
 
         self.item460=ttk.Frame(self.item400,height=50,relief='sunken',padding="0.3cm")        
-        self.item461=ttk.Label(self.item460, text="Echelle image réduite : ")
+        self.item461=ttk.Label(self.item460, text=_("Echelle image réduite : "))
         self.item462=ttk.Entry(self.item460,textvariable=self.echelle2)
         self.item461.pack()
         self.item462.pack()
-        self.item463=ttk.Label(self.item460, text="Seconde Echelle (-1 pour l'image entière) :")
+        self.item463=ttk.Label(self.item460, text=_("Seconde Echelle (-1 pour l'image entière) :"))
         self.item464=ttk.Entry(self.item460,textvariable=self.echelle3)
         self.item463.pack()
         self.item464.pack()
@@ -957,9 +1427,9 @@ class Interface(ttk.Frame):
         # tapioca Delta Echelle4
 
         self.item470=ttk.Frame(self.item400,height=50,relief='sunken',padding="0.3cm")
-        self.item471=ttk.Label(self.item470, text="Echelle image (-1 pour l'image entière) :")
+        self.item471=ttk.Label(self.item470, text=_("Echelle image (-1 pour l'image entière) :"))
         self.item472=ttk.Entry(self.item470,textvariable=self.echelle4)
-        self.item473=ttk.Label(self.item470, text="Delta (nombre d'images se recouvrant, avant et après) : ")
+        self.item473=ttk.Label(self.item470, text=_("Delta (nombre d'images se recouvrant, avant et après) : "))
         self.item474=ttk.Entry(self.item470,textvariable=self.delta)
         self.item471.pack()
         self.item472.pack()
@@ -987,13 +1457,13 @@ class Interface(ttk.Frame):
 
         self.item520 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour la calibration, fera un encadrement
         # photosPourCalibrationIntrinseque       
-        self.item525 = ttk.Button(self.item520,text="Choisir quelques photos pour la calibration intrinsèques",command=self.imagesCalibrationIntrinseques)  
+        self.item525 = ttk.Button(self.item520,text=_("Choisir quelques photos pour la calibration intrinsèques"),command=self.imagesCalibrationIntrinseques)  
         self.item526 = ttk.Label(self.item520, text="")
         self.item527 = ttk.Checkbutton(self.item520, variable=self.calibSeule,
-                                       text=" N'utiliser ces photos que pour la calibration\n (exemple : focales différentes)") # inutile ?
-        self.item528 = ttk.Label(self.item520, text="Toutes ces photos doivent avoir la même focale,\néventuellement différente de la focale des autres photos.")
+                                       text=_(" N'utiliser ces photos que pour la calibration") + "\n" +  _("(exemple : focales différentes)")) # inutile ?
+        self.item528 = ttk.Label(self.item520, text=_("Toutes ces photos doivent avoir la même focale,") + "\n" + _("éventuellement différente de la focale des autres photos."))
         self.item510 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour le check button, fera un encadrement
-        self.item530 = ttk.Checkbutton(self.item510, variable=self.arretApresTapas, text="Arrêter le traitement après TAPAS")
+        self.item530 = ttk.Checkbutton(self.item510, variable=self.arretApresTapas, text=_("Arrêter le traitement après TAPAS"))
         self.item530.pack(ipady=5)
         self.item525.pack()
         self.item526.pack()
@@ -1014,17 +1484,17 @@ class Interface(ttk.Frame):
                                    padding="0.3cm")
         
         self.item961 = ttk.Label(self.item960,
-                                  text='Choisir entre :')
+                                  text=_('Choisir entre :'))
         
         self.item962 = ttk.Button(self.item960,
-                                  text='Ligne horizontale',
+                                  text=_('Ligne horizontale'),
                                   command= self.ligneHorizontale)            
 
         self.item963 = ttk.Label(self.item960,
-                                  text='ou')        
+                                  text=_('ou'))        
 
         self.item964 = ttk.Button(self.item960,
-                                  text='Ligne verticale',
+                                  text=_('Ligne verticale'),
                                   command= self.ligneVerticale)
 
         self.item961.pack(ipadx=5,padx=5,ipady=2)
@@ -1037,7 +1507,7 @@ class Interface(ttk.Frame):
         # conjonction de coordination :
         
         self.item965 = ttk.Frame(  self.item950)
-        self.item966 = ttk.Label(self.item965,text='ET :')
+        self.item966 = ttk.Label(self.item965,text=_('ET :'))
         self.item966.pack()
         self.item965.pack()
         
@@ -1049,17 +1519,17 @@ class Interface(ttk.Frame):
                                    padding="0.3cm")
         
         self.item971 = ttk.Label(self.item970,
-                                  text='Choisir entre :')
+                                  text=_('Choisir entre :'))
         
         self.item972 = ttk.Button(self.item970,
-                                  text='Zone plane horizontale',
+                                  text=_('Zone plane horizontale'),
                                   command= self.planHorizontal)   
 
         self.item973 = ttk.Label(self.item970,
-                                  text='ou') 
+                                  text=_('ou')) 
 
         self.item974 = ttk.Button(self.item970,
-                                  text='Zone plane verticale',
+                                  text=_('Zone plane verticale'),
                                   command= self.planVertical)
         
         self.item971.pack(ipadx=5,padx=5,ipady=2)               
@@ -1071,7 +1541,7 @@ class Interface(ttk.Frame):
         # conjonction de coordination :
         
         self.item975 = ttk.Frame(self.item950)
-        self.item976 = ttk.Label(self.item975,text='ET :')
+        self.item976 = ttk.Label(self.item975,text=_('ET :'))
         self.item976.pack()            
         self.item975.pack()
         
@@ -1082,12 +1552,12 @@ class Interface(ttk.Frame):
                                    relief='sunken',
                                    padding="0.3cm")        
         self.item981 = ttk.Label(self.item980,
-                                  text='Distance entre les 2 points :')        
+                                  text=_('Distance entre les 2 points :'))        
 
         self.item982 = ttk.Entry(self.item980,textvariable=self.distance)          # distance
 
         self.item983 = ttk.Button(self.item980,
-                                  text='Placer 2 points identiques sur 2 photos',
+                                  text=_('Placer 2 points identiques sur 2 photos'),
                                   command= self.placer2Points)
 
         self.item981.pack()
@@ -1097,16 +1567,16 @@ class Interface(ttk.Frame):
 
         self.item990 = ttk.Frame(  self.item950,
                                    relief='sunken') 
-        self.item991 = ttk.Label(self.item990,text='\nPour annuler la calibration mettre la distance = 0')       
+        self.item991 = ttk.Label(self.item990,text='\n' + _('Pour annuler la calibration mettre la distance = 0'))       
         self.item991.pack()
         
         # Malt 
 
         self.item700 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")                      
         # retiré : ('Ortho pour orthophotos','Ortho'), la commande nuage2ply est différente ??
-        self.modesMalt = [('UrbanMNE pour photos urbaines','UrbanMNE'),
-                          ("GeomImage pour photos du sol ou d'objets",'GeomImage'),
-                          ('Ortho pour orthophotos','Ortho')]
+        self.modesMalt = [(_('UrbanMNE pour photos urbaines'),'UrbanMNE'),
+                          (_("GeomImage pour photos du sol ou d'objets"),'GeomImage'),
+                          (_('Ortho pour orthophotos'),'Ortho')]
 
         self.TawnyListeparam = (
                                 "* [Name=DEq] INT :: {Degree of equalization (Def=1)}\n"+
@@ -1130,21 +1600,21 @@ class Interface(ttk.Frame):
                 
         self.item710 = ttk.Frame(self.item700,height=50,relief='sunken',padding="0.2cm")      # pour le check button, fera un encadrement
         self.item701 = ttk.Label(self.item710)
-        self.item702 = ttk.Button(self.item710,text="Choisir les maîtresses",command=self.imageMaitresse)
+        self.item702 = ttk.Button(self.item710,text=_("Choisir les maîtresses"),command=self.imageMaitresse)
         self.item703 = ttk.Label(self.item710)
-        self.item704 = ttk.Button(self.item710,text='Tracer les masques',command=self.tracerLesMasques) #avant : traceMasque) 
-        self.item705 = ttk.Label(self.item710,text="Attention : Le masque 3D de C3DC a la priorité sur Malt\nPour supprimer un masque : supprimer la maitresse")
+        self.item704 = ttk.Button(self.item710,text=_('Tracer les masques'),command=self.tracerLesMasques) #avant : traceMasque) 
+        self.item705 = ttk.Label(self.item710,text=_("Attention : Le masque 3D de C3DC a la priorité sur Malt") + "\n" + _("Pour supprimer un masque : supprimer la maitresse"))
         self.item720 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour le zoom 
-        self.item722 = ttk.Label(self.item720,text="Zoom final : 8, 4, 2 ou 1 (8=le plus rapide, 1=le plus précis)")
+        self.item722 = ttk.Label(self.item720,text=_("Zoom final : 8, 4, 2 ou 1 (8=le plus rapide, 1=le plus précis)"))
         self.item723 = ttk.Entry(self.item720,width=5,textvariable=self.zoomF)
         self.item730 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour maitre et masque du masque        self.item702.pack(ipady=2,pady=10)
-        self.item732 = ttk.Label(self.item730,text="Nombre de photos utiles en + et en - autour de l'image maitresse :")
+        self.item732 = ttk.Label(self.item730,text=_("Nombre de photos utiles en + et en - autour de l'image maitresse :"))
         self.item733 = ttk.Entry(self.item730,width=5,textvariable=self.photosUtilesAutourDuMaitre)        
         self.item740 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour maitre et masque du masque        self.item702.pack(ipady=2,pady=10)
-        self.item741 = ttk.Checkbutton(self.item740, variable=self.tawny, text="Lancer tawny après MALT")
-        self.item742 = ttk.Label(self.item740,text="Saisir si besoin les paramètres facultatifs, exemple :\nDEq=2 DegRapXY=[4,1]")
+        self.item741 = ttk.Checkbutton(self.item740, variable=self.tawny, text=_("Lancer tawny après MALT"))
+        self.item742 = ttk.Label(self.item740,text=_("Saisir si besoin les paramètres facultatifs, exemple :") + "\nDEq=2 DegRapXY=[4,1]")
         self.item743 = ttk.Entry(self.item740,width=45,textvariable=self.tawnyParam)
-        self.item744 = ttk.Label(self.item740,text="Liste des paramètres facultatifs nommés :\n"+self.TawnyListeparam
+        self.item744 = ttk.Label(self.item740,text=_("Liste des paramètres facultatifs nommés :") + "\n"+self.TawnyListeparam
                                  )        
         self.item701.pack()
         self.item702.pack()         
@@ -1165,28 +1635,28 @@ class Interface(ttk.Frame):
         self.item800 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")
         
         #self.item810 = ttk.Radiobutton(self.item800, text="Ground",     variable=self.modeC3DC, value='Ground') non supportée
-        self.item811 = ttk.Radiobutton(self.item800, text="Statue - avec drapage",     variable=self.modeC3DC, value='Statue')
-        self.item812 = ttk.Radiobutton(self.item800, text="QuickMac - rapide, sans drapage",   variable=self.modeC3DC, value='QuickMac')
+        self.item811 = ttk.Radiobutton(self.item800, text=_("Statue - avec drapage"),     variable=self.modeC3DC, value='Statue')
+        self.item812 = ttk.Radiobutton(self.item800, text=_("QuickMac - rapide, sans drapage"),   variable=self.modeC3DC, value='QuickMac')
         #self.item810.pack(anchor='w')
         self.item811.pack(anchor='w')
         self.item812.pack(anchor='w')
         #self.item810.state(['disabled'])                # dans micmac : non supporté
        
-        self.item801 = ttk.Button(self.item800,text='Tracer le masque 3D sur le nuage AperiCloud',command=self.affiche3DApericloud)              
+        self.item801 = ttk.Button(self.item800,text=_('Tracer le masque 3D sur le nuage AperiCloud'),command=self.affiche3DApericloud)              
         self.item801.pack(ipady=2,pady=10)
-        self.item802 = ttk.Button(self.item800,text='Supprimer le masque 3D',command=self.supprimeMasque3D)              
+        self.item802 = ttk.Button(self.item800,text=_('Supprimer le masque 3D'),command=self.supprimeMasque3D)              
         self.item802.pack(ipady=2,pady=10)        
         self.item803 = ttk.Label(self.item800, text= \
-                                                   "Dans l'outil : \n"+\
-                                                   "Définir le masque : F9 \n"+\
-                                                   "Ajouter un point : clic gauche\n"+\
-                                                   "Fermer le polygone : clic droit\n"+\
-                                                   "Sélectionner : touche espace\n"+\
-                                                   "Sauver le masque : Ctrl S.\n"+
-                                                   "Quitter : Ctrl Q.\n\n"+
-                                                   "Agrandir les points : Maj +\n\n"+\
-                                                   "Saisie simultanée de plusieurs masques disjoints possible\n\n"+\
-                                                   "C3DC a la priorité sur le masque 2D de Malt")
+                                                   _("Dans l'outil : " ) +"\n"+\
+                                                   _("Définir le masque : F9 ") + "\n"+\
+                                                   _("Ajouter un point : clic gauche") + "\n"+\
+                                                   _("Fermer le polygone : clic droit") + "\n"+\
+                                                   _("Sélectionner : touche espace") +"\n"+\
+                                                   _("Sauver le masque : Ctrl S.") + "\n"+
+                                                   _("Quitter : Ctrl Q.") + "\n\n"+
+                                                   _("Agrandir les points : Maj +") + "\n\n"+\
+                                                   _("Saisie simultanée de plusieurs masques disjoints possible") + "\n\n"+\
+                                                   _("C3DC a la priorité sur le masque 2D de Malt"))
         self.item803.pack(ipady=2,pady=10)
         self.item804 = ttk.Label(self.item800, text= "")
         self.item804.pack(ipady=2,pady=10)
@@ -1204,10 +1674,10 @@ class Interface(ttk.Frame):
 
         self.item450 = ttk.Frame(fenetre)                           # frame pour bouton de validation, permet un ménage facile
         self.item451 = ttk.Button(self.item450,
-                                text=' Valider les options',
+                                text=_(' Valider les options'),
                                 command=self.finOptionsOK)          # bouton permettant de tout valider
         self.item452 = ttk.Button(self.item450,
-                                text=' Annuler',
+                                text=_(' Annuler'),
                                 command=self.finOptionsKO)          # bouton permettant de tout annuler
         
         # les 2 boutons globaux :
@@ -1220,16 +1690,16 @@ class Interface(ttk.Frame):
         self.item1000 = ttk.Frame(fenetre)
         self.item1001 = ttk.Label(self.item1000)
         self.item1002 = ttk.Label(self.item1000,
-                                  text= "Indiquer les dimensions du capteur, en mm.\n"+\
-                                        "par exemple :\n\n                                  5.7  7.6  \n\n"+\
-                                        "Le site :\n \http://www.dpreview.com/products\n"+\
-                                        "fournit les dimensions de tous les appareils photos.")
+                                  text= _("Indiquer les dimensions du capteur, en mm.") + "\n"+\
+                                        _("par exemple :") + "\n\n                                  5.7  7.6  \n\n"+\
+                                        _("Le site :") + "\n \http://www.dpreview.com/products\n"+\
+                                        _("fournit les dimensions de tous les appareils photos."))
         self.item1003 = ttk.Entry(self.item1000)
         self.item1004 = ttk.Button(self.item1000,
-                                text=' Valider',
+                                text=_(' Valider'),
                                 command=self.dimensionCapteurOK)          # bouton permettant de tout valider
         self.item1005 = ttk.Button(self.item1000,
-                                text=' Annuler',
+                                text=_(' Annuler'),
                                 command=self.dimensionCapteurKO)          # bouton permettant de tout annuler
         self.item1001.pack(pady=15)
         self.item1002.pack(pady=15)
@@ -1262,32 +1732,32 @@ class Interface(ttk.Frame):
         
         self.item2000 = ttk.Frame(fenetre)
         self.item2010 = ttk.Label(self.item2000,
-                                  text="Marque de l'appareil : ")
+                                  text=_("Marque de l'appareil : "))
         self.item2011 = ttk.Entry(self.item2000,
                                   textvariable=self.goProMaker)         
         self.item2001 = ttk.Label(self.item2000,
-                                  text="Nom de la camera GoPRo : ")
+                                  text=_("Nom de la camera : "))
         self.item2002 = ttk.Entry(self.item2000,
                                   textvariable=self.goProNomCamera)        
         self.item2003 = ttk.Label(self.item2000,
-                                  text= "Focale en mm:")
+                                  text= _("Focale en mm:"))
         self.item2004 = ttk.Entry(self.item2000,
                                   textvariable=self.goProFocale)
         self.item2005 = ttk.Label(self.item2000,
-                                  text= "Focale équivalente 35mm :")
+                                  text= _("Focale équivalente 35mm :"))
         self.item2006 = ttk.Entry(self.item2000,
                                   textvariable=self.goProFocale35)
         self.item2007 = ttk.Label(self.item2000,
-                                  text= "--------------\nNombre d'images à conserver par seconde :",
+                                  text= "--------------\n" + _("Nombre d'images à conserver par seconde :"),
                                   justify='center')
         self.item2008 = ttk.Entry(self.item2000,
                                   textvariable=self.goProNbParSec)        
         
         self.item2020 = ttk.Button(self.item2000,
-                                text=' Valider',
+                                text=_(' Valider'),
                                 command=self.optionsGoProOK)          # bouton permettant de tout valider
         self.item2021 = ttk.Button(self.item2000,
-                                text=' Annuler',
+                                text=_(' Annuler'),
                                 command=self.optionsGoProKO)          # bouton permettant de tout annuler
         self.item2010.pack(pady=5)
         self.item2011.pack(pady=1)        
@@ -1308,8 +1778,72 @@ class Interface(ttk.Frame):
         self.goProNomCamera.set("GoPro Hero3 HD3")
         self.goProNbParSec.set("3")                 # taux de conservation des photos pour DIV
         self.goProEchelle.set("1000")               # pour tapioca 
-        self.goProDelta.set("10")   
+        self.goProDelta.set("10")
+        
+    # la fenêtre des options pour les indices de surfaces:
+    
+        self.methode_interpol = tkinter.StringVar()
+        self.pas_maillage     = tkinter.StringVar()
 
+        self.methode_interpol.set("")
+        self.pas_maillage.set("")
+
+        self.item7000 = ttk.Frame(fenetre)
+
+        self.modes_interpol = [(_('linéaire'),'linear'),
+                               (_("cubique"),'cubic')]
+
+        self.item7010 = ttk.Label(self.item7000,
+                                    text=_(" Choisir la méthode d'interpolation "))
+        self.item7020 = ttk.Label(self.item7000,
+                                    text=_(" Choisir le pas du maillage "))
+        self.item7021 = ttk.Entry(self.item7000,
+                                    textvariable=self.pas_maillage)
+
+        self.item7030 = ttk.Button(self.item7000,
+                                text=_('Valider '),
+                                command=self.surfOK)          # bouton permettant de tout valider
+        self.item7031 = ttk.Button(self.item7000,
+                                text=_(' Annuler'),
+                                command=self.surfKO)          # bouton permettant de tout annuler
+
+
+
+        self.item7010.pack(pady=5)
+        for t,m in  self.modes_interpol:
+            b = ttk.Radiobutton(self.item7000, text=t, variable=self.methode_interpol, value=m)
+            b.pack()
+            if(t == _("linéaire")):
+                b.state(['selected'])
+                self.methode_interpol.set("linear")
+
+
+        self.item7020.pack(pady=3)
+        self.item7021.pack(pady=5)
+        self.item7030.pack(pady=5)
+        self.item7031.pack(pady=5)
+        
+    # choix du profil utilisé à afficher (Idices surfaciques)
+
+        self.num_profil = tkinter.StringVar()
+        self.num_profil.set("")
+
+        self.item8000 = ttk.Frame(fenetre)
+        self.item8010 = ttk.Label(self.item8000,
+                                    text="\n" + _("Choisir profil à afficher "))
+        self.item8011 = ttk.Entry(self.item8000,
+                                    textvariable=self.num_profil)
+        self.item8020 = ttk.Button(self.item8000,
+                                text=_('Valider '),
+                                command=self.affOK)          # bouton permettant de tout valider
+        self.item8021 = ttk.Button(self.item8000,
+                                text=_('Annuler '),
+                                command=self.affK0)          # bouton permettant de tout valider
+        self.item8010.pack(pady=3)
+        self.item8011.pack(pady=5)
+        self.item8020.pack(pady=5)
+        self.item8021.pack(pady=5)
+        
     # La fenetre des options pour l'exif :
 
         self.exifMaker     =   tkinter.StringVar()
@@ -1324,27 +1858,27 @@ class Interface(ttk.Frame):
         
         self.item3000 = ttk.Frame(fenetre)
         self.item3010 = ttk.Label(self.item3000,
-                                  text="Modification des Exif\n\nMarque de l'appareil : ")
+                                  text=_("Modification des Exif") + "\n\n" + _("Marque de l'appareil : "))
         self.item3011 = ttk.Entry(self.item3000,
                                   textvariable=self.exifMaker)         
         self.item3001 = ttk.Label(self.item3000,
-                                  text="Modèle de l'appareil: ")
+                                  text=_("Modèle de l'appareil: "))
         self.item3002 = ttk.Entry(self.item3000,
                                   textvariable=self.exifNomCamera)        
         self.item3003 = ttk.Label(self.item3000,
-                                  text= "Focale en mm:")
+                                  text= _("Focale en mm:"))
         self.item3004 = ttk.Entry(self.item3000,
                                   textvariable=self.exifFocale)
         self.item3005 = ttk.Label(self.item3000,
-                                  text= "Focale équivalente 35mm :")
+                                  text= _("Focale équivalente 35mm :"))
         self.item3006 = ttk.Entry(self.item3000,
                                   textvariable=self.exifFocale35)
 
         self.item3020 = ttk.Button(self.item3000,
-                                text='Valider et mettre à jour',
+                                text=_('Valider et mettre à jour'),
                                 command=self.exifOK)          # bouton permettant de tout valider
         self.item3021 = ttk.Button(self.item3000,
-                                text=' Annuler',
+                                text=_(' Annuler'),
                                 command=self.exifKO)          # bouton permettant de tout annuler
         
         self.item3010.pack(pady=5)
@@ -1358,6 +1892,27 @@ class Interface(ttk.Frame):
         self.item3020.pack(pady=5)        
         self.item3021.pack(pady=5)
 
+        # La boite de dialogue pour demander le nombre de photos a retenir parmi les meilleures
+        
+        self.item9000 = ttk.Frame(fenetre)
+        self.item9001 = ttk.Label(self.item9000)
+        self.item9002 = ttk.Label(self.item9000,
+                                  text= _("Indiquer le nombre de photos à retenir.") + "\n"+
+                                        _("Un nouveau chantier sera créé avec les photos ayant, par paire, le plus de points homologues")+ "\n"+
+                                        _("Ce choix est différent du nombre moyen de points homologues par photo."))
+        self.item9003 = ttk.Entry(self.item9000)
+        self.item9004 = ttk.Button(self.item9000,
+                                text=_(' Valider'),
+                                command=self.nbMeilleuresOK)          # bouton permettant de tout valider
+        self.item9005 = ttk.Button(self.item9000,
+                                text=_(' Annuler'),
+                                command=self.nbMeilleuresKO)          # bouton permettant de tout annuler
+        self.item9001.pack(pady=15)
+        self.item9002.pack(pady=15)
+        self.item9003.pack(pady=15)
+        self.item9004.pack(pady=15)
+        self.item9005.pack(pady=15)        
+
         # les logo, l'apropos
 
         self.logo1          = ttk.Frame(fenetre)                                    # cadre dans la fenetre de départ : CEREMA !
@@ -1365,7 +1920,7 @@ class Interface(ttk.Frame):
         self.canvasLogo     = tkinter.Canvas(self.logo,width = 225, height = 80)    # Canvas pour revevoir l'image
         self.logoIgn        = ttk.Frame(self.resul100)                              # logo IGN dans l'apropos 
         self.canvasLogoIGN  = tkinter.Canvas(self.logoIgn,width = 149, height = 162)# Canvas pour revevoir l'image
-        self.labelIgn       = ttk.Label(self.logo,text="MicMac est une réalisation de l'IGN")
+        self.labelIgn       = ttk.Label(self.logo,text=_("MicMac est une réalisation de l'IGN"))
         
         # Les fichiers XML :
 
@@ -1652,13 +2207,13 @@ class Interface(ttk.Frame):
         self.nbEncadre                  =       0       # utilisé pour relancer la fenetre
         self.suffixeExport              =       "_export"  # ne pas modifierr : rendra incompatible la nouvelle version
 
-        self.messageSauvegardeOptions   =       ("Quelles options par défaut utiliser pour les nouveaux chantiers ?\n"+
-                                                "Les options par défaut concernent :\n"+
-                                                "Tapioca : All, MulScale, line ,les échelles et delta\n"+
-                                                "Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas\n"+
-                                                "Malt    : mode, zoom final, nombre de photos autour de la maîtresse\n"+
-                                                "Tawny et ses options en saisie libre\n"+
-                                                "C3DC    : mode (Statue ou QuickMac)\n\n")
+        self.messageSauvegardeOptions   =       (_("Quelles options par défaut utiliser pour les nouveaux chantiers ?") + "\n"+
+                                                _("Les options par défaut concernent :") + "\n"+
+                                                _("Tapioca : All, MulScale, line ,les échelles et delta") + "\n"+
+                                                _("Tapas   : RadialExtended,RadialStandard, Radialbasic, arrêt aprés Tapas") + "\n"+
+                                                _("Malt    : mode, zoom final, nombre de photos autour de la maîtresse") + "\n"+
+                                                _("Tawny et ses options en saisie libre") + "\n"+
+                                                _("C3DC    : mode (Statue ou QuickMac)") + "\n\n")
         self.tacky                      = True  # Suite au message de Luc Girod sur le forum le 21 juin 17h
         
     ####################### initialiseValeursParDefaut du défaut : nouveau chantier, On choisira de nouvelles photos : on oublie ce qui précéde, sauf les paramètres généraux de aperodedenis (param micmac)
@@ -1694,7 +2249,7 @@ class Interface(ttk.Frame):
             
     # les photos :
    
-        self.repertoireDesPhotos        =   'Pas de répertoire pour les photos'
+        self.repertoireDesPhotos        =   _('Pas de répertoire pour les photos')
         self.photosAvecChemin           =   list()                                              # liste des noms des fichiers photos avec chemin complet
         self.photosSansChemin           =   list()                                              # nom des photos sans le chemin
         self.lesExtensions              =   str()                                               # l'utilisateur pourrait sélectionner des photos avec des extensions différentes
@@ -1778,7 +2333,7 @@ class Interface(ttk.Frame):
 
         self.restaureOptions()
         
-    ################# Le Menu FICHIER : Ouvre un nouveau chantier avec les valeurs par défaut, ouvre un chantier existant, enregistrer, renommer, supprimer
+    ################# Le Menu FICHIER : Ouvre un nouveau chantier avec les valeurs par défaut, ouvre un chantier existant, enregistrer, renommer, supprimer 
 
     # Enregistre le chantier précédent, prépare un chantier vide avec le répertoire de travail par défaut   
 
@@ -1786,20 +2341,20 @@ class Interface(ttk.Frame):
         self.menageEcran()
         texte=""                                                        # réinitialise les paramètres du chantier (initialiseValeursParDefaut)
         if self.etatDuChantier == 1 :
-            if self.troisBoutons("Enregistrer le chantier ?",
-                                "Chantier non encore enregistré. Voulez-vous l'enregistrer ?",
-                                "Enregistrer",
-                                "Ne pas enregistrer.") == 0:
+            if self.troisBoutons(_("Enregistrer le chantier ?"),
+                                _("Chantier non encore enregistré. Voulez-vous l'enregistrer ?"),
+                                _("Enregistrer"),
+                                _("Ne pas enregistrer.")) == 0:
                 self.enregistreChantier()
-                texte="Chantier précédent enregistré : "+self.chantier+"\n"
+                texte=_("Chantier précédent enregistré : %s") % (self.chantier)+ "\n" 
             
         if self.etatDuChantier >= 2 and self.etatSauvegarde =="*":
-            if self.troisBoutons("Enregistrer le chantier "+self.chantier+" ?",
-                                "Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?",
-                                "Enregistrer",
-                                "Ne pas enregistrer.") == 0:
+            if self.troisBoutons(_("Enregistrer le chantier %s ?") % (self.chantier),
+                                _("Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?"),
+                                _("Enregistrer"),
+                                _("Ne pas enregistrer.")) == 0:
                 self.copierParamVersChantier()
-                texte = "Chantier précédent enregistré : "+self.chantier+"\n"                
+                texte = _("Chantier précédent enregistré : %s") % (self.chantier)+ "\n"                 
         self.initialiseValeursParDefaut()                           
         os.chdir(self.repTravail)                                               # lors de la création d'un chantier il s'agir du répertoire de l'appli
         self.afficheEtat(texte)
@@ -1808,23 +2363,22 @@ class Interface(ttk.Frame):
         self.menageEcran()
         texte=""
         if self.etatDuChantier == 1 and self.etatSauvegarde =="*":
-            if self.troisBoutons("Enregistrer le chantier ?",
-                                "Chantier non encore enregistré. Voulez-vous l'enregistrer ?",
-                                "Enregistrer",
-                                "Ne pas enregistrer.") == 0:
+            if self.troisBoutons(_("Enregistrer le chantier ?"),
+                                _("Chantier non encore enregistré. Voulez-vous l'enregistrer ?"),
+                                _("Enregistrer"),
+                                _("Ne pas enregistrer.")) == 0:
                 self.enregistreChantier()
-                texte="Chantier précédent enregistré : "+self.chantier+"\n"
+                texte=_("Chantier précédent enregistré : %s") % (self.chantier) + "\n"
         if self.etatDuChantier >= 2 and self.etatSauvegarde =="*":
-            if self.troisBoutons("Enregistrer le chantier "+self.chantier+" ?",
-                                "Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?",
-                                "Enregistrer",
-                                "Ne pas enregistrer.") == 0:
+            if self.troisBoutons(_("Enregistrer le chantier %s ?") % (self.chantier),
+                                _("Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?"),
+                                _("Enregistrer"),
+                                _("Ne pas enregistrer.")) == 0:
                 self.copierParamVersChantier()
-                texte="Chantier précédent enregistré : "+self.chantier+"\n"
-                
-        bilan = self.choisirUnRepertoire("Choisir un chantier.")                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
+                texte=_("Chantier précédent enregistré : %s") % (self.chantier) + "\n"       
+        bilan = self.choisirUnRepertoire(_("Choisir un chantier."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
-            self.afficheEtat("Aucun chantier choisi.\n"+bilan+"\n")
+            self.afficheEtat(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
             return   
         self.fichierParamChantier  =   self.selectionRepertoireAvecChemin+os.sep+self.paramChantierSav         
         if os.path.exists(self.fichierParamChantier):        
@@ -1832,30 +2386,31 @@ class Interface(ttk.Frame):
             self.sauveParam()                                                   # pour assurer la cohérence entre le chantier en cours et le chantier ouvert (écrase le chantier en cours)
             self.afficheEtat(texte)
         else:
-            self.encadre ('Chantier choisi "'+self.selectionRepertoireAvecChemin+'" corrompu. Abandon.',nouveauDepart='non')
+            self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin),nouveauDepart='non')
 
     def enregistreChantierAvecMessage(self):
-        self.enregistreChantier()
-        self.afficheEtat("Chantier enregistré")
+        if(self.enregistreChantier()):
+            self.afficheEtat(_("Chantier enregistré"))
 
     def enregistreChantier(self):               # Correspond simplement à la copie du fichier paramètre sous le répertoire de travail et à l''apparition du nom
         self.menageEcran()
         if self.etatDuChantier == 0:		# pas de photo : pas d'enregistrement
-            self.encadre("Indiquer les photos à traiter avant d'enregistrer le chantier.",nouveauDepart="non")
-            return
+            self.encadre(_("Indiquer les photos à traiter avant d'enregistrer le chantier."),nouveauDepart="non")
+            return False
         if self.etatDuChantier == 1:		# des photos, pas encore enregistré : on mote l'enregistrement : etat = 2
             self.etatDuChantier = 2
         self.copierParamVersChantier()          # on enregistre, ou on réenregistre 
+        return True
 
     def renommeChantier(self):
         self.menageEcran()        
         if self.etatDuChantier==0:
-            self.encadre("Le chantier est en cours de définition.\nIl n'a pas encore de nom, il ne peut être renommé.\n\nCommencer par choisir les photos",nouveauDepart='non')
-            return                        
-        texte = "Nouveau nom ou nouveau chemin pour le chantier "+self.chantier+" :\n"
-        bas = ("Tout chemin relatif au chemin actuel est valide\n\n"+
-               "Un chemin absolu sur la même unité disque est valide\n\n"+
-               "Aucun fichier de l'arborescence du chantier ne doit être ouvert.")
+            self.encadre(_("Le chantier est en cours de définition.") + "\n" + _("Il n'a pas encore de nom, il ne peut être renommé.") + "\n\n" + _("Commencer par choisir les photos"),nouveauDepart='non')
+            return                      
+        texte = _("Nouveau nom ou nouveau chemin pour le chantier %s :") % (self.chantier) + "\n"
+        bas = (_("Tout chemin relatif au chemin actuel est valide") + "\n\n"+
+               _("Un chemin absolu sur la même unité disque est valide") + "\n\n"+
+               _("Aucun fichier de l'arborescence du chantier ne doit être ouvert."))
 
         new = MyDialog(fenetre,texte,basDePage=bas)
         if new.saisie=="":
@@ -1866,17 +2421,17 @@ class Interface(ttk.Frame):
             nouveauRepertoire = os.path.normcase(os.path.normpath(os.path.join(self.repertoireDesPhotos,new.saisie)))
         nouveauChantier = os.path.basename(nouveauRepertoire)
         if nouveauChantier.upper() in [os.path.basename(e).upper() for e in self.tousLesChantiers]:
-            self.encadre("Le nom du nouveau chantier '"+nouveauChantier+"' existe déjà. Abandon.",nouveauDepart='non')
+            self.encadre(_("Le nom du nouveau chantier %s existe déjà. Abandon.") % (nouveauChantier),nouveauDepart='non')
             return
         if os.path.splitdrive(nouveauRepertoire)[0].upper()!=os.path.splitdrive(self.repTravail)[0].upper():
-            self.encadre("Le nouveau répertoire \n\n"+nouveauRepertoire+"\n\nimplique un changement de disque.\nUtiliser l'Export-Import.",nouveauDepart='non')
+            self.encadre(_("Le nouveau répertoire ") + "\n\n" + nouveauRepertoire + "\n\n" + _("implique un changement de disque.") + "\n" + _("Utiliser l'Export-Import."),nouveauDepart='non')
             return 
         if os.path.exists(nouveauRepertoire):
-            self.encadre("Le répertoire \n"+nouveauRepertoire+"\npour le chantier est déjà utilisé.\nChoisissez un autre nom.",nouveauDepart='non')
+            self.encadre(_("Le répertoire") + "\n" + nouveauRepertoire + "\n" + _("pour le chantier est déjà utilisé.") + "\n" + _("Choisissez un autre nom."),nouveauDepart='non')
             return
         if self.repTravail in nouveauRepertoire:
-            self.encadre("Le répertoire \n"+nouveauRepertoire+"\ndésigne un sous-répertoire du chantier en cours.\nChoisissez un autre nom.",nouveauDepart='non')
-            return            
+            self.encadre(_("Le répertoire") + "\n" + nouveauRepertoire + "\n" + _("désigne un sous-répertoire du chantier en cours.") + "\n" + _("Choisissez un autre nom."),nouveauDepart='non')
+            return
         self.fermerVisuPhoto()                                                    # fermer tous les fichiers potentiellement ouvert.
         os.chdir(self.repertoireData)                                             # quitter le répertoire courant
         try: self.meshlabExe1.kill()
@@ -1887,9 +2442,9 @@ class Interface(ttk.Frame):
             time.sleep(0.1)
             os.renames (self.repTravail,nouveauRepertoire)                               # RENOMMER
         except Exception as e:
-            self.encadre("Le renommage du chantier ne peut se faire actuellement,\nsoit le nom fourni est incorrect,\n"+
-                         "soit un fichier du chantier est ouvert par une autre application.\n"+
-                         "soit l'explorateur explore l'arborescence.\nerreur : \n\n"+str(e),nouveauDepart='non')
+            self.encadre(_("Le renommage du chantier ne peut se faire actuellement,") + "\n" + _("soit le nom fourni est incorrect,") + "\n"+
+                         _("soit un fichier du chantier est ouvert par une autre application.") + "\n"+
+                         _("soit l'explorateur explore l'arborescence.") + "\n" + _("erreur : ") + "\n\n"+str(e),nouveauDepart='non')
             return
 
         ancienChantier = self.chantier
@@ -1904,7 +2459,8 @@ class Interface(ttk.Frame):
     # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
     # [2] = 'original' ou "importé"
         self.typeDuChantier[1] = 'renommé'
-        self.encadreEtTrace("\n---------\n"+heure()+"\nChantier :\n"+ancienChantier+"\nrenommé en :\n"+self.chantier+"\n"+"Répertoire : "+self.repTravail+"\n")
+
+        self.encadreEtTrace("\n---------\n"+ heure() + "\n" + _("Chantier :") + "\n" + ancienChantier + "\n" + _("renommé en :") + "\n" + self.chantier + "\n" + _("Répertoire : ") + self.repTravail + "\n") 
 
     def redefinirLesChemins(self):       # Mettre self.repTravail dans les chemins des images maitre et masques et dans les dictionnaires, sauver
                                          # si le chantier n'est plus sous le répertoire des photos alors le répertoire des photos devient le chantier lui même       
@@ -1960,36 +2516,36 @@ class Interface(ttk.Frame):
     def exporteChantier(self):
         self.menageEcran()
         if self.etatDuChantier == 0:
-            self.encadre("Pas de chantier en cours",nouveauDepart='non')
+            self.encadre(_("Pas de chantier en cours"),nouveauDepart='non')
             return
-        self.encadre("Patience : chantier en cours d'archivage...\n",nouveauDepart='non')
+        self.encadre(_("Patience : chantier en cours d'archivage...") + "\n",nouveauDepart='non')
         self.copierParamVersChantier()      # enregistre et sauve le chantier
-        self.encadre("Archive \n"+self.chantier+".exp\n créée sous \n"+self.repTravail+"\n\n Taille = "+str(int(zipdir(self.repTravail)/1024))+" KO.")
+        self.encadre(_("Archive ") + "\n" + self.chantier + ".exp" + "\n" + _("créée sous ") + "\n" + self.repTravail + "\n\n" + _("Taille =") + str(int(zipdir(self.repTravail)/1024)) + "Ko")
 
     def importeChantier(self):
         self.menageEcran()
         try:
-            self.encadre("Choisir le nom de l'archive à importer.",nouveauDepart='non')        
+            self.encadre(_("Choisir le nom de l'archive à importer."),nouveauDepart='non')        
             archive = tkinter.filedialog.askopenfilename( initialdir=self.repTravail,                                                 
-                                                        filetypes=[("Export","*.exp"),("Tous","*")],multiple=False,
-                                                        title = "Chantier à importer")
+                                                        filetypes=[(_("Export"),"*.exp"),(_("Tous"),"*")],multiple=False,
+                                                        title = _("Chantier à importer"))
             if archive==str():
-                self.encadre("Importation abandonnée.",nouveauDepart='non')
+                self.encadre(_("Importation abandonnée."),nouveauDepart='non')
                 return
             if not zipfile.is_zipfile(archive):
-                self.encadre(archive+" n'est pas un fichier d'export valide\n"+
-                             "ou alors, sous ubuntu,il lui manque le droit d'éxécution.",
+                self.encadre(archive+_(" n'est pas un fichier d'export valide") + "\n"+
+                             _("ou alors, sous ubuntu,il lui manque le droit d'exécution."),
                              nouveauDepart='non')
                 return                                                               
             
-            self.encadre("Choisir le répertoire dans lequel recopier le chantier.",nouveauDepart='non')          
+            self.encadre(_("Choisir le répertoire dans lequel recopier le chantier."),nouveauDepart='non')          
             destination = tkinter.filedialog.askdirectory(title='Désigner le répertoire où importer le chantier ',
                                                         initialdir=self.repTravail)
             if not os.path.isdir(destination):
-                self.encadre(destination+" n'est pas un répertoire valide.",nouveauDepart='non')
+                self.encadre(destination+_(" n'est pas un répertoire valide."),nouveauDepart='non')
                 return
             os.chdir(destination)                   # relativise les chemins
-            self.encadre("Recopie en cours dans\n"+destination+"\nPatience !",nouveauDepart='non')
+            self.encadre(_("Recopie en cours dans") + "\n" + destination + "\n" + _("Patience !"),nouveauDepart='non')
      
             zipf = zipfile.ZipFile(archive, 'r')    # ouverture du zip
             # récupération du nom du futur chantier : c'est la racine commune de tous les fichiers dans la sauvegarde
@@ -1997,7 +2553,7 @@ class Interface(ttk.Frame):
             ancienChantier = nouveauChantier.split(self.suffixeExport)[0]  # ancien chantier = nouveau - suffixe
             if os.path.isdir(nouveauChantier):
                 zipf.close()
-                self.encadre("Le répertoire destination\n"+os.path.join(destination,nouveauChantier)+"\nexiste déjà. Abandon",nouveauDepart='non')
+                self.encadre(_("Le répertoire destination") + "\n" + os.path.join(destination, nouveauChantier) + "\n" + _("existe déjà. Abandon"),nouveauDepart='non')
                 return
             zipf.extractall(path=destination)
             zipf.close()
@@ -2008,8 +2564,8 @@ class Interface(ttk.Frame):
                 i += 1
             try: os.renames (oldChantier,nouveauChantier)   # on a trouvé un nom nouveau de chantier ET de répertoire (plante si old=nouveau) 
             except Exception as e:
-                print("Erreur copie lors d'un import : ",str(e))                
-                self.encadre("L'importation a échouée. Erreur : "+str(e),nouveauDepart='non')
+                print(_("Erreur copie lors d'un import : "),str(e))
+                self.encadre(_("L'importation a échouée. Erreur : ")+str(e),nouveauDepart='non')
                 return
             
             nouveauChemin = os.path.normcase(os.path.normpath(os.path.join(destination,nouveauChantier)))
@@ -2017,8 +2573,8 @@ class Interface(ttk.Frame):
             # on copie si possible l'archive sous le nouveau répertoire de travail
             try: shutil.copy(archive,nouveauChemin)
             except Exception as e:
-                print("Erreur copie lors d'un import : ",str(e))
-                self.encadre("L'importation a échouée. Erreur : "+str(e),nouveauDepart='non')
+                print(_("Erreur copie lors d'un import : "),str(e))
+                self.encadre(_("L'importation a échouée. Erreur : ")+str(e),nouveauDepart='non')
                 return            
             # le répertoire des photos devient le répertoire de travail
 
@@ -2033,7 +2589,7 @@ class Interface(ttk.Frame):
             if os.path.isfile(fichierParam):
                 self.restaureParamChantier(fichierParam)        # la restauration positionne self.reptravail et self.chantier sur l'ancien répertoire de travail
             else:
-                self.encadre(fichierParam+" absent",nouveauDepart='non')
+                self.encadre(fichierParam+_(" absent"),nouveauDepart='non')
                 return
             self.repTravail = nouveauChemin
             self.chantier = nouveauChantier
@@ -2049,17 +2605,16 @@ class Interface(ttk.Frame):
             
             self.encadreEtTrace("\n\n -------------- \n"+
                                 heure()+
-                                "\nChantier importé :\n"+self.chantier+"\n\nRépertoire :\n"+
-                                self.repTravail+"\n\nVous pouvez le renommer si  besoin."+
+                                "\n" + _("Chantier importé :") + "\n" + self.chantier + "\n\n" + _("Répertoire :") + "\n" +self.repTravail+ "\n\n" + _("Vous pouvez le renommer si  besoin.")+
                                 "\n -------------- ")
             try:
-                self.ajoutLigne("\nVersion de MicMac avant l'import : "+self.mercurialMicMacChantier+"\n")
-                self.ajoutLigne("\nVersion de MicMac : "+self.mercurialMicMac+"\n")            
+                self.ajoutLigne("\n" + _("Version de MicMac avant l'import : %s") % (self.mercurialMicMacChantier) +"\n")
+                self.ajoutLigne("\n" + _("Version de MicMac : %s") % (self.mercurialMicMac) +"\n")            
                 self.ecritureTraceMicMac()
             except Exception as e:
-                print("erreur affichage version lors de l'import d'un chantier : "+str(e))
+                print(_("erreur affichage version lors de l'import d'un chantier : ")+str(e))
         except Exception as e:
-            self.encadre("Anomalie lors de l'importation : "+str(e),nouveauDepart='non')
+            self.encadre(_("Anomalie lors de l'importation : ")+str(e),nouveauDepart='non')
             return
 
     def copierParamVersChantier(self):                                                  # copie du fichier paramètre sous le répertoire du chantier, pour rejouer et trace
@@ -2067,11 +2622,10 @@ class Interface(ttk.Frame):
             self.etatSauvegarde = ""             
             self.sauveParam()
             try: shutil.copy(self.fichierParamChantierEnCours,self.repTravail)          # pour éviter de copier un fichier sur lui même
-            except Exception as e: print("erreur copie fichier param chantier : ",self.fichierParamChantierEnCours," vers ",self.repTravail," erreur=",str(e))           
+            except Exception as e: print(_("erreur copie fichier param chantier : %(param)s vers %(rep)s erreur=") % {"param" : self.fichierParamChantierEnCours, "rep" : self.repTravail} ,str(e))           
             fenetre.title(self.etatSauvegarde+self.titreFenetre)            
         except Exception as e:
-            self.ajoutLigne("Erreur lors de la copy du fichier paramètre chantier \n"+
-                            self.fichierParamChantierEnCours+"\n vers \n"+self.repTravail+"\n erreur : \n"+str(e))
+            self.ajoutLigne(_("Erreur lors de la copie du fichier paramètre chantier") + "\n" + self.fichierParamChantierEnCours + "\n" + _("vers") + "\n" + self.repTravail + "\n" + _("erreur :") + "\n" +str(e))
 
 
     ################################## LE MENU EDITION : afficher l'état, les photos, lire une trace, afficher les nuages de points ############################
@@ -2081,6 +2635,7 @@ class Interface(ttk.Frame):
         self.sauveParam()
         nbPly = 0
         photosSansCheminDebutFin = list(self.photosSansChemin)
+        texte = str()
         if len(self.photosSansChemin)>5:
             photosSansCheminDebutFin =photosSansCheminDebutFin[:2]+list('..',)+photosSansCheminDebutFin[-2:]
         try:
@@ -2090,154 +2645,155 @@ class Interface(ttk.Frame):
             # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
             # [2] = 'original' ou "importé"          
             if self.typeDuChantier[0]=='photos':
-                 texte = entete+'\nRépertoire des photos : \n'+afficheChemin(self.repertoireDesPhotos)
+                print(entete)
+                texte = entete + '\n' + _('Répertoire des photos :') +  "\n" + afficheChemin(self.repertoireDesPhotos)
             if self.typeDuChantier[0]=='vidéo':
-                 texte = entete+'\nRépertoire de la vidéo : \n'+afficheChemin(self.repertoireDesPhotos)                 
+                 texte = entete + "\n" + _("Répertoire de la vidéo :") + "\n" + afficheChemin(self.repertoireDesPhotos)                 
             if len(self.photosSansChemin)==0:
-               texte = texte+'\n\n'+'Aucune photo sélectionnée.\n'              
+               texte = texte+'\n\n'+_('Aucune photo sélectionnée.') + '\n'              
             if len(self.photosSansChemin)>=1:                                   # Il ne peut en principe pas y avoir une seule photo sélectionnée
                 if self.calibSeule.get():
-                    m = ' photos sélectionnées\n(sans calibration si tapas éxécuté) : \n'
+                    m = _(' photos sélectionnées') + '\n' + _('(sans calibration si tapas executé) : ') + '\n'
                 else:
-                    m = ' photos sélectionnées : \n'
+                    m = _(' photos sélectionnées : ') + '\n'
                 texte = texte+'\n\n'+str(len(self.photosSansChemin))+m+'\n'.join(photosSansCheminDebutFin)+finale
             if self.nombreDExtensionDifferentes(self.photosSansChemin)>1:       # il y a plus d'un format de photo !
-                texte = texte+'\n\nATTENTION : plusieurs extensions différentes dans les photos choisies !\n Le traitement ne se fera que sur un type de fichier.'
+                texte = texte+'\n\n' + _('ATTENTION : plusieurs extensions différentes dans les photos choisies !') + '\n' + _('Le traitement ne se fera que sur un type de fichier.')
 
             # Options pour Tapioca :
 
             if self.modeTapioca.get()!='':
-                texte = texte+'\n\nTapioca :\nMode : '+self.modeTapioca.get()+'\n'
+                texte = texte+'\n\n' + 'Tapioca :' + '\n' + _('Mode : ')+self.modeTapioca.get()+'\n'
             if self.modeTapioca.get()=="All":
-                texte = texte+'Echelle 1 : '+self.echelle1.get()+'\n'
+                texte = texte+_('Echelle 1 : ')+self.echelle1.get()+'\n'
             if self.modeTapioca.get()=="MulScale":
-                texte = texte+'Echelle 1 : '+self.echelle2.get()+'\n'
-                texte = texte+'Echelle 2 : '+self.echelle3.get()+'\n'
+                texte = texte+_('Echelle 1 : ')+self.echelle2.get()+'\n'
+                texte = texte+_('Echelle 2 : ')+self.echelle3.get()+'\n'
             if self.modeTapioca.get()=="Line":
-                texte = texte+'Echelle : '+self.echelle4.get()+'\n'
-                texte = texte+'Delta : '+self.delta.get()+'\n'
+                texte = texte+_('Echelle : ')+self.echelle4.get()+'\n'
+                texte = texte+_('Delta : ')+self.delta.get()+'\n'
 
 
             # Options pour Tapas :
             
             if self.modeCheckedTapas.get()!='':
-                texte = texte+'\nTapas :\nMode : '+self.modeCheckedTapas.get()+'\n'              
+                texte = texte+'\n' + 'Tapas :\n' + _('Mode : ')+self.modeCheckedTapas.get()+'\n'              
             if self.photosPourCalibrationIntrinseque.__len__()>0:
-                texte = texte+"Nombre de photos pour calibration intrinsèque : "+str(self.photosPourCalibrationIntrinseque.__len__())+"\n"
+                texte = texte+_("Nombre de photos pour calibration intrinsèque : ")+str(self.photosPourCalibrationIntrinseque.__len__())+"\n"
                 if self.calibSeule.get():
-                     texte = texte+'Ces photos servent uniquement à la calibration.\n'                   
+                     texte = texte+_('Ces photos servent uniquement à la calibration.') + '\n'                   
             if self.arretApresTapas.get()==1:
-                texte = texte+'Arrêt demandé après Tapas\n'
+                texte = texte+_('Arrêt demandé après Tapas') + '\n'
 
                 
             # Calibration
 
             if self.controleCalibration():
-                texte = texte+'\nCalibration présente\n'+self.etatCalibration
+                texte = texte+'\n' + _('Calibration présente') + '\n'+self.etatCalibration
             else:
                 if self.distance.get()=='0':
-                    texte = texte+'\nCalibration annulée : distance=0\n'
+                    texte = texte+'\n' + _('Calibration annulée : distance=0') + '\n'
                 elif self.etatCalibration!=str():             # calibration incomplète
-                    texte = texte+"\nCalibration incomplète :\n"+self.etatCalibration+"\n"   
+                    texte = texte+"\n" + _("Calibration incomplète :") + "\n"+self.etatCalibration+"\n"   
 
             # Points GPS
-            
-            if self.controlePointsGPS():
-                 texte = texte+self.etatPointsGPS
+   
+            self.controlePointsGPS()
+            texte = texte+self.etatPointsGPS
                  
             # Masque 3D pour D3DC ou alors Malt et image maîtresse et masque :
             
             malt = True                                                             # a priori on éxécute malt
             if self.mm3dOK:                                                         # La version de MicMac autorise les masques 3D
                 if self.existeMasque3D():
-                    texte = texte+'\nC3DC : Masque 3D\n'
+                    texte = texte+'\n' + _('C3DC : Masque 3D') + '\n'
                     malt = False                                                    # on éxécutera C3DC
                     self.densification = "C3DC"
             else:
-                texte = texte + "\nLa version installée de Micmac n'autorise pas les masques en 3D\n"
+                texte = texte + "\n" + _("La version installée de Micmac n'autorise pas les masques en 3D") + "\n"
 
             # Malt si pas c3dc
 
             if malt:
                 self.densification = "Malt"
-                texte = texte+'\nMalt :\nMode : '+self.modeMalt.get()
+                texte = texte+'\n' + 'Malt :\n' + _('Mode : ')+self.modeMalt.get()
                 if self.modeMalt.get()=="GeomImage":
                     if self.listeDesMaitresses.__len__()==0:
-                        texte = texte+"\nPas d'image maîtresse"
+                        texte = texte+"\n" + _("Pas d'image maîtresse")
                     if self.listeDesMaitresses.__len__()==1:
-                        texte = texte+'\nImage maîtresse : '+os.path.basename(self.listeDesMaitresses[0])
+                        texte = texte+'\n' + _('Image maîtresse : ')+os.path.basename(self.listeDesMaitresses[0])
                     if self.listeDesMaitresses.__len__()>1:
-                        texte = texte+'\n'+str(self.listeDesMaitresses.__len__())+' images maîtresses'
+                        texte = texte+'\n'+str(self.listeDesMaitresses.__len__())+_(' images maîtresses')
                     if self.listeDesMasques.__len__()==1:
-                        texte = texte+'\n1 masque\n'
+                        texte = texte+'\n' + _('1 masque') + '\n'
                     if self.listeDesMasques.__len__()==0:
-                        texte = texte+"\nPas de masque.\n"
+                        texte = texte+"\n" + _("Pas de masque.") + "\n"
                     if self.listeDesMasques.__len__()>1:
-                        texte = texte+"\n"+str(self.listeDesMasques.__len__())+" masques\n"
-                    texte = texte+"2 fois "+str(self.photosUtilesAutourDuMaitre.get())+" photos utiles autour de la maîtresse"+"\n"
+                        texte = texte+"\n"+str(self.listeDesMasques.__len__())+_(" masques") + "\n"
+                    texte = texte+_("2 fois %s photos utiles autour de la maîtresse") % (str(self.photosUtilesAutourDuMaitre.get()))+"\n"
 
                 if self.modeMalt.get()=="Ortho":
                     if self.tawny.get():
-                        texte = texte+"\nTawny lancé aprés Malt"+"\n"
+                        texte = texte+"\n" + _("Tawny lancé aprés Malt")+"\n"
                     
-                texte = texte+"\narrêt au zoom : "+self.zoomF.get()+"\n"
+                texte = texte+"\n" + _("arrêt au zoom : ")+self.zoomF.get()+"\n"
                      
             # état du chantier :
             
             if self.etatDuChantier == 0:                                        # pas encore de chantier
-                texte = texte+"\nChantier en cours de définition.\n"               
+                texte = texte+"\n" + _("Chantier en cours de définition.") + "\n"               
             if self.etatDuChantier >= 1:                                        # le chantier est créé : il y a des photos choisies (2 enregistré,
                                                                                 # 3 en cours d'exécution,
                                                                                 # 4 arrêt aprés tapas, 5 terminé aprés malt ou c3dc, 6 modifiable mais n'existe plus)
-                texte = texte+"\nChantier : "+self.chantier+".\n"
+                texte = texte+"\n" + _("Chantier : ")+self.chantier+".\n"
                 # Type de chantier : c'est une liste de string (on pourrait aussi mettre un dictionnaire), avec :
                 # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' 
                 # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
                 # [2] = 'original' ou "importé"          
                 
                 if self.typeDuChantier[1]=="renommé" or self.typeDuChantier[2]=="importé":
-                    texte = texte + "Chemin du chantier :\n"+afficheChemin(os.path.dirname(self.repTravail))+"\n\n"
+                    texte = texte + _("Chemin du chantier :") + "\n"+afficheChemin(os.path.dirname(self.repTravail))+"\n\n"
             else:
-                texte = texte+"\nChantier en attente d'enregistrement.\n"
+                texte = texte+"\n" + _("Chantier en attente d'enregistrement.") + "\n"
             if self.etatDuChantier in (2,3,4,5,6) and self.etatSauvegarde=="":		
-                texte = texte+"\nChantier enregistré.\n"
+                texte = texte+"\n" + _("Chantier enregistré.") + "\n"
             if self.etatDuChantier == "2":		
-                texte = texte+"Options du chantier modifiables.\n"                
+                texte = texte+_("Options du chantier modifiables.") + "\n"               
             if self.etatDuChantier == 3:		
-                texte = texte+"\nChantier interrompu suite à erreur.\nRelancer micmac.\n"                      
+                texte = texte+"\n" + _("Chantier interrompu suite à erreur.") + "\n" + _("Relancer micmac.") + "\n"                      
             if self.etatDuChantier == 4:		
-                texte = texte+"Options de Malt/C3DC modifiables.\n"
+                texte = texte+_("Options de Malt/C3DC modifiables.") + "\n"
             if self.etatDuChantier == 5:		
-                texte = texte+"Chantier terminé.\n"
+                texte = texte+_("Chantier terminé.")+ "\n"
             if self.etatDuChantier == 6:		
-                texte = texte+"\nChantier exécuté puis débloqué.\n"
+                texte = texte+"\n" + _("Chantier exécuté puis débloqué.") + "\n"
 
             # Résultat des traitements :
             
               
             if os.path.exists('AperiCloud.ply'):
-               texte = texte+"Nuage de point non densifié généré après Tapas.\n"
+               texte = texte+_("Nuage de point non densifié généré après Tapas.") + "\n"
                nbPly=1
 
             if os.path.exists(self.modele3DEnCours):
-               texte = texte+"Nuage de point densifié généré après "+self.densification+".\n"
+               texte = texte+_("Nuage de point densifié généré après %s") %(self.densification)+".\n"
                nbPly+=1
             if self.etatDuChantier in (4,5,6) and nbPly==0:
-               texte = texte+"Aucun nuage de point généré.\n"
+               texte = texte+_("Aucun nuage de point généré.") + "\n"
 
             # Affichage :
             os.chdir(self.repTravail) 
             self.encadre(texte,nouveauDepart='non')
             
         except Exception as e:
-            texte = "Les caractéristiques du chantier précédent \n"+self.chantier+"\n n'ont pas pu être lues correctement.\n"+\
-                    "Le fichier des paramètres est probablement incorrect ou vous avez changé la version de l'interface.\n"+\
-                    "Certaines fonctions seront peut_être défaillantes.\n"+\
-                    "Désolé pour l'incident.\n\n"+\
-                    "Erreur : "+str(e) +"\n"+texte                       
+            texte = _("Les caractéristiques du chantier précédent") + "\n" + self.chantier + "\n" + _("n'ont pas pu être lues correctement." ) + "\n"+\
+                    _("Le fichier des paramètres est probablement incorrect ou vous avez changé la version de l'interface.") + "\n"+\
+                    _("Certaines fonctions seront peut_être défaillantes.") + "\n"+\
+                    _("Désolé pour l'incident.") + "\n\n"+\
+                    _("Erreur : ")+str(e) +"\n"+texte                       
             self.encadre(texte,nouveauDepart='non')            
 
-############### Existance des maitres 2D 3D : vrai, faux
+############### Existance des maitres 2D 3D : vrai, faux 
        
     def existeMasque3D(self):
         if self.repTravail==self.repertoireData:
@@ -2262,60 +2818,60 @@ class Interface(ttk.Frame):
         
     def afficherToutesLesPhotos(self):
         if self.photosPourCalibrationIntrinseque.__len__()==0:
-            titre = 'Toutes les photos'
-            message = 'Toutes les photos'
+            titre = _('Toutes les photos')
+            message = _('Toutes les photos')
         else:
-            titre = 'Toutes les photos utiles'
-            message = 'Toutes les photos\nsans les '+str( self.photosPourCalibrationIntrinseque.__len__())+' photos pour calibration intrinseque'
+            titre = _('Toutes les photos utiles')
+            message = _('Toutes les photos') + '\n' + _('sans les %s photos pour calibration intrinseque') % (str( self.photosPourCalibrationIntrinseque.__len__()))
             
         self.choisirUnePhoto(self.photosSansChemin,
                              titre=titre,
                              mode='single',
                              message=message,
-                             messageBouton="Fermer")
+                             messageBouton=_("Fermer"))
 
     def afficherLesPointsGPS(self):
         photosAvecPointsGPS = [ e[1] for e in self.dicoPointsGPSEnPlace.keys() ]    # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
         if photosAvecPointsGPS.__len__()==0:
-            self.encadre("Aucun point GPS saisi.",nouveauDepart='non')
+            self.encadre(_("Aucun point GPS saisi."),nouveauDepart='non')
             return
         self.choisirUnePhoto(photosAvecPointsGPS,
-                             titre='Affichage des photos avec points GPS',
+                             titre=_('Affichage des photos avec points GPS'),
                              mode='single',
-                             message="seules les photos avec points sont montrées.",
-                             messageBouton="Fermer",
+                             message=_("seules les photos avec points sont montrées."),
+                             messageBouton=_("Fermer"),
                              dicoPoints=self.dicoPointsGPSEnPlace)
         
     def afficherLesMaitresses(self):
 
         if self.listeDesMaitresses.__len__()>0:
             self.choisirUnePhoto(self.listeDesMaitresses+self.listeDesMasques,
-                                 titre='Liste des images maîtresses et des masques',
+                                 titre=_('Liste des images maîtresses et des masques'),
                                  mode='single',
-                                 message="Images maîtresses et masques",
-                                 messageBouton="Fermer"
+                                 message=_("Images maîtresses et masques"),
+                                 messageBouton=_("Fermer")
                                  )            
         else:
-            self.encadre("Pas de maîtresses définies pour ce chantier",nouveauDepart='non')
+            self.encadre(_("Pas de maîtresses définies pour ce chantier"),nouveauDepart='non')
             
 
     def afficheMasqueC3DC(self):
         if self.existeMasque3D()==False:
-            self.encadre("Pas de masque 3D pour ce chantier.",nouveauDepart='non')
+            self.encadre(_("Pas de masque 3D pour ce chantier."),nouveauDepart='non')
             return
         os.chdir(self.repTravail)
         
         self.topMasque3D = tkinter.Toplevel(relief='sunken')
         fenetreIcone(self.topMasque3D)           
         self.item900 = ttk.Frame(self.topMasque3D,height=5,relief='sunken',padding="0.3cm")        
-        self.item901 = ttk.Button(self.item900,text='Visaliser le masque 3D',command=self.affiche3DApericloud)              
+        self.item901 = ttk.Button(self.item900,text=_('Visaliser le masque 3D'),command=self.affiche3DApericloud)              
         self.item901.pack(ipady=2,pady=10)
-        self.item903 = ttk.Button(self.item900,text='Fermer',command=lambda : self.topMasque3D.destroy())              
+        self.item903 = ttk.Button(self.item900,text=_('Fermer'),command=lambda : self.topMasque3D.destroy())              
         self.item903.pack(ipady=2,pady=10)        
-        self.item902 = ttk.Label(self.item900, text= "Affichage du masque 3D :\n\n"+\
-                                                   "Les points blancs du nuage sont dans le masque\n"+\
-                                                   "Ce masque C3DC a la priorité sur le masque 2D de Malt\n\n"+
-                                                    "ATTENTION : FERMER la fenêtre 3D pour continuer")
+        self.item902 = ttk.Label(self.item900, text= _("Affichage du masque 3D :") + "\n\n"+\
+                                                   _("Les points blancs du nuage sont dans le masque") + "\n"+\
+                                                   _("Ce masque C3DC a la priorité sur le masque 2D de Malt") + "\n\n"+
+                                                    _("ATTENTION : FERMER la fenêtre 3D pour continuer"))
         self.item902.pack(ipady=2,pady=10)        
         
         
@@ -2324,18 +2880,22 @@ class Interface(ttk.Frame):
 
     def afficherZonePlane(self):
         if len(self.monImage_MaitrePlan)>0:
-            masqueEtMaitre = [self.monImage_PlanTif,self.monImage_MaitrePlan]
-            if self.monImage_PlanTif==self.planProvisoireHorizontal:
-                plan = "horizontale"
-            else:
-                plan = "verticale"
-            self.choisirUnePhoto(masqueEtMaitre,
-                                 titre="Visualiser l'image maîtresse et le plan horizontal ou vertical",
+            if os.path.exists(self.monImage_PlanTif) and os.path.exists(self.monImage_MaitrePlan):
+                masqueEtMaitre = [self.monImage_PlanTif,self.monImage_MaitrePlan]
+                if self.monImage_PlanTif==self.planProvisoireHorizontal:
+                    plan = _("horizontale")
+                else:
+                    plan = _("verticale")
+                self.choisirUnePhoto(masqueEtMaitre,
+                                 titre=_("Visualiser l'image maîtresse et le plan horizontal ou vertical"),
                                  mode='single',
-                                 message="Zone plane "+plan,
-                                 messageBouton="Fermer")            
+                                 message=_("Zone plane ")+plan,
+                                 messageBouton=_("Fermer"))     
+            else:
+                self.monImage_PlanTif = self.monImage_MaitrePlan = str()
+                self.encadre("Pas de plan horizontal ou vertical défini pour ce chantier",nouveauDepart='non')          
         else:
-            self.encadre("Pas de plan horizontal ou vertical défini pour ce chantier",nouveauDepart='non')
+            self.encadre(_("Pas de plan horizontal ou vertical défini pour ce chantier"),nouveauDepart='non')
 
     def afficherLigneHV(self):        
         photosAvecLigneH = [ e[1] for e in self.dicoLigneHorizontale.keys() ]
@@ -2345,42 +2905,42 @@ class Interface(ttk.Frame):
         sens = str()
         for e in self.dicoLigneHorizontale:
             dicoAvecLigne[e] = self.dicoLigneHorizontale[e]
-            sens = "HORIZONTALE"
+            sens = _("HORIZONTALE")
         for e in self.dicoLigneVerticale:
             dicoAvecLigne[e] = self.dicoLigneVerticale[e]
-            sens = "VERTICALE"
+            sens = _("VERTICALE")
         if photosAvecLigne.__len__():    
             self.choisirUnePhoto(photosAvecLigne,
-                                 titre='Affichage des photos avec ligne horizontale ou verticale',
+                                 titre=_('Affichage des photos avec ligne horizontale ou verticale'),
                                  mode='single',
-                                 message="ligne "+sens,
-                                 messageBouton="Fermer",
+                                 message=_("ligne ")+sens,
+                                 messageBouton=_("Fermer"),
                                  dicoPoints=dicoAvecLigne)
         else:
-            self.encadre("Pas de ligne horizontale ou verticale définie pour ce chantier",nouveauDepart='non')            
+            self.encadre(_("Pas de ligne horizontale ou verticale définie pour ce chantier"),nouveauDepart='non')            
 
     def afficherDistance(self):
         if self.distance.get()==str():
-            self.encadre("Pas de distance définie pour ce chantier.",nouveauDepart='non')
+            self.encadre(_("Pas de distance définie pour ce chantier."),nouveauDepart='non')
             return
         
         photosAvecDistance = list(set([ e[1] for e in self.dicoCalibre.keys() ]))
         self.choisirUnePhoto(photosAvecDistance,
-                             titre="Visualiser les photos avec distance",
+                             titre=_("Visualiser les photos avec distance"),
                              mode='single',
-                             message="Valeur de la distance : "+self.distance.get(),
-                             messageBouton="Fermer",
+                             message=_("Valeur de la distance : ")+self.distance.get(),
+                             messageBouton=_("Fermer"),
                              dicoPoints=self.dicoCalibre)           
 
     def afficherCalibIntrinseque(self):
         if self.photosPourCalibrationIntrinseque.__len__()==0:
-            self.encadre("Pas de photos pour la calibration intrinsèque par Tapas.",nouveauDepart='non')    
+            self.encadre(_("Pas de photos pour la calibration intrinsèque par Tapas."),nouveauDepart='non')    
             return
         self.choisirUnePhoto(self.photosPourCalibrationIntrinseque,
-                             titre='Les photos pour calibration intrinsèque (Tapas)',
+                             titre=_('Les photos pour calibration intrinsèque (Tapas)'),
                              mode='single',
-                             message="Calibration intrinsèque",
-                             messageBouton="Fermer")
+                             message=_("Calibration intrinsèque"),
+                             messageBouton=_("Fermer"))
 
 ############### Affichages des traces
         
@@ -2404,7 +2964,7 @@ class Interface(ttk.Frame):
             self.ajoutLigne(contenu)
             self.texte201.see("1.1")            
         else:
-            texte = "Pas de trace de la trace !"
+            texte = _("Pas de trace de la trace !")
             self.encadre(texte,nouveauDepart='non')
             
     def lectureTraceSynthetiqueMicMac(self):
@@ -2415,38 +2975,37 @@ class Interface(ttk.Frame):
     def afficheApericloud(self):
         retour = self.lanceApericloudMeshlab()
         if retour == -1:
-            self.encadre("Pas de nuage de points aprés Tapas.",nouveauDepart='non')
+            self.encadre(_("Pas de nuage de points aprés Tapas."),nouveauDepart='non')
         if retour == -2:
-            self.encadre("Programme pour ouvrir les .PLY non trouvéé.",nouveauDepart='non')
+            self.encadre(_("Programme pour ouvrir les .PLY non trouvéé."),nouveauDepart='non')
 
     def affiche3DNuage(self):
         retour = self.ouvreModele3D()
         if  retour == -1 :
-             self.encadre("Pas de nuage de points aprés Malt ou C3DC.",nouveauDepart='non')                
+             self.encadre(_("Pas de nuage de points aprés Malt ou C3DC."),nouveauDepart='non')                
         if retour == -2 :
-            self.encadre("Programme pour ouvrir les .PLY non trouvé.",nouveauDepart='non')
+            self.encadre(_("Programme pour ouvrir les .PLY non trouvé."),nouveauDepart='non')
                          
         
     ################################## Le menu PARAMETRAGE : répertoires MicMAc et Meshlab ###########################################################
 
     def afficheParam(self):
-        
-        texte =('\nRépertoire bin de MicMac : \n\n'+afficheChemin(self.micMac)+
+        texte =('\n' + _("Répertoire bin de MicMac : ")+'\n\n'+afficheChemin(self.micMac)+
                 '\n------------------------------\n'+
-                '\nVersion MicMac : \n\n'+str(self.mercurialMicMac)+
+                '\n' + _("Version MicMac :")+'\n\n' + str(self.mercurialMicMac)+
                 '\n------------------------------\n'+
-                '\nOutil exiftool : \n\n'+afficheChemin(self.exiftool)+
+                '\n' + _("Outil exiftool :") + '\n\n' + afficheChemin(self.exiftool)+
                 '\n------------------------------\n'+
-                "\nOutil convert d'ImageMagick : \n\n"+afficheChemin(self.convertMagick)+                
+                '\n' + _("Outil convert d\'ImageMagick :") + ' \n\n' + afficheChemin(self.convertMagick)+                
                 '\n------------------------------\n'+                
-                '\nOutil pour afficher les .ply : \n\n'+afficheChemin(self.meshlab)+
+                '\n' + _("Outil pour afficher les .ply :") + '\n\n' + afficheChemin(self.meshlab)+
                 '\n------------------------------\n'+
-                "\nOutil pour décompacter les vidéos (ffmpeg) : \n\n"+afficheChemin(self.ffmpeg)+                
+                '\n' + _("Outil pour décompacter les vidéos (ffmpeg):") + "\n\n" + afficheChemin(self.ffmpeg)+                
                 '\n------------------------------\n'+
-                "\nRépertoire d'AperoDeDenis : \n\n"+afficheChemin(self.repertoireScript)+
+                '\n' + _("Répertoire d'AperoDeDenis :") + "\n\n" + afficheChemin(self.repertoireScript)+
                 '\n------------------------------\n'+
-                "\nRépertoire des paramètres : \n\n"+afficheChemin(self.repertoireData)+
-                '\n------------------------------\n')        
+                '\n' + _("Répertoire des paramètres :") + "\n\n" + afficheChemin(self.repertoireData)+
+                '\n------------------------------\n')       
         self.encadre(texte,nouveauDepart='non')
 
     def repMicmac(self):
@@ -2455,7 +3014,7 @@ class Interface(ttk.Frame):
         
         #affichage de la valeur actuelle du répertoire de micmpac :
         
-        texte="Répertoire bin sous MICMAC : "+afficheChemin(self.micMac)
+        texte=_("Répertoire bin sous MICMAC : ")+afficheChemin(self.micMac)
         self.encadre(texte,nouveauDepart='non')               # pour éviter le redémarrage de la fenêtre      
         existe = False
         exiftoolOK = False
@@ -2463,28 +3022,33 @@ class Interface(ttk.Frame):
         
         # Choisir le répertoire de MicMac
         
-        source=tkinter.filedialog.askdirectory(title='Désigner le répertoire bin sous Micmac ',initialdir=self.micMac)
+        source=tkinter.filedialog.askdirectory(title=_('Désigner le répertoire bin sous Micmac '),initialdir=self.micMac)
         
         if len(source)==0:
-            texte="Abandon, pas de changement.\nRépertoire bin de Micmac : \n\n"+afficheChemin(self.micMac)
+            texte=_("Abandon, pas de changement.") + "\n" + _("Répertoire bin de Micmac :") + "\n\n"+afficheChemin(self.micMac)
             self.encadre(texte,nouveauDepart='non')
             return
 
         if " " in source:
-            texte = "Le chemin du répertoire bin de micmac ne doit pas comporter le caractère 'espace'.\n"
-            texte = "Renommer le répertoire de MicMac.\n"            
-            texte += "Abandon, pas de changement.\nRépertoire bin de Micmac : \n\n"+afficheChemin(self.micMac)
+            texte = _("Le chemin du répertoire bin de micmac ne doit pas comporter le caractère 'espace'.") + "\n"
+            texte = _("Renommer le répertoire de MicMac.") + "\n"            
+            texte += _("Abandon, pas de changement.") + "\n" + _("Répertoire bin de Micmac :") + "\n\n"+afficheChemin(self.micMac)
             self.encadre(texte,nouveauDepart='non')
             return
         
         # mm3d  sous Windows :
         
         if self.systeme=="nt":
-            self.mm3d = os.path.join(source,"mm3d.exe")
+            mm3d = os.path.join(source,"mm3d.exe")
             
-            if os.path.exists(self.mm3d):
+            if os.path.exists(mm3d):
                 self.micMac = source
+                self.mm3d = mm3d
                 existe = True
+            else:
+                self.encadre(_("Le répertoire %s ne contient pas le fichier mm3d.exe. Abandon") % (source),nouveauDepart='non')
+                return
+                return
                 
             if self.pasDeExiftool():    
                 exiftool = os.path.join(source+"aire-aux","exiftool.exe")   # recherche de l'existence de exiftool sous binaire-aux
@@ -2503,10 +3067,14 @@ class Interface(ttk.Frame):
         # mm3D sous linux, mas os :
             
         if self.systeme=="posix":
-            self.mm3d = os.path.join(source,"mm3d")
+            mm3d = os.path.join(source,"mm3d")
             if os.path.exists(self.mm3d):
                 self.micMac = source
+                self.mm3d = mm3d
                 existe = True
+            else:
+                self.encadre(_("Le répertoire %s ne contient pas le fichier mm3d.exe. Abandon") % (source),nouveauDepart='non')
+                return                
 
         # DicoCamera : 
 
@@ -2518,21 +3086,21 @@ class Interface(ttk.Frame):
             
         if executable:                                                          # nouveau répertoire correct
             self.micMac = source
-            texte="Nouveau répertoire de Micmac : \n\n"+afficheChemin(self.micMac)
+            texte=_("Nouveau répertoire de Micmac :") + "\n\n"+afficheChemin(self.micMac)
             self.sauveParam()
             
         else:
             if existe:
-                texte = "Le programme mm3d est présent mais ne peut s'exécuter.\n Vérifier si la version est compatible avec le système. :\n"
+                texte = _("Le programme mm3d est présent mais ne peut s'exécuter.") + "\n" + _("Vérifier si la version est compatible avec le système. :") + "\n"
             else:
-                texte = "Le programme mm3d est absent du répertoire choisi :\n"+source+"\n Répertoire bin sous MicMac incorrect. \nAbandon."
+                texte = _("Le programme mm3d est absent du répertoire choisi :") + "\n"+source+"\n" + _("Répertoire bin sous MicMac incorrect.") +"\n" + _("Abandon.")
 
         # chemin pour exiftool si sous micmac\bin :
 
         if exiftoolOK:
-            texte = texte + "\n\nChemin de exiftool :\n\n"+self.exiftool
+            texte = texte + "\n\n" + _("Chemin de exiftool :") + "\n\n"+self.exiftool
         if convertOK:
-            texte = texte + "\n\nChemin de convert d'image Magick :\n\n"+self.convertMagick
+            texte = texte + "\n\n" + _("Chemin de convert d'image Magick :") + "\n\n" +self.convertMagick
 
         # Chemin de ffmpeg pour décompacter les vidéo : si existe
         
@@ -2540,117 +3108,160 @@ class Interface(ttk.Frame):
           
         self.mm3dOK = verifMm3d(self.mm3d)                # Booléen indiquant si la version de MicMac permet la saisie de masque 3D
         self.mercurialMicMac = mercurialMm3d(self.mm3d)
-        self.ajoutLigne("\nNouvelle version de MicMac : "+self.mercurialMicMac+"\n")
+        if self.mercurialMicMac==False:
+            self.mercurialMicMac = _("Pas de version identifiée de MicMac")
+        self.ajoutLigne("\n" + _("Nouvelle version de MicMac : ")+str(self.mercurialMicMac)+"\n")
         self.ecritureTraceMicMac()
         self.encadre(texte,nouveauDepart='non')
         
     def repExiftool(self):
         self.menageEcran()
         if self.exiftool=="":
-            texte="Pas de chemin pour le programme exiftool"
+            texte=_("Pas de chemin pour le programme exiftool")
         else:
-            texte="Programme exiftool :\n"+afficheChemin(self.exiftool)
+            texte=_("Programme exiftool :") + "\n"+afficheChemin(self.exiftool)
         self.encadre(texte,nouveauDepart='non')         
         
         # Choisir le répertoire de Meshlab ou CLoudCompare :
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.exiftool),                                                 
-                                                  filetypes=[("exiftool","exiftool*"),("Tous","*")],multiple=False,
-                                                  title = "Recherche exiftool")
+                                                  filetypes=[("exiftool","exiftool*"),(_("Tous"),"*")],multiple=False,
+                                                  title = _("Recherche exiftool"))
         if len(source)==0:
-            texte="Abandon, pas de changement.\nFichier exiftool inchangé :\n\n"+afficheChemin(self.exiftool)
+            texte=_("Abandon, pas de changement.") + "\n" + _("Fichier exiftool inchangé :") + "\n\n"+afficheChemin(self.exiftool)
             self.encadre(texte,nouveauDepart='non')
             return
         self.exiftool=''.join(source)
         self.sauveParam()
-        texte="\nProgramme exiftool :\n\n"+afficheChemin(self.exiftool)
+        texte="\n" + _("Programme exiftool :") + "\n\n" +afficheChemin(self.exiftool)
         self.encadre(texte,nouveauDepart='non')
 
     def repConvert(self):
         self.menageEcran()
         if self.convertMagick=="":
-            texte="Pas de chemin pour le programme convert d'ImageMagick"
+            texte=_("Pas de chemin pour le programme convert d'ImageMagick")
         else:
-            texte="Programme convert :\n"+afficheChemin(self.convertMagick)
+            texte=_("Programme convert :") + "\n"+afficheChemin(self.convertMagick)
         self.encadre(texte,nouveauDepart='non')         
         
         # Choisir le répertoire de Meshlab ou CLoudCompare :
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.exiftool),                                                 
-                                                  filetypes=[("convert",("convert*","avconv*")),("Tous","*")],multiple=False,
-                                                  title = "Recherche convert")
+                                                  filetypes=[("convert",("convert*","avconv*")),(_("Tous"),"*")],multiple=False,
+                                                  title = _("Recherche convert"))
         if len(source)==0:
-            texte="Abandon, pas de changement.\nFichier convert inchangé :\n\n"+afficheChemin(self.convertMagick)
+            texte=_("Abandon, pas de changement.") + "\n" + _("Fichier convert inchangé :") + "\n\n"+afficheChemin(self.convertMagick)
             self.encadre(texte,nouveauDepart='non')
             return
         self.convertMagick=''.join(source)
         self.sauveParam()
-        texte="\nProgramme convert :\n\n"+afficheChemin(self.convertMagick)
+        texte="\n" + _("Programme convert :") + "\n\n"+afficheChemin(self.convertMagick)
         self.encadre(texte,nouveauDepart='non')
         
     def repMeslab(self):
         self.menageEcran()
         if self.meshlab=="":
-            texte="Pas de chemin pour le programme ouvrant les .PLY"
+            texte=_("Pas de chemin pour le programme ouvrant les .PLY")
         else:
-            texte="Programme ouvrant les .PLY :\n"+afficheChemin(self.meshlab)
+            texte=_("Programme ouvrant les .PLY :") + "\n"+afficheChemin(self.meshlab)
         self.encadre(texte,nouveauDepart='non')                       
         # Choisir le répertoire de Meshlab ou CLoudCompare 
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.meshlab),                                                 
-                                                  filetypes=[("meshlab ou CloudCompare",("meshlab*","Cloud*")),("Tous","*")],multiple=False,
-                                                  title = "Recherche fichier Meshlab sous VCG, ou CloudCompare")
+                                                  filetypes=[(_("meshlab ou CloudCompare"),("meshlab*","Cloud*")),(_("Tous"),"*")],multiple=False,
+                                                  title = _("Recherche fichier Meshlab sous VCG, ou CloudCompare"))
         if len(source)==0:
-            texte="Abandon, pas de changement.\nFichier Meshlab ou cloud compare :\n\n"+afficheChemin(self.meshlab)
+            texte=_("Abandon, pas de changement.") + "\n" + _("Fichier Meshlab ou cloud compare :") + "\n\n"+afficheChemin(self.meshlab)
             self.encadre(texte,nouveauDepart='non')
             return
         self.meshlab = source
         self.sauveParam()
-        texte="\nProgramme ouvrant les .PLY :\n\n"+afficheChemin(self.meshlab)
+        texte="\n" + _("Programme ouvrant les .PLY :") + "\n\n"+afficheChemin(self.meshlab)
         self.encadre(texte,nouveauDepart='non')
 
     def repFfmpeg(self):
         self.menageEcran()
         if self.ffmpeg=="":
-            texte="Pas de chemin pour le programme Ffmpeg"
+            texte=_("Pas de chemin pour le programme Ffmpeg")
         else:
-            texte="Programme ffmpeg :\n"+afficheChemin(self.ffmpeg)
+            texte=_("Programme ffmpeg :") + "\n"+afficheChemin(self.ffmpeg)
         self.encadre(texte,nouveauDepart='non')         
         
         # Choisir le répertoire de ffmpeg:
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.ffmpeg),                                                 
-                                                  filetypes=[("ffmpeg","ffmpeg*"),("Tous","*")],multiple=False,
-                                                  title = "Recherche ffmpeg")
+                                                  filetypes=[("ffmpeg","ffmpeg*"),(_("Tous"),"*")],multiple=False,
+                                                  title = _("Recherche ffmpeg"))
         if len(source)==0:
-            texte="Abandon, pas de changement.\nFichier ffmpeg inchangé :\n\n"+afficheChemin(self.ffmpeg)
+            texte=_("Abandon, pas de changement.") + "\n" + _("Fichier ffmpeg inchangé :") + "\n\n"+afficheChemin(self.ffmpeg)
             self.encadre(texte,nouveauDepart='non')
             return
         self.ffmpeg=''.join(source)
         self.sauveParam()
-        texte="\nProgramme ffmpeg :\n\n"+afficheChemin(self.ffmpeg)
+        texte="\n" + _("Programme ffmpeg :") + "\n\n"+afficheChemin(self.ffmpeg)
         self.encadre(texte,nouveauDepart='non')
 
     def modifierTacky(self):
         self.tacky = not self.tacky
         if self.tacky:
-            self.encadre("Tacky message au lancement activé")
+            self.encadre(_("Tacky message au lancement activé"))
         else:
-            self.encadre("Tacky message au lancement désactivé")            
- 
+            self.encadre(_("Tacky message au lancement désactivé"))
+
+    def modifierLangue(self):
+        self.menageEcran()
+        self.encadre(_("Sélectionnez la langue à utiliser. L'application sera redémarée."))
+        frame = tkinter.Frame(fenetre)
+        frameListe = tkinter.Frame(frame)
+        frameBoutton = tkinter.Frame(frame)
+        self.choixLangue = tkinter.Listbox(frameListe)
+        frame.pack()
+        frameListe.pack(side = tkinter.TOP)
+        frameBoutton.pack(side = tkinter.BOTTOM)
+        valider = tkinter.Button(frameBoutton, text = _("Appliquer"), command = self.selectionLangue)
+        self.choixLangue.pack(side = tkinter.LEFT, fill = tkinter.Y)
+        valider.pack()
+        self.choixLangue.insert(1, _("Français"))
+        self.choixLangue.insert(2, _("Anglais"))
+        
+    def selectionLangue(self):
+        nouvelleLangue = self.choixLangue.get(self.choixLangue.curselection())
+        global langue
+        if(nouvelleLangue == _("Français")):
+            langue = 'fr'
+        else:
+            langue = 'en'
+        try:
+            traduction = gettext.translation('AperoDeDenis', localedir = repertoire_langue, languages=[langue])
+            traduction.install()
+        except:
+            message = "Version bilingue non installée. Revoir la procédure d'installation.\nChoisir KO pour quitter l'application" 
+            if self.troisBoutons(titre="traduction absente",question=message,b1='OK',b2='KO',b3=None,b4=None)==1:
+                self.quitter()
+        try: fenetre.destroy()
+        except: pass
+
     ################################## LE MENU MICMAC : Choisir les photos, les options, le traitement ##########################################################
 
 
     def lesPhotos(self):                                # Choisir des images dans un répertoire
+
+        if not os.path.isdir(self.micMac):
+                self.encadre(_("Avant de choisir les photos associer le répertoire bin de micmac (Menu Paramétrage\\associer le répertoire bin de MicMac)."),nouveauDepart='non')
+                return
+            
+        if not os.path.isfile(self.exiftool):
+                self.encadre(_("Avant de choisir les photos associer le chemin du programme exiftool (Menu trage\\Associer exiftool)."),nouveauDepart='non')
+                return
 
         self.fermerVisuPhoto()                          #  s'il y a une visualisation en cours des photos ou du masque on la ferme             
         self.menageEcran()
         reinitialationAFaire = False
         if self.etatDuChantier>2:                       # 1 = avec photo ; 2 = enregistré, plus = traitement effectué
             reinitialationAFaire = True
-            if self.troisBoutons("Nouvelles photos pour le meme chantier",
-                                 "Choisir de nouvelles photos réinitialisera le chantier.\n"+
-                                "Les traces et l'arborescence des calculs seront effacées.\n"+
-                                "Les options compatibles avec les nouvelles photos seront conservées.\n",
-                                "Abandon",
-                                "Réinitialiser le chantier") == 0:
-                self.encadre("Abandon, le chantier n'est pas modifié.",nouveauDepart='non')
+            if self.troisBoutons(_("Nouvelles photos pour le meme chantier"),
+                                 _("Choisir de nouvelles photos réinitialisera le chantier." ) + "\n"+
+                                _("Les traces et l'arborescence des calculs seront effacées.") + "\n"+
+                                _("Les options compatibles avec les nouvelles photos seront conservées.") + "\n",
+                                _("Abandon"),
+                                _("Réinitialiser le chantier")) == 0:
+                self.encadre(_("Abandon, le chantier n'est pas modifié."),nouveauDepart='non')
                 return
 
             
@@ -2658,32 +3269,32 @@ class Interface(ttk.Frame):
         if os.path.isdir(self.repertoireDesPhotos):
             repIni = self.repertoireDesPhotos
             
-        photos=tkinter.filedialog.askopenfilename(title='Choisir des photos',
+        photos=tkinter.filedialog.askopenfilename(title=_('Choisir des photos'),
                                                   initialdir=repIni,
-                                                  filetypes=[("Photos",("*.JPG","*.jpg","*.BMP","*.bmp","*.TIF","*.tif")),("Tous","*")],
+                                                  filetypes=[(_("Photos"),("*.JPG","*.jpg","*.BMP","*.bmp","*.TIF","*.tif")),(_("Tous"),"*")],
                                                   multiple=True)
         
         if len(photos)==0:
-            self.encadre("Abandon, aucune sélection de fichier image,\n le répertoire et les photos restent inchangés.\n",nouveauDepart="non")
+            self.encadre(_("Abandon, aucune sélection de fichier image,") + "\n" + _("le répertoire et les photos restent inchangés.") + "\n",nouveauDepart="non")
             return 
 
         if self.nombreDExtensionDifferentes(photos)==0:
-            self.encadre("Aucune extension acceptable pour des images. Abandon.",nouveauDepart="non")
+            self.encadre(_("Aucune extension acceptable pour des images. Abandon."),nouveauDepart="non")
             return
         
         if self.nombreDExtensionDifferentes(photos)>1:
-            self.encadre("Plusieurs extensions différentes :\n"+",".join(self.lesExtensions)+".\n Impossible dans cette version. Abandon.",nouveauDepart="non")
+            self.encadre(_("Plusieurs extensions différentes :") + "\n"+",".join(self.lesExtensions)+".\n" + _("Impossible dans cette version. Abandon."),nouveauDepart="non")
             return
 
         if self.lesExtensions[0].upper() not in ".JPG.JPEG":
             
-            if self.troisBoutons("Info : Format des photos","La version actuelle ne traite que les photos au format JPG,\n\n or le format des photos est : "+self.lesExtensions[0]+
-                             ".\n\nles photos vont être converties au format JPG.",
-                              b1='Convertir en JPG',
-                              b2='Abandonner')==1:
+            if self.troisBoutons(_("Info : format des photos"),_("La version actuelle ne traite que les photos au format JPG,") + "\n\n" + _("or le format des photos est : ")+self.lesExtensions[0]+
+                             ".\n\n" + _("les photos vont être converties au format JPG."),
+                              b1=_('Convertir en JPG'),
+                              b2=_('Abandonner'))==1:
                 return
             if verifierSiExecutable(self.convertMagick)==False:
-                self.encadre("Désigner l'outil de conversation 'convert' d'ImageMagick\n(Menu Paramétrage)",nouveauDepart="non")
+                self.encadre(_("Désigner l'outil de conversation 'convert' d'ImageMagick") + "\n" + _("(Menu Paramétrage)"),nouveauDepart="non")
                 return
             if  self.pasDeConvertMagick():return
 
@@ -2691,7 +3302,7 @@ class Interface(ttk.Frame):
             photos = [os.path.splitext(e)[0]+".JPG" for e in photos]
            
         if self.nombreDExtensionDifferentes(photos)==0:
-            self.encadre("Aucune extension acceptable pour des images. Abandon.",nouveauDepart="non")
+            self.encadre(_("Aucune extension acceptable pour des images. Abandon."),nouveauDepart="non")
             return            
 
 
@@ -2705,10 +3316,10 @@ class Interface(ttk.Frame):
                 if e not in photosChoisies:
                     NbPointsSupprimes+=1        # le compte n'y est pas (si positif)
             if NbPointsSupprimes>0:
-                if self.troisBoutons("ATTENTION !","ATTENTION : Des points GPS ont été précedemment placés sur des photos non choisies pour ce chantier.\n"+
-                                         "Les emplacements de ces points vont être supprimés si vous validez cette sélection de photos.",
-                              b1='Valider la sélection de photos',
-                              b2='Abandonner')==1:
+                if self.troisBoutons(_("ATTENTION !"),_("ATTENTION : des points GPS ont été précedemment placés sur des photos non choisies pour ce chantier.") + "\n"+
+                                         _("Les emplacements de ces points vont être supprimés si vous validez cette sélection de photos."),
+                              b1=_('Valider la sélection de photos'),
+                              b2=_('Abandonner'))==1:
                     return
                 
 
@@ -2716,21 +3327,19 @@ class Interface(ttk.Frame):
         
         self.extensionChoisie = self.lesExtensions[0]       # l'extension est OK
 
-        self.encadre("Copie des photos en cours... Patience",nouveauDepart='non') #  pour éviter le redémarage
+        self.encadre(_("Copie des photos en cours... Patience"),nouveauDepart='non') #  pour éviter le redémarage
 
-
-
-        # crée le repertoire de travail, copie les photos et renvoit le nombre de fichiers photos "aceptables",
+        # crée le repertoire de travail, copie les photos avec l'extension choisie et renvoit le nombre de fichiers photos "aceptables",
         # met à 1 l'état du chantier crée self.photosAvecChemin et self.photosSansChemin
         # ATTENTION : Supprime l'arborescence et certains résultats.
         
         retourExtraire = self.extrairePhotoEtCopier(photos)    
 
         if retourExtraire.__class__()=='':              # si le retour est un texte alors erreur, probablement création du répertoire impossible
-            self.encadre ("Impossible de créer le répertoire de travail.\nVérifier les droits en écriture sous le répertoire des photos\n"+str(retourExtraire),nouveauDepart="non")
+            self.encadre (_("Impossible de créer le répertoire de travail.") + "\n" + _("Vérifier les droits en écriture sous le répertoire des photos") + "\n"+str(retourExtraire),nouveauDepart="non")
             return 
         if retourExtraire==0:                           # extraction et positionne  self.repertoireDesPhotos, et les listes de photos avec et sanschemin (photosAvecChemin et photosSansChemin)
-            self.encadre ("Aucun JPG, PNG, BMP, TIF, ou GIF  sélectionné,\nle répertoire et les photos restent inchangés.\n",nouveauDepart="non")
+            self.encadre (_("Aucun JPG, PNG, BMP, TIF, ou GIF  sélectionné,") + "\n" + _("le répertoire et les photos restent inchangés.") + "\n",nouveauDepart="non")
             return
 
         self.etatSauvegarde="*"                                     # chantier modifié
@@ -2743,16 +3352,16 @@ class Interface(ttk.Frame):
         if self.exifsOK==False:
             if self.pasDeFocales:
                 if self.pasDeExiftool():
-                    message+="L'outil exiftool n'est pas localisé : controle des photos impossible.\nDésigner le fichier exiftool (menu paramétrage)."
+                    message+=_("L'outil exiftool n'est pas localisé : controle des photos impossible.") + "\n" + _("Désigner le fichier exiftool (menu paramétrage).")
                 else:
-                    message+='Les focales sont absentes des exif.\nMettez à jour les exifs avant de lancer MicMac.\n'+\
-                            "Utiliser le menu Outils/Modifier l'exif des photos.\n"
+                    message+=_('Les focales sont absentes des exif.') + "\n" + _('Mettez à jour les exifs avant de lancer MicMac.') + '\n'+\
+                            _("Utiliser le menu Outils/Modifier l'exif des photos.") + "\n"
             else:
-                message += "Attention : Les focales des photos ou ne sont pas toutes identiques.\n"
+                message += _("Attention : Les focales des photos ou ne sont pas toutes identiques.") + "\n"
                 
         if self.dimensionsOK==False:
-            message += "Attention : les dimensions des photos ne sont pas toutes identiques.\n"+\
-                      "\nLe traitement par MicMac ne sera peut-être pas possible.\n"
+            message += _("Attention : les dimensions des photos ne sont pas toutes identiques.") + "\n"+\
+                      "\n" + _("Le traitement par MicMac ne sera peut-être pas possible.") + "\n"
             
         # conséquences du choix de nouvelles photos sur un ancien chantier : on supprime tous le répertoire de travail ancien
         # on conserve les options
@@ -2764,8 +3373,8 @@ class Interface(ttk.Frame):
             
         if reinitialationAFaire:
         # trace dans la trace
-            message = ("De nouvelles photos ont été sélectionnés sur un chantier pré-existant.\n"+
-                   "Les anciennes options compatibles avec les nouvelles photos ont été conservées.\n")
+            message = (_("De nouvelles photos ont été sélectionnés sur un chantier pré-existant.") + "\n"+
+                   _("Les anciennes options compatibles avec les nouvelles photos ont été conservées.") + "\n")
  
             self.ajoutLigne(message)                
             self.ecritureTraceMicMac()            
@@ -2784,10 +3393,11 @@ class Interface(ttk.Frame):
 
 
     ################################## COPIER LES FICHIERS DANS LE REPERTOIRE DE TRAVAIL ###########################################################       
-    ################################## ATTENTION : FAIT UN GRAND MENAGE : supprime toute l'arborescence de travail et des fichiers dans le chantier dont param.sav ###############       
+    ################################## ATTENTION : FAIT UN GRAND MENAGE : supprime toute l'arborescence de travail et des fichiers dans le chantier dont param.sav ###############
     
     def extrairePhotoEtCopier(self,photos): # création repertoire du chantier,  copie les photos OK, chdir. retour : nombre de photos ou message d'erreur
-                                            #  photosAvecChemin photosSansChemin                                  
+                                            #  photosAvecChemin photosSansChemin
+                                            #attention : self.extensionChoisie doit être positionné
 
         liste=[x for x in photos if x[-3:].upper() in 'JPGJPEGPNGRAWBMPTIFTIFFGIF']        # on restreint aux seul format d'images accepté : JPG, PNG, BMP, TIF, RAW, GIF 
         if len(liste)==0: return 0
@@ -2814,8 +3424,7 @@ class Interface(ttk.Frame):
                         shutil.copy(f,dest)                                 # copie du fichier sous le répertoire de travail                            
                     ajout(listeCopie,dest)                                  # liste des fichiers à traiter
         except Exception as e:
-            texte=  'erreur lors de la copie du fichier\n'+f+'\n dans le répertoire \n'+self.repTravail+"\nlibellé de l'erreur : \n"+str(e)+\
-                    "\nCauses possibles : manque d'espace disque ou droits insuffisants."
+            texte=  _("erreur lors de la copie du fichier") + "\n" + f + "\n" + _("dans le répertoire ") + "\n" + self.repTravail + "\n" + _("libellé de l\'erreur :") + "\n" + str(e) + "\n" + _("Causes possibles : manque d\'espace disque ou droits insuffisants.")
             return texte
         self.photosAvecChemin =  list(listeCopie)                                   # on oublie les photos initiales
         self.photosSansChemin = list([os.path.basename(x) for x in listeCopie]) # liste des noms de photos copiès, sans le chemin.
@@ -2865,7 +3474,7 @@ class Interface(ttk.Frame):
                 self.pasDeFocales = True               
             if lesFocales.__len__()==1 and self.pasDeFocales==False:
                 self.exifsOK = True                  
-        except Exception as e: print("erreur controle des photos : ",str(e))
+        except Exception as e: print(_("erreur controle des photos : "),str(e))
         
     ################# définir le répertoire de travail, le créer :
     
@@ -2895,7 +3504,7 @@ class Interface(ttk.Frame):
             self.indiceTravail+=1                                                                   # numéro particulier au répertoire de travail créé
             self.repTravail = os.path.normcase(os.path.normpath(os.path.join(self.repertoireDesPhotos,'MicMac_'+str(self.indiceTravail)))) # répertoire différent à chaque éxécution (N° séquentiel)
         try: os.mkdir(self.repTravail)                                                                   # création répertoire du chantier
-        except Exception as e : return "Impossible de créer le répertoire de travail : erreur = \n"+str(e)
+        except Exception as e : return _("Impossible de créer le répertoire de travail : erreur = ") + "\n"+str(e)
         ajout(self.tousLesChantiers,self.repTravail)                                                # on ajoute le répertoire créé dans la liste des répertoires
         self.chantier = os.path.basename(self.repTravail)                                           # nom du chantier, puis état du chantier : 1 = créé, fixé
 
@@ -2909,8 +3518,8 @@ class Interface(ttk.Frame):
         # l'état du chantier permet-il de choisir des options :
            
         if self.etatDuChantier==3:		
-            self.encadre("Le chantier est interrompu suite à incident. \n\n"+
-                         "Si besoin créer un nouveau chantier ou débloquer le chantier en lancant micmac.",nouveauDepart='non')       
+            self.encadre(_("Le chantier est interrompu suite à incident. ") + "\n\n"+
+                         _("Si besoin créer un nouveau chantier ou débloquer le chantier en lancant micmac."),nouveauDepart='non')       
             return        
 
     # Chantier arrété après tapas : l'utilisateur a pu modifier les options et veut continuer ou reprendre au début suivant les résultats
@@ -2920,15 +3529,15 @@ class Interface(ttk.Frame):
     # Chantier terminé, l'utilisateur peur décider de le débloquer en conservant les résultats de tapas ou supprimer tous les résultats
     
         if self.etatDuChantier==5:		                # Chantier terminé
-            retour = self.troisBoutons(  titre='Le chantier '+self.chantier+' est terminé.',
-                                         question="Le chantier est terminé après "+self.densification+".\n"+
-                                         "Vous pouvez :\n"+
-                                         " - Nettoyer le chantier pour modifier les options de Tapioca et Tapas\n"+
-                                         " - Conserver les traitements de Tapioca/Tapas pour modifier les options de Malt ou C3DC\n"+
-                                         " - Ne rien faire.\n",                                    
-                                         b1='Modifier les options de Tapioca et Tapas',
-                                         b2='Modifier les options de Malt ou C3DC',
-                                         b3='Ne rien faire',)
+            retour = self.troisBoutons(  titre=_('Le chantier %(x)s est terminé.') % {"x" : self.chantier},
+                                         question=_("Le chantier est terminé après ")+self.densification+".\n"+
+                                         _("Vous pouvez :") + "\n"+
+                                         _(" - Nettoyer le chantier pour modifier les options de Tapioca et Tapas") + "\n"+
+                                         _(" - Conserver les traitements de Tapioca/Tapas pour modifier les options de Malt ou C3DC") + "\n"+
+                                         _(" - Ne rien faire.") + "\n",                                    
+                                         b1=_('Modifier les options de Tapioca et Tapas'),
+                                         b2=_('Modifier les options de Malt ou C3DC'),
+                                         b3=_('Ne rien faire'),)
             if retour==-1:                                      # -1 : fermeture fenêtre, abandon
                 self.afficheEtat()
                 return
@@ -2956,7 +3565,7 @@ class Interface(ttk.Frame):
             self.optionsTapioca()                                   # les frames à afficher ne sont pas "fixes"
             self.item520.pack(pady=10)                              # la frame fixe de tapas pour calibration
             self.item510.pack(pady=10)                              # la frame fixe de tapas pour arrêt ou poursuite
-            self.item526.config(text="Nombre de photos choisies : "+str(self.photosPourCalibrationIntrinseque.__len__()))
+            self.item526.config(text=_("Nombre de photos choisies : ")+str(self.photosPourCalibrationIntrinseque.__len__()))
             self.item720.pack(pady=10)                              # Malt
             self.optionsMalt()                                      # La frame Image Maitre à afficher n'est pas "fixe"           
             self.item960.pack(padx=5,pady=10,ipady=2,ipadx=15)      # Calibration de 960 à 980
@@ -2982,7 +3591,7 @@ class Interface(ttk.Frame):
             if os.path.exists(self.masque3DSansChemin):
                 supprimeFichier(self.masque3DSansChemin)                # suppression des anciens masques 3D 
                 supprimeFichier(self.masque3DBisSansChemin)
-                self.ajoutLigne("Suppression du masque 3D : la version de MicMac ne comporte pas C3DC")
+                self.ajoutLigne(_("Suppression du masque 3D : la version de MicMac ne comporte pas C3DC"))
                 self.ecritureTraceMicMac()
             try: self.onglets.hide(self.item800)
             except: pass
@@ -2991,14 +3600,14 @@ class Interface(ttk.Frame):
 
             os.chdir(self.repTravail)        
             if os.path.exists("AperiCloud.ply")==False:
-                self.item804.configure(text= "pas de fichier AperiCloud.ply pour construire le masque :\nlancer Micmac pour en constituer un.",foreground='red',style="C.TButton")
+                self.item804.configure(text= _("pas de fichier AperiCloud.ply pour construire le masque :") + "\n" + _("lancer Micmac pour en constituer un."),foreground='red',style="C.TButton")
                 self.item801.configure(state = "disable")
             else:
                 self.item801.configure(state = "normal")
             if self.existeMasque3D():
-                self.item804.configure(text = "Masque 3D créé",foreground='black')
+                self.item804.configure(text = _("Masque 3D créé"),foreground='black')
             else:
-                self.item804.configure(text = "Pas de masque 3D",foreground='black')            
+                self.item804.configure(text = _("Pas de masque 3D"),foreground='black')            
             
 
         # met à jour les infos sur les maîtresses et les masques
@@ -3033,7 +3642,7 @@ class Interface(ttk.Frame):
         self.sauveParam()
 
         if retour!=True:
-            texte = "\nOption incorrecte :\n"+str(retour)
+            texte = "\n" + _("Option incorrecte :") + "\n"+str(retour)
             self.encadreEtTrace(texte)
             return
         
@@ -3047,15 +3656,14 @@ class Interface(ttk.Frame):
         if self.dicoPointsGPSEnPlace.__len__()==0:                  # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
             return False
         if self.controlePoints():                                   # retour True si problème !
-            print("Points GPS vérifiés par controlePoints : non conformes. Vérifiez.")
-            self.encadre("Points GPS non conformes. Vérifiez.",nouveauDepart='non')
+            self.encadre(_("Points GPS non conformes. Nom est absent ou en double. Vérifiez."),nouveauDepart='non')
             return False
         os.chdir(self.repTravail)
         with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: #écriture de la description de chaque point GPS
             infile.write(self.dicoAppuisDebut)
             self.actualiseListePointsGPS()
-            for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
-                point=self.dicoAppuis1Point.replace("Nom",Nom)
+            for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+                point=self.dicoAppuis1Point.replace(_("Nom"),Nom)
                 point=point.replace("X",X)
                 point=point.replace("Y",Y)
                 point=point.replace("Z",Z)
@@ -3074,14 +3682,14 @@ class Interface(ttk.Frame):
                         if key!="":
                             infile.write(self.mesureAppuisFinPhoto)                    
                         key = cle[1]   
-                        photo = self.mesureAppuisDebutPhoto.replace("NomPhoto",os.path.basename(cle[1]))
+                        photo = self.mesureAppuisDebutPhoto.replace(_("NomPhoto"),os.path.basename(cle[1]))
                         infile.write(photo)
-                        point = self.mesureAppuis1Point.replace("NomPoint",cle[0])
+                        point = self.mesureAppuis1Point.replace(_("NomPoint"),cle[0])
                         point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
                         point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
                         infile.write(point)                    
                     else:
-                        point = self.mesureAppuis1Point.replace("NomPoint",cle[0])
+                        point = self.mesureAppuis1Point.replace(_("NomPoint"),cle[0])
                         point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
                         point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
                         infile.write(point)
@@ -3089,30 +3697,35 @@ class Interface(ttk.Frame):
                 infile.write(self.mesureAppuisFin)
         return True
     
-    def controlePointsGPS(self):                # controle pour affiche etat : informer de la situation : si vrai alors self.etatPointsGPS sera affiché
-        # si pas de chantier, pas de problème mais retour False :  pas de calibration
+    def controlePointsGPS(self):            # controle pour affiche etat et afficher tous les points : informer de la situation : si vrai alors self.etatPointsGPS sera affiché
+                                            # finCalibrationGPSOK doit avoir été éxécuté avant
         self.etatPointsGPS = str()
-        if self.repTravail==self.repertoireData:
+        retour = True
+     
+        if self.repTravail==self.repertoireData:    # si pas de chantier, pas de problème mais retour False :  pas de calibration
             return False
-       
+        
         # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
         listePointsActifs = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] and e[0]!="" ]
 
-        # ICI : on pourrait controler que les x,y,z et incertitudes sont bien des valeurs numériques                     
-
+        # ICI : on pourrait controler que les x,y,z et incertitudes sont bien des valeurs numériques    
+        if len(listePointsActifs)==0:
+            self.etatPointsGPS += _("Pas de points GPS.") + "\n"
+            return False
+            
         if len(listePointsActifs)>0:
-            self.etatPointsGPS += ("\n"+str(len(self.dicoPointsGPSEnPlace))+" points GPS placés\n"+ # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
-                                  "pour "+str(len(listePointsActifs))+" points GPS définis\n")
+            self.etatPointsGPS = ("\n" + _("%s points GPS placés") % (str(len(self.dicoPointsGPSEnPlace))) + "\n"  + # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
+                                  _("pour %s points GPS définis") % (str(len(listePointsActifs)))) + "\n" 
             if len(listePointsActifs)<3:
-                 self.etatPointsGPS += "Attention : Il faut au moins 3 points pour qu'ils soient pris en compte.\n"   
+                 self.etatPointsGPS += _("Attention : il faut au moins 3 points pour qu'ils soient pris en compte.") + "\n"
+                 retour = False   
             if len(self.dicoPointsGPSEnPlace)<2*len(listePointsActifs):
-                 self.etatPointsGPS += "Attention : chaque points doit être sur 2 photos au moins.\n"
-
-
+                 self.etatPointsGPS += _("Attention : chaque points doit être sur 2 photos au moins.") + "\n"
+                 retour = False
         if os.path.exists(os.path.join(self.repTravail,self.mesureAppuis))==False:
-            self.etatPointsGPS+="Saisie incomplète : les points ne seront pas pris en compte\n"
-
-        return True
+            self.etatPointsGPS+=_("Saisie incomplète : les points ne seront pas pris en compte") + "\n"
+            retour = False
+        return retour
                          
     def controleCalibration(self):  # controle de saisie globale du repère axe, plan métrique, arrêt à la première erreur, True si pas d'erreur, sinon message
         #si pas de chantier, pas de problème mais retour False :  pas de calibration
@@ -3125,37 +3738,37 @@ class Interface(ttk.Frame):
             return False
         #ligne :
         if len(self.dicoLigneHorizontale)+len(self.dicoLigneVerticale)!=2:
-            self.etatCalibration = self.etatCalibration+"La ligne horizontale ou verticale ne comporte pas 2 points\n"
+            self.etatCalibration = self.etatCalibration+_("La ligne horizontale ou verticale ne comporte pas 2 points") + "\n"
         # Plan :
         if os.path.exists(self.monImage_MaitrePlan)==False or self.monImage_MaitrePlan==str():
-            self.etatCalibration = self.etatCalibration+"Pas de maitre plan horizontal ou vertical\n"
+            self.etatCalibration = self.etatCalibration+_("Pas de maitre plan horizontal ou vertical") + "\n"
             self.monImage_PlanTif = str()       # réinit le plan sans maitre
         else:
             if os.path.exists(self.monImage_PlanTif)==False:
-                self.etatCalibration = self.etatCalibration+"Pas de plan horizontal ou vertical\n"
+                self.etatCalibration = self.etatCalibration+_("Pas de plan horizontal ou vertical") + "\n"
         # Distance
         try:
             d = float(self.distance.get())
             if d<0:
-                self.etatCalibration = self.etatCalibration+"Distance "+self.distance.get()+" invalide.\n"
+                self.etatCalibration = _("%(x)s Distance %(y)s invalide.") % {"x": self.etatCalibration, "y": self.distance.get()} + "\n" 
             if d==0:
-                self.etatCalibration = "Calibration annulée.\n"                
+                self.etatCalibration = _("Calibration annulée.") + "\n"                
         except: 
-            self.etatCalibration = self.etatCalibration+"Pas de distance.\n"
+            self.etatCalibration = _("%s Pas de distance.") % (self.etatCalibration) + "\n" 
             return False
         # métrique :
         if self.dicoCalibre.__len__()>0:
             liste = list(self.dicoCalibre.items())
             if liste.__len__()!=4:
-                self.etatCalibration += "La distance n'est pas mesurée par 2 points repérés sur 2 photos.\n"
+                self.etatCalibration += _("La distance n'est pas mesurée par 2 points repérés sur 2 photos.") + "\n"
             photosAvecDistance = list(set([os.path.basename(e[1]) for e in self.dicoCalibre.keys() ]))
             if not os.path.exists(photosAvecDistance[0]):
-                self.etatCalibration += "La photo avec distance "+photosAvecDistance[0]+" est absente.\n"
+                self.etatCalibration += _("La photo avec distance %s est absente.") % (photoavecDistance[0]) + "\n"
             if photosAvecDistance.__len__()>1:
                 if not os.path.exists(photosAvecDistance[1]):
-                    self.etatCalibration += "La photo avec distance "+photosAvecDistance[1]+" est absente.\n"                
+                    self.etatCalibration += _("La photo avec distance %s est absente.") % (photosAvecDistance[1]) + "\n"            
         if self.dicoCalibre.__len__()==0:
-            self.etatCalibration += "Pas de distance pour la calibration.\n"
+            self.etatCalibration += _("Pas de distance pour la calibration.") + "\n"
             
         if self.etatCalibration==str():
             return True                             # calibration OK, tout va bien
@@ -3172,7 +3785,7 @@ class Interface(ttk.Frame):
 
         # Pattern des fichiers à traiter : 
         
-        xml = xml.replace("Fichiers",str(' .*'+self.extensionChoisie))
+        xml = xml.replace(_("Fichiers"),str(' .*'+self.extensionChoisie))
 
         # axe horizontal, dans le dico : self.dicoLigneHorizontale. key = nom point, photo, identifiant ;Retrouver nom de la photo, coordonnées des points
         # items = liste de tuple (key,values) soit tuple = (point,photo, id),(x1,y1)
@@ -3263,11 +3876,11 @@ class Interface(ttk.Frame):
         except:
             echelle1 = 1000
             self.echelle1.set(str(echelle1))
-            erreur += "\nL'échelle pour le mode All de Tapioca est invalide, une valeur par défaut, "+self.echelle1.get()+", est affectée.\n"
+            erreur += "\n" + _("L'échelle pour le mode All de Tapioca est invalide, une valeur par défaut, %s, est affectée.") % (self.echelle1.get()) + "\n"
 
         try:
             if echelle1<50 and echelle1!=-1 and self.modeTapioca.get()=="All":
-                texte += "\nEchelle pour le mode All de Tapioca trop petite : \n"+self.echelle1.get()+"\nMinimum = 50\n"
+                texte += "\n" + _("Echelle pour le mode All de Tapioca trop petite :") +  "\n" + self.echelle1.get() + "\n" + _("Minimum = 50") + "\n"
         except:
             pass
 
@@ -3279,18 +3892,18 @@ class Interface(ttk.Frame):
         except:
             echelle2 = 300
             self.echelle2.set(str(echelle2))
-            erreur += "\nL'échelle 1 pour MulScale de Tapioca est invalide, une valeur par défaut, "+self.echelle2.get()+", est affectée.\n"
+            erreur += "\n" + _("L'échelle 1 pour MulScale de Tapioca est invalide, une valeur par défaut, %s, est affectée.") % (self.echelle2.get()) + "\n"
 
         try:
             if echelle2==-1 and self.modeTapioca.get()=="MulScale":
-                texte += "\nL'échelle 1 de MulScale ne doit pas être -1.\nElle est mise à 300.\n"
+                texte += "\n" + _("L'échelle 1 de MulScale ne doit pas être -1.") + "\n" + _("Elle est mise à 300.") + "\n"
                 echelle2 = 300
                 self.echelle2.set(str(echelle2))
         except: pass
         
         try:
             if echelle2<50 and echelle2!=-1 and self.modeTapioca.get()=="MulScale":
-                texte += "\nL'échelle 1 pour le mode MulScale de Tapioca est trop petite : \n"+self.echelle2.get()+"\nMinimum = 50, maximum conseillé : 300\n"
+                texte += "\n" + _("L'échelle 1 pour le mode MulScale de Tapioca est trop petite : ") + "\n" + self.echelle2.get() + "\n" + _("Minimum = 50, maximum conseillé : 300") + "\n"
         except:
             pass
 
@@ -3302,11 +3915,11 @@ class Interface(ttk.Frame):
         except:
             echelle3 = 1200
             self.echelle3.set(str(echelle3))
-            erreur += "\nL'échelle 2 pour le mode  MulScale de Tapioca est invalide, une valeur par défaut, "+self.echelle3.get()+", est affectée.\n"        
+            erreur += "\n" + _("L'échelle 2 pour le mode  MulScale de Tapioca est invalide, une valeur par défaut, %s, est affectée.") % (self.echelle3.get()) + "\n"      
 
         try:
             if echelle3<50 and echelle3!=-1 and self.modeTapioca.get()=="MulScale":
-                texte += "\nL'échelle 2 pour le mode MulScale de Tapioca est trop petite : \n"+self.echelle3.get()+"\nMinimum = 50\n"
+                texte += "\n" + _("L'échelle 2 pour le mode MulScale de Tapioca est trop petite :") + "\n" + self.echelle3.get() + "\n" + _("Minimum = 50") + "\n"
         except:
             pass
 
@@ -3314,7 +3927,7 @@ class Interface(ttk.Frame):
 
         try:
             if echelle3<=echelle2 and echelle3!=-1 and self.modeTapioca.get()=="MulScale":
-                texte += "\nL'échelle 2 de MulScale pour tapioca\n"+self.echelle3.get()+"\n plus petite que l'échelle 1 : \n"+self.echelle2.get()+"\n"                  
+                texte += "\n" + _("L'échelle 2 de MulScale pour tapioca") + "\n" + self.echelle3.get() + "\n" + _("plus petite que l'échelle 1 :") + "\n" + self.echelle2.get() + "\n"              
         except:
             pass
 
@@ -3326,11 +3939,11 @@ class Interface(ttk.Frame):
         except:
             echelle4 = 1200
             self.echelle4.set(str(echelle4))
-            erreur += "\nL'échelle pour le mode Line de tapioca est invalide, une valeur par défaut, "+self.echelle4.get()+", est affectée.\n"
+            erreur += "\n" + _("L'échelle pour le mode Line de tapioca est invalide, une valeur par défaut, %s, est affectée.") % (self.echelle4.get()) + "\n"
 
         try:
             if echelle4<50 and echelle4!=-1 and self.modeTapioca.get()=="Line":
-                texte += "\nEchelle pour le mode Line de tapioca trop petite : \n"+self.echelle4.get()+"\n"
+                texte += "\n" + _("Echelle pour le mode Line de tapioca trop petite : ") + "\n" + self.echelle4.get() + "\n" % (self.echelle4.get())
         except:
             pass
 
@@ -3342,18 +3955,18 @@ class Interface(ttk.Frame):
         except:
             delta = 4
             self.delta.set(str(delta))
-            erreur += "\nLa valeur de delta pour le mode Line de Tapioca est invalide,\n une valeur par défaut, "+self.delta.get()+", est affectée.\n"        
+            erreur += "\n" + _("La valeur de delta pour le mode Line de Tapioca est invalide,") + "\n" + _("une valeur par défaut, %s, est affectée.") % self.delta.get() + "\n"        
             
         try:
             if delta<1 and self.modeTapioca.get()=="Line":
-                texte += "\nDelta trop petit : \n"+self.delta.get()+"\nMinimum = 1\n"
+                texte += "\n" + _("Delta trop petit :") + "\n" + self.delta.get() + "\n" + _("Minimum = 1") + "\n"
         except:
             pass           
 
         #vérification du zoom final :
                     
         if self.zoomF.get() not in ("1","2","4","8"):
-            erreur += "\nLe zoom final pour MALT n'est pas 1,2,4 ou 8 : "+self.zoomF.get()+"\n"
+            erreur += "\n" + _("Le zoom final pour MALT n'est pas 1,2,4 ou 8 : %s") % (self.zoomF.get()) + "\n"
         
         # zoom OK, les valeurs 8,4,2,1 correspondent au nuage étape 5, 6, 7, 8 
         
@@ -3367,9 +3980,9 @@ class Interface(ttk.Frame):
         try:
             self.photosUtilesAutourDuMaitre.set(int(self.photosUtilesAutourDuMaitre.get())) # met un entier (sinon galère !)
             if self.photosUtilesAutourDuMaitre.get()<1:
-                texte += "\nMalt mode Geomimage :\n Le nombre de photos utiles autour de l'image maîtresse est trop petit : "+str(self.photosUtilesAutourDuMaitre.get())+"\n"
+                texte += "\n" + _("Malt mode Geomimage :") + "\n" + _("Le nombre de photos utiles autour de l'image maîtresse est trop petit : %s")  % (str(self.photosUtilesAutourDuMaitre.get())) + "\n"
         except Exception as e:
-            texte += "\nMalt mode Geomimage :\nLe nombre de photos utiles autour de l'image centrale n'est pas numérique : \nIl est mis à 1.\n"
+            texte += "\n" + _("Malt mode Geomimage :") + "\n" + _("Le nombre de photos utiles autour de l'image centrale n'est pas numérique : ") + "\n" + _("Il est mis à 1.") + "\n"
             self.photosUtilesAutourDuMaitre.set(1)
 
             
@@ -3377,24 +3990,24 @@ class Interface(ttk.Frame):
         
         if len(self.photosAvecChemin)>0:
             if os.path.exists(self.photosAvecChemin[0])==False:
-                texte += "La photo "+self.photosAvecChemin[0]+" n'existe plus."
+                texte += _("La photo %s n'existe plus.") % (self.photosAvecChemin[0])
                 return texte+erreur        
             photo1 = Image.open(self.photosAvecChemin[0])
             largeur,hauteur = photo1.size
             del photo1
-        
+            inutile = _("Inutile et ralenti le traitement. Modifier.")
             maxi = max(largeur,hauteur)
             if self.modeTapioca.get()=='All':
                 if int(self.echelle1.get())>maxi:
-                    texte += "\nL'échelle pour le mode All de tapioca = "+self.echelle1.get()+"\n, est plus grande que la dimension maxi de la photo : \n"+str(maxi)+".\n\nInutile et ralenti le traitement. Modifier."
+                    texte += "\n" + _("L'échelle pour le mode All de tapioca = ") + self.echelle1.get() + "\n" + _(", est plus grande que la dimension maxi de la photo : ") + "\n" + str(maxi) + "." + "\n\n" + inutile
 
             if self.modeTapioca.get()=='MulScale':
                 if int(self.echelle2.get())>maxi:
-                    texte += "\nL'échelle 2 pour le mode MulScale de tapioca= "+self.echelle2.get()+"\n est plus grande que la dimension maxi de la photo : \n"+str(maxi)+".\n\nInutile et ralenti le traitement. Modifier."
+                    texte += "\n" + _("L'échelle 2 pour le mode MulScale de tapioca= ") + self.echelle2.get() + "\n" + _("est plus grande que la dimension maxi de la photo :") + "\n" + str(maxi) + "." + "\n\n" + inutile
 
             if self.modeTapioca.get()=='Line':
                 if int(self.echelle4.get())>maxi:
-                    texte += "\nL'échelle pour le mode Line de tapioca = "+self.echelle2.get()+"\n est plus grande que la dimension maxi de la photo : \n"+str(maxi)+".\n\nInutile et ralenti le traitement. Modifier."
+                    texte += "\n" + _("L'échelle pour le mode Line de tapioca = ") + self.echelle2.get() + "\n" + _("est plus grande que la dimension maxi de la photo :") + "\n" + str(maxi) + "." + "\n\n" + inutile
 
         # retour True ou String
 
@@ -3428,21 +4041,24 @@ class Interface(ttk.Frame):
     #""""""""""""""""""""""""   Options de Malt
             
     def imagesCalibrationIntrinseques(self):
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return        
         bulles = dict([(e,"") for e in self.photosPourCalibrationIntrinseque])
         self.choisirUnePhoto(self.photosAvecChemin,
-                             "Pour calibrer l'appareil photo",
-                             "Quelques photos, convergentes, d'angles écartés\nen jaune la calibration actuelle",
-                             boutonDeux="Supprimer",
+                             _("Pour calibrer l'appareil photo"),
+                             _("Quelques photos, convergentes, d'angles écartés") + "\n" + _("en jaune la calibration actuelle"),
+                             boutonDeux=_("Supprimer"),
                              bulles=bulles)
         if self.fermerVisu:                                             # sortie par second bouton
-            self.item526.config(text="Pas de photos de calibration intrinseque.")
+            self.item526.config(text=_("Pas de photos de calibration intrinseque."))
             self.photosPourCalibrationIntrinseque = list()                                 
             return
         if self.selectionPhotosAvecChemin.__len__()==0:             #sortie par fermeture fenêtre
-            self.item526.config(text="Choix inchangé.\n")
+            self.item526.config(text=_("Choix inchangé.") + "\n")
             return
         self.photosPourCalibrationIntrinseque = self.selectionPhotosAvecChemin
-        self.item526.config(text="Nombre de photos choisies : "+str(self.selectionPhotosAvecChemin.__len__()))
+        self.item526.config(text=_("Nombre de photos choisies : ")+str(self.selectionPhotosAvecChemin.__len__()))
         
     #""""""""""""""""""""""""   Options de Malt        
 
@@ -3457,6 +4073,9 @@ class Interface(ttk.Frame):
             self.item740.pack(pady=5)
             
     def imageMaitresse(self):
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle("Choisir d'abord les photos du chantier.")
+            return  
 
         # préparation des infos bulles
         
@@ -3465,7 +4084,7 @@ class Interface(ttk.Frame):
         for f in self.listeDesMaitresses:
             for e in self.listeDesMasques:
                 if os.path.splitext(f)[0]+"_masque.tif"==e:
-                    bulles[f]="Image maitresse avec masque"
+                    bulles[f]=_("Image maitresse avec masque")
             if f not in bulles:
                 bulles[f]=""    # image maitresse sans masque
 
@@ -3479,9 +4098,9 @@ class Interface(ttk.Frame):
         # choix des nouvelles maîtresses :
                 
         self.choisirUnePhoto(self.photosAvecChemin,
-                             "Choisir les maîtresses",
-                             "Choisir une ou plusieurs image(s) maîtresse(s)\nen jaune : les maitresses actuelles\nUne info bulle informe de la présence d'un masque",
-                             boutonDeux="Supprimer les images maîtresses", # self.fermerVisu=True
+                             _("Choisir les maîtresses"),
+                             _("Choisir une ou plusieurs image(s) maîtresse(s)") + "\n" + _("en jaune : les maitresses actuelles") + "\n" + _("Une info bulle informe de la présence d'un masque"),
+                             boutonDeux=_("Supprimer les images maîtresses"), # self.fermerVisu=True
                              mode="extended",
                              bulles=bulles)
 
@@ -3492,7 +4111,7 @@ class Interface(ttk.Frame):
         
         #abandon de la saisie
         if self.selectionPhotosAvecChemin.__len__()==0:                 #sortie par fermeture fenêtre ou sans choix
-            self.item701.config(text="Abandon. Choix inchangé.\n")
+            self.item701.config(text=_("Abandon. Choix inchangé.") + "\n")
             return
         
         # nouvelle liste des maitresses : mettre à jour la nouvelle liste des masques
@@ -3509,40 +4128,44 @@ class Interface(ttk.Frame):
         self.miseAJourItem701_703()
 
     def miseAJourItem701_703(self):         # Onglet Malt, Cadre geomImage
-
-        if self.listeDesMaitresses.__len__()==0:
-            self.item701.config(text="Image maitresse obligatoire pour GeomImage.")
-        if self.listeDesMaitresses.__len__()==1:
-            self.item701.config(text="image maîtresse = "+os.path.basename(self.listeDesMaitresses[0]))
+        try:
+            if self.listeDesMaitresses.__len__()==0:
+                self.item701.config(text=_("Image maitresse obligatoire pour GeomImage."))
+            if self.listeDesMaitresses.__len__()==1:
+                self.item701.config(text=_("image maîtresse = ")+os.path.basename(self.listeDesMaitresses[0]))
             
-        if self.listeDesMaitresses.__len__()>1:
-            self.item701.config(text=str(self.listeDesMaitresses.__len__())+" images maîtresses")
+            if self.listeDesMaitresses.__len__()>1:
+                self.item701.config(text=str(self.listeDesMaitresses.__len__())+_(" images maîtresses"))
         
-        if self.listeDesMasques.__len__()==0:
-            self.item703.config(text="\nPas de masque.")                       
+            if self.listeDesMasques.__len__()==0:
+                self.item703.config(text="\n" + _("Pas de masque."))                       
 
-        if self.listeDesMasques.__len__()==1:
-            self.item703.config(text="\nun seul masque : "+os.path.basename(self.listeDesMasques[0]))                      
+            if self.listeDesMasques.__len__()==1:
+                self.item703.config(text="\n" + _("un seul masque : ")+os.path.basename(self.listeDesMasques[0]))  
 
-        if self.listeDesMasques.__len__()>1:
-            self.item703.config(text="\n"+str(self.listeDesMasques.__len__())+" masques")                       
-
+            if self.listeDesMasques.__len__()>1:
+                self.item703.config(text="\n"+str(self.listeDesMasques.__len__())+_(" masques"))                       
+        except Exception as e:
+            print(_("erreur dans miseAJour701_703 : "),str(e))                            
 
     def tracerLesMasques(self):
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return      
         self.fermerVisuPhoto()
 
         if self.listeDesMaitresses.__len__()==0:
-            self.item703.config(text="Il faut au moins une image maîtresse pour définir un masque.",
+            self.item703.config(text=_("Il faut au moins une image maîtresse pour définir un masque."),
                                 background="#ffffaa")
             return
         bulles=dict()     
         for e in self.listeDesMasques:
             for f in self.listeDesMaitresses:
                 if os.path.splitext(f)[0]+"_masque.tif"==e:
-                    bulles[f]="Un masque existe déjà"
+                    bulles[f]=_("Un masque existe déjà")
         self.choisirUnePhoto(self.listeDesMaitresses,
-                             "Choisir l'image pour le masque",
-                             "Choisir une image maîtresse pour le masque\nen jaune = un masque existe",
+                             _("Choisir l'image pour le masque"),
+                             _("Choisir une image maîtresse pour le masque\nen jaune = un masque existe"),
                              mode="single",
                              bulles=bulles)
        
@@ -3562,7 +4185,7 @@ class Interface(ttk.Frame):
         self.fermerVisuPhoto()
 
         if self.listeDesMaitresses.__len__()==0:
-            self.item703.config(text="Il faut au moins une image maîtresse pour définir un masque.",
+            self.item703.config(text=_("Il faut au moins une image maîtresse pour définir un masque."),
                                 background="#ffffaa")
             return
 
@@ -3572,8 +4195,8 @@ class Interface(ttk.Frame):
         # comme il y a  plusieurs maîtres possibles il faut choisir !
         else:
             self.choisirUnePhoto(self.listeDesMaitresses,
-                                 "Choisir l'image pour le masque",
-                                 "Choisir une image maîtresse pour le masque",
+                                 _("Choisir l'image pour le masque"),
+                                 _("Choisir une image maîtresse pour le masque"),
                                  mode="single")
             if self.selectionPhotosAvecChemin.__len__()==0:
                 return
@@ -3591,9 +4214,9 @@ class Interface(ttk.Frame):
             self.masqueRetour = TracePolygone(fenetre,self.maitre,self.masqueProvisoire)        # L'utilisateur peut tracer le masque sur l'image maitre 
             if self.masqueRetour.polygone == False:                                             # si retour OK (masqueRetour est un élément de la classe tracePolygone)
                  self.masqueProvisoire = str()                                                  # pas de masque : détricotage
-                 self.item703.config(text="pas de masque")
+                 self.item703.config(text=_("pas de masque"))
         else:
-            self.item703.config(text="Il faut une image maîtresse pour définir un masque.",
+            self.item703.config(text=_("Il faut une image maîtresse pour définir un masque."),
                                 background="#ffffaa")
 
     def MasqueXML(self):      # préparation du masque pour malt GeomImage. self.maitreSansChemin est nécessaire
@@ -3631,16 +4254,16 @@ class Interface(ttk.Frame):
         
         try:                                                                # marche pas si on est en visu
             if self.existeMasque3D():
-                self.item804.configure(text= "Masque 3D créé",foreground='black') 
+                self.item804.configure(text= _("Masque 3D créé"),foreground='black') 
             else:
-                self.item804.configure(text= "Abandon : pas de masque créé.",foreground='red')                
+                self.item804.configure(text= _("Abandon : pas de masque créé."),foreground='red')                
         except: pass
 
 
     def supprimeMasque3D(self):
         supprimeFichier(self.masque3DSansChemin)                # suppression définitive des fichiers pour le masque 3D 
         supprimeFichier(self.masque3DBisSansChemin)        
-        self.item804.configure(text= "Masque 3D supprimé.",foreground='red')
+        self.item804.configure(text= _("Masque 3D supprimé."),foreground='red')
         
             
     #""""""""""""""""""""""" Options de CalibrationGPS : faire correspondre des points (x,y,z) numérotés de 1 à N, avec des pixels des images.
@@ -3660,9 +4283,9 @@ class Interface(ttk.Frame):
         # message en haut de fenêtre
         
         self.item670 = ttk.Frame(self.item650,height=10,relief='sunken')
-        texte = "3 points minimum, chaque point doit être placé sur au moins 2 photos\n\n"
-        texte+= "La calibration par points GPS se fait aprés Tapas et avant Malt.\n"
-        texte+= "Elle est prioritaire sur la calibration par axe, plan et métrique."
+        texte = _("3 points minimum, chaque point doit être placé sur au moins 2 photos") + "\n\n"
+        texte+= _("La calibration par points GPS se fait aprés Tapas et avant Malt.") + "\n"
+        texte+= _("Elle est prioritaire sur la calibration par axe, plan et métrique.")
         self.item671=ttk.Label(self.item670,text=texte,justify='left')
         self.item671.pack(pady=10,padx=10,ipady=2,ipadx=2,fill="y")        
         self.item670.pack(side='top')
@@ -3674,15 +4297,15 @@ class Interface(ttk.Frame):
         self.item662 = ttk.Label(self.item660,text='X').pack(side='left',pady=10,padx=60)                  
         self.item663 = ttk.Label(self.item660,text='Y').pack(side='left',pady=10,padx=60)
         self.item664 = ttk.Label(self.item660,text='Z').pack(side='left',pady=10,padx=60)
-        self.item665 = ttk.Label(self.item660,text='Incertitude').pack(side='left',pady=10,padx=30)        
+        self.item665 = ttk.Label(self.item660,text=_('Incertitude')).pack(side='left',pady=10,padx=30)        
         self.item660.pack(side="top")
         
         # préparation des boutons en bas de liste
 		
-        self.item653=ttk.Button(self.item650,text='Ajouter un point',command=self.ajoutPointCalibrationGPS)
-        self.item654=ttk.Button(self.item650,text='Supprimer des points',command=self.supprPointsGPS)                  
-        self.item655=ttk.Button(self.item650,text='Placer les points',command=self.placerPointsGPS)
-        self.item656=ttk.Button(self.item650,text='Appliquer au \nnuage non densifié',command=self.appliquerPointsGPS)
+        self.item653=ttk.Button(self.item650,text=_('Ajouter un point'),command=self.ajoutPointCalibrationGPS)
+        self.item654=ttk.Button(self.item650,text=_('Supprimer des points'),command=self.supprPointsGPS)                  
+        self.item655=ttk.Button(self.item650,text=_('Placer les points'),command=self.placerPointsGPS)
+        self.item656=ttk.Button(self.item650,text=_('Appliquer au ') + '\n' + _('nuage non densifié'),command=self.appliquerPointsGPS)
         
         self.item653.pack_forget()											#on oublie les boutons du bas s'ils étaient affichés
         self.item654.pack_forget()
@@ -3738,11 +4361,11 @@ class Interface(ttk.Frame):
 
     def ajoutPointCalibrationGPS(self):
         if self.onglets.tab(self.onglets.select(), "text")=="GPS" and not self.item452.winfo_viewable():                       # controle la visibilité des boutons " valider les options" et "annuler"
-            self.infoBulle("Agrandissez la fenêtre avant d'ajouter un point GPS !\n(ou si impossible : supprimer un point)")
+            self.infoBulle(_("Agrandissez la fenêtre avant d'ajouter un point GPS !") + "\n" + _("(ou si impossible : supprimer un point)"))
             return
         self.actualiseListePointsGPS()
         if [ e[0] for e in self.listePointsGPS if e[4]].__len__()>=30:                     
-            self.infoBulle("Soyez raisonnable : pas plus de 30 points GPS !")
+            self.infoBulle(_("Soyez raisonnable : pas plus de 30 points GPS !"))
             return
         nom = chr(65+self.listePointsGPS.__len__())
         self.listePointsGPS.append([nom,"","","",True,self.idPointGPS,"10 10 10"])     # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant,incertitude)
@@ -3751,23 +4374,23 @@ class Interface(ttk.Frame):
         self.onglets.select(self.item650)                    		    # active l'onglet (il a été supprimé puis recréé par optionsReperes)  
         self.actualiseListePointsGPS()
         
-    def supprPointsGPS(self):
+    def supprPointsGPS(self):       # Suppression des points GPS
         try: self.bulle.destroy()
         except: pass        
         if self.listePointsGPS.__len__()==0:                # pas de points : on sort
-            self.infoBulle("Aucun point à supprimer !")
+            self.infoBulle(_("Aucun point à supprimer !"))
             return
 						
-        self.actualiseListePointsGPS()                      # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        self.actualiseListePointsGPS()                      # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
         listeIdentifiants = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] ] # liste des noms,identifiants si point non supprimé
 
         self.messageSiPasDeFichier = 0                                           #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
         self.choisirUnePhoto([ f[0] for f in listeIdentifiants],
-                                                 titre='Points à supprimer',
+                                                 titre=_('Points à supprimer'),
                                                  mode='extended',
-                                                 message="Multiselection possible.",
+                                                 message=_("Multiselection possible."),
                                                  objets='points',
-                                                 boutonDeux="Annuler")
+                                                 boutonDeux=_("Annuler"))
         self.messageSiPasDeFichier = 1
 
         # en retour une liste : self.selectionPhotosAvecChemin        
@@ -3822,16 +4445,20 @@ class Interface(ttk.Frame):
                         except: pass                        
         
     def placerPointsGPS(self):
-
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return
+        
         self.actualiseListePointsGPS()
 
-        if self.controlePoints():
+        if self.erreurPointsGPS():
             return
+        
         liste = list ([(n,ident) for n,x,y,z,actif,ident,incertitude in self.listePointsGPS if actif])    # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
         self.messageSiPasDeFichier  = 0                                             #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
         self.choisirUnePhoto(
                              self.photosAvecChemin,
-                             message="Choisir une photo pour placer les points GPS : ",
+                             message=_("Choisir une photo pour placer les points GPS : "),
                              mode='single',
                              dicoPoints=self.dicoPointsGPSEnPlace)          # dicoPointsGPSEnPlace key = (nom point, photo, identifiant), value = (x,y)
         self.messageSiPasDeFichier  = 1
@@ -3842,42 +4469,55 @@ class Interface(ttk.Frame):
             return
 		
         # en retour une liste : self.selectionPhotosAvecChemin
+        print (self.dicoPointsGPSEnPlace + _("avant") + " = ",self.dicoPointsGPSEnPlace)
         self.calibre = CalibrationGPS(fenetre,
                                       self.selectionPhotosAvecChemin,                                   # image sur laquelle placer les points
                                       liste,                                                            # liste des identifiants en "string" des points
                                       self.dicoPointsGPSEnPlace,                                        # les points déjà placés key = nom point, photo, identifiant
                                       )                                                                 # value = x,y
-        try: self.dicoPointsGPSEnPlace = self.calibre.dicoPointsJPG                                     # si pas de retour !
-        except: pass
+        try:
+            self.dicoPointsGPSEnPlace = self.calibre.dicoPointsJPG                                     # si pas de retour !
+            print ("self.dicoPointsGPSEnPlace " + _("aprés ="),self.dicoPointsGPSEnPlace)
+        except:
+            pass
         
-    def controlePoints(self):
+    def erreurPointsGPS(self):          # regarde si la liste des points GPS comporte une erreur : nom absent ou en double, retourne True si erreur
         try: self.bulle.destroy()
         except: pass
-        texte = ""
-        ensemble=set(e[0] for e in self.listePointsGPS if e[4])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        texte = str()
+        ensemble=set(e[0] for e in self.listePointsGPS if e[4])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
         liste=list(e[0] for e in self.listePointsGPS if e[4])
         if ensemble.__len__()!=liste.__len__():
-            texte = "Attention : Des points portent le même nom : corriger !"
+            texte = _("Attention : des points portent le même nom : corriger !")
         if "" in ensemble:
-            texte = "Attention : un point n'a pas de nom. "+texte
-        if texte!="":
-            print("controle points : "+texte)
+            texte = _("Attention : un point n'a pas de nom. ")+texte
+        if texte!=str():
+            print(_("controle points : ")+texte)
             self.infoBulle(texte)
             return True
         return False
-
+        
 
     def appliquerPointsGPS(self):
 
-        if not os.path.exists(os.path.join(self.repTravail,"Ori-Arbitrary")):
-            self.infoBulle("Lancer d'abord tapioca/tapas\npour obtenir un nuage non densifié.")
+        try: self.bulle.destroy()
+        except: pass     
+        if not os.path.exists(os.path.join(self.repTravail,"AperiCloud.ply")):
+            self.infoBulle(_("Lancer d'abord tapioca/tapas") + "\n" + _("pour obtenir un nuage non densifié."))
             return
- 
-        if not self.finCalibrationGPSOK():          # création des fichiers xml qui vont bien (dicoAppuis, mesureAppuis)
-            self.infoBulle("Points GPS non conformes :\n"+self.etatPointsGPS)
+       
+        if self.erreurPointsGPS():                      # erreur : nom en double ou point sans nom, affiche une info bulle, retourne True si pb
+            return                 
+
+        if self.controlePointsGPS()==False:               # les points GPS sont assez nombreux et présents sur assez de photos, retourne False si Pb
+            self.infoBulle(_("Points GPS non conformes :") + "\n"+self.etatPointsGPS)            
             return
         
-        self.infoBulle("Patienter :\nle nuage est en cours de calibration.")
+        if self.finCalibrationGPSOK()==False:          # création des fichiers xml qui vont bien (dicoAppuis, mesureAppuis) return False si problème
+            self.infoBulle(_("Points GPS non conformes :") + "\n"+self.etatPointsGPS)
+            return
+      
+        self.infoBulle(_("Patienter :") + "\n" + _("le nuage est en cours de calibration"))
         self.lanceBascule()                 # calibration suivant les points GPS
         
        # Apericloud  crée le nuage 3D des points homologues puis visualisation :
@@ -3891,14 +4531,17 @@ class Interface(ttk.Frame):
 ############################ Calibration par axe, plan et métrique
            
     def ligneHorizontale(self):
-        liste = (("Origine Ox",1),("Extrémité Ox",2))           # liste de tuple nom du point et identifiant du widget
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return              
+        liste = ((_("Origine Ox"),1),(_("Extrémité Ox"),2))           # liste de tuple nom du point et identifiant du widget
         self.messageSiPasDeFichier  = 0                         # pour affichage de message dans choisirphoto, difficile a passer en paramètre
         bulles={}
         if self.dicoLigneHorizontale.__len__():
             bulles={list(self.dicoLigneHorizontale.items())[0][0][1]:""} 
         self.choisirUnePhoto(
                              self.photosAvecChemin,
-                             message="Placer une ligne horizontale sur une seule photo : ",
+                             message=_("Placer une ligne horizontale sur une seule photo : "),
                              mode='single',
                              dicoPoints=self.dicoLigneHorizontale,
                              bulles=bulles)
@@ -3922,20 +4565,23 @@ class Interface(ttk.Frame):
         #il doit y avoir 2 points placés, sinon erreur :
         try:
             if self.calibre.dicoPointsJPG.__len__()!=2:
-                self.infoBulle("il faut  placer les 2 points.")
+                self.infoBulle(_("il faut  placer les 2 points."))
                 return
         except: pass
         try: self.dicoLigneHorizontale = self.calibre.dicoPointsJPG                                     # si pas de retour on saute
         except: pass
 
     def ligneVerticale(self):
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return          
         self.messageSiPasDeFichier  = 0                  #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
         bulles={}
         if self.dicoLigneVerticale.__len__():
             bulles={list(self.dicoLigneVerticale.items())[0][0][1]:""}       
         self.choisirUnePhoto(
                              self.photosAvecChemin,
-                             message="Placer une ligne verticale sur une seule photo :  : ",
+                             message=_("Placer une ligne verticale sur une seule photo :  : "),
                              mode='single',
                              dicoPoints=self.dicoLigneVerticale,
                              bulles=bulles)
@@ -3946,7 +4592,7 @@ class Interface(ttk.Frame):
         if self.selectionPhotosAvecChemin.__len__()==0:
             return
         self.dicoLigneHorizontale = dict()                                                              # on efface le dico horizontal (l'un ou l'autre)        
-        liste = (("Origine Oy",1),("Extrémité Oy",2))                                                   # liste de tuple nom du point et identifiant du widget
+        liste = ((_("Origine Oy"),1),(_("Extrémité Oy"),2))                                                   # liste de tuple nom du point et identifiant du widget
         horizonVierge = dict()
         try:
             if self.selectionPhotosAvecChemin[0]==list(self.dicoLigneVerticale.items())[0][0][1]:       # si l'image choisie est la même on conserve le dico
@@ -3960,22 +4606,24 @@ class Interface(ttk.Frame):
         # il doit y avoir 2 points placés, sinon erreur :)
         try:
             if self.calibre.dicoPointsJPG.__len__()!=2:
-                self.infoBulle("il faut  placer exactement 2 points.")
+                self.infoBulle(_("il faut  placer exactement 2 points."))
                 return
         except Exception as e: pass
         try: self.dicoLigneVerticale = self.calibre.dicoPointsJPG                                     # si pas de retour !
         except Exception as e: pass
 
     def planVertical(self):
-
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return  
         self.messageSiPasDeFichier  = 0
         if self.planProvisoireVertical=="planVertical.tif":
-            bulles = {self.monImage_MaitrePlan:"Plan vertical"}
+            bulles = {self.monImage_MaitrePlan:_("Plan vertical")}
         else:
-            bulles = {self.monImage_MaitrePlan:"Plan horizontal"}            
+            bulles = {self.monImage_MaitrePlan:_("Plan horizontal")}            
         self.choisirUnePhoto(
                              self.photosAvecChemin,
-                             message="Une photo pour placer le plan vertical : ",
+                             message=_("Une photo pour placer le plan vertical : "),
                              mode='single',
                              bulles=bulles)
         self.messageSiPasDeFichier  = 1
@@ -3993,19 +4641,20 @@ class Interface(ttk.Frame):
         self.planV = TracePolygone(fenetre,
                                    self.monImage_MaitrePlan,
                                    self.planProvisoireVertical,
-                                   labelBouton="Délimiter un plan vertical")                                       # L'utilisateur peut tracer le masque sur l'image maitre 
+                                   labelBouton=_("Délimiter un plan vertical"))                                       # L'utilisateur peut tracer le masque sur l'image maitre 
 
     def planHorizontal(self):
-        
-
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return       
         self.messageSiPasDeFichier  = 0
         if self.planProvisoireVertical=="planVertical.tif":
-            bulles = {self.monImage_MaitrePlan:"Plan vertical"}
+            bulles = {self.monImage_MaitrePlan:_("Plan vertical")}
         else:
-            bulles = {self.monImage_MaitrePlan:"Plan horizontal"}          
+            bulles = {self.monImage_MaitrePlan:_("Plan horizontal")}          
         self.choisirUnePhoto(
                              self.photosAvecChemin,
-                             message="Une photo pour placer le plan horizontal : ",
+                             message=_("Une photo pour placer le plan horizontal : "),
                              mode='single',
                              bulles=bulles)
         self.messageSiPasDeFichier  = 1
@@ -4023,14 +4672,17 @@ class Interface(ttk.Frame):
         self.planH = TracePolygone(fenetre,
                                    self.monImage_MaitrePlan,
                                    self.planProvisoireHorizontal,
-                                   labelBouton="Délimiter un plan horizontal")                                       # L'utilisateur peut tracer le masque sur l'image maitre 
+                                   labelBouton=_("Délimiter un plan horizontal"))                                       # L'utilisateur peut tracer le masque sur l'image maitre 
         
     def placer2Points(self):
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return  
         liste = (("Début",1),("Fin",2))                                                   # liste de tuple nom du point et identifiant du widget
         self.messageSiPasDeFichier  = 0
         self.choisirUnePhoto(
                              self.photosAvecChemin,
-                             message="Choisir deux fois une photo pour placer les 2 points  : ",
+                             message=_("Choisir deux fois une photo pour placer les 2 points  : "),
                              mode='single',
                              dicoPoints=self.dicoCalibre)
         self.messageSiPasDeFichier  = 1
@@ -4046,7 +4698,7 @@ class Interface(ttk.Frame):
         ajout(photosAvecDistance,os.path.basename(self.selectionPhotosAvecChemin[0]))
 
         if photosAvecDistance.__len__()>2:
-            self.infoBulle("Il y a dèjà 2 images avec des points 'distance'. Supprimer les points sur une des 2 images.")
+            self.infoBulle(_("Il y a dèjà 2 images avec des points 'distance'. Supprimer les points sur une des 2 images."))
             return
         
         self.calibre = CalibrationGPS(fenetre,
@@ -4058,13 +4710,13 @@ class Interface(ttk.Frame):
         except: pass
         
        
-    ################################## LANCEMENT DE MICMAC ###########################################################
+    ################################## LANCEMENT DE MICMAC ########################################################### 
         
     def lanceMicMac(self):                                      # vérification du choix de photos, de présence de l'éxécutable, du choix de l'extension, de la copie effective dans le répertoire de travail
 
         if self.etatDuChantier==5:		                # Chantier terminé
-            self.encadre("Le chantier "+self.chantier+" est terminé après "+self.densification+".\n\n"+
-                         "Vous pouvez modifier les options puis relancer MicMac.",nouveauDepart='non')
+            self.encadre(_("Le chantier %(chant)s est terminé après %(densif)s") % {"chant" : self.chantier, "densif" : self.densification} + ".\n\n"+
+                         _("Vous pouvez modifier les options puis relancer MicMac."),nouveauDepart='non')
             return
             
     # réinitialisation des variables "locales" définies dans le module
@@ -4083,47 +4735,47 @@ class Interface(ttk.Frame):
     
         retour = self.controleOptions()
         if retour!=True:
-            self.encadre("Options incorrectes : corriger\n\n"+retour,nouveauDepart="non")
+            self.encadre(_("Options incorrectes : corriger") + "\n\n"+retour,nouveauDepart="non")
             return            
 
     #  pas assez de photos choisies :
     
         if self.photosAvecChemin.__len__()==2:
-            message = "Avec 2 photos MicMac construira difficilement un nuage de point dense.\nUtiliser l'échelle -1 dans Tapioca pour obtenir un nuage optimal.\n"   
-            retour = self.troisBoutons(titre='Avertissement : 2 photos seulement',
+            message = _("Avec 2 photos MicMac construira difficilement un nuage de point dense.") + "\n" + _("Utiliser l'échelle -1 dans Tapioca pour obtenir un nuage optimal.") + "\n"   
+            retour = self.troisBoutons(titre=_('Avertissement : 2 photos seulement'),
                               question=message,
-                                b1='Continuer',b2='Abandon',b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
+                                b1=_('Continuer'),b2=_('Abandon'),b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
             if retour != 0:
                 self.afficheEtat()
                 return         
              
     
     # pas enregistré : on enregistre on poursuit
-            
+    
         if self.etatDuChantier==1:                              # Des photos mais fichier paramètre non encore enregistré, on enregistre et on poursuit
             self.enregistreChantier()                           # sauvegarde du fichier paramètre sous le répertoire du chantier : modif etatduchantier = 2
 
     # Les photos sont-elles correctes ?
     
-        self.encadre("Controle des photos en cours....\nPatienter jusqu'à la fin du controle.",nouveauDepart='non')
+        self.encadre(_("Controle des photos en cours....\nPatienter jusqu'à la fin du controle."),nouveauDepart='non')
         self.controlePhotos()
         message = str()
         if self.dimensionsOK==False:
-            message = "\nLes dimensions des photos ne sont pas toutes identiques.\n"+\
-                      "Le traitement par MicMac est incertain.\n"+\
+            message = "\n" + _("Les dimensions des photos ne sont pas toutes identiques.") + "\n"+\
+                      _("Le traitement par MicMac est incertain.") + "\n"+\
                       "\n".join([ a+" : "+str(b[0])+" "+str(b[1]) for a, b in self.dimensionsDesPhotos])
-            retour = self.troisBoutons(titre='Avertissement',question=message,b1='Continuer',b2='Abandon',b3=None)
+            retour = self.troisBoutons(titre=_('Avertissement'),question=message,b1=_('Continuer'),b2=_('Abandon'),b3=None)
             if retour != 0:
                 self.afficheEtat()
                 return            
 
         if self.pasDeFocales:
                 
-            retour = self.troisBoutons(titre='Absence de focales',
-                              question="Certaines photos n'ont pas de focales.\n"+
-                                "Le traitement echouera probablement.\n"+
-                                "Mettre à jour les exifs (menu Outils)",
-                                b1='Continuer',b2='Abandon',b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
+            retour = self.troisBoutons(titre=_('Absence de focales'),
+                              question=_("Certaines photos n'ont pas de focales.") + "\n"+
+                                _("Le traitement echouera probablement.") + "\n"+
+                                _("Mettre à jour les exifs (menu Outils)"),
+                                b1=_('Continuer'),b2=_('Abandon'),b3=None)   # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1,
             if retour != 0:
                 self.afficheEtat()
                 return            
@@ -4131,32 +4783,32 @@ class Interface(ttk.Frame):
             
         if self.exifsOK==False and self.pasDeFocales==False and self.etatDuChantier<3 :
             if self.calibSeule.get()==False:
-                message = "Les focales des photos ne sont pas toutes identiques.\n"+\
-                      "Le traitement par MicMac est possible en utilisant une focale pour la calibration intrinsèque de Tapas.\n"+\
-                      "Cependant vous pouvez essayer sans cela.\n"
-                retour = self.troisBoutons(titre='Avertissement',question=message,b1='Continuer',b2='Abandon',b3=None)
+                message = _("Les focales des photos ne sont pas toutes identiques.") + "\n"+\
+                      _("Le traitement par MicMac est possible en utilisant une focale pour la calibration intrinsèque de Tapas.") + "\n"+\
+                      _("Cependant vous pouvez essayer sans cela.") + "\n"
+                retour = self.troisBoutons(titre=_('Avertissement'),question=message,b1=_('Continuer'),b2=_('Abandon'),b3=None)
                 if retour != 0:
                     self.afficheEtat()
                     return
 
         if self.assezDePhotos==False:
-            message += "Pas assez de photos pour le traitement : il en faut au moins 2."
+            message += _("Pas assez de photos pour le traitement : il en faut au moins 2.")
             self.encadre(message,nouveauDepart='non')
             return
         
     # anormal : chantier planté lors de la dernière éxécution : on propose le déblocage mais on sort dans tous les cas
                 
         if self.etatDuChantier==3:		                # En principe ne doit pas arriver : plantage en cours d'un traitement précédent 
-            retour = self.troisBoutons(  titre="Le chantier "+self.chantier+" a été interrompu en cours d'exécution.",
-                                        question="Le chantier est interrompu.\nVous pouvez le débloquer, "+
-                                        "ce qui permettra de modifier les options et de le relancer.\n",
-                                        b1='Débloquer le chantier',b2='Abandon')
+            retour = self.troisBoutons(  titre=_("Le chantier %s a été interrompu en cours d'exécution.") % (self.chantier),
+                                        question=_("Le chantier est interrompu.") + "\n" + _("Vous pouvez le débloquer,")+
+                                       _( "ce qui permettra de modifier les options et de le relancer.") + "\n",
+                                        b1=_('Débloquer le chantier'),b2=_('Abandon'))
             if abs(retour)==1:                                  # 1 ou -1 : abandon ou fermeture de la fenêtre par la croix
                 return
             if retour==0:
                 self.nettoyerChantier()                          # le chantier est noté comme de nouveau modifiable
                 self.sauveParam()
-                self.afficheEtat("Chantier "+self.chantier+" de nouveau modifiable, paramètrable et exécutable.")                
+                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable.") % (self.chantier))                
                 return
 
     # Chantier arrété après tapas : l'utilisateur a pu modifier les options et veut continuer ou reprendre au début suivant les résultats
@@ -4164,26 +4816,26 @@ class Interface(ttk.Frame):
 
         if self.etatDuChantier==4:                              # Chantier arrêté après Tapas
             
-            retour = self.troisBoutons(  titre='Continuer le chantier '+self.chantier+' après tapas ?',
-                                         question =  "Le chantier est arrêté après tapas. Vous pouvez :\n"+
-                                                     " - lancer Malt, ou C3DC, pour obtenir un nuage dense\n"+
-                                                     " - débloquer le chantier pour modifier les paramètres de Tapioca/tapas\n"+
-                                                     " - ne rien faire\n",
-                                         b1='Lancer '+self.densification,
-                                         b2='Débloquer le chantier - garder les résultats',
-                                         b3='Abandon')
+            retour = self.troisBoutons(  titre=_('Continuer le chantier %s après tapas ?') % (self.chantier),
+                                         question =  _("Le chantier est arrêté après tapas. Vous pouvez :") + "\n"+
+                                                     _(" - lancer Malt, ou C3DC, pour obtenir un nuage dense") + "\n"+
+                                                     _(" - débloquer le chantier pour modifier les paramètres de Tapioca/tapas") + "\n"+
+                                                     _(" - ne rien faire") + "\n",
+                                         b1=_('Lancer ')+self.densification,
+                                         b2=_('Débloquer le chantier - garder les résultats'),
+                                         b3=_('Abandon'))
             if retour == -1:                                    # fermeture de la fenêtre
-                self.afficheEtat(entete="abandon de Malt")
+                self.afficheEtat(entete=_("abandon de Malt"))
                 return
             self.cadreVide()                                # début de la trace : fenêtre texte pour affichage des résultats. 
             if retour == 0:                                     # b1 : Lancer malt ou C3DC                   
-                self.ajoutLigne(heure()+" Reprise du chantier "+self.chantier+" arrêté aprés TAPAS - La trace depuis l'origine sera disponible dans le menu édition.")
+                self.ajoutLigne(heure()+_(" Reprise du chantier %s arrêté aprés TAPAS - La trace depuis l'origine sera disponible dans le menu édition.") % (self.chantier))
                 self.suiteMicmac()                              # on poursuit par Malt ou C3DC
                 return
 
             if retour==1:                                       # débloquer le chantier
                 self.nettoyerChantier()
-                self.afficheEtat("Chantier "+self.chantier+" de nouveau modifiable, paramètrable et exécutable.")
+                self.afficheEtat_(("Chantier %s de nouveau modifiable, paramètrable et exécutable.") % (self.chantier))
                 return
 
             if retour==2:
@@ -4245,7 +4897,7 @@ class Interface(ttk.Frame):
         retourAvantScene = self.avantScene()                    # Efface tout, Prépare le contexte, crée le répertoire de travail, copie les photos, ouvre les traces
 
         if retourAvantScene!=None:                              # Préparation de l'éxécution de MicMac
-            texte = "Pourquoi MicMac s'arrête : \n"+retourAvantScene
+            texte = _("Pourquoi MicMac s'arrête : ") + "\n"+retourAvantScene
             self.encadreEtTrace(texte)                          # si problème arrêt avec explication
             return
 
@@ -4254,12 +4906,12 @@ class Interface(ttk.Frame):
         self.etatDuChantier = 3		                        # trés provisoirement (en principe cette valeur est transitoire sauf si avantScène plante)
         self.lanceTapioca()
         if not os.path.exists("Homol"):                         # le répertoire Homol contient les points homologues, si absent, pas de points en correspondancce
-            message = "Pourquoi MicMac s'arrête : \n"+"Aucun point en correspondance sur 2 images n'a été trouvé par Tapioca.\n\n"+\
-                      "Parmi les raisons de cet échec il peut y avoir :\n"+\
-                      "soit l'exif des photos ne comporte pas la focale ou plusieurs focales sont présentes \n+"+\
-                      "Soit l'appareil photo est inconnu de Micmac\n"+\
-                      "soit la qualité des photos est en cause.\n"+\
-                      "\nUtiliser les items du menu 'outils' pour vérifier ces points.\n\n"
+            message = _("Pourquoi MicMac s'arrête : ") + "\n"+_("Aucun point en correspondance sur 2 images n'a été trouvé par Tapioca.") + "\n\n"+\
+                      _("Parmi les raisons de cet échec il peut y avoir :") + "\n"+\
+                      _("soit l'exif des photos ne comporte pas la focale ou plusieurs focales sont présentes") + "\n+" +\
+                      _("Soit l'appareil photo est inconnu de Micmac") + "\n"+\
+                      _("soit la qualité des photos est en cause.") + "\n\n"+\
+                      _("Utiliser les items du menu 'outils' pour vérifier ces points.") + "\n\n"
             self.ajoutLigne(message)
             self.messageNouveauDepart =  message
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
@@ -4270,9 +4922,9 @@ class Interface(ttk.Frame):
         self.lanceTapas()
         
         if os.path.isdir("Ori-Arbitrary")==False:               # Tapioca n'a pu mettre en correspondance ce aucun point entre deux images : échec
-            message = "Pourquoi MicMac s'arrête : \n"+"Pas d'orientation trouvé par tapas.\nPrises de vues non positionnées.\n"+\
-                      "Consulter l'aide (quelques conseils),\nconsulter la trace.\n"+\
-                      "Verifier la qualité des photos (item du menu outil)\n\n"+self.messageRetourTapas
+            message = _("Pourquoi MicMac s'arrête :") + "\n"+_("Pas d'orientation trouvé par tapas.") + "\n" + _("Prises de vues non positionnées.") + "\n"+\
+                      _("Consulter l'aide (quelques conseils),") + "\n" + _("consulter la trace.") + "\n"+\
+                      _("Verifier la qualité des photos (item du menu outil)") + "\n\n"+self.messageRetourTapas
             self.ajoutLigne(message)
             self.ecritureTraceMicMac()                          # on écrit les fichiers trace
             self.sauveParam()
@@ -4286,7 +4938,7 @@ class Interface(ttk.Frame):
                 self.lanceApero()
                 
         if self.etatCalibration!=str():             # calibration incomplète s'il y a un message, motif dans etatCalibration
-                self.ajoutLigne(heure()+"Calibration incomplète : "+self.etatCalibration)
+                self.ajoutLigne(heure()+_("Calibration incomplète : ")+self.etatCalibration)
 
 
         # calibrage de l'orientation suivant des points GPS, un axe ox, un plan déterminé par un masque
@@ -4312,8 +4964,8 @@ class Interface(ttk.Frame):
         # Faut-il poursuivre ?
       
         if self.arretApresTapas.get():                         # L'utilisateur a demandé l'arrêt
-            ligne="\nArrêt après Tapas "+heure()+". Lancer MicMac pour reprendre le traitement. \n"              
-            ligne=ligne+"\n\-------------- Arrêt aprés Tapas sur demande utilisateur --------------\n\n"        
+            ligne="\n" + _("Arrêt après Tapas ")+heure()+_(". Lancer MicMac pour reprendre le traitement.") + "\n"              
+            ligne=ligne+"\n\-------------- " + _("Arrêt aprés Tapas sur demande utilisateur") + " --------------\n\n"        
             self.ajoutLigne(ligne)
             self.nouveauDepart()                                # sauvegarde les paramètres, écrit la trace, relance "interface" si on est sous nt
             return
@@ -4326,19 +4978,19 @@ class Interface(ttk.Frame):
         # on ne peut poursuivre que si il existe un fichier "apericloud.ply", et une image maîtresse, 2D ou 3D.
 
         if os.path.exists("AperiCloud.ply")==False:
-            ligne = ("Tapas n'a pas généré de nuage de points.\n"+
-                     "Le traitement ne peut se poursuivre.\n"+
-                     "Vérifier la qualité des photos, modifier les paramètres et relancer tapioca-tapas")
+            ligne = (_("Tapas n'a pas généré de nuage de points.") + "\n"+
+                     _("Le traitement ne peut se poursuivre.") + "\n"+
+                     _("Vérifier la qualité des photos, modifier les paramètres et relancer tapioca-tapas"))
             self.encadre(ligne,nouveauDepart='non')
             return
 
         if not(self.existeMasque3D() or self.existeMaitre2D()):
-            ligne = ("Pas de masque 3D, ou d'image maîtresse pour Malt.\n"+
-                     "Le traitement ne peut se poursuivre.\n"+
-                     "Définir une image maîtresse\n"+                     
-                     "ou Changer le mode 'GeomImage' qui impose une image maîtresse\n"+
-                     "ou définir un masque 3D\n"+
-                     "Pour cela utiliser l'item option/Malt ou option/C3DC du menu MicMac\n")
+            ligne = (_("Pas de masque 3D, ou d'image maîtresse pour Malt.") + "\n"+
+                     _("Le traitement ne peut se poursuivre.") + "\n"+
+                     _("Définir une image maîtresse") +"\n"+                     
+                     _("ou Changer le mode 'GeomImage' qui impose une image maîtresse") + "\n"+
+                     _("ou définir un masque 3D") + "\n"+
+                     _("Pour cela utiliser l'item option/Malt ou option/C3DC du menu MicMac") + "\n")
             self.encadre(ligne,nouveauDepart='non')
             return
                
@@ -4357,10 +5009,10 @@ class Interface(ttk.Frame):
                 if not os.path.exists(new):
                     try:
                         os.replace(os.path.join(self.repTravail,"modele3D.ply"),os.path.join(self.repTravail,new))
-                        self.ajoutLigne("\nLe fichier modele3D.ply précédent est renommé en "+new+".")
+                        self.ajoutLigne("\n" + _("Le fichier modele3D.ply précédent est renommé en ")+new+".")
                     except Exception as e:
-                        print("erreur renommage ancien modele_3d en ",new,str(e))
-                        self.ajoutLigne("\nLe fichier Modele3D.ply précédent n'a pu être renommé. Il sera remplacé.")
+                        print(_("erreur renommage ancien modele_3d en "),new,str(e))
+                        self.ajoutLigne("\n" + _("Le fichier Modele3D.ply précédent n'a pu être renommé. Il sera remplacé."))
                     break
         
         # malt ou D3CD : suivant que le masque 3 D existe ou pas, avec préférence au masque 3D,
@@ -4376,10 +5028,10 @@ class Interface(ttk.Frame):
         retour = self.ouvreModele3D()
         texte = ""
         if  retour == -1 :
-             texte = "Pas de nuage de points aprés Malt ou C3DC."
+             texte = _("Pas de nuage de points aprés Malt ou C3DC.")
         if retour == -2 :
-            texte = "Programme pour ouvrir les .PLY non trouvé."        
-        ligne = texte + "\n\n-------------- Fin du traitement MicMac "+heure()+" --------------\n\n"       
+            texte = _("Programme pour ouvrir les .PLY non trouvé.")        
+        ligne = texte + "\n\n-------------- " + _("Fin du traitement MicMac ")+heure()+" --------------\n\n"       
         self.ajoutLigne(ligne)
         self.etatDuChantier = 5     # 5 : chantier terminé          
         self.nouveauDepart()        # sauvegarde les paramètres, écrit la trace, relance "interface" si on est sous nt (nécessaire : suiteMicmac doit être autonome)
@@ -4389,17 +5041,17 @@ class Interface(ttk.Frame):
     def suiteMicmacMalt(self):
 
         if self.etatDuChantier!=4:  	                        # en principe inutile : il faut être juste aprés tapas (toujours vrai ici) !
-            self.ajoutLigne("Tapas non effectué, lancer Micmac depuis le menu. Etat du chantier = ",self.etatDuChantier)
+            self.ajoutLigne(_("Tapas non effectué, lancer Micmac depuis le menu. Etat du chantier = "),self.etatDuChantier)
             return
 
         # il faut une image maîtresse si le mode est geoimage
 
         if self.listeDesMaitresses.__len__()==0 and self.modeMalt.get()=="GeomImage":    # self.photoMaitre : nom de la photo sans extension ni chemin, l'extension est dans self.extensionChoisie
-            message = ( "Pourquoi MicMac est arrêté :"+
-                        "\nPas d'image maîtresse."+
-                        "\nCelle-ci est nécessaire pour l'option choisie geomImage de Malt."+
-                        "\nPour corriger modifier les options de Malt ou choississez un masque 3D avec C3DC."+
-                        "\n Corriger." )
+            message = ( _("Pourquoi MicMac est arrêté :")+
+                        "\n" + _("Pas d'image maîtresse.")+
+                        "\n" + _("Celle-ci est nécessaire pour l'option choisie geomImage de Malt.")+
+                        "\n" + _("Pour corriger modifier les options de Malt ou choississez un masque 3D avec C3DC.")+
+                        "\n" + _("Corriger."))
             self.ajoutLigne(message)                
             self.ecritureTraceMicMac()
             self.afficheEtat(message)
@@ -4414,7 +5066,7 @@ class Interface(ttk.Frame):
             
              # création de modele3D.ply (self.modele3DEnCours= dernier ply généré par tousLesNuages)
             try: shutil.copy(self.modele3DEnCours,"modele3D.ply")
-            except Exception as e: self.ajoutLigne("Erreur copie modele3D.ply")
+            except Exception as e: self.ajoutLigne(_("Erreur copie modele3D.ply"))
             self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage           
             return             
 
@@ -4433,10 +5085,10 @@ class Interface(ttk.Frame):
             self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage       
         if self.nuagesDenses.__len__()==1:
             try: shutil.copy(self.nuagesDenses[0],self.modele3DEnCours)
-            except Exception as e: print("erreur malt GeomImage copy de nuage en modele3D : ",str(e)," pour : ",self.nuagesDenses[0])
+            except Exception as e: print(_("erreur malt GeomImage copy de nuage en modele3D : "),str(e),_(" pour : "),self.nuagesDenses[0])
         else:            
             try: self.fusionnerPly(self.nuagesDenses,self.modele3DEnCours)     
-            except Exception as e: print("erreur malt GeomImage fusion des nuages en modele3D : ",str(e)," pour : ","\n".join(self.nuagesDenses[0]))
+            except Exception as e: print(_("erreur malt GeomImage fusion des nuages en modele3D : "),str(e),_(" pour : "),"\n".join(self.nuagesDenses[0]))
             
     ################################## LES DIFFENTES PROCEDURES MICMAC ###########################################################       
 
@@ -4449,24 +5101,24 @@ class Interface(ttk.Frame):
         # vérification nécessaires :
         
         if len(self.photosAvecChemin)==0:                       # photos sans chemin
-            texte='Aucune photo choisie. Abandon.'
+            texte=_('Aucune photo choisie. Abandon.')
             return texte
         
         if len(self.photosAvecChemin)==1:                       # photos sans chemin
-            texte='Une seule photo choisie. Abandon.'
+            texte=_('Une seule photo choisie. Abandon.')
             return texte
-        retour = self.controleOptions()   
+        retour = self.controleOptions()
         if retour!=True:
-            return "\nOption incorrecte :\n"+str(retour)
+            return "\n" + _("Option incorrecte :") + "\n"+str(retour)
                  
-        self.lignePourTrace = ("-------------- TRACE DETAILLEE **--------------\n") # première ligne de la trace détaillée        
-        self.ligneFiltre = ("-------------- TRACE SYNTHETIQUE --------------\n")  # première ligne de la trace synthétique
+        self.lignePourTrace = ("-------------- " + _("TRACE DETAILLEE") + " **--------------\n") # première ligne de la trace détaillée        
+        self.ligneFiltre = ("-------------- " + _("TRACE SYNTHETIQUE") + " --------------\n")  # première ligne de la trace synthétique
         
-        texte = "-------------- DEBUT DU TRAITEMENT MICMAC à "+ heure()+" -------------- \n\n"
+        texte = "-------------- " + _("DEBUT DU TRAITEMENT MICMAC à ")+ heure()+" -------------- \n\n"
 
         photosPropres=list([os.path.basename(x) for x in self.photosAvecChemin])
-        texte = texte+'Photos choisies : \n\n'+'\n'.join(photosPropres)+'\n\n'           
-        texte = texte+"Ces photos sont recopiées dans le répertoire du chantier : \n\n"+self.repTravail+'\n\n'  
+        texte = texte+_('Photos choisies :') + " \n\n"+'\n'.join(photosPropres)+'\n\n'           
+        texte = texte+_("Ces photos sont recopiées dans le répertoire du chantier :") + "\n\n"+self.repTravail+'\n\n'  
         self.ajoutLigne(texte)
 
 
@@ -4522,13 +5174,13 @@ class Interface(ttk.Frame):
             return ligne           
         if 'utopano' in ligne and self.etapeTapioca==0:                    # début de la première étape sur la première échelle
             self.etapeTapioca += 1
-            return heure()+"\nRecherche des points remarquables et des correspondances sur une image de taille "+self.echelle1PourMessage+" pixels.\n\n"
+            return heure()+"\n" + _("Recherche des points remarquables et des correspondances sur une image de taille %s pixels.") % (self.echelle1PourMessage)+ "\n\n"
         if 'utopano' in ligne and self.etapeTapioca==1:                    # début de la seconde étape sur la seconde échelle
             self.etapeTapioca += 1
             if self.echelle2PourMessage=="-1":
-                return "\nRecherche des points remarquables et des correspondances sur l'image entière.\n\n"
+                return "\n" + _("Recherche des points remarquables et des correspondances sur l'image entière.") + "\n\n"
             if self.echelle2PourMessage!="":
-                return "\nRecherche des points remarquables et des correspondances sur une image de taille "+self.echelle2PourMessage+" pixels.\n\n"
+                return "\n" + _("Recherche des points remarquables et des correspondances sur une image de taille %s pixels.") % (self.echelle2PourMessage) + "\n\n"
             return ligne
 
     # ------------------ TAPAS ----------------------- Avec ou sans calibrationj intrinsèque
@@ -4539,11 +5191,11 @@ class Interface(ttk.Frame):
         if self.photosPourCalibrationIntrinseque.__len__()>0:       # s'il y a des photos pour calibration intrinsèque
             self.photosCalibrationSansChemin = [os.path.basename(f) for f in self.photosPourCalibrationIntrinseque]
             if self.photosCalibrationSansChemin.__len__()==1:
-                self.messageRetourTapas = "Une seule photo pour la calibration intrinsèque : insuffisant.\n"
+                self.messageRetourTapas = _("Une seule photo pour la calibration intrinsèque : insuffisant.") + "\n"
                 self.ajoutLigne(self.messageRetourTapas)
                 return
             
-            self.ajoutLigne("Calibration intrinsèque lancée sur les photos : \n"+str("\n".join(self.photosCalibrationSansChemin)+"\n"))
+            self.ajoutLigne(_("Calibration intrinsèque lancée sur les photos : ") + "\n"+str("\n".join(self.photosCalibrationSansChemin)+"\n"))
 
             # limitation aux seules images pour la calibration :
             
@@ -4557,20 +5209,20 @@ class Interface(ttk.Frame):
                      "ExpTxt="+self.exptxt]        
             self.lanceCommande(tapas,
                                filtre=self.filtreTapas,
-                               info="Calibration intrinsèque, pour trouver les réglages de l'appareil photo sur quelques photos\nRecherche d'un point de convergence au centre de l'image.\n\n")
+                               info=_("Calibration intrinsèque, pour trouver les réglages de l'appareil photo sur quelques photos") + "\n" + _("Recherche d'un point de convergence au centre de l'image.") + "\n\n")
 
             #  Remise en état initial des photos pour calibration
             [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]  
             
             if os.path.isdir("Ori-Calib")==False:
-                self.messageRetourTapas = "La calibration intrinsèque n'a pas permis de trouver une orientation.\n"
+                self.messageRetourTapas = _("La calibration intrinsèque n'a pas permis de trouver une orientation.") + "\n"
                 self.ajoutLigne(self.messageRetourTapas)         
                 return
-                self.ajoutLigne("Calibration intrinsèque effectuée.")
+                self.ajoutLigne(_("Calibration intrinsèque effectuée."))
 
 
             if self.photosSansChemin.__len__()-self.photosCalibrationSansChemin.__len__()<2 and self.calibSeule.get():
-                self.messageRetourTapas = "Une seule photo pour Tapas sans les photos de calibration : insuffisant.\n"
+                self.messageRetourTapas = _("Une seule photo pour Tapas sans les photos de calibration : insuffisant.") + "\n"
                 self.ajoutLigne(self.messageRetourTapas)
                 return
 
@@ -4599,7 +5251,7 @@ class Interface(ttk.Frame):
                      "ExpTxt="+self.exptxt]        
             self.lanceCommande(tapas,
                                filtre=self.filtreTapas,
-                               info="Recherche l'orientation des prises de vues\n\n") 
+                               info=_("Recherche l'orientation des prises de vues") + "\n\n") 
 
         else:
             
@@ -4611,7 +5263,7 @@ class Interface(ttk.Frame):
                      "ExpTxt="+self.exptxt]        
             self.lanceCommande(tapas,
                                filtre=self.filtreTapas,
-                               info="Calibration, pour trouver les réglages intrinsèques de l'appareil photo\nRecherche l'orientation des prises de vue.\n\n"        )
+                               info=_("Calibration, pour trouver les réglages intrinsèques de l'appareil photo") + "\n" + _("Recherche l'orientation des prises de vue.") + "\n\n"        )
 
     def filtreTapas(self,ligne): 
         if ('RESIDU LIAISON MOYENS' in ligne) or ('Residual' in ligne) :   # Residual pour la version 5999
@@ -4628,7 +5280,7 @@ class Interface(ttk.Frame):
                  "Apero",
                  os.path.basename(self.miseAEchelle)]
         self.lanceCommande(apero,
-                           info="Fixe l'orientation (axe,plan et métrique) suivant les options de 'calibration'")
+                           info=_("Fixe l'orientation (axe,plan et métrique) suivant les options de 'calibration'"))
 
         
     # ------------------ APERICLOUD :  -----------------------
@@ -4647,14 +5299,14 @@ class Interface(ttk.Frame):
                     "ExpTxt="+self.exptxt]
         self.lanceCommande(apericloud,
                            filtre=self.filtreApericloud,
-                           info="Positionne les appareils photos autour du sujet.\n\Création d'un nuage de points grossier.")
+                           info=_("Positionne les appareils photos autour du sujet.") + "\n" + _("Création d'un nuage de points grossier."))
         
     def filtreApericloud(self,ligne):
         if ligne[0]=="|":
             return ligne        
         if "cMetaDataPhoto" in ligne:
-            print("ligne avec meta : ",ligne)
-            return "\n#### ATTENTION : Des Metadonnées nécessaires sont absentes des photos. Vérifier l'exif.\n\n" 
+            print(_("ligne avec meta : "),ligne)
+            return "\n####" + _("ATTENTION : des metadonnées nécessaires sont absentes des photos. Vérifier l'exif.") + "\n\n" 
 
     # ------------------ Meslab 1 : ouvre AperiCloud.ply avec l'outil choisi par l'utilisateur --------------------------
     
@@ -4665,21 +5317,21 @@ class Interface(ttk.Frame):
                 open_file('AperiCloud.ply')
                 return             
             self.lanceCommande([self.meshlab,'AperiCloud.ply'],
-                              info="Ouverture du nuage de points après Apericloud",
+                              info=_("Ouverture du nuage de points après Apericloud"),
                               attendre=False)
         else:
-           texte="\nPas de fichier AperiCloud.ply généré.\n"
+           texte="\n" + _("Pas de fichier AperiCloud.ply généré.") + "\n"
            self.ajoutLigne(texte)
-           self.messageNouveauDepart = texte+"Consulter l'aide (quelques conseils),\nConsulter la trace.\n"
+           self.messageNouveauDepart = texte+_("Consulter l'aide (quelques conseils),\nConsulter la trace.") + "\n"
            return -1
 
     # ------------------ GCPBascule : utilise les points GPS-----------------------    
 
     def lanceBascule(self):             # une alternative est Campari
 
-        self.ajoutLigne("\n\n---------------------------\nPrise en compte des points GPS : nécessite au minimum 3 points, chacun sur 2 photos\n")
+        self.ajoutLigne("\n\n---------------------------\n" + _("Prise en compte des points GPS : nécessite au minimum 3 points, chacun sur 2 photos") + "\n")
         if len(self.dicoPointsGPSEnPlace)<6:
-            self.ajoutLigne("\nLe nombre minimum de points placés sur les photos n'est pas atteint. Abandon.\n")
+            self.ajoutLigne("\n" + _("Le nombre minimum de points placés sur les photos n'est pas atteint. Abandon.") + "\n")
             return
         GCPBascule = [  self.mm3d,
                         "GCPBascule",
@@ -4697,7 +5349,7 @@ class Interface(ttk.Frame):
                             #                  et dans self.photosSansChemin les images autour de l'image maitressse
                             #                  si il y a un masque il faut les 2 fichiers maitre_Masq.xml et maitre_Masq.tif sans les indiquer dans la syntaxe
 
-        self.ajoutLigne("\n\n---------------------------\nPréparation du lancement de Malt\n")
+        self.ajoutLigne("\n\n---------------------------\n" + _("Préparation du lancement de Malt") + "\n")
         self.densification = "Malt"
             
         malt = [self.mm3d,
@@ -4717,16 +5369,16 @@ class Interface(ttk.Frame):
                 i = self.photosSansChemin.index(self.maitreSansChemin)  # il faut limiter l'éxécution aux photos "proches"  de l'image maître si besoin
                 listeAConserver = self.photosSansChemin[max(0,i-self.photosUtilesAutourDuMaitre.get()):min(i+1+self.photosUtilesAutourDuMaitre.get(),self.photosSansChemin.__len__())]
                 [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in listeAConserver]  #  Renomme les photos à ne pas traiter
-                self.ajoutLigne("Nombre de photos autour de la maîtresse : "+str(self.photosUtilesAutourDuMaitre.get())+"\n"+
-                                str(listeAConserver.__len__())+" photos traitées par Malt : \n"+"\n".join(listeAConserver)+"\n")
+                self.ajoutLigne(_("Nombre de photos autour de la maîtresse : ")+str(self.photosUtilesAutourDuMaitre.get())+"\n"+
+                                str(listeAConserver.__len__())+_(" photos traitées par Malt :") + "\n"+"\n".join(listeAConserver)+"\n")
             except Exception as e:
-                self.ajoutLigne("\nErreur lors de la recherche des photos proches de la maitresse "+self.maitreSansChemin+".\nToutes les photos sont conservées.\n"+
-                      "Erreur : "+str(e)+"\n")
+                self.ajoutLigne("\n" + _("Erreur lors de la recherche des photos proches de la maitresse %s.") + "\n" + _("Toutes les photos sont conservées.") % (self.maitreSansChemin)+ "\n"+
+                      _("Erreur : ")+str(e)+"\n")
 
                      
         self.lanceCommande(malt,
                            filtre=self.filtreMalt,
-                           info="ATTENTION : cette procédure est longue : patience !")
+                           info=_("ATTENTION : cette procédure est longue : patience !"))
                      
         if 'listeAConserver' in locals():
             [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if e not in listeAConserver]  #  Remise en état initial  
@@ -4855,13 +5507,13 @@ class Interface(ttk.Frame):
                 self.tawnyParam.get()] 
         self.lanceCommande(tawny,
                            filtre=self.filtreTawny,
-                           info="lance Tawny")
+                           info=_("lance Tawny"))
 
     def filtreTawny(self,ligne):
         if "Don't understand" in ligne:
             return ligne
         if "FATAL ERROR" in ligne:
-            return ligne+" : Voir la trace complète."    
+            return ligne+_(" : voir la trace complète.")   
         if "KBOX" in ligne:
             return ligne
         
@@ -4881,7 +5533,7 @@ class Interface(ttk.Frame):
                 "Out="+self.modele3DEnCours]
         self.lanceCommande(C3DC,
                            filtre=self.filtreC3DC,
-                           info="ATTENTION : cette procédure est longue : patience !")
+                           info=_("ATTENTION : cette procédure est longue : patience !"))
 
     def filtreC3DC(self,ligne):
         if ligne[0]=="|":
@@ -4961,7 +5613,7 @@ class Interface(ttk.Frame):
 
         aOuvrir = os.path.join(self.repTravail,self.modele3DEnCours)
         if not os.path.exists(aOuvrir):
-           texte="Pas de fichier "+self.modele3DEnCours+" généré.\n\nEchec du traitement MICMAC"
+           texte=_("Pas de fichier %s généré.") % (self.model3DEnCours)+ "\n\n" + _("Echec du traitement MICMAC") 
            self.ajoutLigne(texte)
            return -1
         if not os.path.exists(self.meshlab):
@@ -4969,7 +5621,7 @@ class Interface(ttk.Frame):
             return        
         meshlab = [self.meshlab, aOuvrir]        
         self.lanceCommande(meshlab,
-                           info="Nuage de points "+ self.modele3DEnCours+" généré.",
+                           info=_("Nuage de points %s généré.") % (self.modele3DEnCours),
                            attendre=False)
 
     def nettoyerChantier(self):     # Le chantier est nettoyé : les résulats sous reptravail sont conservés, les arborescences de calcul effacés
@@ -4984,28 +5636,28 @@ class Interface(ttk.Frame):
         listeAConserver  = os.listdir(self.repTravail)
         supprimeArborescenceSauf(self.repTravail,listeAConserver)
 
-    ################################## UTILITAIRES MICMAC ###########################################################
+    ################################## UTILITAIRES MICMAC ########################################################### 
 
     def OutilQualitePhotosLine(self):
 
         if self.pasDePhoto():return    
         if self.pasDeMm3d():return
         
-    # on copie les photos dans un répertoire de test
+    # on copie les photos dans un répertoire de test #
 
         self.copieDansRepertoireDeTest("Line")
 
-        self.encadre("Détermine un indice de qualité des photos en mode 'line'\n\n"+
-                     "Le résultat sera inscrit dans le fichier trace synthétique\n\nPatience...",nouveauDepart='non')
+        self.encadre(_("Détermine un indice de qualité des photos en mode 'line'") + "\n\n"+
+                     _("Le résultat sera inscrit dans le fichier trace synthétique") + "\n\n" + _("Patience..."),nouveauDepart='non')
 
-        self.ajoutLigne(heure()+"\n\nDebut de la recherche sur la qualité des photos mode 'Line'.")        
+        self.ajoutLigne(heure()+"\n\n" + _("Debut de la recherche sur la qualité des photos mode 'Line'."))        
         self.qualiteTrouvee = list()
         qualite = [self.mm3d,
                    "Tapioca",
                    "Line",
                    ".*"+self.extensionChoisie,      #'"'+str(self.repTravail+os.sep+".*"+self.extensionChoisie)+'"',
-                   "1000",               
-                   "1",
+                   self.echelle4.get(),
+                   self.delta.get(),
                    "ExpTxt="+self.exptxt]
 
             
@@ -5026,17 +5678,17 @@ class Interface(ttk.Frame):
 
         self.copieDansRepertoireDeTest("All")
 
-        self.encadre("Détermine un indice de qualité des photos en mode 'All' ou 'MulScale' \n\n"+
-                     "Le résultat sera inscrit dans le fichier trace synthétique\n\nPatience...",nouveauDepart='non')    
+        self.encadre(_("Détermine un indice de qualité des photos en mode 'All' ou 'MulScale'") + "\n\n"+
+                     _("Le résultat sera inscrit dans le fichier trace synthétique") + "\n\n" + _("Patience..."),nouveauDepart='non')    
         
-        self.ajoutLigne(heure()+"\n\nDebut de la recherche sur la qualité des photos, mode 'All' ou 'MulScale'.")        
+        self.ajoutLigne(heure()+"\n\n" + _("Debut de la recherche sur la qualité des photos, mode 'All' ou 'MulScale'."))        
         self.qualiteTrouvee = list()
         
         qualite = [self.mm3d,
                    "Tapioca",
-                   "All",
+                   "All",                   
                    ".*"+self.extensionChoisie,
-                   "1000",
+                   self.echelle1.get(),
                    "ExpTxt="+self.exptxt]          
             
         self.lanceCommande(qualite,
@@ -5077,17 +5729,17 @@ class Interface(ttk.Frame):
         listeHomol = list(moyenne.items())
         listeHomol.sort(key=lambda e: e[1],reverse=True)
         self.effaceBufferTrace()
-        self.ajoutLigne("\n ******\n\nClassement des photos par nombre de points homologues :\n\n")
+        self.ajoutLigne("\n ******\n\n" + _("Classement des photos par nombre de points homologues :") + "\n\n")
         for e in listeHomol:
-            self.ajoutLigne("photo "+e[0]+" score = "+str(int(e[1]))+"\n")
+            self.ajoutLigne(_("photo ")+e[0]+_(" score = ")+str(int(e[1]))+"\n")
 
         if len(listeHomol)==0:
-            self.ajoutLigne("Aucune photo n'a de point analogue avec une autre.\n")
+            self.ajoutLigne(_("Aucune photo n'a de point analogue avec une autre.") + "\n")
 
          
     def exploiterHomol(self):
-        self.ajoutLigne("\n ****** Qualité des photos suite au traitement : ")
-        repHomol = self.repTravail+os.path.sep+'Homol'
+        self.ajoutLigne("\n ****** " + _("Qualité des photos suite au traitement : "))
+        repHomol = self.repTravail+os.path.sep+_('Homol')
         if os.path.exists(repHomol):
             lesRep = os.listdir(repHomol)
             for e in lesRep:
@@ -5099,11 +5751,11 @@ class Interface(ttk.Frame):
                         with  open(fi) as infile:
                             lignes = infile.readlines()    #lecture dicoCamera.xml
 
-        self.ajoutLigne("\n ****** Fin d'examen de qualité des photos.")
+        self.ajoutLigne("\n ****** " + _("Fin d'examen de qualité des photos."))
 
     def copieDansRepertoireDeTest(self,nom):
 
-        self.encadre("Copie des photos dans un répertoire de test.\n Patience...",nouveauDepart='non')
+        self.encadre(_("Copie des photos dans un répertoire de test.") + "\n" + _("Patience..."),nouveauDepart='non')
         self.repTest = self.repTravail+os.path.sep+"test_"+nom
         if os.path.exists(self.repTest):
             supprimeArborescenceSauf(self.repTest,os.listdir(self.repTest))
@@ -5114,7 +5766,53 @@ class Interface(ttk.Frame):
                     shutil.copy(e,self.repTest)
         os.chdir(self.repTest)
 
+    ###################### création d'un nouveau chantier avec les meilleurs photos
 
+    def OutilMeilleuresPhotos(self):
+        self.menageEcran()
+        repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
+        if os.path.isdir(repertoireHomol)==False:
+            self.encadre("Lancer d'abord Tapioca/Tapas")
+            return
+        self.item9000.pack()
+        pass
+
+    def nbMeilleuresOK(self):
+        nb=self.item9003.get()
+        liste = [os.path.join(self.repTravail,e) for e in self.lesMeilleuresPhotos(int(nb))]
+        if self.troisBoutons(titre=_("Nouveau chantier"),question=_("Créer un nouveau chantier avec les photos : ")
+                             +"\n"+"\n"+"\n".join(liste)+" ?\n"+"\n"+_("Les paramètres de Tapioca/Malt seront optimisés."))==0:
+            self.nouveauChantier()
+            
+            # crée le repertoire de travail, copie les photos et renvoit le nombre de fichiers photos "aceptables",
+            # met à 1 l'état du chantier crée self.photosAvecChemin et self.photosSansChemin
+            # ATTENTION : Supprime l'arborescence et certains résultats.
+
+            self.nombreDExtensionDifferentes(liste)
+            self.extensionChoisie = self.lesExtensions[0]                     
+            retourExtraire = self.extrairePhotoEtCopier(liste)    
+
+            if retourExtraire.__class__()=='':              # si le retour est un texte alors erreur, probablement création du répertoire impossible
+                self.encadre (_("Impossible de créer le répertoire de travail.") + "\n" + _("Vérifier les droits en écriture sous le répertoire des photos") + "\n"+str(retourExtraire),nouveauDepart="non")
+                return 
+            if retourExtraire==0:                           # extraction et positionne  self.repertoireDesPhotos, et les listes de photos avec et sanschemin (photosAvecChemin et photosSansChemin)
+                self.encadre (_("Aucun JPG, PNG, BMP, TIF, ou GIF  sélectionné,") + "\n" + _("le répertoire et les photos restent inchangés.") + "\n",nouveauDepart="non")
+                return
+            # paramètres de tapioca : MultiScale 300 * MulScale (Line est disqualifié par la sélection des photos, All est trop lourd)
+            self.modeTapioca.set('MulScale')# Mode (All, MulScale, Line)
+            self.echelle2.set('300')
+            self.echelle3.set('-1')
+            # Paramètre de Tapas :
+            self.modeCheckedTapas.set('RadialBasic')                # mode par défaut depuis la v 2.23 du 14 mars 2016
+            self.arretApresTapas.set(1)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
+            # pas encore suvegardé :
+            self.etatSauvegarde = "*"                                     # chantier modifié
+            self.etatDuChantier = 1
+        self.afficheEtat()
+
+    def nbMeilleuresKO(self):
+        self.encadre(_("Abandon"),nouveauDepart="non")        
+        pass
     ###################### Appareil photo : affiche le nom de l'apapreil de la première photo, la focale, la taille du capteur dans dicocamera
 
     def OutilAppareilPhoto(self,silence=None):
@@ -5122,48 +5820,48 @@ class Interface(ttk.Frame):
         if self.pasDePhoto():return
         if self.pasDeExiftool():return
               
-        texte = " ******\nCaractéristiques de l'appareil photo : \n\n"
+        texte = " ******\n" + _("Caractéristiques de l'appareil photo : ") + "\n\n"
         self.fabricant =  self.tagExif("Make")
         if self.fabricant!=str():
-            texte = texte + "fabricant : "+self.fabricant+"\n"
+            texte = texte + _("fabricant : ")+self.fabricant+"\n"
             
         self.nomCamera = self.tagExif("Model")
         if self.nomCamera==str():
-            texte = texte+"Nom de l'appareil photo inacessible."
+            texte = texte+_("Nom de l'appareil photo inacessible.")
         else:
-            texte = texte+"Nom de l'appareil photo : "+self.nomCamera+"\n"
+            texte = texte+_("Nom de l'appareil photo : ")+self.nomCamera+"\n"
             
         self.focale35MM = self.tagExif("FocalLengthIn35mmFormat")
             
         self.focale = self.tagExif("FocalLength")
         if self.focale==str():
-            texte = texte +("\nPas de focale dans l'exif.")
+            texte = texte +("\n" + _("Pas de focale dans l'exif."))
         else:
-            texte = texte+"\nFocale : "+ self.focale+"\n"
+            texte = texte+"\n" + _("Focale : ")+ self.focale+"\n"
 
         if self.focale35MM=="" and "35" not in self.focale:
-            texte = texte +("\nPas de focale équivalente 35 mm dans l'exif :\nPrésence de la taille du capteur dans DicoCamera nécesssaire.")
+            texte = texte +("\n" + _("Pas de focale équivalente 35 mm dans l'exif :") + "\n" + _("Présence de la taille du capteur dans DicoCamera nécesssaire."))
         else:
             if self.focale35MM=="":
-                texte = texte+"\nFocale équivalente 35 mm absente de l'exif\n" 
+                texte = texte+"\n" + _("Focale équivalente 35 mm absente de l'exif") + "\n" 
             else:
-                texte = texte+"\nFocale équivalente 35 mm : "+ self.focale35MM+"\n"            
+                texte = texte+"\n" + _("Focale équivalente 35 mm : ")+ self.focale35MM+"\n"            
 
         if not os.path.isfile(self.CameraXML):
-            texte = texte+"\nDicoCamera.xml non trouvé : paramètrer au préalable le chemin de MicMac\\bin."
+            texte = texte+"\n" + _("DicoCamera.xml non trouvé : paramètrer au préalable le chemin de MicMac\\bin.")
         else:
             self.tailleCapteurAppareil()
             if self.tailleCapteur==str():
-                texte = texte + "\n\nL'appareil est inconnu dans DicoCamera.XML.\n\n"                          
+                texte = texte + "\n\n" + _("L'appareil est inconnu dans DicoCamera.XML.") + "\n\n"                          
             else:
-                texte = texte + "\n\nL'appareil est connu dans DicoCamera.XML.\n\n"+\
-                          "Taille du capteur en mm : \n\n"+self.tailleCapteur+"."
+                texte = texte + "\n\n" + _("L'appareil est connu dans DicoCamera.XML.") + "\n\n"+\
+                          _("Taille du capteur en mm : ")+"\n\n"+self.tailleCapteur+"."
 
         
         # écriture du résultat dans le fichier trace et présentation à l'écran
         
         self.effaceBufferTrace()
-        self.ajoutLigne("\n\nAppareil photo :\n"+texte)
+        self.ajoutLigne("\n\n" + _("Appareil photo :") + "\n"+texte)
         self.ecritureTraceMicMac()
         if silence!=None:
             return        
@@ -5185,9 +5883,9 @@ class Interface(ttk.Frame):
 
     def FiltreTag(self, ligne):                             # ne retourne rien (pour éviter la trace, mais positionne si possible self.tag
         if "can't open" in ligne:
-            return "Erreur dans exiftool : "+ligne
+            return _("Erreur dans exiftool : ")+ligne
         try: self.tag = ligne.split(":")[1].strip()         # pour récupérer le nom, et supprimer le retour chariot de fin de ligne
-        except Exception as e: print("erreur tagExif : ",str(e))
+        except Exception as e: print(_("erreur tagExif : "),str(e))
         return None
 
     # tags dans l'exif : renvoi la valeur du tag 'tag' dans l'exif de toutes les photos
@@ -5248,30 +5946,30 @@ class Interface(ttk.Frame):
         
         self.nomCamera = self.tagExif("Model")
         if self.nomCamera==str():
-            self.encadre("Pas trouvé de nom d'appareil photo dans l'exif.",nouveauDepart='non')
+            self.encadre(_("Pas trouvé de nom d'appareil photo dans l'exif."),nouveauDepart='non')
             return
         if not os.path.isfile(self.CameraXML):
-          self.encadre("DicoCamera.xml non trouvé : paramètrer au préalable le chemin de MicMac\\bin.",nouveauDepart='non')
+          self.encadre(_("DicoCamera.xml non trouvé : paramètrer au préalable le chemin de MicMac\\bin."),nouveauDepart='non')
           return
         if self.tailleCapteurAppareil()==1:
-            self.encadre(   "Le fichier DicoCamera.xml contient la taille du capteur pour l'appareil :\n\n"+
-                             self.nomCamera+"\n\ntaille  = "+self.tailleCapteur+
-                             "\n\nModification non prévue dans cette version de l'outil AperoDeDenis\n----------------",nouveauDepart='non')
+            self.encadre(   _("Le fichier DicoCamera.xml contient la taille du capteur pour l'appareil :") + "\n\n"+
+                             self.nomCamera+"\n\n" + _("taille  = ")+self.tailleCapteur+
+                             "\n\n" + _("Modification non prévue dans cette version de l'outil AperoDeDenis") + "\n----------------",nouveauDepart='non')
             return            
 
         self.menageEcran()
-        self.item1001.configure(text="Pour l'appareil "+self.nomCamera)
+        self.item1001.configure(text=_("Pour l'appareil ")+self.nomCamera)
         self.item1000.pack()
 
     def dimensionCapteurOK(self):
         if not os.path.isfile(self.CameraXML):
-            self.encadre("Paramètrer au préalable le chemin de MicMac\\bin.",nouveauDepart='non')
+            self.encadre(_("Paramètrer au préalable le chemin de MicMac\\bin."),nouveauDepart='non')
             return                                               
         dimension = self.item1003.get()
         # paragraphe à rajouter à DicoCamera  : texte
-        texte = self.dicoCameraXMLTaille.replace("NomCourt",self.nomCamera)          
-        texte = texte.replace("Nom",self.nomCamera)
-        texte = texte.replace("tailleEnMM",dimension)
+        texte = self.dicoCameraXMLTaille.replace(_("NomCourt"),self.nomCamera)          
+        texte = texte.replace(_("Nom"),self.nomCamera)
+        texte = texte.replace(_("tailleEnMM"),dimension)
 
         #lecture dicocamera.xml :
         with  open(self.CameraXML) as infile:
@@ -5285,19 +5983,18 @@ class Interface(ttk.Frame):
             try:
                 with  open(self.CameraXML,mode="w") as outfile:
                     outfile.write(newDico)
-            except:
-                self.encadre("Erreur lors de l'écriture de DicoCamera.xml\nUne sauvegarde a été créée : DicoCamerra.xml.sav",nouveauDepart='non')
+            except:#ici
+                self.encadre(_("Erreur lors de l'écriture de DicoCamera.xml") + "\n" + _("Une sauvegarde a été créée : DicoCamerra.xml.sav"),nouveauDepart='non')
                 return
         else:
-            self.encadre("Dimensions du capteur non mis à jour\n",nouveauDepart='non')
+            self.encadre(_("Dimensions du capteur non mis à jour") + "\n",nouveauDepart='non')
             return
 
-        self.encadre("Dimensions du capteur mis à jour\n"+texte,nouveauDepart='non')
+        self.encadre(_("Dimensions du capteur mis à jour") + "\n"+texte,nouveauDepart='non')
         
 
     def dimensionCapteurKO(self):
-        self.encadre("Dimensions du capteur non mis à jour",nouveauDepart='non')
-
+        self.encadre(_("Dimensions du capteur non mis à jour"),nouveauDepart='non')
 
     def toutesLesFocales(self):
 
@@ -5307,7 +6004,7 @@ class Interface(ttk.Frame):
         texte=self.tagsExif("FocalLength")
         texte=texte+["\n",]+self.tagsExif("FocalLengthIn35mmFormat")
         self.effaceBufferTrace()
-        self.ajoutLigne(" ****** \nToutes les focales : \n\n"+"".join(texte)+"\n ****** \n")
+        self.ajoutLigne(" ****** \n" + _("Toutes les focales : ") + "\n\n"+"".join(texte)+"\n ****** \n")
         self.ecritureTraceMicMac() 
         self.encadre(texte,nouveauDepart='non')
         
@@ -5317,164 +6014,164 @@ class Interface(ttk.Frame):
                 #"       - Nettoyer les photos : permet de délimiter les zones ""utiles"" des photos.\n"
                 #"         Cette option n'est pas active dans la version 1.0 de l'outil.\n"        
     def aide(self):
-        aide1 = "Interface graphique pour lancer les modules de MICMAC.\n\n"+\
-                "Utilisable sous Linux, Windows, Mac OS.\n"+\
-                "Logiciel libre diffusé sous licence CeCILL-B.\n"+\
+        aide1 = _("Interface graphique pour lancer les modules de MICMAC.") + "\n\n"+\
+                _("Utilisable sous Linux, Windows, Mac OS.") + "\n"+\
+                _("Logiciel libre diffusé sous licence CeCILL-B.") + "\n"+\
                 "-----------------------------------------------------------------------------------------------------------------\n\n"+\
-                "La barre de titre présente le nom du chantier et la version de l'outil. Une * indique que le chantier est à sauvegarder.\n\n"+\
-                "Menu Fichier :\n\n"+\
-                "       - Nouveau chantier : constitution d'un 'chantier' comportant les photos, les options d'exécution de Micmac et\n"+\
-                "         les résultats des traitements.\n"+\
-                "         Les paramètres du chantier sont conservés dans le fichier "+self.paramChantierSav+".\n"+\
-                "         Enregistrer le chantier crée une arborescence dont la racine est le répertoire des photos et le nom du chantier.\n\n"+\
-                "       - Ouvrir un chantier : revenir sur un ancien chantier pour le poursuivre ou consulter les résultats.\n\n"+\
-                "       - Enregistrer le chantier : enregistre le chantier en cours sans l'exécuter.\n"+\
-                "         Une * dans la barre de titre indique que le chantier a été modifié.\n"+\
-                "         Le chantier en cours, même non enregistré, est conservé lors de la fermeture de l'application.\n\n"+\
-                "       - Renommer le chantier : personnalise le nom du chantier.\n\n"+\
-                "         Le chantier est déplacé dans l'arborescence en indiquant un chemin absolu ou relatif.\n"+\
-                "         Par exemple : 'D:\\MonPremierChantier' nomme 'MonPremierChantier' sous la racine du disque D.\n"+\
-                "         Attention : le changement de disque n'est pas possible dans cette version de l'outil.\n\n"+\
-                "       - Exporter le chantier en cours : création d'une archive du chantier, qui permet :\n"+\
-                "            - de conserver le chantier en l'état, pour y revenir.\n"+\
-                "            - de l'importer sous un autre répertoire, un autre disque, un autre ordinateur, un autre système d'exploitation\n\n"+\
-                "       - Importer un chantier :\n"+\
-                "            - copie le chantier sauvegardé dans un nouvel environnement (ordinateur, système d'exploitation)\n"+\
-                "            - un exemple d'intérêt : copier un chantier aprés tapas, lancer malt avec des options variées sans perdre l'original.\n\n"+\
-                "       - Du ménage ! : Supprimer les chantiers : Chaque chantier crée une arborescence de travail.\n"+\
-                "         Cet item permet de supprimer les répertoires devenus inutiles.\n"+\
-                "         Aprés un message demandant confirmation la suppression est définitive, sans récupération possible :\n"+\
-                "         toute l'arborescence est supprimée, même les archives exportées.\n\n"+\
-                "       - Quitter : quitte l'application, le chantier en cours est conservé et sera ouvert lors de la prochaine exécution.\n\n"+\
-                "Menu Edition :\n\n"+\
-                "       - Afficher l'état du chantier : affiche les paramètres du chantier et son état d'exécution.\n"+\
-                "         Par défaut l'état du chantier est affiché lors du lancement de l'application.\n"+\
-                "         Cet item est utile après un message ou l'affichage d'une trace.\n\n"+\
-                "       - Plusieurs items permettent de consulter les photos, les traces et les vues 3D du chantier en cours.\n\n"+\
-                "            Visualiser toutes les photos sélectionnées : visualise les photos\n"+\
-                "            Visualiser les points GPS                  : visu des seules photos avec points GPS.\n"+\
-                "            Visualiser le masque 3D                    : visualise le masque 3D\n"+\
-                "            Visualiser le masque 2D et l'image maitre  : visualise le masque 2D s'il existe et de l'image maître.\n"+\
-                "            Visualiser la ligne horizontale/verticale  : visualise le repère Ox ou Oy.\n"+\
-                "            Visualiser la zone plane                   : visualise la zone plane\n"+\
-                "            Visualiser la distance                     : visualise de la distance et les points associés.\n"+\
+                _("La barre de titre présente le nom du chantier et la version de l'outil. Une * indique que le chantier est à sauvegarder.") + "\n\n"+\
+                _("Menu Fichier :") + "\n\n"+\
+                _("       - Nouveau chantier : constitution d'un 'chantier' comportant les photos, les options d'exécution de Micmac et") + "\n"+\
+                _("         les résultats des traitements.") +"\n"+\
+                _("         Les paramètres du chantier sont conservés dans le fichier ")+self.paramChantierSav+".\n"+\
+                _("         Enregistrer le chantier crée une arborescence dont la racine est le répertoire des photos et le nom du chantier.") + "\n\n"+\
+                _("       - Ouvrir un chantier : revenir sur un ancien chantier pour le poursuivre ou consulter les résultats.") + "\n\n"+\
+                _("       - Enregistrer le chantier : enregistre le chantier en cours sans l'exécuter.") + "\n"+\
+                _("         Une * dans la barre de titre indique que le chantier a été modifié.") + "\n"+\
+                _("         Le chantier en cours, même non enregistré, est conservé lors de la fermeture de l'application.") + "\n\n"+\
+                _("       - Renommer le chantier : personnalise le nom du chantier.") + "\n\n"+\
+                _("         Le chantier est déplacé dans l'arborescence en indiquant un chemin absolu ou relatif.") + "\n"+\
+                _("         Par exemple : 'D:\\MonPremierChantier' nomme 'MonPremierChantier' sous la racine du disque D.") + "\n"+\
+                _("         Attention : le changement de disque n'est pas possible dans cette version de l'outil.") + "\n\n"+\
+                _("       - Exporter le chantier en cours : création d'une archive du chantier, qui permet :") + "\n"+\
+                _("            - de conserver le chantier en l'état, pour y revenir.") + "\n"+\
+                _("            - de l'importer sous un autre répertoire, un autre disque, un autre ordinateur, un autre système d'exploitation") + "\n\n"+\
+                _("       - Importer un chantier :") + "\n"+\
+                _("            - copie le chantier sauvegardé dans un nouvel environnement (ordinateur, système d'exploitation)") + "\n"+\
+                _("            - un exemple d'intérêt : copier un chantier aprés tapas, lancer malt avec des options variées sans perdre l'original.") + "\n\n"+\
+                _("       - Du ménage ! : supprimer les chantiers : chaque chantier crée une arborescence de travail.") + "\n"+\
+                _("         Cet item permet de supprimer les répertoires devenus inutiles.") + "\n"+\
+                _("         Aprés un message demandant confirmation la suppression est définitive, sans récupération possible :") + "\n"+\
+                _("         toute l'arborescence est supprimée, même les archives exportées.") + "\n\n"+\
+                _("       - Quitter : quitte l'application, le chantier en cours est conservé et sera ouvert lors de la prochaine exécution.") + "\n\n"+\
+                _("Menu Edition :") + "\n\n"+\
+                _("       - Afficher l'état du chantier : affiche les paramètres du chantier et son état d'exécution.") + "\n"+\
+                _("         Par défaut l'état du chantier est affiché lors du lancement de l'application.") + "\n"+\
+                _("         Cet item est utile après un message ou l'affichage d'une trace.") + "\n\n"+\
+                _("       - Plusieurs items permettent de consulter les photos, les traces et les vues 3D du chantier en cours.") + "\n\n"+\
+                _("            Visualiser toutes les photos sélectionnées : visualise les photos") + "\n"+\
+                _("            Visualiser les points GPS                  : visu des seules photos avec points GPS.") + "\n"+\
+                _("            Visualiser le masque 3D                    : visualise le masque 3D") + "\n"+\
+                _("            Visualiser le masque 2D et l'image maitre  : visualise le masque 2D s'il existe et de l'image maître.") + "\n"+\
+                _("            Visualiser la ligne horizontale/verticale  : visualise le repère Ox ou Oy.") + "\n"+\
+                _("            Visualiser la zone plane                   : visualise la zone plane") + "\n"+\
+                _("            Visualiser la distance                     : visualise de la distance et les points associés.") + "\n"+\
                 "\n"+\
-                "            Afficher la trace complete du chantier     : visualise la trace complète, standard micmac\n"+\
-                "            Afficher la trace synthétique du chantier  : visualise la trace filtrée par aperoDeDenis, moins bavarde\n\n"+\
+                _("            Afficher la trace complete du chantier     : visualise la trace complète, standard micmac") + "\n"+\
+                _("            Afficher la trace synthétique du chantier  : visualise la trace filtrée par aperoDeDenis, moins bavarde") + "\n\n"+\
                 "\n"+\
-                "            Afficher l'image 3D non densifiée          : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Tapas\n"+\
-                "            Afficher l'image 3D densifiée              : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Malt ou C3DC\n"+\
+                _("            Afficher l'image 3D non densifiée          : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Tapas") + "\n"+\
+                _("            Afficher l'image 3D densifiée              : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Malt ou C3DC") + "\n"+\
                 "\n"+\
-                "            Lister Visualiser les images 3D            : liste la pyramide des images 3D, créées à chaque étape de Malt\n"+\
-                "            Fusionner des images 3D                    : permet de fusionner plusieurs PLY en un seul\n\n"+\
-                "Menu MicMac :\n\n"+\
-                "       - Choisir les photos : permet choisir les photos JPG, GIF, TIF ou BMP pour le traitement.\n\n"+\
-                "         Remarque  : les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert).\n"+\
-                "         Un EXIF avec la focale utilisée pour la prise de vue est nécessaire : si besoin l'ajouter (menu Outil/ajout exif).\n"+\
-                "         Remarque  : \n"+\
-                "                     Le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils)\n\n"+\
-                "       - Options : choisir les options des modules Tapioca, Tapas (nuage non densifié)  puis de Malt (nuage densifié) : \n\n"+\
-                "         Les options suivantes concernent le calcul du nuage de points NON densifié :\n\n"+\
-                "                    - Tapioca : options et sous options associées (échelles, fichier xml)\n"+\
-                "                    - Tapas   : Choix d'un mode de calcul, possibilité d'arrêter le traitement après tapas.\n"+\
-                "                                La calibration intrinsèque permet de lancer  Tapas sur un premier lot de photos.\n"+\
-                "                                Typiquement sur les photos de plus grande focale si il y a 2 focales différentes.\n"+\
-                "                                L'arrêt après Tapas est nécessaire pour décrire le masque 2D ou 3D.\n"+\
-                "                                Produit une image 3D non densifiée avec position des appareils photos.\n"+\
-                "                    - Calibration : définir un axe, une zone plane, une distance pour définir le repère du chantier.\n\n"+\
-                "                    - GPS : Définir les points de calage GPS qui permettent de géolocaliser la scène.\n\n"+\
-                "                            Pour être utilisé chaque point, minimum 3, doit être placé sur au moins 2 photos.\n\n"+\
-                "                            Cette option est utilisée pour le nuage de point non densifié ET pour le nuage densifié.\n\n"+\
-                "         Les 3 options suivantes concernent le calcul du nuage de points densifié :\n\n"+\
-                "                    - Malt    : choix du mode et du niveau de densification.\n"+\
-                "                                Si le mode est GeomImage : \n"+\
-                "                                  désigner une ou plusieurs images maîtresses\n"+\
-                "                                  dessiner si besoin le ou les masques associés.\n"+\
-                "                                  Seuls les points visibles sur les images maitres seront sur l'image 3D finale.\n"+\
-                "                                  Le masque limite la zone utile de l'image 3D finale.\n"+\
-                "                                  La molette permet de zoomer et le clic droit maintenu de déplacer l'image.\n"+\
-                "                                  Supprimer une image maîtresse de la liste réinitialise le masque.\n\n"+\
-                "                                  Nombre de photos utiles autour de l'image maîtresse :.\n"+\
-                "                                    Permet de limiter les recherches aux images entourant chaque image maîtresse.\n\n"+\
-                "                               Choix du niveau de densification final : 8,4,2 ou 1.\n"+\
-                "                                  Le niveau 1 est le plus dense. \n"+\
-                "                                  La géométrie est revue à chaque niveau et de plus en plus précise : \n"+\
-                "                                    la densification s'accroît, et la géométrie s'affine aussi.\n\n"+\
-                "                    - C3DC    : dessiner le masque 3D sur le nuage de points AperiCloud généré par Tapas..\n"+\
-                "                                Les touches fonctions à utiliser sont décrites dans l'onglet.\n"+\
-                "                                Le masque limite la zone en 3 dimensions de l'image finale.\n"+\
-                "                                L'outil de saisie est issu de micmac.\n\n"+\
-                "                    - GPS     : Définir les points de calage GPS qui permettent de géolocaliser la scène.\n"+\
-                "                                Pour être utilisé chaque point, minimum 3, doit être placé sur au moins 2 photos.\n\n"+\
-                "                                Le bouton 'appliquer' permet de calibrer le modèle non densifié immédiatement.\n\n"+\
-                "       - Lancer MicMac : Enregistre le chantier et lance le traitement avec les options par défaut ou choisies par l'item 'options'.\n"+\
-                "                         Relance micmac si l'arrêt a été demandé après tapas.\n"+\
-                "                         Lancer micmac bloque les photos et les options du chantier.\n"+\
-                "                         Pour débloquer le chantier il faut lancer micmac à nouveau et choisir le débloquage.\n"+\
-                "                         Le débloquage permet de relancer Malt sans relancer tapioca/tapas : \n"+\
-                "                           le fichier modele3D.ply est conservé sous un autre nom.\n\n"+\
-                "menu Vidéo :\n\n"+\
-                "       - Options : indiquer le nom de la camera (GoPro, smartphone...), sa focale, sa focale equivalente 35mm\n"+\
-                "         et le nombre d'images à conserver par seconde de film\n"+\
-                "         Le nom permet de faire le lien avec DicoCamera.xml qui contient la taille du capteur.\n"+\
-                "         Les focales seront recopiées dans l'exif des images.\n"+\
-                "         Le nombre d'images par seconde sera utilisé pour la sélection des meilleures images.\n\n"+\
-                "         Remarque :\n"+\
-                "           Il faut indiquer dans DicoCamera la taille du capteur effectivement utilisée par la fonction camera,\n"+\
-                "           taille qui peut être inférieure à la taille du capteur utilisée pour les photos.\n"+\
-                "           Voir par exemple pour une camera Gopro :\n"+\
-                "           http://www.kolor.com/wiki-en/action/view/Autopano_Video_-_Focal_length_and_field_of_view#About_GoPro_focal_length_and_FOV\n\n"+\
-                "       - Nouveau chantier : choisir une video : choisir un fichier video issu d'une camera ou d'une GoPro.\n"+\
-                "         La vidéo sera décompactée en images, l'exif sera créé avec les informations en options.\n"+\
-                "         Cette étape nécessite la présence de l'outil ffmpeg sous le répertoire bin de MicMac (dépend de la version de MicMac).\n"+\
-                "         Un nouveau chantier est créé avec les options suivante : Line pour Tapioca et FishEyeBasic pour Tapas.\n\n"+\
-                "       - Sélection des images : il est raisonnable de ne garder que quelques images par seconde de film.\n"+\
-                "         Le nombre d'images conservées par seconde est indiqué dans les options.\n"+\
-                "         Chaque seconde de film les 'meilleures' images seront retenues, les autres effacées.\n"+\
-                "         Attention : Cette étape n'est pas effective pour toutes les versions de MicMac. La version mercurial 5508 fonctionne.\n\n"+\
-                "         Une fois les images sélectionnées le chantier est créé : utiliser le menu MicMac comme pour un chantier normal.\n\n"+\
-                "menu Outils :\n\n"+\
-                "       - Affiche le nom et la focale de l'appareil photo : fabricant, modèle et focale de la première photo.\n"+\
-                "         Il y a 2 types de focales : focale effective et focale équivalente 35 mm.\n"+\
-                "         Indique si l'appareil photo est connu dans '/XML MicMac/DicoCamera.xml'.\n\n"+\
-                "       - Affiche toutes les focales des photos : focales et focales equivalentes en 35mm.\n"+\
-                "         Si les focales ne sont pas identiques pour toutes les photos : utiliser la calibration intrinséque de tapas.\n\n"+\
-                "       - Mettre à jour DicoCamera.xml : ajouter la taille du capteur dans '/XML MicMac/DicoCamera.xml'.\n"+\
-                "         La taille du capteur dans DicoCamera.xml est requise si la focale équivalente 35mm est absente de l'exif.\n"+\
-                "         La taille du capteur facilite les calculs et améliore les résultats.\n"+\
-                "         La taille du capteur se trouve sur le site du fabricant ou sur http://www.dpreview.com.\n\n"+\
-                "       - Qualité des photos du dernier traitement : calcule le nombre moyen de points homologues par photo.\n"+\
-                "         Si des photos présentent des moyennes très faibles elles peuvent faire échouer le traitement.\n\n"+\
-                "       - Qualité des photos 'Line' : calcule le nombre moyen de points homologues par photo en mode 'Line', taille 1000.\n\n"+\
-                "       - Qualité des photos 'MulScale ou All' : calcule le nombre moyen de points homologues par photo, taille 1000.'.\n"+\
-                "         Ce nombre informe sur la qualité relative des photos au sein du chantier.\n"+\
-                "         La présence de photos avec peu de points homologues peut faire échouer le traitement.\n"+\
-                "         Il est parfois préférable de traiter peu de photos mais de bonne qualité.\n\n"+\
-                "       - Modifier l'exif des photos : permet la création et la modification des exifs des photos du chantier.\n\n"+\
-                "menu Paramétrage :\n\n"+\
-                "       - Affiche les paramètres : visualise les chemins de micmac\\bin, d'exiftool, du fichier pour visualiser les .ply (Meshlab ou Cloud Compare),\n"+\
-                "         ainsi que le répertoire où se trouve les fichiers paramètres de l'interface.\n"+\
-                "         Ces paramètres sont sauvegardés de façon permanente dans le fichier :"+\
-                "         "+self.fichierParamMicmac+".\n\n"+\
-                "       - Désigner le répertoire MicMac\\bin : répertoire où se trouvent les modules de MicMac \n"+\
-                "         Si plusieurs versions sont installées cet item permet de changer facilement la version de MicMac utilisée.\n\n"+\
-                "       - Désigner l'application exiftool, utile pour modifier les exif (elle se trouve sous micMac\\binaire-aux).\n\n"+\
-                "       - Désigner l'application convert d'ImageMagick, utile pour convertir les gif, tif et bmp en jpg (elle se trouve sous micMac\\binaire-aux).\n\n"+\
-                "       - Désigner l'application ouvrant les fichiers .PLY. Ce peut être  Meshlab, CloudCompare ou autre.\n"+\
-                "         Sous Windows Meshlab se trouve sous un répertoire nommé VCG.\n\n"+\
-                "       - Activer/désactiver le 'tacky' message de lancement\n"+\
-                "menu Aide :\n\n"+\
-                "       - Pour commencer : à lire lors de la prise en main de l'interface.\n\n"+\
-                "       - Aide : le détail des items de menu.\n\n"+\
-                "       - Quelques conseils : sur la prise de vue et les options.\n"+\
-                "       - Historique : les nouveautés de chaque version.\n\n"+\
-                "       - A propos\n\n\n"+\
-                " Quelques précisions :\n"+\
-                " Cette version a été développée sous Windows XP et Seven avec micmac rev 5508 d'avril 2015.\n"+\
-                " L'utilisation d'autres versions de Micmac a été testée, jusqu'à la version 6219.\n\n"+\
-                " Le fonctionnement sous Ubuntu Trusty a été vérifié.\n\n"+\
-                " Consulter la documentation de MicMac, outil réalisé par l'IGN.\n\n"+\
-                " Consulter le guide d'installation et de prise en main d'AperoDeDenis.\n\n"+\
+                _("            Lister Visualiser les images 3D            : liste la pyramide des images 3D, créées à chaque étape de Malt") + "\n"+\
+                _("            Fusionner des images 3D                    : permet de fusionner plusieurs PLY en un seul") + "\n\n"+\
+                _("Menu MicMac :") + "\n\n"+\
+                _("       - Choisir les photos : permet choisir les photos JPG, GIF, TIF ou BMP pour le traitement.") + "\n\n"+\
+                _("         Remarque  : les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert).") + "\n"+\
+                _("         Un EXIF avec la focale utilisée pour la prise de vue est nécessaire : si besoin l'ajouter (menu Outil/ajout exif).") + "\n"+\
+                _("         Remarque  : ")+ "\n"+\
+                _("                     Le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils)") + "\n\n"+\
+                _("       - Options : choisir les options des modules Tapioca, Tapas (nuage non densifié)  puis de Malt (nuage densifié) : ") + "\n\n"+\
+                _("         Les options suivantes concernent le calcul du nuage de points NON densifié :") + "\n\n"+\
+                _("                    - Tapioca : options et sous options associées (échelles, fichier xml)")+ "\n"+\
+                _("                    - Tapas   : choix d'un mode de calcul, possibilité d'arrêter le traitement après tapas.") + "\n"+\
+                _("                                La calibration intrinsèque permet de lancer  Tapas sur un premier lot de photos.") + "\n"+\
+                _("                                Typiquement sur les photos de plus grande focale si il y a 2 focales différentes.")+ "\n"+\
+                _("                                L'arrêt après Tapas est nécessaire pour décrire le masque 2D ou 3D.") + "\n"+\
+                _("                                Produit une image 3D non densifiée avec position des appareils photos.") + "\n"+\
+                _("                    - Calibration : définir un axe, une zone plane, une distance pour définir le repère du chantier.") + "\n\n"+\
+                _("                    - GPS : définir les points de calage GPS qui permettent de géolocaliser la scène.") + "\n\n"+\
+                _("                            Pour être utilisé chaque point, minimum 3, doit être placé sur au moins 2 photos.") + "\n\n"+\
+                _("                            Cette option est utilisée pour le nuage de point non densifié ET pour le nuage densifié.") + "\n\n"+\
+                _("         Les 3 options suivantes concernent le calcul du nuage de points densifié :") + "\n\n"+\
+                _("                    - Malt    : choix du mode et du niveau de densification.") + "\n"+\
+                _("                                Si le mode est GeomImage : ") + "\n"+\
+                _("                                  désigner une ou plusieurs images maîtresses") + "\n"+\
+                _("                                  dessiner si besoin le ou les masques associés.") + "\n"+\
+                _("                                  Seuls les points visibles sur les images maitres seront sur l'image 3D finale.") + "\n"+\
+                _("                                  Le masque limite la zone utile de l'image 3D finale.") + "\n"+\
+                _("                                  La molette permet de zoomer et le clic droit maintenu de déplacer l'image.") + "\n"+\
+                _("                                  Supprimer une image maîtresse de la liste réinitialise le masque.") + "\n\n"+\
+                _("                                  Nombre de photos utiles autour de l'image maîtresse :") + "\n"+\
+                _("                                    Permet de limiter les recherches aux images entourant chaque image maîtresse.") + "\n\n"+\
+                _("                               Choix du niveau de densification final : 8,4,2 ou 1.") + "\n"+\
+                _("                                  Le niveau 1 est le plus dense. ") + "\n"+\
+                _("                                  La géométrie est revue à chaque niveau et de plus en plus précise : ") + "\n"+\
+                _("                                    la densification s'accroît, et la géométrie s'affine aussi.") + "\n\n"+\
+                _("                    - C3DC    : dessiner le masque 3D sur le nuage de points AperiCloud généré par Tapas..") + "\n"+\
+                _("                                Les touches fonctions à utiliser sont décrites dans l'onglet.") + "\n"+\
+                _("                                Le masque limite la zone en 3 dimensions de l'image finale.") + "\n"+\
+                _("                                L'outil de saisie est issu de micmac.") + "\n\n"+\
+                _("                    - GPS     : définir les points de calage GPS qui permettent de géolocaliser la scène.") + "\n"+\
+                _("                                Pour être utilisé chaque point, minimum 3, doit être placé sur au moins 2 photos.") + "\n\n"+\
+                _("                                Le bouton 'appliquer' permet de calibrer le modèle non densifié immédiatement.") + "\n\n"+\
+                _("       - Lancer MicMac : enregistre le chantier et lance le traitement avec les options par défaut ou choisies par l'item 'options'.") + "\n"+\
+                _("                         Relance micmac si l'arrêt a été demandé après tapas.") + "\n"+\
+                _("                         Lancer micmac bloque les photos et les options du chantier.") + "\n"+\
+                _("                         Pour débloquer le chantier il faut lancer micmac à nouveau et choisir le débloquage.") + "\n"+\
+                _("                         Le débloquage permet de relancer Malt sans relancer tapioca/tapas : ") + "\n"+\
+                _("                         le fichier modele3D.ply est conservé sous un autre nom.") + "\n\n"+\
+                _("menu Vidéo :") + "\n\n"+\
+                _("       - Options : indiquer le nom de la camera (GoPro, smartphone...), sa focale, sa focale equivalente 35mm") + "\n"+\
+                _("         et le nombre d'images à conserver par seconde de film") + "\n"+\
+                _("         Le nom permet de faire le lien avec DicoCamera.xml qui contient la taille du capteur.") + "\n"+\
+                _("         Les focales seront recopiées dans l'exif des images.") + "\n"+\
+                _("         Le nombre d'images par seconde sera utilisé pour la sélection des meilleures images.") + "\n\n"+\
+                _("         Remarque :") + "\n"+\
+                _("           Il faut indiquer dans DicoCamera la taille du capteur effectivement utilisée par la fonction camera,") + "\n"+\
+                _("           taille qui peut être inférieure à la taille du capteur utilisée pour les photos.") + "\n"+\
+                _("           Voir par exemple pour une camera Gopro :") + "\n"+\
+                "           http://www.kolor.com/wiki-en/action/view/Autopano_Video_-_Focal_length_and_field_of_view#About_GoPro_focal_length_and_FOV" + "\n\n"+\
+                _("       - Nouveau chantier : choisir une video : choisir un fichier video issu d'une camera ou d'une GoPro.") + "\n"+\
+                _("         La vidéo sera décompactée en images, l'exif sera créé avec les informations en options.") + "\n"+\
+                _("         Cette étape nécessite la présence de l'outil ffmpeg sous le répertoire bin de MicMac (dépend de la version de MicMac).") + "\n"+\
+                _("         Un nouveau chantier est créé avec les options suivante : Line pour Tapioca et FishEyeBasic pour Tapas.") + "\n\n"+\
+                _("       - Sélection des images : il est raisonnable de ne garder que quelques images par seconde de film.") + "\n"+\
+                _("         Le nombre d'images conservées par seconde est indiqué dans les options.") + "\n"+\
+                _("         Chaque seconde de film les 'meilleures' images seront retenues, les autres effacées.") + "\n"+\
+                _("         Attention : cette étape n'est pas effective pour toutes les versions de MicMac. La version mercurial 5508 fonctionne.") + "\n\n"+\
+                _("         Une fois les images sélectionnées le chantier est créé : utiliser le menu MicMac comme pour un chantier normal.") + "\n\n"+\
+                _("menu Outils :") + "\n\n"+\
+                _("       - Affiche le nom et la focale de l'appareil photo : fabricant, modèle et focale de la première photo.") + "\n"+\
+                _("         Il y a 2 types de focales : focale effective et focale équivalente 35 mm.") + "\n"+\
+                _("         Indique si l'appareil photo est connu dans '/XML MicMac/DicoCamera.xml'.") + "\n\n"+\
+                _("       - Affiche toutes les focales des photos : focales et focales equivalentes en 35mm.") + "\n"+\
+                _("         Si les focales ne sont pas identiques pour toutes les photos : utiliser la calibration intrinséque de tapas.") + "\n\n"+\
+                _("       - Mettre à jour DicoCamera.xml : ajouter la taille du capteur dans '/XML MicMac/DicoCamera.xml'.") + "\n"+\
+                _("         La taille du capteur dans DicoCamera.xml est requise si la focale équivalente 35mm est absente de l'exif.") + "\n"+\
+                _("         La taille du capteur facilite les calculs et améliore les résultats.") + "\n"+\
+                _("         La taille du capteur se trouve sur le site du fabricant ou sur http://www.dpreview.com.") + "\n\n"+\
+                _("       - Qualité des photos du dernier traitement : calcule le nombre moyen de points homologues par photo.") + "\n"+\
+                _("         Si des photos présentent des moyennes très faibles elles peuvent faire échouer le traitement.") + "\n\n"+\
+                _("       - Qualité des photos 'Line' : calcule le nombre moyen de points homologues par photo en mode 'Line', taille 1000.") + "\n\n"+\
+                _("       - Qualité des photos 'MulScale ou All' : calcule le nombre moyen de points homologues par photo, taille 1000.'.") + "\n"+\
+                _("         Ce nombre informe sur la qualité relative des photos au sein du chantier.") + "\n"+\
+                _("         La présence de photos avec peu de points homologues peut faire échouer le traitement.") + "\n"+\
+                _("         Il est parfois préférable de traiter peu de photos mais de bonne qualité.") + "\n\n"+\
+                _("       - Modifier l'exif des photos : permet la création et la modification des exifs des photos du chantier.") + "\n\n"+\
+                _("menu Paramétrage :") + "\n\n"+\
+                _("       - Affiche les paramètres : visualise les chemins de micmac\\bin, d'exiftool, du fichier pour visualiser les .ply (Meshlab ou Cloud Compare),") + "\n"+\
+                _("         ainsi que le répertoire où se trouve les fichiers paramètres de l'interface.") + "\n"+\
+                _("         Ces paramètres sont sauvegardés de façon permanente dans le fichier :")+\
+                "         "+self.fichierParamMicmac+"." + "\n\n"+\
+                _("       - Désigner le répertoire MicMac\\bin : répertoire où se trouvent les modules de MicMac ") + "\n"+\
+                _("         Si plusieurs versions sont installées cet item permet de changer facilement la version de MicMac utilisée.") + "\n\n"+\
+                _("       - Désigner l'application exiftool, utile pour modifier les exif (elle se trouve sous micMac\\binaire-aux).") + "\n\n"+\
+                _("       - Désigner l'application convert d'ImageMagick, utile pour convertir les gif, tif et bmp en jpg (elle se trouve sous micMac\\binaire-aux).") + "\n\n"+\
+                _("       - Désigner l'application ouvrant les fichiers .PLY. Ce peut être  Meshlab, CloudCompare ou autre.") + "\n"+\
+                _("         Sous Windows Meshlab se trouve sous un répertoire nommé VCG.") + "\n\n"+\
+                _("       - Activer/désactiver le 'tacky' message de lancement")+ "\n"+\
+                _("menu Aide :") + "\n\n"+\
+                _("       - Pour commencer : à lire lors de la prise en main de l'interface.") + "\n\n"+\
+                _("       - Aide : le détail des items de menu.") + "\n\n"+\
+                _("       - Quelques conseils : sur la prise de vue et les options.") + "\n"+\
+                _("       - Historique : les nouveautés de chaque version.") + "\n\n"+\
+                _("       - A propos") + "\n\n\n"+\
+                _(" Quelques précisions :") + "\n"+\
+                _(" Cette version a été développée sous Windows XP et Seven avec micmac rev 5508 d'avril 2015.") + "\n"+\
+                _(" L'utilisation d'autres versions de Micmac a été testée, jusqu'à la version 6219.") + "\n\n"+\
+                _(" Le fonctionnement sous Ubuntu Trusty a été vérifié.") + "\n\n"+\
+                _(" Consulter la documentation de MicMac, outil réalisé par l'IGN.") + "\n\n"+\
+                _(" Consulter le guide d'installation et de prise en main d'AperoDeDenis.") + "\n\n"+\
                 "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
 
         self.cadreVide()
@@ -5483,63 +6180,63 @@ class Interface(ttk.Frame):
         self.texte201.see("1.1")
         
     def conseils(self):
-        aide2 = "Interface graphique pour lancer les modules de MICMAC : quelques conseils.\n\n"+\
-                "Prises de vue  :\n"+\
-                "                - Le sujet doit être immobile durant toutes la séance de prise de vue.\n"+\
-                "                - Le sujet doit être bien éclairé, la prise de vue en plein jour doit être recherchée.\n"+\
-                "                - Les photos doivent être nettes, attention à la profondeur de champ :\n"+\
-                "                  utiliser la plus petite ouverture possible (nombre F le plus grand, par exemple 22).\n"+\
-                "                - Les photos de personnes ou d'objet en mouvement sont déconseillées\n"+\
-                "                - Les surfaces lisses ou réfléchissantes sont défavorables.\n"+\
-                "                - Si le sujet est central prendre une photo tous les 20°, soit 9 photos pour un 'demi-tour', 18 pour un tour complet.\n"+\
-                "                - Si le sujet est en 'ligne' le recouvrement entre photos doit être des 2/3.\n"+\
-                "                - Tester la 'qualité' des photos au sein du chantier (voir les items du menu Outils).\n"+\
-                "                  les photos ayant un mauvais score doivent être supprimées du chantier : elle peuvent faire échouer le traitement.\n"+\
-                "                - La présence des dimensions du capteur de l'appareil dans DIcoCamera.xml améliore le traitement.\n"+\
-                "                  Cette présence est obligatoire si l'exif ne présente pas la focale équivalente 35mm.\n"+\
-                "                  Pour ajouter la taille du capteur utiliser le menu 'Outils//mettre à jour DicoCamera'.\n\n"+\
-                "                 Précautions :    \n"+\
-                "                 Ne pas utiliser la fonction autofocus. Deux focales différentes maximum pour un même chantier.\n"+\
-                "                 Si il y a 2 focales différentes utiliser la calibration intrinsèque de Tapas.\n"+\
-                "                 Eviter aussi la fonction 'anti tremblement' qui agit en modfiant la position du capteur.\n\n"         +\
-                "Options :\n"+\
-                "               - Tapioca : Si le sujet est central conserver les paramètres par défaut.\n"                             +\
-                "                           L'échelle est la taille réduite de l'image (en pixels, ou -1 pour l'image entière) pour la recherche des points homologues.\n" +\
-                "                           Si le sujet est en ligne choisir 'line' dans les options de Tapioca, \n"                    +\
-                "                                                   puis delta = 1, si les photos se recouvrent à moitiè, \n"             +\
-                "                                                   ou   delta = 2 voire +, si le recouvrement est plus important.\n\n" +\
-                "                           L'option ALl recherche les points homologues sur toutes les paires de photos (ce qui peut faire beaucoup !)\n" +\
-                "                           L'option MulScale recherche les points homologues en 2 temps :\n" +\
-                "                             1) sur toutes les paires avec une taille de photo réduite (typiquement 300)\n" +\
-                "                             2) Seules les paires de photos ayant eu au moins 2 points homologues à cette échelle seront\n" +\
-                "                                retenues pour rechercher les points homologues à la seconde échelle. Gain de temps important possible.\n" +\
-                "               - Tapas : Si l'appareil photo est un compact ou un smartphone choisir RadialBasic, \n"+\
-                "                         Si l'appareil photo est un reflex haut de gamme choisir RadialExtended \n"                    +\
-                "                         Si l'appareil photo est de moyenne gamme choisir RadialStd\n"                               +\
-                "                         Si les photos ont 2 focales alors choisir toutes celles qui ont la plus grande focale pour la calibration intrinsèque.\n"+\
-                "                         L'arrêt aprés Tapas est conseillé : la visualisation du nuage de points non densifié\n"       +\
-                "                         permet de définir un masque, 2D ou 3D, pour l'étape suivante.\n\n"                            +\
-                "               - Calibration : permet de définir un repère et une métrique (axe, plan et distance, tous obligatoires).\n\n"+\
-                "               - Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtresses.\n"          +\
-                "                        Seuls les points visibles sur ces images seront conservés dans le nuage de points.\n"                +\
-                "                        Sur ces images maîtresses tracer les masque délimitant la partie 'utile' de la photo.\n"+\
-                "                        Le résultat sera mis en couleur suivant les images maitresses.\n"+\
-                "                        (éviter trop de recouvrement entre les maîtresses !).\n"+\
-                "                        Le traitement avec masque sera accéléré et le résultat plus 'propre'.\n\n"                                 +\
-                "               - C3DC : propose de définir un masque en 3D qui conservera tout le volume concerné.\n"                  +\
-                "                        Alternative à Malt, le traitement est beaucoup plus rapide. Nécessite la dernière version de MicMac.\n\n"+\
-                "               - GPS  : définir au moins 3 points cotés et les placer sur 2 photos. La trace indique s'ils sont pris en compte\n\n"+\
-                "Si MicMac ne trouve pas d'orientation ou pas de nuage de points :\n\n"+\
-                "               - Examiner la qualité des photos (utiliser le menu outils/Qualité des photos): .\n"                             +\
-                "                        1) Eliminer les photos ayant les plus mauvais scores\n"+\
-                "                        2) si ce n'est pas suffisant ne garder que les meilleures photos (typiquement : moins de 10)\n"+\
-                "                           Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.\n"+\
-                "                        3) Augmenter l'échelle des photos pour tapioca, mettre -1 au lieu de la valeur par défaut.\n"+\
-                "                        4) modifier le type d'appareil pour Tapas (radialstd ou radialbasic)\n"+\
-                "                        5) vérifier la taille du capteur dans dicocamera, nécessaire si la focale equivalente 35 mm est absente de l'exif\n"+\
-                "                        6) examiner la trace synthétique et la trace complète : MicMac donne quelques informations\n"+\
-                "                        7) consulter le forum micmac (http://forum-micmac.forumprod.com)\n"+\
-                "                        8) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)\n\n"+\
+        aide2 = _("Interface graphique pour lancer les modules de MICMAC : quelques conseils.") + "\n\n"+\
+                _("Prises de vue  :") + "\n"+\
+                _("                - Le sujet doit être immobile durant toutes la séance de prise de vue.") + "\n"+\
+                _("                - Le sujet doit être bien éclairé, la prise de vue en plein jour doit être recherchée.") + "\n"+\
+                _("                - Les photos doivent être nettes, attention à la profondeur de champ :") + "\n"+\
+                _("                  utiliser la plus petite ouverture possible (nombre F le plus grand, par exemple 22).") + "\n"+\
+                _("                - Les photos de personnes ou d'objet en mouvement sont déconseillées") + "\n"+\
+                _("                - Les surfaces lisses ou réfléchissantes sont défavorables.") + "\n"+\
+                _("                - Si le sujet est central prendre une photo tous les 20°, soit 9 photos pour un 'demi-tour', 18 pour un tour complet.") + "\n"+\
+                _("                - Si le sujet est en 'ligne' le recouvrement entre photos doit être des 2/3.") + "\n"+\
+                _("                - Tester la 'qualité' des photos au sein du chantier (voir les items du menu Outils).") + "\n"+\
+                _("                  les photos ayant un mauvais score (voir le menu Outils/Qualité des photos 'All') doivent être supprimées du chantier : elle peuvent faire échouer le traitement.") + "\n"+\
+                _("                - La présence des dimensions du capteur de l'appareil dans DIcoCamera.xml améliore le traitement.") + "\n"+\
+                _("                  Cette présence est obligatoire si l'exif ne présente pas la focale équivalente 35mm.") + "\n"+\
+                _("                  Pour ajouter la taille du capteur utiliser le menu 'Outils//mettre à jour DicoCamera'.") + "\n\n"+\
+                _("                 Précautions :    ") + "\n"+\
+                _("                 Ne pas utiliser la fonction autofocus. Deux focales différentes maximum pour un même chantier.") + "\n"+\
+                _("                 Si il y a 2 focales différentes utiliser la calibration intrinsèque de Tapas.") + "\n"+\
+                _("                 Eviter aussi la fonction 'anti tremblement' qui agit en modfiant la position du capteur.") + "\n\n"         +\
+                _("Options :") + "\n"+\
+                _("               - Tapioca : si le sujet est central conserver les paramètres par défaut.") + "\n"                             +\
+                _("                           L'échelle est la taille réduite de l'image (en pixels, ou -1 pour l'image entière) pour la recherche des points homologues.") + "\n" +\
+                _("                           Si le sujet est en ligne choisir 'line' dans les options de Tapioca, ") + "\n"                    +\
+                _("                                                   puis delta = 1, si les photos se recouvrent à moitiè, ") + "\n"             +\
+                _("                                                   ou   delta = 2 voire +, si le recouvrement est plus important.") + "\n\n" +\
+                _("                           L'option ALl recherche les points homologues sur toutes les paires de photos (ce qui peut faire beaucoup !)") + "\n" +\
+                _("                           L'option MulScale recherche les points homologues en 2 temps :") + "\n" +\
+                _("                             1) sur toutes les paires avec une taille de photo réduite (typiquement 300)") + "\n" +\
+                _("                             2) Seules les paires de photos ayant eu au moins 2 points homologues à cette échelle seront") + "\n" +\
+                _("                                retenues pour rechercher les points homologues à la seconde échelle. Gain de temps important possible.") + "\n" +\
+                _("               - Tapas : si l'appareil photo est un compact ou un smartphone choisir RadialBasic, ") + "\n"+\
+                _("                         si l'appareil photo est un reflex haut de gamme choisir RadialExtended ") + "\n"                    +\
+                _("                         si l'appareil photo est de moyenne gamme choisir RadialStd") + "\n"                               +\
+                _("                         si les photos ont 2 focales alors choisir toutes celles qui ont la plus grande focale pour la calibration intrinsèque.") + "\n"+\
+                _("                         L'arrêt aprés Tapas est conseillé : la visualisation du nuage de points non densifié") + "\n"       +\
+                _("                         permet de définir un masque, 2D ou 3D, pour l'étape suivante.") + "\n\n"                            +\
+                _("               - Calibration : permet de définir un repère et une métrique (axe, plan et distance, tous obligatoires).") + "\n\n"+\
+                _("               - Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtresses.") + "\n"          +\
+                _("                        Seuls les points visibles sur ces images seront conservés dans le nuage de points.") + "\n"                +\
+                _("                        Sur ces images maîtresses tracer les masque délimitant la partie 'utile' de la photo.") + "\n"+\
+                _("                        Le résultat sera mis en couleur suivant les images maitresses.") + "\n"+\
+                _("                        (éviter trop de recouvrement entre les maîtresses !).") + "\n"+\
+                _("                        Le traitement avec masque sera accéléré et le résultat plus 'propre'.") + "\n\n"                                 +\
+                _("               - C3DC : propose de définir un masque en 3D qui conservera tout le volume concerné.") + "\n"                  +\
+                _("                        Alternative à Malt, le traitement est beaucoup plus rapide. Nécessite la dernière version de MicMac.") + "\n\n"+\
+                _("               - GPS  : définir au moins 3 points cotés et les placer sur 2 photos. La trace indique s'ils sont pris en compte") + "\n\n"+\
+                _("Si MicMac ne trouve pas d'orientation ou pas de nuage de points :") + "\n\n"+\
+                _("               - Examiner la qualité des photos (utiliser le menu outils/Qualité des photos): .") + "\n"                             +\
+                _("                        1) Eliminer les photos ayant les plus mauvais scores") + "\n"+\
+                _("                        2) si ce n'est pas suffisant ne garder que les meilleures photos (typiquement : moins de 10)") + "\n"+\
+                _("                           Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.")+ "\n"+\
+                _("                        3) Augmenter l'échelle des photos pour tapioca, mettre -1 au lieu de la valeur par défaut.") + "\n"+\
+                _("                        4) modifier le type d'appareil pour Tapas (radialstd ou radialbasic)") + "\n"+\
+                _("                        5) vérifier la taille du capteur dans dicocamera, nécessaire si la focale equivalente 35 mm est absente de l'exif") + "\n"+\
+                _("                        6) examiner la trace synthétique et la trace complète : MicMac donne quelques informations") + "\n"+\
+                _("                        7) consulter le forum micmac (http://forum-micmac.forumprod.com)") + "\n"+\
+                _("                        8) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)") + "\n\n"+\
                 "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
         self.cadreVide()
         self.effaceBufferTrace()        
@@ -5548,71 +6245,71 @@ class Interface(ttk.Frame):
 
     def commencer(self):
         aide3 =  \
-                "   Pour commencer avec l'interface graphique MicMac :\n\n"+\
-                "   Tout d'abord : Installer MicMac.\n"+\
-                "   Puis : Installer Meshlab ou CloudCompare (pour afficher les nuages de points)\n\n"+\
-                "   Ensuite, dans cette interface graphique :\n\n"+\
-                "1) Paramètrer l'interface : indiquer ou se trouvent le répertoire bin de MicMac et l'éxécutable Meshlab ou CloudCompare.\n"+\
-                "   Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick (en principe sous MicMac\\binaire-aux).\n"+\
-                "2) Choisir quelques photos, par exemple du jeu d'essai gravillons, au moins 3 mais pas plus de 6 pour commencer (menu MicMac).\n"+\
-                "3) Lancer MicMac en laissant les paramètres par défaut (menu MicMac).\n"+\
-                "   Si tout va bien une vue en 3D non densifiée doit s'afficher, patience : cela peut être long.\n"+\
-                "4) Si tout va bien alors modifier les options pour la suite du traitement (Malt ou C3DC) (voir la doc).\n"+\
-                "   Puis re lancer MicMac pour obtenir une vue 3D densifiée.\n\n"+\
-                "5) Si tout ne va pas bien re 'lancer MicMac' et annuler le traitement, puis :\n"+\
-                "   Lire 'quelques conseils' (menu Aide).\n"+\
-                "   Tester la qualité des photos (menu Outils).\n"+\
-                "   Examiner les traces (menu Edition),\n"+\
-                "   Consulter l'aide (menu Aide),\n"+\
-                "   Consulter le guide d'installation et de prise en main de l'interface.\n"+\
-                "   Consulter le forum MicMac sur le net, consulter la doc MicMac.\n"+\
-                "6) Si une solution apparaît : modifier les options (menu MicMac).\n"+\
-                "   puis relancer le traitement.\n"+\
-                "7) Si le problème persiste faire appel à l'assistance de l'interface (adresse mail dans l'A-propos)\n"
+                _("   Pour commencer avec l'interface graphique MicMac :") + "\n\n"+\
+                _("   Tout d'abord : installer MicMac.") + "\n"+\
+                _("   Puis : installer Meshlab ou CloudCompare (pour afficher les nuages de points)") + "\n\n"+\
+                _("   Ensuite, dans cette interface graphique :") + "\n\n"+\
+                _("1) Paramètrer l'interface : indiquer ou se trouvent le répertoire bin de MicMac et l'éxécutable Meshlab ou CloudCompare.") + "\n"+\
+                _("   Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick (en principe sous MicMac\\binaire-aux).") + "\n"+\
+                _("2) Choisir quelques photos, par exemple du jeu d'essai gravillons, au moins 3 mais pas plus de 6 pour commencer (menu MicMac).") + "\n"+\
+                _("3) Lancer MicMac en laissant les paramètres par défaut (menu MicMac).") + "\n"+\
+                _("   Si tout va bien une vue en 3D non densifiée doit s'afficher, patience : cela peut être long.") + "\n"+\
+                _("4) Si tout va bien alors modifier les options pour la suite du traitement (Malt ou C3DC) (voir la doc).") + "\n"+\
+                _("   Puis re lancer MicMac pour obtenir une vue 3D densifiée.") + "\n\n"+\
+                _("5) Si tout ne va pas bien re 'lancer MicMac' et annuler le traitement, puis :") + "\n"+\
+                _("   Lire 'quelques conseils' (menu Aide).") + "\n"+\
+                _("   Tester la qualité des photos (menu Outils).") + "\n"+\
+                _("   Examiner les traces (menu Edition),") + "\n"+\
+                _("   Consulter l'aide (menu Aide),") + "\n"+\
+                _("   Consulter le guide d'installation et de prise en main de l'interface.") + "\n"+\
+                _("   Consulter le forum MicMac sur le net, consulter la doc MicMac.") + "\n"+\
+                _("6) Si une solution apparaît : modifier les options (menu MicMac).") + "\n"+\
+                _("   puis relancer le traitement.") + "\n"+\
+                _("7) Si le problème persiste faire appel à l'assistance de l'interface (adresse mail dans l'A-propos)") + "\n"
         self.encadre (aide3,50,aligne='left',nouveauDepart='non')
 
     def historiqueDesVersions(self):
         aide4 = \
-              "Historique des versions diffusées sur le site de l'IGN\n"+\
+              _("Historique des versions diffusées sur le site de l'IGN") + "\n"+\
               "----------------------------------------------------------"+\
-              "\nVersion 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.\n"+\
-              "\nVersion 1.55 : Sous Windows le fichier paramètre est placé sous le répertoire APPDATA de l'utilisateur,\n"+\
-              chr(9)+chr(9)+"ce qui règle les questions relatives aux droits d'accès en écriture. Mise en ligne le 04/12/2015.\n"+\
-              "\nVersion 1.60 : Ajout des fonctions :\n"+\
-              chr(9)+chr(9)+"- Qualité des photos lors du dernier traitement\n"+\
-              chr(9)+chr(9)+"- Exporter le chantier en cours\n"+\
-              chr(9)+chr(9)+"- Importer un chantier (permet de recopier le chantier sur un autre répertoire, disque, ordinateur, système d'exploitation)\n"+\
-              chr(9)+chr(9)+"- Les fichiers 'trace' sont enregistrés au format utf-8.\n\n"+\
-              "Version 2.00 : Ajout des fonctions :\n"+\
-              chr(9)+chr(9)+"- Choix de photos pour la calibration intrinsèque par Tapas.\n"+\
-              chr(9)+chr(9)+"- Possibilité de relancer Malt sans relancer Tapioca/Tapas tout en conservant les images 3D générées.\n"+\
-              chr(9)+chr(9)+"- Conservation de plusieurs fichiers modele3D.ply après Malt pour un même chantier.\n"+\
-              chr(9)+chr(9)+"- Choix du niveau de zoom d'arrêt de la procédure Malt : de 1 (par défaut) à 8.\n"+\
-              chr(9)+chr(9)+"- Création de tous les fichiers .ply correspondants à tous les niveaux de zoom calculés.\n"+\
-              chr(9)+chr(9)+"- Ajout d'un item du menu édition listant et visualisant toutes les images 3D générées.\n"+\
-              chr(9)+chr(9)+"- Choix du nombre de photos à retenir autour de l'image maître pour Malt.\n"+\
-              chr(9)+chr(9)+"- Traitement des vidéos (par exemple GoPro) : décompactage, sélection, mise à jour de l'exif\n"+\
-              chr(9)+chr(9)+"- Ajout de deux contrôles sur le lot des photos : mêmes dimensions, même focale.\n"+\
-              chr(9)+chr(9)+"- Ajout d'un item 'historique' dans le menu Aide.\n"+\
-              "\nVersion 2.10"+chr(9)+"- Ajout d'un item du menu édition fusionnant les images 3D.\n"+\
-              chr(9)+chr(9)+"- Plusieurs images maîtresses, plusieurs masques.\n"+\
-              chr(9)+chr(9)+"- Conversion automatique des fichiers PNG, BMP, GIF, TIF en JPG\n"+\
-              chr(9)+chr(9)+"- Ajout d'un item du menu Outils permettant de modifier les exifs. Diffusion restreinte à la DTer NC le 16/02/2016\n"+\
-              "\nVersion 2.20 :"+chr(9)+"- Maintien des options compatibles lors du choix de nouvelles photos. Février 2016\n"+\
-              "\nVersion 2.30 : "+\
-              chr(9)+"- Modification des options par défaut dans le menu outils.\n"+\
-              "\nVersion 2.40 :"+chr(9)+"- Choix de l'option (Statue ou QuickMac) pour C3DC. Avril 2016\n"+\
-              "\nVersion 2.45 :"+chr(9)+"- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.\n"+\
-              chr(9)+chr(9)+"- Possiblité d'appliquer la calibration GPS sans relancer malt. Mai 2016\n"+\
-              "\nVersion 2.50 :"+chr(9)+"- Ajout de Tawny aprés Malt en mode Ortho, désactivation du message de lancement. Juin 2016\n"+\
+              "\n" + _("Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.") + "\n"+\
+              "\n" + _("Version 1.55 : sous Windows le fichier paramètre est placé sous le répertoire APPDATA de l'utilisateur,") + "\n"+\
+              chr(9)+chr(9)+_("ce qui règle les questions relatives aux droits d'accès en écriture. Mise en ligne le 04/12/2015.") + "\n"+\
+              "\n" + _("Version 1.60 : ajout des fonctions :") + "\n"+\
+              chr(9)+chr(9)+_("- Qualité des photos lors du dernier traitement") + "\n"+\
+              chr(9)+chr(9)+_("- Exporter le chantier en cours") + "\n"+\
+              chr(9)+chr(9)+_("- Importer un chantier (permet de recopier le chantier sur un autre répertoire, disque, ordinateur, système d'exploitation)") + "\n"+\
+              chr(9)+chr(9)+_("- Les fichiers 'trace' sont enregistrés au format utf-8.") + "\n\n"+\
+              _("Version 2.00 : ajout des fonctions :") + "\n"+\
+              chr(9)+chr(9)+_("- Choix de photos pour la calibration intrinsèque par Tapas.") + "\n"+\
+              chr(9)+chr(9)+_("- Possibilité de relancer Malt sans relancer Tapioca/Tapas tout en conservant les images 3D générées.") + "\n"+\
+              chr(9)+chr(9)+_("- Conservation de plusieurs fichiers modele3D.ply après Malt pour un même chantier.") + "\n"+\
+              chr(9)+chr(9)+_("- Choix du niveau de zoom d'arrêt de la procédure Malt : de 1 (par défaut) à 8.") + "\n"+\
+              chr(9)+chr(9)+_("- Création de tous les fichiers .ply correspondants à tous les niveaux de zoom calculés.") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un item du menu édition listant et visualisant toutes les images 3D générées.") + "\n"+\
+              chr(9)+chr(9)+_("- Choix du nombre de photos à retenir autour de l'image maître pour Malt.") + "\n"+\
+              chr(9)+chr(9)+_("- Traitement des vidéos (par exemple GoPro) : décompactage, sélection, mise à jour de l'exif") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout de deux contrôles sur le lot des photos : mêmes dimensions, même focale.") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un item 'historique' dans le menu Aide.") + "\n"+\
+              "\n" + _("Version 2.10")+chr(9)+_("- Ajout d'un item du menu édition fusionnant les images 3D.") + "\n"+\
+              chr(9)+chr(9)+_("- Plusieurs images maîtresses, plusieurs masques.") + "\n"+\
+              chr(9)+chr(9)+_("- Conversion automatique des fichiers PNG, BMP, GIF, TIF en JPG") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un item du menu Outils permettant de modifier les exifs. Diffusion restreinte à la DTer NC le 16/02/2016") + "\n"+\
+              "\n" + _("Version 2.20 :")+chr(9)+_("- Maintien des options compatibles lors du choix de nouvelles photos. Février 2016") + "\n"+\
+              "\n" + _("Version 2.30 : ")+\
+              chr(9)+_("- Modification des options par défaut dans le menu outils.") + "\n"+\
+              "\n" + _("Version 2.40 :")+chr(9)+_("- Choix de l'option (Statue ou QuickMac) pour C3DC. Avril 2016") + "\n"+\
+              "\n" + _("Version 2.45 :")+chr(9)+_("- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.") + "\n"+\
+              chr(9)+chr(9)+_("- Possiblité d'appliquer la calibration GPS sans relancer malt. Mai 2016") + "\n"+\
+              "\n" + _("Version 2.50 :")+chr(9)+_("- Ajout de Tawny aprés Malt en mode Ortho, désactivation du message de lancement. Juin 2016") + "\n"+\
               "----------------------------------------------------------"       
         self.encadre (aide4,50,aligne='left',nouveauDepart='non')
-        
+
         
     def aPropos(self):
        
-        aide5=self.titreFenetre+("\n\nRéalisation Denis Jouin 2015-2016\n\nLaboratoire Régional de Rouen\n\n"+
-                                "Direction Territoriale Normandie Centre\n\n CEREMA\n\ninterface-micmac@cerema.fr")
+        aide5=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2016") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
+                                _("Direction Territoriale Normandie Centre") + "\n\n" + "CEREMA" + "\n\n" + "interface-micmac@cerema.fr")
 
         self.encadre (aide5,aligne='center',nouveauDepart='non')
         
@@ -5628,7 +6325,7 @@ class Interface(ttk.Frame):
             if self.labelIgn.winfo_manager()!="pack":
                 self.labelIgn.pack(pady=5)            
                 
-        except Exception as e: print("erreur canvas logo cerema : "+str(e))
+        except Exception as e: print(_("erreur canvas logo cerema : ")+str(e))
 
         #ajout du logo IGN si possible
         if os.path.exists(self.logoIGN):
@@ -5703,43 +6400,54 @@ class Interface(ttk.Frame):
                          self.modeC3DC.get(),
                          self.tawny.get(),
                          self.tawnyParam.get(),
-                         version
+                         version                         
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
             supprimeFichier(self.fichierParamChantierEnCours)
             os.rename(essai,self.fichierParamChantierEnCours)
         except Exception as e:
-            print ('erreur sauveParamChantier : ',str(e))
+            print (_('erreur sauveParamChantier : '),str(e))
 
        
     def sauveParamMicMac(self):
-        essai = (self.fichierParamMicmac+"essai")       # pour éviter d'écraser le fichier si le diqsque est plein
+        essai = (self.fichierParamMicmac+"essai")       # pour éviter d'écraser le fichier si le disque est plein
         try:
             sauvegarde2=open(essai,mode='wb')
-            pickle.dump((self.micMac,
-                         self.meshlab,
+            repertoire = self.verifParamRep()
+            pickle.dump((repertoire[0],
+                         repertoire[1],
                          self.indiceTravail,
                          self.tousLesChantiers,
-                         self.exiftool,
-                         self.mm3d,
-                         self.convertMagick,
+                         repertoire[2],
+                         repertoire[3],
+                         repertoire[4],
                          self.tacky,
-                         version
+                         version,
+                         langue
                          ),     
                         sauvegarde2)
             sauvegarde2.close()
             supprimeFichier(self.fichierParamMicmac)
             os.rename(essai,self.fichierParamMicmac)
         except Exception as e:              # Controle que le programme a accès en écriture dans le répertoire d'installation
-            print ('erreur sauveParamMicMac : ',str(e))
-            texte = "L'interface doit être installée dans un répertoire ou vous avez les droits d'écriture.\n\n"+\
-                    "Installer l'interface AperoDeDenis à un emplacement ou vous avez ce droit.\n\n"+\
-                    "Répertoire actuel : "+self.repertoireData+".\n\n"+\
-                    "Erreur rencontrée : "+str(e)
-            self.troisBoutons(titre="Problème d'installation",question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
+            print (_('erreur sauveParamMicMac : '),str(e))
+            texte = _("L'interface doit être installée dans un répertoire ou vous avez les droits d'écriture.") + "\n\n"+\
+                    _("Installer l'interface AperoDeDenis à un emplacement ou vous avez ce droit.") + "\n\n"+\
+                    _("Répertoire actuel : ")+self.repertoireData+".\n\n"+\
+                    _("Erreur rencontrée : ")+str(e)
+            self.troisBoutons(titre=_("Problème d'installation"),question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
             fin(1)
 
+
+    def verifParamRep(self):  #Vérifie s'il existe un répertoire pour les outils de micmac et gère leur absence lors de la sauvegarde.
+        repertoire = [self.micMac, self.meshlab, self.exiftool, self.mm3d, self.convertMagick]
+        cpt = 0
+        while(cpt < 5):
+            if(repertoire[cpt] == self.noRep[cpt]):
+               repertoire[cpt] = "N\\A" ##Empêche de se retrouver avec une langue inconnue dans ses paramètres.
+            cpt +=1
+        return repertoire
 
     ###### Restauration paramètres :
             
@@ -5749,22 +6457,39 @@ class Interface(ttk.Frame):
             self.restaureParamChantier(self.fichierParamChantierEnCours)
             sauvegarde2 = open(self.fichierParamMicmac,mode='rb')
             r2=pickle.load(sauvegarde2)
-            sauvegarde2.close()     
-            self.micMac                     =   r2[0]
-            self.meshlab                    =   r2[1]           
-            self.indiceTravail              =   r2[2]           
-            self.tousLesChantiers           =   r2[3]           
-            self.exiftool                   =   r2[4]            
-            self.mm3d                       =   r2[5]                               # spécifique linux/windows            
-            self.convertMagick              =   r2[6]           
+            sauvegarde2.close()
+            r3 = []
+            r3 = self.verifNARep(r2)
+            self.micMac                     =   r3[0]
+            self.meshlab                    =   r3[1]
+            self.indiceTravail              =   r2[2]
+            self.tousLesChantiers           =   r2[3]
+            self.exiftool                   =   r3[2]
+            self.mm3d                       =   r3[3]                               # spécifique linux/windows
+            self.convertMagick              =   r3[4]
             self.tacky                      =   r2[7]
-            # r2[8] est la version : inutile pour l'instant (v2.61)
-        except Exception as e: print("Erreur restauration param généraux : ",str(e))
+            #r2[8] est la version : inutile pour l'instant (v3.00)
+            #r2[9] est la langue
+            
+        except Exception as e: print(_("Erreur restauration param généraux : "),str(e))
         
         self.CameraXML      = os.path.join(os.path.dirname(self.micMac),self.dicoCameraGlobalRelatif)
         self.ffmpeg         = os.path.join(self.micMac,"ffmpeg")
         self.mercurialMicMac= mercurialMm3d(self.mm3d)
-        self.mm3dOK         = verifMm3d(self.mm3d)                # Booléen indiquant si la version de MicMac permet la saisie de masque 3D         
+        self.mm3dOK         = verifMm3d(self.mm3d)                # Booléen indiquant si la version de MicMac permet la saisie de masque 3D
+
+
+    def verifNARep(self, r2): 
+        cpt = 0
+        r3 = [r2[0], r2[1], r2[4], r2[5], r2[6]]
+        while(cpt < 5):
+            if(r3[cpt] == "N\\A"):
+                r3[cpt] = self.noRep[cpt]
+            cpt +=1
+        return r3
+
+
+
 
     ######  la restauration d'un chantier peut concerner un chantier archivé,
     #      dans ce cas on restaure un fichier dont le nom est passé en paramètre
@@ -5804,8 +6529,8 @@ class Interface(ttk.Frame):
             self.dicoLigneVerticale         =   r[25]
             self.dicoCalibre                =   r[26]
             self.distance.set               (r[27])
-            self.monImage_MaitrePlan        =   r[28]       # Nom de l'image maîtresse du plan repere (sans extension)
-            self.monImage_PlanTif           =   r[29]       # nom du masque correspondant
+            self.monImage_MaitrePlan        =   r[28]                                               # Nom de l'image maîtresse du plan repere (sans extension)
+            self.monImage_PlanTif           =   r[29]                                               # nom du masque correspondant
             self.etatSauvegarde             =   r[30]
             self.modeCheckedTapas.set       (r[31])
             self.echelle4.set               (r[32])
@@ -5820,9 +6545,9 @@ class Interface(ttk.Frame):
             self.densification              =   r[41]
             self.modeC3DC.set               (r[42])
             self.tawny.set                  (r[43])
-            self.tawnyParam.set             (r[44])
+            self.tawnyParam.set             (r[44])                                         
             # r[45] est la version : inutile pour l'instant (v2.61]
-        except Exception as e: print("Erreur restauration param chantier : ",str(e))    
+        except Exception as e: print(_("Erreur restauration param chantier : "),str(e))    
 
     # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GPS
     # passage vers la version 2.60 de la liste des points GPS (un item de plus dans le tuple)
@@ -5832,7 +6557,7 @@ class Interface(ttk.Frame):
                 self.listePointsGPS=[[a,nom,x,y,z,ident,"10 10 10"] for a,nom,x,y,z,ident in self.listePointsGPS]
 
         try: self.definirFichiersTrace()                 # attention : peut planter a juste titre si reptravail
-        except: print("erreur définir fichier trace, est normale lors d'une importation.")
+        except: print(_("erreur définir fichier trace, est normale lors d'une importation."))
         
     # zoom OK, les valeurs 8,4,2,1 correspondent au nuage étape 5, 6, 7, 8 (la valeur 8 est initialisée par défaut
         try:
@@ -5946,7 +6671,13 @@ class Interface(ttk.Frame):
            self.item2000.pack_forget()
         if self.item3000.winfo_manager()=="pack":
            self.item3000.pack_forget()
-
+        if self.item7000.winfo_manager()=="pack":
+           self.item7000.pack_forget()
+        if self.item8000.winfo_manager()=="pack":
+           self.item8000.pack_forget()
+        if self.item9000.winfo_manager()=="pack":
+           self.item9000.pack_forget()
+           
         if self.resul100.winfo_manager()=="pack":
            self.resul100.pack_forget()
         if self.resul200.winfo_manager()=="pack":
@@ -5961,7 +6692,10 @@ class Interface(ttk.Frame):
         if self.logoIgn.winfo_manager()=="pack":
            self.logoIgn.pack_forget()
 
-        try: self.bulle.destroy()
+        try:
+            if self.frame.winfo_manager()=="pack":
+                self.frame.pack_forget()              
+            self.bulle.destroy()
         except: pass             
            
 ##
@@ -5984,7 +6718,7 @@ class Interface(ttk.Frame):
             if self.onglets.winfo_manager()=="":
                 return
             self.fermetureOngletsEnCours = True        
-            if self.troisBoutons("Fermer les options.","Enregistrer les options saisies ?",b1="enregistrer",b2="abandon")==0:
+            if self.troisBoutons(_("Fermer les options."),_("Enregistrer les options saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
                 self.finOptionsOK()
             else:
                 self.finOptionsKO()
@@ -5997,7 +6731,7 @@ class Interface(ttk.Frame):
         if self.item2000.winfo_manager()=="":
             return
         self.fermetureOptionsGoProEnCours = True        
-        if self.troisBoutons("Fermer les options vidéo.","Enregistrer les options vidéos saisies ?",b1="enregistrer",b2="abandon")==0:
+        if self.troisBoutons(_("Fermer les options vidéo."),_("Enregistrer les options vidéos saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
             self.optionsGoProOK()
         else:
             self.optionsGoProKO()
@@ -6009,18 +6743,18 @@ class Interface(ttk.Frame):
         if self.item3000.winfo_manager()=="":
             return
         self.fermetureModifExif = True        
-        if self.troisBoutons("Fermer la modification des exifs.","Enregistrer les valeurs saisies ?",b1="enregistrer",b2="abandon")==0:
+        if self.troisBoutons(_("Fermer la modification des exifs."),_("Enregistrer les valeurs saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
             self.exifOK()
         else:
             self.exifKO()
         self.fermetureModifExif = False
         
-    #################################### Supprime (ou conserve) les répertoires de travail
+    #################################### Supprime (ou conserve) les répertoires de travail 
     
     def supprimeRepertoires(self):
         self.menageEcran()
         if len(self.tousLesChantiers)==0:
-                texte='\nTous les chantiers sont déjà supprimés.\n'
+                texte='\n' + _("Tous les chantiers sont déjà supprimés.") + "\n"
                 self.encadre(texte,nouveauDepart='non')
                 return          
         supprime = list()
@@ -6028,33 +6762,33 @@ class Interface(ttk.Frame):
         texte = str()
         attention = str()
         self.choisirUnePhoto(self.tousLesChantiers,
-                             titre='Chantiers à supprimer', 
+                             titre=_('Chantiers à supprimer'), 
                              mode='extended',
-                             message="Multiselection possible.",
-                             boutonDeux="Annuler",
-                             objets='repertoires')      # renvoi  : self.selectionPhotosAvecChemin
+                             message=_("Multiselection possible."),
+                             boutonDeux=_("Annuler"),
+                             objets=_('repertoires'))      # renvoi  : self.selectionPhotosAvecChemin
         if len(self.selectionPhotosAvecChemin)==0:
             return
         
         if len(self.selectionPhotosAvecChemin)==1:
-            self.troisBoutons('Suppression des répertoires de travail superflus',
-                             'Le répertoire suivant va être supprimé, sans mise en corbeille : \n\n'+'\n'.join(self.selectionPhotosAvecChemin),
-                             'Confirmez',
-                             'Annuler')
+            self.troisBoutons(_('Suppression des répertoires de travail superflus'),
+                             _('Le répertoire suivant va être supprimé, sans mise en corbeille :') + '\n\n'+'\n'.join(self.selectionPhotosAvecChemin),
+                             _('Confirmez'),
+                             _('Annuler'))
         if len(self.selectionPhotosAvecChemin)>1:
             if self.repTravail in self.selectionPhotosAvecChemin:
-                attention="ATTENTION : le chantier en cours va être supprimé.\n\n"
-            self.troisBoutons('Suppression des répertoires de travail superflus',
-                             attention+'Vont être supprimés les répertoires suivants, sans mise en corbeille : \n\n'+'\n'.join(self.selectionPhotosAvecChemin),
-                             'Confimez','Annuler')
+                attention=_("ATTENTION : le chantier en cours va être supprimé.") + "\n\n"
+            self.troisBoutons(_('Suppression des répertoires de travail superflus'),
+                             attention+_('Vont être supprimés les répertoires suivants, sans mise en corbeille :') +  '\n\n'+'\n'.join(self.selectionPhotosAvecChemin),
+                             _('Confimez'),_('Annuler'))
         if self.bouton==1 or self.bouton==-1:       #abandon par annulation (1) ou par fermeture de la fenêtre (-1)
             return
-        self.encadre("Suppression en cours....",nouveauDepart="non")      
+        self.encadre(_("Suppression en cours...."),nouveauDepart="non")      
         for e in self.selectionPhotosAvecChemin:
             if os.path.exists(e):
                 if self.repTravail==e:
                     self.etatDuChantier = -1
-                    texte="Le précédent chantier "+self.chantier+" est en cours de suppression.\n"                    
+                    texte=_("Le précédent chantier %s est en cours de suppression.") % (self.chantier)+ "\n"                    
                     self.nouveauChantier()
                     time.sleep(0.1)
                 try: shutil.rmtree(e)                           # il semble que la racine reste présente il faut ensuite la supprimer
@@ -6070,22 +6804,22 @@ class Interface(ttk.Frame):
                 except: pass
                 self.encadrePlus("...")
         if len(supprime)>=1:        
-            texte = texte+"Compte rendu de la suppression : \n\nRepertoires supprimés : \n\n"+'\n'.join(supprime)+"\n"
+            texte = texte+_("Compte rendu de la suppression :") + "\n\n" + _("Repertoires supprimés :") + "\n\n" + "\n".join(supprime)+"\n"
         else:
-            texte = texte+"Compte rendu de la suppression : \n\nAucun répertoire supprimé.\n\n"+'\n'.join(supprime)+"\n"
+            texte = texte+_("Compte rendu de la suppression :") + "\n\n" + _("Aucun répertoire supprimé.") + "\n\n"+'\n'.join(supprime)+"\n"
             
         if len(conserve)==0:
-                texte = texte+'\n\nTous les chantiers demandés sont supprimés.'
+                texte = texte+'\n\n' + _('Tous les chantiers demandés sont supprimés.')
         elif len(conserve)==1:
-                texte = texte+'\n\nIl reste un chantier impossible à supprimer maintenant : \n\n'+'\n'.join(conserve)
+                texte = texte+'\n\n' + _('Il reste un chantier impossible à supprimer maintenant : ') + '\n\n'+'\n'.join(conserve)
         else:
-                texte = texte+'\n\nIl reste des chantiers impossibles à supprimer maintenant : \n\n'+'\n'.join(conserve)                 
+                texte = texte+'\n\n' + _('Il reste des chantiers impossibles à supprimer maintenant : ') + '\n\n'+'\n'.join(conserve)                 
         self.sauveParam()                                   # mémorisation de la suppression
         self.encadre(texte,nouveauDepart='non')
 
     ############################### Message proposant une question et deux, trois ou 4 Boutons
-    # si b2="" alors pas de second bouton    
-    def troisBoutons(self,titre='Choisir',question="Choisir : ",b1='OK',b2='KO',b3=None,b4=None):
+    # si b2="" alors pas de second bouton    retour : 0, 1, 2, 3 : numéro du bouton
+    def troisBoutons(self,titre=_('Choisir'),question=_("Choisir : "),b1='OK',b2='KO',b3=None,b4=None):
         # positionne self.bouton et le renvoie : b1 = 0, b2 = 1 b3 = 2 b4 = 3; fermer fenetre = -1, 
         try:
             self.bouton = -1
@@ -6153,7 +6887,8 @@ class Interface(ttk.Frame):
 
         commande = [e for e in commande if e.__len__()>0]       # suppression des arguments "vides"
         commandeTexte=" ".join(commande)                        # Format concaténé des arguments
-        self.ajoutLigne("\n\n"+heure()+" : Lancement de "+commandeTexte+"\n\n"+info+"\n")
+        self.ajoutLigne("\n\n"+heure()+_(" : lancement de ")+commandeTexte+"\n\n"+info+"\n")
+
         try:
             exe = subprocess.Popen(commande,
                                    shell=self.shell,
@@ -6162,16 +6897,16 @@ class Interface(ttk.Frame):
                                    stderr=subprocess.STDOUT,
                                    universal_newlines=True)
         except Exception as e:
-            self.ajoutLigne("\n"+"erreur lors de l'éxécution de la commande : \n"+str(e)+"\n")
-            self.ajoutLigne("\n"+heure()+" : Fin de "+commandeTexte+"\n")
+            self.ajoutLigne("\n"+_("erreur lors de l'éxécution de la commande :") + "\n"+str(e)+"\n")
+            self.ajoutLigne("\n"+heure()+_(" : fin de ")+commandeTexte+"\n")
             return
         
         if not attendre:                                        # par exemple pour lancer meshlab on n'attend pas la fin
             return
         
         if "exe" not in locals():
-            self.ajoutLigne("\n"+"erreur lors de l'éxécution de la commande.\n")
-            self.ajoutLigne("\n"+heure()+" : Fin de "+commandeTexte+"\n")            
+            self.ajoutLigne("\n"+_("erreur lors de l'éxécution de la commande.") + "\n")
+            self.ajoutLigne("\n"+heure()+_(" : fin de ")+commandeTexte+"\n")            
             return
             
         ligne=exe.stdout.readline()
@@ -6186,14 +6921,14 @@ class Interface(ttk.Frame):
                     
             try: ligne=exe.stdout.readline()            # ligne suivante, jusqu'à la fin du fichier, sauf décès (anormal) du processus père
             except:
-                print("erreur lecture output : ",commandeTexte)
+                print(_("erreur lecture output : "),commandeTexte)
                 break                                   # si la lecture ne se fait pas c'est que le processus est "mort", on arrête
 
         while exe.poll()==None:                          # on attend la fin du process, si pas fini (en principe : fini)
             time.sleep(0.1)
             pass
         
-        self.ajoutLigne("\n"+heure()+" : Fin de "+commandeTexte+"\n")
+        self.ajoutLigne("\n"+heure()+_(" : fin de ")+commandeTexte+"\n")
 
     ########################## Opérations sur les Fichiers TRACE
 
@@ -6208,13 +6943,13 @@ class Interface(ttk.Frame):
         open(self.TraceMicMacComplete,'w').close()              # création d'un fichier de trace, vide
         self.effaceBufferTrace()                                # RAZ d'un ahjoutLigne éventuel (notamment par affichage de la trace )
         self.ajoutLigne(heure()+" : "+self.titreFenetre+"\n-----------------------\n")
-        self.ajoutTraceComplete("Trace complète")
-        self.ajoutTraceSynthese("Trace synthétique")
+        self.ajoutTraceComplete(_("Trace complète"))
+        self.ajoutTraceSynthese(_("Trace synthétique"))
         self.ajoutLigne("\n-----------------------\n\n")
         if len(self.photosAvecChemin)>0:
-            self.ajoutLigne(heure()+ "\n\nChoix des photos :\n"+"\n".join(self.photosAvecChemin))
-        self.ajoutLigne("\n\nrépertoire du chantier :\n"+self.repTravail+"\n\n")
-        self.ajoutLigne("Version MicMac : "+self.mercurialMicMac+"\n")
+            self.ajoutLigne(heure()+ "\n\n" + _("Choix des photos :") + "\n"+"\n".join(self.photosAvecChemin))
+        self.ajoutLigne("\n\n" + _("répertoire du chantier :") + "\n"+self.repTravail+"\n\n")
+        self.ajoutLigne(_("Version MicMac : ")+self.mercurialMicMac+"\n")
         self.ecritureTraceMicMac()
         
             
@@ -6273,7 +7008,7 @@ class Interface(ttk.Frame):
                 infile.write(self.lignePourTrace)
             
         except Exception as e:
-            print ('erreur ecritureTraceMicMac : ',str(e),"\ntraces : ",self.TraceMicMacSynthese," et ",self.TraceMicMacComplete)
+            print (_('erreur ecritureTraceMicMac : '),str(e),"\ntraces : ",self.TraceMicMacSynthese," et ",self.TraceMicMacComplete)
 
         self.effaceBufferTrace()    
             
@@ -6289,29 +7024,28 @@ class Interface(ttk.Frame):
             
     def choisirUnePhoto(self,                                               # en retour liste : self.selectionPhotosAvecChemin
                         listeAvecChemin,                                    # liste des noms  de fichiers ou répertoires à afficher pour le choix
-                        titre='Choisir une photo',                          # titre de la fenêtre
-                        message="Cliquer pour choisir une ou plusieurs photos : ", # entête de la liste 
+                        titre=_('Choisir une photo'),                          # titre de la fenêtre
+                        message=_("Cliquer pour choisir une ou plusieurs photos : "), # entête de la liste 
                         mode='extended',                                    # par défaut sélection multiple, autre mode = "single"
-                        messageBouton="OK",                                 # message sur le premier bouton
+                        messageBouton=_("OK"),                                 # message sur le premier bouton
                         boutonDeux=None,                                    # texte d'un second bouton : fermeture, renvoyant une liste vide
                         dicoPoints=None,                                    # dictionnaire de points à afficher :  key = (nom point, photo, identifiant), value = (x,y)
                         objets='photos',                                    # par défaut la liste est une liste de fichiers, alternative : répertoires, ply
-                        bulles=dict()):                                     # dictionnaires d'info bulle : key = photo, value = infobulle
-
+                        bulles=dict()):                                     # dictionnaires d'info bulle : key = photo, value = infobulle               
+        if len(listeAvecChemin)==0:                                         # pas de photos : on sort
+            self.encadre(_("Pas de photos pour cette demande."),
+                         nouveauDepart="non")
+            return  
         self.selectionPhotosAvecChemin = list()                             # sélection : vide pour l'instant !
         self.cherche = str()                                                # recherche
-        self.fermerVisu = False                                             # permet d'identifier la sortie par le second bouton si = True (!= sortie par fermeture fenêtre)               
-        if len(listeAvecChemin)==0:                                         # pas de photos : on sort
-            self.encadre("Pas de photos pour cette demande.",
-                         nouveauDepart="non")
-            return
+        self.fermerVisu = False                                             # permet d'identifier la sortie par le second bouton si = True (!= sortie par fermeture fenêtre)
     
         l = [ e for e in listeAvecChemin if not (os.path.exists(e))]          # si des photos ou répertoires manquent : abandon !
         if len(l)>0 and objets in ('photos','ply'):
             # les fichiers absents peuvent être des fichiers "pour calibration" : ils doivent alors être retirés de la liste             
             noCalib = [f for f in l if os.path.basename(f) not in [os.path.basename(g) for g in self.photosPourCalibrationIntrinseque]]
             if len(noCalib)>0:
-                texte="Les fichiers suivants sont absents du disque :\n"+"\n".join(l)+"\nDossier corrompu. Traitement interrompu."
+                texte=_("Les fichiers suivants sont absents du disque :") + "\n\n".join(l)+"\n" + _("Dossier corrompu. Traitement interrompu.")
                 self.encadre(texte,nouveauDepart="non")
                 return
             # restriction de la liste aux fichiers non calibrant :
@@ -6360,7 +7094,7 @@ class Interface(ttk.Frame):
         
         self.b1 = ttk.Button(self.topVisuPhoto,text=messageBouton,command=self.validPhoto)  # le premier bouton (fermer ou OK
         if boutonDeux!=None:
-            c = ttk.Button(self.topVisuPhoto,text=boutonDeux,command=self.cloreVisuPhoto)  #le second bouon si demandé
+            c = ttk.Button(self.topVisuPhoto,text=boutonDeux,command=self.cloreVisuPhoto)   # le second bouon si demandé
             self.b1.pack(pady=5)
             c.pack(pady=5)
         else:
@@ -6410,7 +7144,7 @@ class Interface(ttk.Frame):
 
     def optionsGoProOK(self):
         self.item2000.pack_forget()     # fermer l'item (pour évitr la question par menageEcran)
-        self.encadre("Options GoPro modifiées",nouveauDepart='non')
+        self.encadre(_("Options GoPro modifiées"),nouveauDepart='non')
 
     def optionsGoProKO(self):   # l'utilisateur abandonne les modifs
         
@@ -6422,7 +7156,7 @@ class Interface(ttk.Frame):
         self.goProEchelle.set(self.goProEchelleSave)            # pour tapioca 
         self.goProDelta.set(self.goProDeltaSave)
         self.item2000.pack_forget()     # fermer l'item (pour évitr la question par menageEcran)
-        self.encadre("Abandon : options GoPro inchangées.",nouveauDepart='non')
+        self.encadre(_("Abandon : options GoPro inchangées."),nouveauDepart='non')
 
     def sauveOptionsGoPro(self):  # l'utilisateur valide les modifs
 
@@ -6440,24 +7174,24 @@ class Interface(ttk.Frame):
         
         self.fermerVisuPhoto()                          #  s'il y a une visualisation en cours des photos ou du masque on la ferme             
         if verifierSiExecutable(self.ffmpeg)==False:
-            self.encadre("L'outil ffmpeg n'est pas installé sur votre ordinateur. Traitement des vidéo GoPro impossible.",nouveauDepart='non')
+            self.encadre(_("L'outil ffmpeg n'est pas installé sur votre ordinateur. Traitement des vidéo GoPro impossible."),nouveauDepart='non')
             return
         
         repIni = ""                                     # répertoire initial de la boite de dialogue
         if os.path.isdir(self.repertoireDesPhotos):
             repIni = self.repertoireDesPhotos
         
-        video = tkinter.filedialog.askopenfilename(title="Choisir la video issue d'un appareil "+self.goProMaker.get()+" "+self.goProNomCamera.get()+" (sinon modifier les options)",
+        video = tkinter.filedialog.askopenfilename(title=_("Choisir la video issue d'un appareil %(GoProMaker)s %(GoProName)s (sinon modifier les options)") % {"GoProMaker" : self.goProMaker.get(), "GoProName" : self.goProNomCamera.get()},
                                                   initialdir=repIni,
-                                                  filetypes=[("Video",("*.mp4","*.MP4","*.MOV","*.mov")),("Tous","*")],
+                                                  filetypes=[(_("Video"),("*.mp4","*.MP4","*.MOV","*.mov")),(_("Tous"),"*")],
                                                   multiple=False)
         
         if len(video)==0:
-            self.encadre("Abandon, aucune sélection,\n le chantier reste inchangé.\n",nouveauDepart='non')
+            self.encadre(_("Abandon, aucune sélection,\n le chantier reste inchangé.") + "\n",nouveauDepart='non')
             return 
 
         if os.path.splitext(video)[1].upper() not in ".MP4":
-            self.encadre("La version actuelle ne traite que les videos au format MP4, or le format des photos est "+os.path.splitext(video)[1]+". Désolé.",nouveauDepart='non' )
+            self.encadre(_("La version actuelle ne traite que les videos au format MP4, or le format des photos est %s. Désolé.") % (os.path.splitext(video)[1]) ,nouveauDepart='non' )
             #return
 
         # Quel répertoire pour le chantier ?
@@ -6476,19 +7210,19 @@ class Interface(ttk.Frame):
         # ouverture de la trace
 
         self.cadreVide()
-        self.ajoutLigne("Décompacte la vidéo")
+        self.ajoutLigne(_("Décompacte la vidéo"))
 
         # décompactage : extraction de toutes les photos :
         self.extensionChoisie = ".JPG"   # ou png        
         if self.lanceFfmpeg(video)==-1:         # sous les noms : "\Im_0000_%5d_Ok"+self.extensionChoisie %5d = 5 chiffres décimaux
-            self.encadre("L'outil ffmpeg est absent du répertoire "+self.micMac+".\nIl convient de l'ajouter.",nouveauDepart='non')
+            self.encadre(_("L'outil ffmpeg est absent du répertoire %s.") + "\n" + _("Il convient de l'ajouter.") % (self.micMac),nouveauDepart='non')
             return
 
         self.photosAvecChemin = [x for x in os.listdir(self.repTravail) if self.extensionChoisie in str(x) and os.path.isfile(x)]    # listes des photos conservées
         self.photosSansChemin = list([os.path.basename(x) for x in self.photosAvecChemin])   # liste des noms de photos copiès, sans le chemin. [tuple]            
 
         if self.photosSansChemin.__len__()==0:
-            self.encadre("Aucune image décompactée : consulter la trace.")
+            self.encadre(_("Aucune image décompactée : consulter la trace."))
             self.ecritureTraceMicMac()          # on écrit les fichiers trace
             return            
 
@@ -6505,11 +7239,9 @@ class Interface(ttk.Frame):
         self.copierParamVersChantier()      # effectue d'abord sauveparam()
         self.ecritureTraceMicMac()          # on écrit les fichiers trace
 
-        # charge les options pour Tapioca :
+        # charge les options pour Tapioca : les valeurs d'échelle et de Line sont celles par défaut  
 
-        self.modeTapioca.set('Line')# Mode (All, MulSclae, Line)
-        self.echelle4.set('1000')       # echelle pour Line
-        self.delta.set(5)               # delta en + et en = pour Line
+        self.modeTapioca.set('Line')# Mode (All, MulScale, Line)
       
         # charge les options pour Tapas :
         
@@ -6517,11 +7249,11 @@ class Interface(ttk.Frame):
 
         # Message final :
 
-        self.encadre("Les images de la video sont décompactées sous le répertoire :\n\n"+self.repTravail+
-                     "\n\nIl y a "+str(self.photosSansChemin.__len__())+" images décompactées."+
-                     "\n\nLancer 'Sélection des images' pour sélectionner "+self.goProNbParSec.get()+" images par seconde de film."+
-                     "\n\nLa sélection choisira les 'meilleures' images"+
-                     "\n\nLes options Tapioca et Tapas ont été positionnées pour des images GoPro : modifier si besoin") 
+        self.encadre(_("Les images de la video sont décompactées sous le répertoire :") + "\n\n" + self.repTravail+
+                     "\n\n" + _("Il y a %s images décompactées.") % (str(self.photosSansChemin.__len__())) +
+                     "\n\n" + _("Lancer 'Sélection des images' pour sélectionner %s images par seconde de film.") % (self.goProNbParSec.get())+
+                     "\n\n" + _("La sélection choisira les 'meilleures' images")+
+                     "\n\n" + _("Les options Tapioca et Tapas ont été positionnées pour des images GoPro : modifier si besoin")) 
 
         return          # fin : on a obtenu les photos avec un exif à partir d'une vidéo
         
@@ -6531,7 +7263,7 @@ class Interface(ttk.Frame):
 
         # mise à jour de l'exif des images décompactées :
         
-        self.ajoutLigne("met à jour l'exif des JPG décompactés : \n"+
+        self.ajoutLigne(_("met à jour l'exif des JPG décompactés :") + "\n"+
                         "F35="+self.goProFocale35.get()+"\n"+
                         "F="+self.goProFocale.get()+"\n"+
                         "Model="+self.goProNomCamera.get()+"\n"+
@@ -6565,7 +7297,7 @@ class Interface(ttk.Frame):
     def selectionGoPro(self):
 
         if self.typeDuChantier[0]!='vidéo':
-            self.encadre("Cette sélection de photos est réservé  aux chantiers vidéos",nouveauDepart='non')
+            self.encadre(_("Cette sélection de photos est réservé  aux chantiers vidéos"),nouveauDepart='non')
             return
                          
         # on sélectionne un nombre d'image à la seconde en fonction de la qualité des images 
@@ -6574,7 +7306,7 @@ class Interface(ttk.Frame):
         [os.rename(a,os.path.splitext(a)[0]+".png") for a in os.listdir(self.repTravail) if self.extensionChoisie in a]
         ########################################################
         self.cadreVide()        # ouvre la trace
-        self.ajoutLigne("Sélection d'un sous ensemble des images GoPro décompactées.")
+        self.ajoutLigne(_("Sélection d'un sous ensemble des images GoPro décompactées."))
         div = [self.mm3d,
                "DIV",
                "Im_0000_.*png",
@@ -6586,24 +7318,24 @@ class Interface(ttk.Frame):
         ########################################################
         
         # on supprime les intrus (les noms des fichiers intrus ont été marqué d'un N1, les autres d'un _Ok
-        self.ajoutLigne("\n".join([(" a supprimer : "+x) for x in os.listdir(self.repTravail) if "Nl" in str(x)]))
+        self.ajoutLigne("\n".join([(_(" a supprimer : ")+x) for x in os.listdir(self.repTravail) if "Nl" in str(x)]))
                 
         nbSuppressions = [supprimeFichier(x) for x in os.listdir(self.repTravail) if "Nl" in str(x)].__len__()            
         self.photosAvecChemin = [x for x in os.listdir(self.repTravail) if self.extensionChoisie in str(x) and os.path.isfile(x)]    # listes des photos conservées
         self.photosSansChemin = list([os.path.basename(x) for x in self.photosAvecChemin])   # liste des noms de photos copiès, sans le chemin. [tuple]            
-        self.etatChantier = 2
+        self.etatDuChantier = 2
         self.ecritureTraceMicMac()                              # on écrit les fichiers trace
         if nbSuppressions==0:
-            self.encadre("Aucune sélection effectuée.\nConsulter la trace.\n\nVous pouvez utiliser le menu 'outils/qualité des photos line'\npuis effectuer une sélection manuelle.",nouveauDepart="non")
+            self.encadre(_("Aucune sélection effectuée.") + "\n" + _("Consulter la trace.") + "\n\n" + _("Vous pouvez utiliser le menu 'outils/qualité des photos line'") + "\n" + _("puis effectuer une sélection manuelle."),nouveauDepart="non")
         else:
-            self.afficheEtat("Images sélectionnées.\n\nVous pouvez lancer Micmac.")                                      
+            self.afficheEtat(_("Images sélectionnées.") + "\n\n" + _("Vous pouvez lancer Micmac."))                                      
 
     ###################### Sélection des meilleures JPG (futur)
 
     def selectionJPG(self):
 
         if self.typeDuChantier[0]!='photos':
-            self.encadre("Cette sélection de photos est réservé  aux chantiers photos",nouveauDepart='non')
+            self.encadre(_("Cette sélection de photos est réservé  aux chantiers photos"),nouveauDepart='non')
             return
                          
         # on sélectionne un nombre d'image à la seconde en fonction de la qualité des images 
@@ -6612,7 +7344,7 @@ class Interface(ttk.Frame):
         [(os.rename(a,os.path.splitext(a)[0]+".png")) for a in os.listdir(self.repTravail) if self.extensionChoisie in a]
         ########################################################
         self.cadreVide()        # ouvre la trace
-        self.ajoutLigne("Sélection d'un sous ensemble des images GoPro décompactées.")
+        self.ajoutLigne(_("Sélection d'un sous ensemble des images GoPro décompactées."))
     
         div = [self.mm3d,
                "DIV",
@@ -6625,17 +7357,17 @@ class Interface(ttk.Frame):
         ########################################################
         
         # on supprime les intrus (les noms des fichiers intrus ont été marqué d'un N1, les autres d'un _Ok
-        self.ajoutLigne("\n".join([(" a supprimer : "+x) for x in os.listdir(self.repTravail) if "Nl" in str(x)]))
+        self.ajoutLigne("\n".join([(_(" a supprimer : ")+x) for x in os.listdir(self.repTravail) if "Nl" in str(x)]))
                 
         nbSuppressions = [supprimeFichier(x) for x in os.listdir(self.repTravail) if "Nl" in str(x)].__len__()            
         self.photosAvecChemin = [x for x in os.listdir(self.repTravail) if self.extensionChoisie in str(x) and os.path.isfile(x)]    # listes des photos conservées
         self.photosSansChemin = list([os.path.basename(x) for x in self.photosAvecChemin])   # liste des noms de photos copiès, sans le chemin. [tuple]            
-        self.etatChantier = 2
+        self.etatDuChantier = 2
         self.ecritureTraceMicMac()                              # on écrit les fichiers trace
         if nbSuppressions==0:
-            self.encadre("Aucune sélection effectuée.\nConsulter la trace.\n\nVous pouvez utiliser le menu 'outils/qualité des photos line'\npuis effectuer une sélection manuelle.",nouveauDepart="non")
+            self.encadre(_("Aucune sélection effectuée.") + "\n" + _("Consulter la trace.") + "\n\n" + _("Vous pouvez utiliser le menu 'outils/qualité des photos line'\npuis effectuer une sélection manuelle."),nouveauDepart="non")
         else:
-            self.afficheEtat("Images sélectionnées.\n\nVous pouvez lancer Micmac.")                                      
+            self.afficheEtat(_("Images sélectionnées.") + "\n\n" + _("Vous pouvez lancer Micmac."))                                      
 
 
     # ------------------ ffmpeg : extraction images d'une video -----------------------
@@ -6651,7 +7383,7 @@ class Interface(ttk.Frame):
                 self.repTravail+"\Im_0000_%5d_Ok"+self.extensionChoisie]
         self.lanceCommande(ffmpeg,
                            filtre=self.filtreFfmpeg,
-                           info="ATTENTION : cette procédure est longue : patience !")
+                           info=_("ATTENTION : cette procédure est longue : patience !"))
 
     def filtreFfmpeg(self,ligne):
         #if ligne[0:5]=="frame":
@@ -6673,14 +7405,14 @@ class Interface(ttk.Frame):
                     trouve = True
                     break
             if trouve:
-                self.invitePhotoMessage.set(self.invitePhotoMessageInitial+"\nTrouvé : "+self.cherche)
+                self.invitePhotoMessage.set(self.invitePhotoMessageInitial+"\n" + _("Trouvé : ")+self.cherche)
             else:
-                self.invitePhotoMessage.set(self.invitePhotoMessageInitial+"\nNon trouvé : "+self.cherche)
+                self.invitePhotoMessage.set(self.invitePhotoMessageInitial+"\n" + _("Non trouvé : ")+self.cherche)
         else:
             self.cherche=str()
             self.invitePhotoMessage.set(self.invitePhotoMessageInitial)
             
-    def poll(self):                                                             # boucle srutant la valeur sélectionnée en cours, 10 fois par seconde
+    def poll(self):                                                             # boucle scrutant la valeur sélectionnée en cours, 10 fois par seconde
         try:
             now = self.selectionPhotos.curselection()
             if now != self.current:
@@ -6695,7 +7427,7 @@ class Interface(ttk.Frame):
             try:
                 if self.retailleEtAffichePhoto(self.listeChoisir[selection[0]])=="KO":  # prend l'image, la retaille et l'affiche
                     if self.messageSiPasDeFichier==1:
-                        self.infoBulle(" Pas de fichier pour "+os.path.basename(self.listeChoisir[selection[0]]))  # message si pas de photo
+                        self.infoBulle(_(" Pas de fichier pour ")+os.path.basename(self.listeChoisir[selection[0]]))  # message si pas de photo
             except: pass
             self.selectionPhotos.see(self.current)
             
@@ -6714,7 +7446,7 @@ class Interface(ttk.Frame):
             l.pack()
             self.bulle.update()
         except Exception as e:
-            print("erreur infobulle : ",str(e))
+            print(_("erreur infobulle : "),str(e))
         
     def yview(self, *args):
         if args[0] == 'scroll':
@@ -6761,11 +7493,11 @@ class Interface(ttk.Frame):
                 nbpts+=1
 
         if nbpts==0:
-            self.infoBulle("Aucun point placé sur cette photo")
+            self.infoBulle(_("Aucun point placé sur cette photo"))
         if nbpts==1:
-            self.infoBulle("Un point placé sur cette photo")
+            self.infoBulle(_("Un point placé sur cette photo"))
         if nbpts>1:
-            self.infoBulle(nbpts.__str__()+" points placés sur cette photo")
+            self.infoBulle(nbpts.__str__()+_(" points placés sur cette photo"))
 
     def afficherLesInfosBullesDuDico(self):
         if self.dicoInfoBullesAAfficher==None:
@@ -6819,7 +7551,7 @@ class Interface(ttk.Frame):
     ############################### Choix d'un répertoire dans la liste des répertoires de travail, avec scrollbar : charge self.selectionPhotosAvecChemin
 
     def choisirUnRepertoire(self,titre,mode='single'):              # mode="single" ou 'extended'
-        self.retourChoixRepertoire="Abandon"
+        self.retourChoixRepertoire=_("Abandon")
         self.fichierProposes = list()
         chantierSansParametre = list()
         for e in self.tousLesChantiers:                             # suppression des répertoires inexistants (parce que supprimés)
@@ -6831,7 +7563,7 @@ class Interface(ttk.Frame):
                     chantierSansParametre.insert(0,e)
                     
         if len(self.fichierProposes)==0:
-            return "Aucun chantier mémorisé."        
+            return _("Aucun chantier mémorisé.")        
         self.selectionRepertoireAvecChemin=str()        
         self.topRepertoire = tkinter.Toplevel()
         self.topRepertoire.title(titre)
@@ -6839,10 +7571,10 @@ class Interface(ttk.Frame):
         fenetreIcone(self.topRepertoire)   
         f = self.topRepertoire                                      #ttk.Frame(self.topRepertoire)       
         frameSelectRep = ttk.Frame(self.topRepertoire)
-        invite = ttk.Label(self.topRepertoire,text="Choisir le chantier à ouvrir :")
+        invite = ttk.Label(self.topRepertoire,text=_("Choisir le chantier à ouvrir :"))
         invite.pack(pady=10,padx=10,ipadx=5,ipady=5)
-        scrollbarV = ttk.Scrollbar(frameSelectRep, orient='vertical')          
-        scrollbarH = ttk.Scrollbar(frameSelectRep, orient='horizontal')
+        scrollbarV = ttk.Scrollbar(frameSelectRep, orient=_('vertical'))          
+        scrollbarH = ttk.Scrollbar(frameSelectRep, orient=_('horizontal'))
         self.selectionRepertoire = tkinter.Listbox(frameSelectRep,
                                                    selectmode=mode,
                                                    xscrollcommand=scrollbarH.set,
@@ -6862,13 +7594,13 @@ class Interface(ttk.Frame):
         self.selectionRepertoire.pack(side='left', fill='both', expand=1)          
         frameSelectRep.pack()         
         self.selectionRepertoire.select_set(0)
-        b = ttk.Button(f,text="Ouvrir",command=self.validRepertoire)
+        b = ttk.Button(f,text=_("Ouvrir"),command=self.validRepertoire)
         b.pack(pady=5)
-        c = ttk.Button(f,text="Annuler",command=self.cancelRepertoire)
+        c = ttk.Button(f,text=_("Annuler"),command=self.cancelRepertoire)
         c.pack(pady=5)
         if len(chantierSansParametre)>0:
-            d = ttk.Label(f,text="Il y a des chantiers incomplets,\n le fichier "+self.paramChantierSav+" est absent.\n"+
-                          "Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :\n\n"+"\n".join(chantierSansParametre))
+            d = ttk.Label(f,text=_("Il y a des chantiers incomplets,") + "\n" + _(" le fichier %s est absent.") % (self.paramChantierSav)+ "\n" + 
+                          _("Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :") + "\n\n"+"\n".join(chantierSansParametre))
             d.pack(pady=5)            
         fenetre.wait_window(self.topRepertoire)    
         return self.retourChoixRepertoire
@@ -6893,7 +7625,7 @@ class Interface(ttk.Frame):
 
     def cancelRepertoire(self):
         self.topRepertoire.destroy()
-        self.retourChoixRepertoire="Abandon utilisateur."
+        self.retourChoixRepertoire=_("Abandon utilisateur.")
 
     ############################## Répertoire Orientation en cours ou futur et répertoire des points Homologues
 
@@ -6913,48 +7645,48 @@ class Interface(ttk.Frame):
 
     def repertoireHomol(self,homol):
                                                     # le paramètre permet d'utiliser un autre répertoire
-        try: os.rename("Homol","HomolTemporaire")
+        try: os.rename(_("Homol"),_("HomolTemporaire"))
         except Exception as e:
-            print("erreur renommage Homol en HomolTemporaire : ",str(e))
+            print(_("erreur renommage Homol en HomolTemporaire : "),str(e))
             return
         try:
-            os.rename(homol,"Homol")
+            os.rename(homol,_("Homol"))
             self.homolActuel = homol                # Pour retourner à la situation originale si besoin
-        except Exception as e: print("erreur renommage "+homol+" en Homol : ",str(e))
+        except Exception as e: print(_("erreur renommage %s en Homol : ") % (homol),str(e))
 
 
     def retourHomol(self):      # pour l'instant inutilisé
         
         if self.homolActuel==str(): return
-        try: os.rename("Homol",self.homolActuel)
+        try: os.rename(_("Homol"),self.homolActuel)
         except  Exception as e:
-            print("erreur renommage Homol en : ",self.homolActuel," : ",str(e))
+            print(_("erreur renommage Homol en : %s : ") % (self.homolActuel),str(e))
             return        
-        try: os.rename("HomolTemporaire","Homol")
+        try: os.rename(_("HomolTemporaire"),"Homol")
         except  Exception as e:
-            print("erreur renommage HomolTemporaire en Homol : ",str(e))
+            print(_("erreur renommage HomolTemporaire en Homol : "),str(e))
             return
         self.homolActuel = str()
         
-    #################### Examen du nombre de points homologues  dans le répertoire homol sous le répertoire passé en pramètre
+    #################### Examen du nombre de points homologues  dans le répertoire homol sous le répertoire passé en paramètre, affichage
 
     def nombrePointsHomologues(self,repertoire=""):
         self.menageEcran()
         cas = str()
         if repertoire=="":
             repertoire = self.repTravail
-            cas = "dernier traitement : "+self.modeTapioca.get()
+            cas = _("dernier traitement : ")+self.modeTapioca.get()
         elif "All" in repertoire: 
-            cas = "MulScale All 1000"
+            cas = "MulScale All " + self.echelle1.get()
         elif "Line" in repertoire:
-            cas = "Line 1000 1"
+            cas = "Line "+self.echelle4.get()+" "+self.delta.get()
           
         repertoireHomol = os.path.join(repertoire,"Homol") # répertoire des homologues
         if os.path.isdir(repertoireHomol)==False and repertoire==self.repTravail:
-            self.encadre("Lancer MicMac avant de pouvoir évaluer la qualité des photos.",nouveauDepart='non')
+            self.encadre(_("Lancer MicMac avant de pouvoir évaluer la qualité des photos."),nouveauDepart='non')
             return
         if os.path.isdir(repertoireHomol)==False and repertoire!=self.repTravail:
-            self.encadre("Le traitement n'a donné aucun point homologue.\n\nConsulter la trace.",nouveauDepart='non')
+            self.encadre(_("Le traitement n'a donné aucun point homologue.") + "\n\n" + _("Consulter la trace."),nouveauDepart='non')
             return
         
         #somme des scores de chaque photo : préparation des données
@@ -6968,7 +7700,7 @@ class Interface(ttk.Frame):
 
         os.chdir(repertoireHomol)
         nbPoints = 0
-        for e in os.listdir():                   # balaie tous les fichiers          
+        for e in os.listdir():                   # balaie tous les fichiers contenant les points homologues         
             os.chdir(os.path.join(repertoireHomol,e))
             for f in os.listdir():
                 if os.path.isfile(f):                               # fichier : on calcule le nombre de points homologues dans le fichier
@@ -6991,34 +7723,66 @@ class Interface(ttk.Frame):
         listeHomol = list(moyenne.items())
         listeHomol.sort(key=lambda e: e[1],reverse=True)
         self.effaceBufferTrace()        # efface ajoutligne
-        self.ajoutLigne("\nClassement des photos par nombre de points homologues :\n\n"+cas+"\n\n")
-        self.ajoutLigne(chr(9)+"Photo"+chr(9)+chr(9)+"score"+chr(9)+"nb photos en correspondance \n\n")
+        self.ajoutLigne("\n" + _("Classement des photos par nombre de points homologues :") + "\n\n"+cas+"\n\n")
+        self.ajoutLigne(chr(9)+_("Photo")+chr(9)+chr(9)+_("score")+chr(9)+_("nb photos en correspondance") + "\n\n")
 
         for e in listeHomol:
             self.ajoutLigne(e[0]+chr(9)+chr(9)+str(int(e[1]))+chr(9)+chr(9)+str(nb[e[0]])+"\n")
 
         if len(listeHomol)==0:
-            self.ajoutLigne("Aucune photo n'a de point analogue avec une autre.\n")
+            self.ajoutLigne(_("Aucune photo n'a de point analogue avec une autre.") + "\n")
             
-        self.ajoutLigne("\n"+heure()+" : Fin de la recherche sur la qualité des photos.")
+        self.ajoutLigne("\n"+heure()+_(" : fin de la recherche sur la qualité des photos."))
         self.ajoutLigne("\n\n ******")
-        ligneFiltre = self.ligneFiltre  #l'écriture de la trace efface self.ligneFiltre et encadre doit être en fin de paragraphe
+        ligneFiltre = self.ligneFiltre  # l'écriture de la trace efface self.ligneFiltre et encadre doit être en fin de paragraphe
         self.ecritureTraceMicMac()
         os.chdir(self.repTravail)       
         self.encadre(ligneFiltre,nouveauDepart='non')
 
-    ####################    Lister les fichiers Ply générés:
+################## Sélection des N meilleures photos en fonction de leur nombre de points homologues....
+################## remarque : on sélectionne les meilleurs couples, avec un petit effort sur le premier item des éléments de listeTaille
+################## Attention : suppose que les points homologues soient dans des fichiers .dat ( si variable self.exptxt="0") sinon des .txt
+        
+    def lesMeilleuresPhotos(self,nombre=0): # retourne la liste des N = nombre meilleures photos en nombre de points homologues.
+        self.menageEcran()    
+        listeTaille = list()
+        repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
+        if os.path.isdir(repertoireHomol)==False:
+            self.encadre(_("Lancer d'abord Tapioca/Tapas"))
+            return
+        
+        os.chdir(repertoireHomol)        
+        for e in os.listdir():                                  # balaie tous les fichiers contenant les points homologues
+            os.chdir(os.path.join(repertoireHomol,e))            
+            for f in os.listdir():
+                listeTaille.append((e,f, os.path.getsize(f)))   # répertoire, nom du fichier et taille
+        os.chdir(self.repTravail)
+        
+        listeTaille.sort(key= lambda e:  e[2],reverse=True)     # trie la liste des fichiers par taille
+        if self.exptxt =="0" : typeFichier=".dat"
+        if self.exptxt =="1" : typeFichier=".txt"        
+        liste = [(e[1].split(typeFichier)[0],e[0].split("Pastis")[-1]) for e in listeTaille]    # liste des noms des plus gros fichiers des fichiers de l'arborescence Homol
+        listeSet=set()                                          # chaque nom peut apparaitre plusieurs fois : on va utilsier un ensemble (set)
+        for e in liste :                                        # on ne conserve que les n premiers
+             listeSet.add(e[0])                                 # ajout nom du répertoire = premiere photo(la lecture de la liste conserve l'ordre des tailles)
+             listeSet.add(e[1])                                 # ajout seconde photo  
+             if len(listeSet)>=nombre:                          # le passage par un ensemble fait perdre l'ordre des tailles (sans importance : on ne retient que les meilleures)
+                 break
+        listeOk = [e for e in listeSet if os.path.exists(e)]    # liste limitée aux fichiers effectivement présents sous le répertoire de travail
+        return listeOk
+
+####################    Lister les fichiers Ply générés:
 
     def lister3DPly(self):
         listePly = [e for e in os.listdir() if os.path.splitext(e)[1]==".ply"]
         if listePly==list():
-            self.encadre("Aucun nuage de points dans ce chantier.",nouveauDepart='non')
+            self.encadre(_("Aucun nuage de points dans ce chantier."),nouveauDepart='non')
             return
         self.choisirUnePhoto(listePly,
-                             titre="Liste des nuages de points du chantier",
-                             message="les nuages (fichiers ply) :",
-                             messageBouton="Visualiser",
-                             boutonDeux="Fermer",
+                             titre=_("Liste des nuages de points du chantier"),
+                             message=_("les nuages (fichiers ply) :"),
+                             messageBouton=_("Visualiser"),
+                             boutonDeux=_("Fermer"),
                              mode='single')
         if self.selectionPhotosAvecChemin.__len__()==1:
             self.lanceCommande([self.meshlab,self.selectionPhotosAvecChemin[0]],attendre=False)
@@ -7029,18 +7793,18 @@ class Interface(ttk.Frame):
 
         listePly = [e for e in os.listdir() if os.path.splitext(e)[1]==".ply"]
         if listePly==list():
-            self.encadre("Aucun nuage de points dans ce chantier.",nouveauDepart='non')
+            self.encadre(_("Aucun nuage de points dans ce chantier."),nouveauDepart='non')
             return
         self.choisirUnePhoto(listePly,
-                             titre="Fusion de nuages",
-                             message="Choisir les fichiers à fusionner :",
-                             messageBouton="Fusionner et visualiser",                             
-                             boutonDeux="Fermer",
+                             titre=_("Fusion de nuages"),
+                             message=_("Choisir les fichiers à fusionner :"),
+                             messageBouton=_("Fusionner et visualiser"),                             
+                             boutonDeux=_("Fermer"),
                              mode='extended')
         if self.selectionPhotosAvecChemin.__len__()==0:
             return
         if self.selectionPhotosAvecChemin.__len__()==1:
-            self.encadre("Choisir au moins 2 nuages pour la fusion.",nouveauDepart='non')
+            self.encadre(_("Choisir au moins 2 nuages pour la fusion."),nouveauDepart='non')
             return
         liste = "|".join([os.path.splitext(os.path.basename(x))[0] for x in self.selectionPhotosAvecChemin])
         self.mergePly = 'fusion.ply'
@@ -7055,7 +7819,7 @@ class Interface(ttk.Frame):
         if liste.__len__()==0:
             return
         if liste.__len__()==1:
-            self.encadre("Choisir au moins 2 nuages pour la fusion.",nouveauDepart='non')
+            self.encadre(_("Choisir au moins 2 nuages pour la fusion."),nouveauDepart='non')
             return
         supprimeFichier(nomFinal)   # tentative de suppression du fichier résultat
         # on va fusionner tous les ply, on dénomme ceux qui ne doivent pas l'être :           
@@ -7067,8 +7831,131 @@ class Interface(ttk.Frame):
         self.lanceCommande(mergePly)            #fusion des ply
         [os.rename(e,os.path.splitext(e)[0]+".ply") for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]==".pyl"]  # remise à l'état initial        
         self.lanceCommande([self.meshlab,nomFinal],attendre=False)
-        self.encadreEtTrace("Nuage fusionné :\n\n"+nomFinal+"\n\najouté à la liste des nuages.\nrésultat de la fusion de :\n\n"
-                     +"\n"+"\n".join(liste)+"\n")
+        self.encadreEtTrace(_("Nuage fusionné :") + "\n\n" + nomFinal + "\n\n" + _("ajouté à la liste des nuages.") + "\n" + _("résultat de la fusion de :") + "\n\n"
+                    +"\n"+"\n".join(liste)+"\n")
+
+        ################### Indices surfaciques ################################
+
+    def afficheSurf(self):
+        self.majParametre()
+        while(1):
+            try:
+                float(self.pas_maillage.get())
+                break
+            except:
+                self.encadre(_("Saisir une valeur numérique"))
+                time.sleep(1)
+                self.majParametre()
+        pas = float(self.pas_maillage.get())
+        methode_interpolation = self.methode_interpol.get()
+
+        self.encadre(_("Passage en coordonnées xyz"))
+        traite = Ply2XYZ()
+        self.encadre(_("Création de la grille ..."))
+        grid._set_nom(traite.fname_out())
+        grid.affiche_grille(methode_interpolation,pas)
+        self.encadre(_("Création de la grille ..."))
+
+    def calculIndices(self):
+        self.majParametre()
+        while(1):
+            try:
+                float(self.pas_maillage.get())
+                break
+            except:
+                self.encadre(_("Saisir une valeur numérique"))
+                time.sleep(1)
+                self.majParametre()
+        pas = float(self.pas_maillage.get())
+        methode_interpolation = self.methode_interpol.get()
+
+        self.encadre(_("Passage en coordonnées xyz"))
+        traite = Ply2XYZ()
+        self.encadre(_("Création de la grille ..."))
+        grid._set_nom(traite.fname_out())
+        grille_reg = grid.creer_grille(methode_interpolation, pas)
+        grid.sauvegarder_grille(traite, grille_reg,pas)
+
+        # Calculs
+
+        donnee._set_nom(grid.nomFichier_sortie(traite,pas))
+        self.encadre(_("Le calcul peut durer quelques minutes ..."))
+        rugosite = donnee.ecart_type()
+        res_tortuosite = donnee.tortuosity(pas)
+        tortuosite = res_tortuosite[0]
+        ecarType = res_tortuosite[1]
+        cles = res_tortuosite[2]
+        self.encadre(_("Rugosité moyenne quadratique : ") + str.format('{0:.3f}',rugosite[0]) +" +/- " +str.format('{0:.3f}',rugosite[1])+
+                    "\r\n " + _("Tortuosité moyenne : ") + str.format('{0:.3f}',tortuosite) +" +/- " +str.format('{0:.3f}',ecarType)+
+                    "\n " + _("nombre de profils utilisés : ") + str(len(cles))+
+                    "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"")
+
+        self.majAffiche_profil()
+        while( self.affOK()):
+            while(1):
+                try:
+                    int(self.num_profil.get())
+                    if(int(self.num_profil.get()) not in range(cles[-1]-cles[0]+1)):
+                        self.encadre(_("Choisir une valeur valide ")+
+                                        "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"\r\n")
+                        self.majAffiche_profil()
+                    else:
+                        break
+                except:
+                    self.encadre(_("Saisir une valeur numérique"))
+                    time.sleep(1)
+                    self.encadre("\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0]))
+                    self.majAffiche_profil()
+            id_profil = int(self.num_profil.get())
+            donnee.affiche_profil(cles[id_profil], pas)
+
+    def calculPmp(self):
+        self.majParametre()
+        while(1):
+            try:
+                float(self.pas_maillage.get())
+                break
+            except:
+                self.encadre(_("Saisir une valeur numérique"))
+                time.sleep(1)
+                self.majParametre()
+        pas = float(self.pas_maillage.get())
+        methode_interpolation = self.methode_interpol.get()
+
+        self.encadre(_("Passage en coordonnées xyz"))
+        traite = Ply2XYZ()
+        self.encadre(_("Création de la grille ..."))
+        grid._set_nom(traite.fname_out())
+        grille_reg = grid.creer_grille(methode_interpolation, pas)
+        grid.sauvegarder_grille(traite, grille_reg,pas)
+        donnee._set_nom(grid.nomFichier_sortie(traite,pas))
+        self.encadre(_("Le calcul peut durer quelques minutes ..."))
+        res_pmp = donnee.pmp()
+        prof_mDeprofil = res_pmp[0]
+        cles = res_pmp[2]
+        self.encadre(_("Profondeur moyenne de profil (moyenne) : ") + str.format('{0:.3f}',prof_mDeprofil) + " +/- " +str.format('{0:.3f}',res_pmp[1])+
+                       "\n" + _("Profondeur de texture équivalente : ")+ str.format('{0:.3f}',0.8*prof_mDeprofil+0.2)+ " +/- " +str.format('{0:.3f}',.8*res_pmp[1]+0.2)+
+                       "\n " + _("nombre de profils utilisés : ")+str(len(cles))+
+                       "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"")
+
+        self.majAffiche_profil()
+        while( self.affOK()):
+            while(1):
+                try:
+                    int(self.num_profil.get())
+                    if(int(self.num_profil.get()) not in range(cles[-1]-cles[0]+1)):
+                        self.encadre(_("Choisir une valeur valide ") +
+                                        "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"\r\n")
+                        self.majAffiche_profil()
+                    else:
+                        break
+                except:
+                    self.encadre(_("Saisir une valeur numérique"))
+                    time.sleep(1)
+                    self.encadre("\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0]))
+                    self.majAffiche_profil()
+            id_profil = int(self.num_profil.get())
+            donnee.affiche_profil(cles[id_profil], pas)
 
     ################### Conversion au format jpg, information de l'Exif
 
@@ -7088,6 +7975,38 @@ class Interface(ttk.Frame):
                 convert = [self.convertMagick,i,'-quality 100',nouveauJPG]
                 os.system(" ".join(convert))
         os.chdir(curdir)
+    # mise à jour des paramètres de surfaces
+    def majParametre(self):
+        self.menageEcran()
+        self.item7000.pack()
+        self.item7000.mainloop()
+
+
+    def surfOK(self):
+        self.item7000.pack_forget()
+        self.encadreEtTrace(_("Paramètres mis à jour") + "\n"+
+                            _("Méthode = ")+self.methode_interpol.get()+"\n"+
+                            _("Pas du maillage = ")+self.pas_maillage.get()+"\n")
+        self.item7000.quit()
+        return
+
+    def surfKO(self):
+        self.item7000.pack_forget()     # pour éviter la question par menageEcran
+        self.afficheEtat()
+
+    # paramètre d'affichage d'un profil (Indices surfaciques)
+
+    def majAffiche_profil(self):
+        self.item8000.pack()
+        self.item8000.mainloop()
+
+    def affOK(self):
+        self.item8000.quit()
+        return True
+
+    def affK0(self):
+        self.item8000.pack_forget()     # pour éviter la question par menageEcran
+        self.afficheEtat()
         
     # mise à jour de l'exif :
                 
@@ -7114,15 +8033,15 @@ class Interface(ttk.Frame):
 
         self.informerExif(self.exiftool,self.photosSansChemin,listeTag)
         self.item3000.pack_forget()     # pour éviter la question par menageEcran
-        self.encadreEtTrace("Exifs mis à jour\n"+
-                            "Fabricant = "+self.exifMaker.get()+"\n"+
-                            "Modèle = "+self.exifNomCamera.get()+"\n"+
-                            "Focale = "+self.exifFocale.get()+"\n"+
-                            "Focale eq 35mm = "+self.exifFocale35.get()+"\n")
+        self.encadreEtTrace(_("Exifs mis à jour") + "\n"+
+                            _("Fabricant = ")+self.exifMaker.get()+"\n"+
+                            _("Modèle = ")+self.exifNomCamera.get()+"\n"+
+                            _("Focale = ")+self.exifFocale.get()+"\n"+
+                            _("Focale eq 35mm = ")+self.exifFocale35.get()+"\n")
 
     def exifKO(self):
         self.item3000.pack_forget()     # pour éviter la question par menageEcran        
-        self.encadre("Abandon de la mise à jour des exifs",nouveauDepart="non")
+        self.encadre(_("Abandon de la mise à jour des exifs"),nouveauDepart="non")
         
 
     # Aprés saisie de l'exif :
@@ -7132,25 +8051,25 @@ class Interface(ttk.Frame):
         if self.pasDeExiftool():return
 
         if listeFichiers.__len__()==0:
-            return "Aucune photo à mettre à jour."
+            return _("Aucune photo à mettre à jour.")
 
         if self.nombreDExtensionDifferentes(listeFichiers)!=1:
-            return "La liste des fichiers comporte plusieurs extensions différentes : abandon."+\
+            return _("La liste des fichiers comporte plusieurs extensions différentes : abandon.")+\
                    "\n".join(listeFichiers)
 
         extension = os.path.splitext(listeFichiers[0])[1]
         if extension.upper() not in ".JPG.JPEG":
-            interface.encadre("La version actuelle ne traite que les exif des photos au format JPG, or le format des photos est "+extension+". Désolé, abandon." )
+            interface.encadre(_("La version actuelle ne traite que les exif des photos au format JPG, or le format des photos est %s. Désolé, abandon.") % (extension) )
             return
                   
         # Controle de l'existence des fichiers :
         for e in listeFichiers:
             if os.path.isfile(e)==False:
-                return "Le fichier "+e+" n'existe pas. Abandon"
+                return _("Le fichier %s n'existe pas. Abandon") % (e)
                     
         # mise à jour de l'exif des images décompactées :
         
-        message = "met à jour l'exif de "+"\n".join(listeFichiers)+"\n"
+        message = _("met à jour l'exif de ")+"\n".join(listeFichiers)+"\n"
                       
         # Les fichiers sont ok on va pouvoir les traiter :
 
@@ -7176,42 +8095,42 @@ class Interface(ttk.Frame):
     def pasDePhoto(self):
 
         if self.photosAvecChemin.__len__()==0:
-            self.encadre("Choisir des photos au préalable.",nouveauDepart="non")
+            self.encadre(_("Choisir des photos au préalable."),nouveauDepart="non")
             return True
         liste = [e for e in self.photosAvecChemin if os.path.exists(e)==False]
         if liste.__len__()>0:
-            texte="Attention  les photos suivantes sont absentes sur disque : \n"+"\n".join(liste)+"\nElles sont supprimées."
+            texte=_("Attention  les photos suivantes sont absentes sur disque : ") + "\n"+"\n".join(liste)+"\n" + _("Elles sont supprimées.")
             self.photosAvecChemin =         liste = [e for e in self.photosAvecChemin if os.path.exists(e)]
             self.photosSansChemin =list([os.path.basename(x) for x in  self.photosAvecChemin])
             repertoireInitial = os.path.dirname(self.photosAvecChemin[0])
             self.photosAvecChemin = [os.path.join(repertoireInitial,e) for e in self.photosSansChemin]
-            self.troisBoutons(titre="Problème de fichiers",question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
+            self.troisBoutons(titre=_("Problème de fichiers"),question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
  
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
-             self.encadre("\nBonjour !\n\nCommencer par indiquer où se trouve MicMac :\n\n"+
-                         " - menu Paramétrage/Associer le répertoire bin de MicMac\n\n"+
-                         "Ensuite consulter l'aide, item 'pour commencer'.\n\n"+
-                         "Si besoin :\n"+
-                         " - Associer convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux\n"+
-                         " - Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D\n\n"+
-                         " - Consulter la notice d'installation et de prise en main",
+             self.encadre("\n" + _("Bonjour !") + "\n\n" + _("Commencer par indiquer où se trouve MicMac :") + "\n\n"+
+                         _(" - menu Paramétrage/Associer le répertoire bin de MicMac") + "\n\n"+
+                         _("Ensuite consulter l'aide, item 'pour commencer'.") + "\n\n"+
+                         _("Si besoin :") + "\n"+
+                        _( " - Associer convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux")+"\n"+
+                        _(" - Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D") + "\n\n"+
+                         _(" - Consulter la notice d'installation et de prise en main"),
                          aligne='left',nouveauDepart='non')
              return True
 
     def pasDeExiftool(self):
         if not os.path.exists(self.exiftool):
-            self.encadre("Désigner le fichier exiftool (menu paramétrage).",nouveauDepart="non")            
+            self.encadre(_("Désigner le fichier exiftool (menu paramétrage)."),nouveauDepart="non")            
             return True
         
     def pasDeConvertMagick(self):
         if not os.path.exists(self.convertMagick):
-            self.encadre("Désigner le fichier convert, ou avconv, d'image Magick\nen principe sous micmac\binaire-aux (menu paramétrage).",nouveauDepart="non")            
+            self.encadre(_("Désigner le fichier convert, ou avconv, d'image Magick") + "\n" + _("en principe sous micmac\\binaire-aux (menu paramétrage)."),nouveauDepart="non")            
             return True
 
     def pasDeFfmpeg(self):
         if not os.path.exists(self.ffmpeg):
-            self.encadre("Désigner le fichier ffmpeg en principe sous micmac\binaire-aux (menu paramétrage).",nouveauDepart="non")            
+            self.encadre(_("Désigner le fichier ffmpeg en principe sous micmac\\binaire-aux (menu paramétrage)."),nouveauDepart="non")            
             return True
 
     def envoiRetourChariot(self,dest):                                                      # dest étant le processus ouvert par popen
@@ -7226,33 +8145,33 @@ class Interface(ttk.Frame):
 
     def majOptionsParDefaut(self):                  # Si les options ont déjà été modifiées
         if os.path.exists(self.fichierSauvOptions):
-            retour = self.troisBoutons(titre="Modifier les options par défaut",
+            retour = self.troisBoutons(titre=_("Modifier les options par défaut"),
                                        question=self.messageSauvegardeOptions,                                       
-                                       b1="Revenir aux options par défaut d'AperoDeDenis",
-                                       b2="Utiliser les options du chantier en cours",
-                                       b3="Ne rien changer")
+                                       b1=_("Revenir aux options par défaut d'AperoDeDenis"),
+                                       b2=_("Utiliser les options du chantier en cours"),
+                                       b3=_("Ne rien changer"))
             if retour == 0: 
                 supprimeFichier(self.fichierSauvOptions)
-                self.encadre("Options par défaut réinitialisées")
+                self.encadre(_("Options par défaut réinitialisées"))
             elif retour == 1:
                 optionsOK = self.sauveOptions()
                 if optionsOK==True:
-                    self.encadre("Les options par défaut seront  désormais celles du chantier en cours",nouveauDepart='non')
+                    self.encadre(_("Les options par défaut seront  désormais celles du chantier en cours"),nouveauDepart='non')
                 else:
                     self.encadre(optionsOK,nouveauDepart='non')
             else:
                 self.afficheEtat()
                 
         else:                                   # Si les options n'ont pas été modifiées
-            retour = self.troisBoutons(titre="Modifier les options par défaut",
+            retour = self.troisBoutons(titre=_("Modifier les options par défaut"),
                                        question=self.messageSauvegardeOptions+
-                                       "Les options par défaut actuelles sont les options par défaut d'AperoDeDenis",                                      
-                                       b1="Utiliser les options du chantier en cours",
-                                       b2="Ne rien changer")
+                                       _("Les options par défaut actuelles sont les options par défaut d'AperoDeDenis"),                                      
+                                       b1=_("Utiliser les options du chantier en cours"),
+                                       b2=_("Ne rien changer"))
             if retour == 0:
                 optionsOK = self.sauveOptions()
                 if optionsOK==True:
-                    self.encadre("Les options par défaut seront  désormais celles du chantier en cours",nouveauDepart='non')
+                    self.encadre(_("Les options par défaut seront  désormais celles du chantier en cours"),nouveauDepart='non')
                 else:
                     self.encadre(optionsOK,nouveauDepart='non')
             else:
@@ -7261,7 +8180,7 @@ class Interface(ttk.Frame):
     def sauveOptions(self):
         retour = self.controleOptions()
         if retour!=True:
-            message = "Options par défaut non sauvegardées car les options du chantier en cours sont invalides :\n"+retour
+            message = _("Options par défaut non sauvegardées car les options du chantier en cours sont invalides :") + "\n"+retour
             return message
         try:
             sauvegarde3=open(self.fichierSauvOptions,mode='wb')
@@ -7280,14 +8199,14 @@ class Interface(ttk.Frame):
                             self.zoomF.get(),
                             self.modeC3DC.get(),
                             self.tawny.get(),
-                            self.tawnyParam.get(),
+                            self.tawnyParam.get(),    
                             version
                             ),
                         sauvegarde3)
             sauvegarde3.close()
         except Exception as e:              # Controle que le programme a accès en écriture dans le répertoire d'installation
-            print ('erreur sauveOptions : ',str(e))
-            texte = "Erreur rencontrée lors de la sauvegarde des options : "+str(e)
+            print (_('erreur sauveOptions : '),str(e))
+            texte = _("Erreur rencontrée lors de la sauvegarde des options : ")+str(e)
             return texte
         return True
             
@@ -7312,10 +8231,10 @@ class Interface(ttk.Frame):
             self.zoomF.set(r[12])
             self.modeC3DC.set(r[13])
             self.tawny.set(r[14])
-            self.tawnyParam.set(r[15])
-            # R16 est la version d'aperodedenis, inutile pour l'instant
+            self.tawnyParam.set(r[15])  
+            # R16 est la version d'aperodedenis, inutile pour l'instant            
         except Exception as e:
-            print("erreur restauration options : "+str(e))
+            print(_("erreur restauration options : ")+str(e))
 
     
        
@@ -7341,7 +8260,7 @@ class Interface(ttk.Frame):
            if "fenetre" in globals():
                 time.sleep(0.2)
                 try:
-                    fenetre.destroy()                                # relance une nouvelle "interface"
+                        fenetre.destroy()                                # relance une nouvelle "interface"
                 except: pass
             
     # quitter
@@ -7349,12 +8268,12 @@ class Interface(ttk.Frame):
     def quitter(self):
         texte=""
         if self.etatDuChantier > 2 and self.etatSauvegarde =="*":
-            if self.troisBoutons("Enregistrer le chantier "+self.chantier+" ?",
-                                 "Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?",
-                                 "Enregistrer","Ne pas enregistrer.") == 0:
+            if self.troisBoutons(_("Enregistrer le chantier %s ?") % (self.chantier),
+                                 _("Chantier modifé depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?"),
+                                 _("Enregistrer"),_("Ne pas enregistrer.")) == 0:
                 self.copierParamVersChantier()
-                texte="Chantier précédent enregistré : "+self.chantier+"\n"        
-        print(heure()+" "+texte+" fin normale d'aperodedenis.")
+                texte=_("Chantier précédent enregistré : %s")% (self.chantier)  + "\n"        
+        print(heure()+" "+texte+_("fin normale d'aperodedenis."))
         self.sauveParam()
         global continuer                                # pour éviter de boucler sur un nouveau départ
         continuer = False                               # termine la boucle mainloop
@@ -7372,27 +8291,25 @@ def pv(variable):       # affiche le nom de la variable, sa classe et sa valeur 
     print('\n------------------')
     if '))' in stack[0][3]:
         nomVariable = stack[0][3].replace('pv(', '').replace('))', ')')
-        typeVariable = "fonction"
-        valeurVariable = "valeur en retour : "
+        typeVariable = _("fonction")
+        valeurVariable = _("valeur en retour : ")
     else:
         nomVariable = stack[0][3].replace('pv(', '').replace(')', '')
-        typeVariable = "variable"
-        valeurVariable = "valeur : "        
-    print ("Détail de la "+typeVariable+" : ",nomVariable,
-           '\nIdentifiant : ',id(variable),
-           '\nType : ',type(variable),
-           '\nclass = ',variable.__class__,
-           '\nLes attributs : ',dir(variable),
-           '\n\n'+valeurVariable,str(variable))
+        typeVariable = _("variable")
+        valeurVariable = _("valeur : " )       
+    print (_("Détail de la %(typeVar)s : %(nomVar)s") % {"typeVar" : typeVariable, "nomVar" : nomVariable},
+           '\n', _('Identifiant : '),id(variable),
+           '\n', _('Type : '),type(variable),
+           '\n', _('class = '),variable.__class__,
+           '\n', _('Les attributs : '),dir(variable),
+           '\n\n')+valeurVariable,str(variable)
     print('\n------------------')
     
-def heure():        #  time.struct_time(tm_year=2015, tm_mon=4, tm_mday=7, tm_hour=22, tm_min=56, tm_sec=23, tm_wday=1, tm_yday=97, tm_isdst=1)
-        return "le "+str(time.localtime()[2])+"/"+str(time.localtime()[1])+"/"+str(time.localtime()[0])+" à "+str(time.localtime()[3])+":"+str(time.localtime()[4])+":"+str(time.localtime()[5])
 
 def supprimeFichier(fichier):
     try:    os.remove(fichier)
     except Exception as e:
-        return "Erreur suppression fichier :"+str(e)
+        return _("Erreur suppression fichier :")+str(e)
 
 def supprimeMasque(repertoire,masque):
     for e in os.listdir(repertoire):
@@ -7415,7 +8332,7 @@ def ajout(liste,item):                                  # ajout d'un item dns un
             for e in c:
                 liste.append(e)
         except Exception as e:
-            print ("erreur ajout : ",str(e))
+            print (_("erreur ajout : "),str(e))
 
 def supprimeArborescenceSauf(racine,listeSauf=list()):  # supprime toute une arborescence, sauf une liste de fichiers sous la racine
     listeSauf = [os.path.basename(e) for e in listeSauf]
@@ -7430,7 +8347,7 @@ def supprimeArborescenceSauf(racine,listeSauf=list()):  # supprime toute une arb
                 try:
                     os.remove(chemin)
                 except Exception as e:
-                    print("erreur remove = ",str(e))
+                    print(_("erreur remove = "),str(e))
                     return
             else:
                 shutil.rmtree(chemin)           # on supprime tous les sous répertoires 'calculs, temporaires...)
@@ -7456,7 +8373,7 @@ def zipdir(path):                                                   # path = che
         zipf.close()
         return os.path.getsize(archive)
     except  Exception as e:
-        print("erreur zip = ",str(e))
+        print(_("erreur zip = "),str(e))
         return -1
 
             
@@ -7488,8 +8405,8 @@ def mercurialMm3d(mm3D):            # Il faudrait que la version de MicMac autor
     if os.path.exists(mm3D)==False: return False
     try: mercurialMm3d = subprocess.check_output([mm3D,"CheckDependencies"],universal_newlines=True)
     except Exception as e:
-        print("erreur mercurial : ",str(e)," pour mm3D=",mm3D)
-        return "pas de version identifiée de MicMac"
+        print(_("erreur mercurial : %(e)s pour mm3D=%(mm3D)s") %{"mm3D" : mm3D, "e" : str(e)})
+        return _("pas de version identifiée de MicMac")
     else: return mercurialMm3d.splitlines()[0]
 
 
@@ -7498,7 +8415,7 @@ def verifierSiExecutable(exe):
         subprocess.check_call(exe)
         return True
     except Exception as e:
-        print("erreur verifier si executable : ",str(e))
+        print(_("erreur verifier si executable : "),str(e))
         try:
             subprocess.check_call([exe,"-h"])
             return True
@@ -7506,7 +8423,7 @@ def verifierSiExecutable(exe):
             return False
     
 def envoiRetourChariot(self,dest):                                                      # dest étant le processus ouvert par popen
-    dest.communicate(input='t\n')
+    dest.communicate(input='tn')
 
 def open_file(filename):
     if sys.platform == "win32":
@@ -7536,23 +8453,12 @@ def iconeGrainSel():
     return f.name
 '''
 
-# liste des fenetres sous windows, pour éviter de relancer l'appli si déjà lancée
-
-def foreach_window(hwnd, lParam):
-    if IsWindowVisible(hwnd):
-        length = GetWindowTextLength(hwnd)
-        buff = ctypes.create_unicode_buffer(length + 1)
-        GetWindowText(hwnd, buff, length + 1)
-        titles.append(buff.value)
-    return True
-
-
 
 ################################## Classe : Dialogue minimum modal : demande une chaine de caractères ###########################"
 
 class MyDialog:
    
-    def __init__(self,parent,titre="Nouveau nom pour le chantier : ",basDePage='none'):
+    def __init__(self,parent,titre=_("Nouveau nom pour le chantier : "),basDePage='none'):
         self.saisie=str()
         top = self.top = tkinter.Toplevel(parent,width=200,relief='sunken')
         top.transient(parent)
@@ -7564,9 +8470,9 @@ class MyDialog:
         self.e = ttk.Entry(top,width=30)
         self.e.pack()
         self.e.focus_set()
-        b = ttk.Button(top, text="OK", command=self.ok)
+        b = ttk.Button(top, text=_("OK"), command=self.ok)
         b.pack(pady=5)
-        c = ttk.Button(top, text="Annuler", command=self.ko)
+        c = ttk.Button(top, text=_("Annuler"), command=self.ko)
         c.pack(pady=5)
         if basDePage!="none":
             d = ttk.Label(top, text=basDePage)
@@ -7584,10 +8490,12 @@ class MyDialog:
         self.top.destroy()
         return
 
+
+
 ################################## Classe : Dialogue minimum modal : deux boutons OK KO ###########################"
 
    
-def MyDialog_OK_KO(parent=None,titre="Question",b1="OK",b2="KO"):
+def MyDialog_OK_KO(parent=None,titre=_("Question"),b1="OK",b2="KO"):
     top = tkinter.Toplevel(parent,width=200,relief='sunken')
     top.transient(parent)
     top.geometry("400x250+100+100")
@@ -7618,74 +8526,7 @@ def monStyle():
     pass
     ttk.Style().configure("TButton", padding=6, relief="flat",background="#ccc")
 
-
-       
-################################## LANCEMENT DU PROGRAMME ###########################################################
-
-# Variables globales
-
-version = " V 2.61"
-continuer = True
-messageDepart = str()
-compteur = 0
-iconeTexte = "R0lGODlhIAAgAIcAMQQCBJSGJNTSPHQKBMTCpGxKBPziXJxmJIR6BOTCXPTybDwCBHR2TMTGhPTmjOzmpJxuBMy+pIRyLDweDPz+1MTGjOzuhDwmBMRaFPz+pHx6LKRiLPzibDQiDMzKZIxqTKR6NOy2fHxCBNTCdEwaBISGTPzqfBwCBPTmpJRuLMzCjKxqBPTmnKxuBOzqnNzGXJQ2BHxGBIx2FIR+fMzGfOTmtMS+vIRyPPz67PTubBQCBJyGJMTCtPzqVKRmHPzSfFQWBIRuTJxuFEQeBPz+vHx2RKxiLNTKXMzCnPzqZAQKBHROBHx6JPz+hPzihPTqfEwqLJxqLJR+XOS+bEwiBMzGhPzenAwCBIyKNNzKTMzCpHxyTOzqpIxyLEwqBJxmRMzKbKx6PIQ+BNTGdISCXMzGjIxCBNS6vPz+/PzqXKRqHPzeZGQOBPzqdPzmjMzOVGwSBMTGpGxGHIR6FPTyfKRuDMy+tDwiBPz+5MTGnEQqBPz+tIR2NKRmLDQiJMzOXJx6VEwWDIx6fPyubLR6FCwCBHRCHIx+BMy6vOS+hPzedPzilIxuPIR2PJSGNJR2hFQaBJRqPKxmFJyCNFwSBIR2JPTqjJQ+BPTqlOzmtKRuFNTOTHRKBIyGTCQCBNzGbJw2BIRGBPz+zPz+lFQiBHxyXMy6zPzmVMzKdPz+7PzuTEQiBHx6PPzuZPzmfKRyBAQGBHQOBJxqJMTKhDwqBKR+NEweBMzGnHRSBPTufMzKhAwGBIRCBPzuXIR+FPzmlFwWBMTCrPTydHR2VOzmrMy+rIRyNPz+3MTGlOzujPz+rHx6NDQiFIxqVNTCfPzqhPTmrMzClIRyRPTudMTCvKRmJIRuVJxuHEQeDPz+xNTKZOS+dIyKPOzqrIxyNNTGfISCZMzGlKRqJDwiDKRmNMzOZPzefPTqnOzmvMzKfPz+9PzubPzmhAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAIAAgAAcI/gABCBxIsKDBgwgTKlxI8MoVHVcYShT4cMIdHRAnKtRxwZIlGsa+eIqo0eAVCey0/fHATgSkEyRLUrwCjUg6MH9yHXECZKRMih0IVKjAZY+FUexCGAryU+AWPHiQVchTJsO0F26waNAASyaDVKkodCOAzMERDxb2uEiGJaZEcOrUUdDF5du2KZiq5EEGxsEQHROvlEqFRxSLADIKWPmGLFgeD09A2HKbUAc2JGUSxYDAScYYLqJE6bKwKY2XVRgpFzwxpNOiKNXqOBnTrUI4ZN2U5VCVZlKQOw5VUzTmwtEGYIyiEQDLgwcBLsqyCKNBjIsEWycQwlpGowslSoC0/qAZj0bdsVmoLCjTJSrbNyurhAOYlc0YpQWRpJwxVf5YmWQeoNIAHuqkcgw0KnBlECzdNNAFEJTY8gEUjyASgSi/vJCLI9DcslwceFSByS4HlZBMALL0pMMEzQTyxQa8qAFBFJM4kE4Nxxg4Ai0HLfNHG6SoYYsnhRQJBDBGqBGDDyI4sQMYZYCFQheUwaKBAr28UkcoK8DAhidgDmGLLCJIMogZTqCCRyploJARQRq8ccgSBpyyBgYDBIKRDid0YQ4hMEjyggsE8IBMFQ5cENMVdyCgwCZJNLEGKHlC9NAdbfTSQxJPVNAcMlx4kChgADjEhAe5ePCHKz/EUkhGfRjJIIAA08wSBw/mqeDCHtKQKtAuLrRHxCeKmLGBJ3ueoEcbROTIw3jF4ACVarAMEwc6RCRgDghyTKDDRU44k0p56lBjwyN+SFQEH3w4wkKbc1gSjXjqFGNNKSXBou8uy5TQgHrH8EDNDOPIpxEDeeSRCThNLaRvwxBHLFFAADs="
-
-# recherche du répertoire d'installation de "aperodedenis" (différent suivant les systèmes et les versions de système)
-
-repertoire_script=os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
-if not os.path.isdir(repertoire_script):
-    repertoire_script = os.path.dirname(os.path.abspath(__file__))
-if not os.path.isdir(repertoire_script):
-    repertoire_script = os.path.dirname(sys.argv[0])
-if not os.path.isdir(repertoire_script):
-    repertoire_script = os.getcwd()
-if not os.path.isdir(repertoire_script):
-    repertoire_script = os.getcwd()
-             
-if os.name=="nt":   
-
-    # lancement unique d'aperodedenis sous WINDOWS : (pas trouvé d'équivalent sous Linux/Ubuntu)
-    
-    EnumWindows = ctypes.windll.user32.EnumWindows
-    EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
-    GetWindowText = ctypes.windll.user32.GetWindowTextW
-    GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
-    IsWindowVisible = ctypes.windll.user32.IsWindowVisible 
-    titles = []  
-    EnumWindows(EnumWindowsProc(foreach_window), 0)     # liste des fenetres ouvertes dans titles 
-
-    # apero déjà ouvert ?
-    liste = [e for e in titles  if "AperoDeDenis V "in e]
-    if liste.__len__():
-        texte = "AperoDeDenis est déjà lancé dans la fenêtre :\n\n"+liste[0]+"\n\n"+\
-                "La version actuelle d'AperoDeDenis n'autorise qu'une seule instance du programme.\n"+\
-                "Valider pour quitter."
-        tkinter.messagebox.showwarning("AperoDeDenis : Avertissement",texte)
-        fin()
-            
-    # Répertoire de travail
-    
-    repertoire_data = os.path.join(os.getenv('APPDATA'),'AperoDeDenis')
-    try: os.mkdir(repertoire_data)
-    except: pass
-    if not os.path.isdir(repertoire_data):
-        repertoire_data = repertoire_script
-        
-else:           # sous Linux
-    
-    if not os.path.isdir(repertoire_script):
-        repertoire_script = os.getenv('HOME')
-    repertoire_data = repertoire_script
-    try: os.mkdir(repertoire_data)
-    except: pass
-    if not os.path.isdir(repertoire_data):
-        repertoire_data = repertoire_script   
-
-# Message indiquant le lancement de l'outil dans le shell
-
-print(heure()+" lancement d'aperodedenis"+version+".")
-
-# boucle sur l'interface tant que continuer est vrai :
+################################### boucle sur l'interface tant que continuer est vrai :
 
 if __name__ == "__main__":
     while continuer:
@@ -7697,4 +8538,3 @@ if __name__ == "__main__":
         else:
             interface.encadre(str(messageDepart))   # affiche les infos restaurées :
         fenetre.mainloop()                          # boucle tant que l'interface existe
-
