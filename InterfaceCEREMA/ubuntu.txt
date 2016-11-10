@@ -1,4 +1,7 @@
-quelques pré-requis
+
+Version 2.6 : 
+
+quelques pré-requis pour installer sans installateur :
 sudo apt-get install python3-tk python3-pil python3-imaging-tk
 
 lancer l'appli
@@ -9,5 +12,8 @@ le fichier .rpm permet d'installer l'application mais nécessite que python3 soi
 L'installation du paquet .rpm peut générer un message "paquet de mauvaise qualité". 
 Vous pouvez cependant installer l'interface sans risque.
 
-Note sur la version 3.10 : les fichiers d'installation .rpm et .deb ne sont pas disponibles.
+Version 3.10 sous Ubuntu sans installateur :
+les fichiers d'installation .rpm et .deb ne sont pas disponibles.
+
+Il faut recopier le répertoire "locale" dans le même répertoire que AperoDeDenis.py (pour la traduction anglaise) 
 Il faut installer python3 et pil comme indiqué dans le pré requis ci-dessus.
