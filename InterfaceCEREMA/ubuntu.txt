@@ -1,3 +1,4 @@
+Sous Ubuntu/linux :
 
 Version 2.6 : 
 
@@ -12,8 +13,7 @@ le fichier .rpm permet d'installer l'application mais nécessite que python3 soi
 L'installation du paquet .rpm peut générer un message "paquet de mauvaise qualité". 
 Vous pouvez cependant installer l'interface sans risque.
 
-Version 3.10 sous Ubuntu sans installateur :
-les fichiers d'installation .rpm et .deb ne sont pas disponibles.
+Version 3.10 sous Ubuntu sans utiliser les paquets rpm ou deb :
 
 Il faut recopier le répertoire "locale" dans le même répertoire que AperoDeDenis.py (pour la traduction anglaise) 
 Il faut installer python3 et pil comme indiqué dans le pré requis ci-dessus.
