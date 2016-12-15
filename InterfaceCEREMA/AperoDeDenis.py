@@ -146,7 +146,7 @@ def chargerLangue():
 
 # Variables globales
 
-version = " V 3.10"
+version = " V 3.11"
 continuer = True
 messageDepart = str()
 compteur = 0
@@ -3068,12 +3068,12 @@ class Interface(ttk.Frame):
             
         if self.systeme=="posix":
             mm3d = os.path.join(source,"mm3d")
-            if os.path.exists(self.mm3d):
+            if os.path.exists(mm3d):
                 self.micMac = source
                 self.mm3d = mm3d
                 existe = True
             else:
-                self.encadre(_("Le répertoire %s ne contient pas le fichier mm3d.exe. Abandon") % (source),nouveauDepart='non')
+                self.encadre(_("Le répertoire %s ne contient pas le fichier mm3d. Abandon") % (source),nouveauDepart='non')
                 return                
 
         # DicoCamera : 
@@ -4469,7 +4469,6 @@ class Interface(ttk.Frame):
             return
 		
         # en retour une liste : self.selectionPhotosAvecChemin
-        print (self.dicoPointsGPSEnPlace + _("avant") + " = ",self.dicoPointsGPSEnPlace)
         self.calibre = CalibrationGPS(fenetre,
                                       self.selectionPhotosAvecChemin,                                   # image sur laquelle placer les points
                                       liste,                                                            # liste des identifiants en "string" des points
@@ -4477,7 +4476,6 @@ class Interface(ttk.Frame):
                                       )                                                                 # value = x,y
         try:
             self.dicoPointsGPSEnPlace = self.calibre.dicoPointsJPG                                     # si pas de retour !
-            print ("self.dicoPointsGPSEnPlace " + _("aprés ="),self.dicoPointsGPSEnPlace)
         except:
             pass
         
@@ -6302,9 +6300,14 @@ class Interface(ttk.Frame):
               "\n" + _("Version 2.45 :")+chr(9)+_("- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.") + "\n"+\
               chr(9)+chr(9)+_("- Possiblité d'appliquer la calibration GPS sans relancer malt. Mai 2016") + "\n"+\
               "\n" + _("Version 2.50 :")+chr(9)+_("- Ajout de Tawny aprés Malt en mode Ortho, désactivation du message de lancement. Juin 2016") + "\n"+\
+              "\n" + _("Version 3.00 :")+chr(9)+_("- Version bilingue Français/Anglais. Octobre 2016") + "\n"+\
+              "\n" + _("Version 3.10 :")+chr(9)+_("- Choix des N meilleures photos pour un nouveau dossier. Novembre 2016") + "\n"+\
               "----------------------------------------------------------"       
-        self.encadre (aide4,50,aligne='left',nouveauDepart='non')
-
+        #self.encadre (aide4,50,aligne='left',nouveauDepart='non')
+        self.cadreVide()
+        self.effaceBufferTrace()        
+        self.ajoutLigne(aide4)
+        self.texte201.see("1.1")
         
     def aPropos(self):
        
