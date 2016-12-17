@@ -146,7 +146,7 @@ def chargerLangue():
 
 # Variables globales
 
-version = " V 3.11"
+version = " V 3.12"
 continuer = True
 messageDepart = str()
 compteur = 0
