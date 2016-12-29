@@ -66,11 +66,16 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
               - correction d'un bogue de compatibilité ascendante sur les points GPS
 
 	     Version 3.00 : novembre 2016
-	      - version bilingue : ajout de la langue anglaise, par Alexandre Courallet
-		La langue est demandée au premier lancement.
-		Un item du menu "paramètrage" ("Settings") permet de changer la langue utilisée.
+	             - version bilingue : ajout de la langue anglaise, par Alexandre Courallet
+		            La langue est demandée au premier lancement.
+		            Un item du menu "paramètrage" ("Settings") permet de changer la langue utilisée.
 
 	     Version 3.10 : 
-              - Ajout d'un item permettant de sélectionner les meilleures photos suivant les points 			homologues (compléte et différe du choix des meilleures images vidéos)
-
+              - Ajout d'un item permettant de sélectionner les meilleures photos suivant les points	homologues 
+              (compléte et différe du choix des meilleures images vidéos)
+              
+       Version 3.13
+              - la distance de la calibration accepte une unité
+              - lancement de Tapas accéléré
+              - diverses corrections de bogues
        
