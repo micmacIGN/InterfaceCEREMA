@@ -70,12 +70,15 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
 		            La langue est demandée au premier lancement.
 		            Un item du menu "paramètrage" ("Settings") permet de changer la langue utilisée.
 
-	     Version 3.10 : 
+	     Version 3.10 : novembre 2016
               - Ajout d'un item permettant de sélectionner les meilleures photos suivant les points	homologues 
               (compléte et différe du choix des meilleures images vidéos)
               
-       Version 3.13
+       Version 3.13  décembre 2016
               - la distance de la calibration accepte une unité
               - lancement de Tapas accéléré
               - diverses corrections de bogues
+              
+      Version 3.14  30 décembre 2016
+              - correction d'une régression au démarrage
        
