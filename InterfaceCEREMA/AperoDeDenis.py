@@ -44,7 +44,8 @@
 # v 3.13 : recherche exiftool et convert sous binaire-aux\windows ffmpeg absent sous bin;
 #          possibilité de saisir une unité avec la distance
 #          controle des photos supprimé si lanceMicMac aprés Tapas.
-
+# v 3.14 : correction d'une régression de la v 3.13 lors de la restauration des paramètres (dûe à l'ajout de self.ffmpeg dans la sauvegarde).
+#          
 
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
@@ -154,7 +155,7 @@ def chargerLangue():
 
 # Variables globales
 
-version = " V 3.13"
+version = " V 3.14"
 continuer = True
 messageDepart = str()
 compteur = 0
@@ -515,8 +516,8 @@ class Conteneur(object):
         return
 
 ########################### Variables globales 2 #################################
-donnee = Conteneur()
-grid = Grille()
+#donnee = Conteneur()
+#grid = Grille()
 
 ########################### Classe pour tracer les masques
 
@@ -6511,7 +6512,7 @@ class Interface(ttk.Frame):
             self.tacky                      =   r2[7]
             #r2[8] est la version : inutile pour l'instant (v3.00)
             #r2[9] est la langue
-            self.ffmpeg                     =   r2[10]
+            self.ffmpeg                     =   r3[5]
             
         except Exception as e: print(_("Erreur restauration param généraux : "),str(e))
         
@@ -6522,14 +6523,14 @@ class Interface(ttk.Frame):
 
     def verifNARep(self, r2): 
         cpt = 0
-        r3 = [r2[0], r2[1], r2[4], r2[5], r2[6],r2[10]]
+        if r2.__len__()>10: repFfmpeg = r2[10]              # pour assurer la compatibilité avec les anciennes versions ou self.ffmpeg n'était pas sauvé
+        else:               repFfmpeg = self.ffmpeg
+        r3 = [r2[0], r2[1], r2[4], r2[5], r2[6], repFfmpeg]
         while(cpt < 6):
             if(r3[cpt] == "N\\A"):
                 r3[cpt] = self.noRep[cpt]
             cpt +=1
         return r3
-
-
 
 
     ######  la restauration d'un chantier peut concerner un chantier archivé,
@@ -8459,7 +8460,6 @@ def verifierSiExecutable(exe):
         subprocess.check_call(exe)
         return True
     except Exception as e:
-        print(_("erreur verifier si executable : "),str(e))
         try:
             subprocess.check_call([exe,"-h"])
             return True
