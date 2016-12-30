@@ -1,6 +1,12 @@
-Sous Windows 64 bits :
+Sous Windows 64 et 32 bits :
 
-Version 3.12 : 
+Des installateurs sont disponibles pour la version 2.99, monolingue.
+La version bilingue est apparue avec la version 3.
+
+Pour installer la version 2.99 : utiliser les installateurs 32 et 64 bits.
+
+
+Pour installer la Version 3  : 
 
 Quelques pré-requis pour installer AperodeDenis sans installateur :
 
@@ -28,6 +34,6 @@ locale (toute l'arborescence)
 5) Lancer AperoDeDenis en double cliquant sur aperoDedenis.py.
 Utiliser le menu paramètrage pour Associer le répertoire bin de Micmac.
 
-Vous pouvez consulter le menu "Aide" et le document "Notice Installation interface graphique micMac version 3.pdf".
+Vous pouvez consulter le menu "Aide" et le document "Documentation AperoDeDenis.pdf".
 
 L'installation d'un outil de visualisation des nuages de points 3D est conseillé : CloudCompare ou Meshlab.  
