@@ -1,4 +1,8 @@
-Sous Ubuntu/linux :
+Sous Ubuntu :
+
+Utiliser l'installateur AperoDeDenis-3.14-1.x86_64.rpm
+
+sinon :
 
 Un pré-requis pour installer sans installateur :
 
@@ -7,7 +11,6 @@ sudo apt-get install python3-tk python3-pil python3-imaging-tk
 lancer l'appli
 
 python3 AperoDeDenis.py
-
 
 Version 3 bilingue sous Ubuntu  :
 
