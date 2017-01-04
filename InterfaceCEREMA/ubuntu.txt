@@ -9,7 +9,7 @@ lancer l'appli
 python3 AperoDeDenis.py
 
 
-Version 3 sous Ubuntu  :
+Version 3 bilingue sous Ubuntu  :
 
 Il faut recopier le répertoire "locale" dans le même répertoire que AperoDeDenis.py (pour la traduction anglaise) 
 Il faut installer python3 et pil comme indiqué dans le pré requis ci-dessus.
