@@ -1,12 +1,14 @@
 Sous Windows 64 et 32 bits :
 
-Des installateurs sont disponibles pour la version 2.99, monolingue.
 La version bilingue est apparue avec la version 3.
 
-Pour installer la version 2.99 : utiliser les installateurs 32 et 64 bits.
+Windows 64 :
 
+Pour installer la version 3.14 : utiliser l'installateur 64 bits.
 
-Pour installer la Version 3  : 
+Windows 32 :
+
+Pour installer la Version 3  spous Windows 32 bits sans l'installateur : 
 
 Quelques pré-requis pour installer AperodeDenis sans installateur :
 
@@ -19,7 +21,9 @@ Choisir "Windows x86-64 MSI installer" qui télécharge l'installateur python-3.
 
 2) Ouvrir une console (exécuter le programme "cmd" pour ouvrir la console)
 modifier le path : 
-> set Path=%Path%;C:\Python34\Scripts;c:\python34
+> set Path=%Path%;C:\Python34\Scripts;c:\python34;c:\python\lib
+
+ajouter le PYTHONPATH : C:\Python34\Lib\site-packages
 
 3) Dans la console Installer Pillow :
 > pip install pillow
@@ -36,4 +40,4 @@ Utiliser le menu paramètrage pour Associer le répertoire bin de Micmac.
 
 Vous pouvez consulter le menu "Aide" et le document "Documentation AperoDeDenis.pdf".
 
-L'installation d'un outil de visualisation des nuages de points 3D est conseillé : CloudCompare ou Meshlab.  
+6) L'installation d'un outil de visualisation des nuages de points 3D est conseillé : CloudCompare ou Meshlab.  
