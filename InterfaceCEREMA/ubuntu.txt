@@ -1,6 +1,6 @@
-Sous Ubuntu :
+Sous Linux/Ubuntu :
 
-Utiliser l'installateur AperoDeDenis-3.14-1.x86_64.rpm
+Utiliser l'installateur AperoDeDenis-3.14-1.x86_64.rpm ou aperodedenis_3.14-2_amd64.deb.
 
 sinon :
 
