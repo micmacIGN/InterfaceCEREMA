@@ -82,3 +82,16 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
       Version 3.14  30 décembre 2016
               - correction d'une régression au démarrage
        
+	    version 3.20 :  17 janvier 2017
+              MALT :
+              - lancement accéléré de MALT (le controle des photos n'est pas refait à chaque lancement)
+              Options de MALT :
+              - Ajout d'une option pour Malt : AperoDeDenis ; l'interface recherche pour vous les maitresses de l'option GeomImage et les photos correspondantes
+			        - les photos autour de la maitresse pour Malt option GeomImage sont choisies parmi les meilleures en correspondances
+              Points GPS :
+              - ajout d'un filtre pour afficher l'erreur max sur gcpbascule dans la trace (erreur positionnement des points GPS).
+              - controle affiné des points gps : on indique ceux qui ne sont placés sur une seule photo et on vérifie la présence de 3 points sur 2 photos
+              - suppression possible d'un point GPS sur une photo (avant : suppression de tous les points)
+              - Affichage dans l'état du chantier des points GPS positionnés sur une seule photo
+              - Le xml des points gps n'est créé que si toutes les contraintes sont respectèes
+
