@@ -45,12 +45,19 @@
 #          possibilité de saisir une unité avec la distance
 #          controle des photos supprimé si lanceMicMac aprés Tapas.
 # v 3.14 : correction d'une régression de la v 3.13 lors de la restauration des paramètres (dûe à l'ajout de self.ffmpeg dans la sauvegarde).
-#          
-
+# v 3.20 : les photos autour de la maitresse pour Malt ne sont plus "autour" mais choisies parmi les meilleures en correspondances
+#          Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche les maitresses et les photos correspondantes
+#          ajout filtre pour afficher l'erreur max sur gcpbascule (erreur positionnement des points GPS.
+#          controle affiné des points gps : on indique ceux qui ne sont placés sur une seule photo et on vérifie la présence de 3 points sur 2 photos
+#          aprés plantage durant malt ou fusion : on renomme les JPG et les PLY lors du rédémarrage (reste pb semblable pour calibration intrinsèque)
+#          suppression d'un point GPS sur une photo (avant : suppression de tous les points)
+#          Affichage dans l'état du chantier des points GPS positionnés sur une seule photo
+#          Non mise dans le xml des points gps positionnés une seule fois.
+#          Si le controle des points GPS est négatif alors les fichiers xml ne sont pas créés
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
-import tkinter.messagebox                   # pour le message avertissant que AperoDedenis est déjà lancé
+import tkinter.messagebox                   # pour le message avertissant que AperoDeDenis est déjà lancé
 import tkinter.ttk as ttk                   # amélioration de certains widgets de tkinter : le comportement est géré indépendamment de l'apparence : c'est mieux ! mais différent !
 import pickle                               # pour la persistence
 import os.path                              # pour les noms de fichier
@@ -155,7 +162,7 @@ def chargerLangue():
 
 # Variables globales
 
-version = " V 3.14"
+version = " V 3.20"
 continuer = True
 messageDepart = str()
 compteur = 0
@@ -841,6 +848,7 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         self.retourSiAbandon = dejaPlaces
         self.boutonActif = ttk.Button()
         self.tempo = 0
+        self.points = points                # pour la suppression d'un point
         
         # initialisations de l'affichage de l'image, dimensions du cadre, positionnement :
         self.imageFichier = Image.open(self.file)
@@ -871,10 +879,12 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         
         self.frame3 = ttk.Frame(self.root,borderwidth = 2,relief = "sunken")
         self.boutonQuitter = ttk.Button(self.frame3, text=_("Valider"),command = self.quitter)
-        self.boutonSupprimerTousLesPoints = ttk.Button(self.frame3, text=_("Supprimer tous les points"),command = self.supprimerTousLesPoints)
+        #self.boutonSupprimerTousLesPoints = ttk.Button(self.frame3, text=_("Supprimer tous les points"),command = self.supprimerTousLesPoints)
+        self.boutonSupprimerUnPoint = ttk.Button(self.frame3, text=_("Supprimer un ou plusieurs points"),command = self.supprimerUnPoint)        
         self.boutonAbandon = ttk.Button(self.frame3, text=_("Abandon"),command = self.abandon)
         self.boutonQuitter.pack(side='left',pady=2,ipady=2)
-        self.boutonSupprimerTousLesPoints.pack(side='left',pady=2,ipady=2,padx=5)
+        #self.boutonSupprimerTousLesPoints.pack(side='left',pady=2,ipady=2,padx=5)
+        self.boutonSupprimerUnPoint.pack(side='left',pady=2,ipady=2,padx=5)       
         self.boutonAbandon.pack(side='left',pady=2,ipady=2,padx=5)
         self.frame3.pack(pady=10)
         self.frame4 = ttk.Frame(self.root,borderwidth = 2,relief = "sunken")        
@@ -1068,9 +1078,15 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
             if cle[1]==self.file:
                del self.dicoPointsJPG[cle]
         self.afficheImage()
-        print("self.file=",self.file)
-        print("dicoPointsGPSEnPlace=",self.dicoPointsGPSEnPlace)        # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
-        
+
+    def supprimerUnPoint(self):
+         tousLesPoints = dict(self.dicoPointsJPG)
+         aSupprimer = choisirDansUneListe(fenetre,[e for e,f,g in tousLesPoints if self.file==f],"Supprimer un ou plusieurs points").selectionFinale
+         for cle in tousLesPoints:         
+             if cle[1]==self.file and cle[0] in aSupprimer:
+               del self.dicoPointsJPG[cle]
+         self.afficheImage()                 
+
 ################# Classe Principale : la fenêtre maître de l'application, le menu, l'IHM
 
 class Interface(ttk.Frame):
@@ -1264,8 +1280,7 @@ class Interface(ttk.Frame):
         fenetre.protocol("WM_DELETE_WINDOW", self.quitter)
 
         # zone de test éventuel :
-
-
+        
     #initialise les valeurs par défaut au lancement de l'outil
         
     def initialiseConstantes(self):
@@ -1579,13 +1594,15 @@ class Interface(ttk.Frame):
         self.item991 = ttk.Label(self.item990,text='\n' + _('Pour annuler la calibration mettre la distance = 0'))       
         self.item991.pack()
         
-        # Malt 
+        # Onglet Malt  : item700
 
-        self.item700 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")                      
-        # retiré : ('Ortho pour orthophotos','Ortho'), la commande nuage2ply est différente ??
+        self.item700 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")
+        
         self.modesMalt = [(_('UrbanMNE pour photos urbaines'),'UrbanMNE'),
                           (_("GeomImage pour photos du sol ou d'objets"),'GeomImage'),
-                          (_('Ortho pour orthophotos'),'Ortho')]
+                          (_('Ortho pour orthophotos'),'Ortho'),
+                          (_('AperoDeDenis choisit pour vous les options de GeomImage'),'AperoDeDenis')
+                          ]
 
         self.TawnyListeparam = (
                                 "* [Name=DEq] INT :: {Degree of equalization (Def=1)}\n"+
@@ -1606,25 +1623,47 @@ class Interface(ttk.Frame):
             if self.modesMalt==m:
                 b.state(['selected'])
                 self.modeMalt.set(m)                        # positionne la valeur initiale sélectionnée
-                
-        self.item710 = ttk.Frame(self.item700,height=50,relief='sunken',padding="0.2cm")      # pour le check button, fera un encadrement
-        self.item701 = ttk.Label(self.item710)
+
+        # Boites item710 et 730 dans item700 pour l'option GeomImage
+        
+        self.item710 = ttk.Frame(self.item700,height=50,relief='sunken',padding="0.2cm")    # pour le check button, fera un encadrement
+        self.item701 = ttk.Label(self.item710)                                              # nom ou nombre d'images maitresses
         self.item702 = ttk.Button(self.item710,text=_("Choisir les maîtresses"),command=self.imageMaitresse)
-        self.item703 = ttk.Label(self.item710)
-        self.item704 = ttk.Button(self.item710,text=_('Tracer les masques'),command=self.tracerLesMasques) #avant : traceMasque) 
+        self.item703 = ttk.Label(self.item710)                                              # nom ou nombre de masques
+        self.item704 = ttk.Button(self.item710,text=_('Tracer les masques'),command=self.tracerLesMasques) 
         self.item705 = ttk.Label(self.item710,text=_("Attention : Le masque 3D de C3DC a la priorité sur Malt") + "\n" + _("Pour supprimer un masque : supprimer la maitresse"))
+        self.item730 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour nb photos à retenir
+        self.item732 = ttk.Label(self.item730,text=_("Nombre de photos à retenir autour de l'image maitresse (-1 = toutes) :"))
+        self.item733 = ttk.Entry(self.item730,width=5,textvariable=self.photosUtilesAutourDuMaitre)        
+
+
+        # Boite item720 pour le niveau de zoom final
+        
         self.item720 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour le zoom 
         self.item722 = ttk.Label(self.item720,text=_("Zoom final : 8, 4, 2 ou 1 (8=le plus rapide, 1=le plus précis)"))
         self.item723 = ttk.Entry(self.item720,width=5,textvariable=self.zoomF)
-        self.item730 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour maitre et masque du masque        self.item702.pack(ipady=2,pady=10)
-        self.item732 = ttk.Label(self.item730,text=_("Nombre de photos utiles en + et en - autour de l'image maitresse :"))
-        self.item733 = ttk.Entry(self.item730,width=5,textvariable=self.photosUtilesAutourDuMaitre)        
+
+
+        # Boite item740 pour Tawny dans item700 pour l'option Ortho 
+        
         self.item740 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour maitre et masque du masque        self.item702.pack(ipady=2,pady=10)
         self.item741 = ttk.Checkbutton(self.item740, variable=self.tawny, text=_("Lancer tawny après MALT"))
         self.item742 = ttk.Label(self.item740,text=_("Saisir si besoin les paramètres facultatifs, exemple :") + "\nDEq=2 DegRapXY=[4,1]")
         self.item743 = ttk.Entry(self.item740,width=45,textvariable=self.tawnyParam)
-        self.item744 = ttk.Label(self.item740,text=_("Liste des paramètres facultatifs nommés :") + "\n"+self.TawnyListeparam
-                                 )        
+        self.item744 = ttk.Label(self.item740,text=_("Liste des paramètres facultatifs nommés :") + "\n"+self.TawnyListeparam)
+
+        # Boite item750 dans item700 pour l'option AperoDeDenis
+        
+        self.item750 = ttk.Frame(self.item700,height=50,relief='sunken',padding="0.2cm")    # pour le check button, fera un encadrement
+        self.item751 = ttk.Label(self.item750,text=_("La saisie des masques n'est active qu'aprés Tapas."))  # nom ou nombre d'images maitresses
+        self.item752 = ttk.Label(self.item750,text=_("Pas de masque."))                     # nom ou nombre de masque
+        self.item753 = ttk.Button(self.item750,text=_('Tracer les masques'),command=self.tracerLesMasquesApero)  
+        self.item754 = ttk.Label(self.item750,text=_("Attention : Le masque 3D de C3DC a la priorité sur Malt") + "\n"
+                                 + _("Pour supprimer un masque : supprimer la maitresse dans l'option GeomImage")+"\n"
+                                 + _("Remarque : les masques sont communs à GeomImage et AperoDeDenis")+"\n"
+                                 + _("Consulter la documentation."))
+
+                                         
         self.item701.pack()
         self.item702.pack()         
         self.item703.pack()                
@@ -1638,8 +1677,14 @@ class Interface(ttk.Frame):
         self.item741.pack()
         self.item742.pack()
         self.item743.pack()
-        self.item744.pack()        
-        # C3DC
+        self.item744.pack()
+        self.item751.pack()
+        self.item752.pack()        
+        self.item753.pack(ipady=2,pady=10)
+        self.item754.pack()
+
+        
+        # Boite item800 pour l'onglet C3DC
         
         self.item800 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")
         
@@ -2266,7 +2311,7 @@ class Interface(ttk.Frame):
         self.chantier                   =   str()                                               # nom du chantier (répertoire sosu le répertoire des photos)
         self.extensionChoisie           =   str()                                               # extensions des photos (actuellement JPG obligatoire)
         
-                                                       
+                                                     
     # Tapioca
 
         self.modeTapioca.set('MulScale')# Mode (All, MulScale, Line)
@@ -2282,24 +2327,25 @@ class Interface(ttk.Frame):
         self.arretApresTapas.set(1)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
         self.calibSeule.set(False)                              # par défaut on exploite toutes les photos
-
+ 
     # Malt
     # mieux que Mic Mac qui prend par défaut le masque de l'image maitre avec le nom prédéfini masq
 
-        self.modeMalt.set('GeomImage')
-        self.photosUtilesAutourDuMaitre.set(4)                  # 4 autour de l'image maîtresse (en + et en - soit 9 photos examinées)
+        self.modeMalt.set('GeomImage')                          # par défaut
+        self.photosUtilesAutourDuMaitre.set(5)                  # 5 autour de l'image maîtresse (les meilleures seront choisies en terme de points homologues)
         self.tawny.set(0)                                       # pas de lancement par défaut de Tawny aprés Malt Ortho
         self.tawnyParam.set("")                                 # paramètres pour tawny 
         self.zoomF.set('4')                                     # doit être "1","2","4" ou "8" (1 le plus détaillé, 8 le plus rapide)
         self.etapeNuage                 = "5"                   # par défaut (très mystérieux!)
         self.modele3DEnCours            = "modele3D.ply"        # Nom du self.modele3DEnCours courant
-        self.reinitialiseMaitreEtMasque()                       # initialise toutes les variables lièes à l'image maitresse et au masque
         self.dicoInfoBullesAAfficher    = None                  # pour passer l'info à afficherLesInfosBullesDuDico (dans choisirUnePhoto)
         self.listeDesMaitresses         = list()
         self.listeDesMasques            = list()
         self.densification              = ""                    # la densification en cours : Malt ou C3DC
         self.zoomI                      = ""                    # le niveau de zoom initial en reprise de Malt
-
+        self.listeDesMaitressesApero    = list()                # les maitresses pour l'option AperoDeDenis (recalculées en fonction du répertoire Homol)
+        self.reinitialiseMaitreEtMasque()                       # initialise toutes les variables lièes à l'image maitresse et au masque 
+        
     # C3DC
 
         self.modeC3DC.set("Statue")                             # valeur possible : Statue, Ground,  QuickMac
@@ -2732,19 +2778,28 @@ class Interface(ttk.Frame):
                     if self.listeDesMaitresses.__len__()==1:
                         texte = texte+'\n' + _('Image maîtresse : ')+os.path.basename(self.listeDesMaitresses[0])
                     if self.listeDesMaitresses.__len__()>1:
-                        texte = texte+'\n'+str(self.listeDesMaitresses.__len__())+_(' images maîtresses')
+                        texte = texte+'\n'+str(self.listeDesMaitresses.__len__())+_(' images maîtresses')                        
                     if self.listeDesMasques.__len__()==1:
                         texte = texte+'\n' + _('1 masque') + '\n'
-                    if self.listeDesMasques.__len__()==0:
+                    if self.listeDesMasques.__len__()==0 and self.listeDesMaitresses.__len__()>0:
                         texte = texte+"\n" + _("Pas de masque.") + "\n"
                     if self.listeDesMasques.__len__()>1:
                         texte = texte+"\n"+str(self.listeDesMasques.__len__())+_(" masques") + "\n"
-                    texte = texte+_("2 fois %s photos utiles autour de la maîtresse") % (str(self.photosUtilesAutourDuMaitre.get()))+"\n"
+                    if self.listeDesMaitresses.__len__()>0 and self.photosUtilesAutourDuMaitre.get()>0:                        
+                        texte = texte+_("%s photos utiles autour de la maîtresse") %(str(self.photosUtilesAutourDuMaitre.get()))+"\n"
+                        texte = texte+_("les meilleures photos en correspondances seront choisies")+ "\n"
 
                 if self.modeMalt.get()=="Ortho":
                     if self.tawny.get():
                         texte = texte+"\n" + _("Tawny lancé aprés Malt")+"\n"
-                    
+                        
+                if self.modeMalt.get()=="AperoDeDenis":
+                    print("self.listeDesMaitressesApero affiche etat=",self.listeDesMaitressesApero)   
+                    if self.listeDesMaitressesApero.__len__()==1:
+                        texte = texte+'\n' + _('Image maîtresse : ')+os.path.basename(self.listeDesMaitressesApero[0])                    
+                    if self.listeDesMaitressesApero.__len__()>1:
+                        texte = texte+'\n' + str(self.listeDesMaitressesApero.__len__())+_(' images maîtresses')
+                        
                 texte = texte+"\n" + _("arrêt au zoom : ")+self.zoomF.get()+"\n"
                      
             # état du chantier :
@@ -2815,7 +2870,7 @@ class Interface(ttk.Frame):
         
     def existeMaitre2D(self):
         if self.repTravail==self.repertoireData:    # pas enregistré
-            return False             
+            return False     
         if str(self.modeMalt.get())!="GeomImage":   # pas besoin d'image maîtresse !
             return True
         if self.listeDesMaitresses.__len__()>0:     # GeoImage et maitresses : OK
@@ -2852,10 +2907,11 @@ class Interface(ttk.Frame):
                              dicoPoints=self.dicoPointsGPSEnPlace)
         
     def afficherLesMaitresses(self):
-
-        if self.listeDesMaitresses.__len__()>0:
-            self.choisirUnePhoto(self.listeDesMaitresses+self.listeDesMasques,
-                                 titre=_('Liste des images maîtresses et des masques'),
+        
+        self.maltApero()    # pour abonder la liste des maitressesApero (un peu lourd)
+        if self.listeDesMaitresses.__len__()+self.listeDesMaitressesApero.__len__()>0:
+            self.choisirUnePhoto(self.listeDesMaitresses+self.listeDesMasques+self.listeDesMaitressesApero,
+                                 titre=_('Liste des images maîtresses et des masques')+"\n"+_("communs à GeomImage et AperoDedenis"),
                                  mode='single',
                                  message=_("Images maîtresses et masques"),
                                  messageBouton=_("Fermer")
@@ -3677,25 +3733,28 @@ class Interface(ttk.Frame):
         self.afficheEtat(texte)
         
     def finCalibrationGPSOK(self):                                  # crée le fichier xml qui va bien avec les données saisies
+        print("debut gqsok")
         supprimeFichier(self.dicoAppuis)
         supprimeFichier(self.mesureAppuis)
         self.actualiseListePointsGPS()                              # met a jour proprement la liste des 6-tuples (nom,x,y,z,actif,identifiantgps)
         if self.dicoPointsGPSEnPlace.__len__()==0:                  # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
             return False
-        if self.controlePointsGPS():                                   # retour True si problème !
+        if self.controlePointsGPS()==False:                         # retour False si problème !
             self.encadre(_("Points GPS non conformes. Nom est absent ou en double. Vérifiez."),nouveauDepart='non')
             return False
+        
         os.chdir(self.repTravail)
-        with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: #écriture de la description de chaque point GPS
+        with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: # écriture de la description de chaque point GPS
             infile.write(self.dicoAppuisDebut)
-            self.actualiseListePointsGPS()
+            print("self.listePointsGPS=",self.listePointsGPS)
             for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
                 point=self.dicoAppuis1Point.replace(_("Nom"),Nom)
                 point=point.replace("X",X)
                 point=point.replace("Y",Y)
                 point=point.replace("Z",Z)
-                point=point.replace("10 10 10",incertitude)                     
+                point=point.replace("10 10 10",incertitude)
                 infile.write(point)
+                print("Dico nom=",Nom)
             infile.write(self.dicoAppuisFin)
 
         with open(self.mesureAppuis, 'w', encoding='utf-8') as infile:             
@@ -3714,44 +3773,79 @@ class Interface(ttk.Frame):
                         point = self.mesureAppuis1Point.replace(_("NomPoint"),cle[0])
                         point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
                         point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
-                        infile.write(point)                    
+                        print("Nom du point : ",Nom,"-"," Clé : ",cle[0])
+                        print("key=",key,"point=",point)
+                        if  cle[0] not in self.pointsPlacesUneFois:   # on n'écrit pas le point s'il  n'est présent que sur une seule photo
+                            infile.write(point)                   
                     else:
                         point = self.mesureAppuis1Point.replace(_("NomPoint"),cle[0])
                         point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
                         point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
-                        infile.write(point)
+                        print("Nom=",Nom,"-","cle=",cle[0],"self.pointsPlacesUneFois=",self.pointsPlacesUneFois)
+                        print("key=",key," point=",point)
+                        if  cle[0] not in self.pointsPlacesUneFois:   # on n'écrit pas le point s'il  n'est présent que sur une seule photo
+                            infile.write(point)
+                            print("ok")
+                        print(self.pointsPlacesUneFois)
                 infile.write(self.mesureAppuisFinPhoto)
                 infile.write(self.mesureAppuisFin)
         return True
     
-    def controlePointsGPS(self):            # controle pour affiche etat et afficher tous les points : informer de la situation : si vrai alors self.etatPointsGPS sera affiché
+    def controlePointsGPS(self):            # controle pour affiche etat et afficher tous les points : informer de la situation :
+                                            # le message self.etatPointsGPS sera affiché dans l'état du chantier
                                             # finCalibrationGPSOK doit avoir été éxécuté avant
         self.etatPointsGPS = str()
         retour = True
      
         if self.repTravail==self.repertoireData:    # si pas de chantier, pas de problème mais retour False :  pas de calibration
             return False
-        
-        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
-        listePointsActifs = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] and e[0]!="" ]
 
+        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
+        listePointsActifs = [f[0] for f in self.listePointsGPS]
+      
         # ICI : on pourrait controler que les x,y,z et incertitudes sont bien des valeurs numériques    
         if len(listePointsActifs)==0:
             self.etatPointsGPS += _("Pas de points GPS.") + "\n"
             return False
+        
+        if listePointsActifs:
             
-        if len(listePointsActifs)>0:
-            self.etatPointsGPS = ("\n" + _("%s points GPS placés") % (str(len(self.dicoPointsGPSEnPlace))) + "\n"  + # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
+            # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y            
+            self.etatPointsGPS = ("\n" + _("%s points GPS placés") % (str(len(self.dicoPointsGPSEnPlace))) + "\n"  +       
                                   _("pour %s points GPS définis") % (str(len(listePointsActifs)))) + "\n" 
             if len(listePointsActifs)<3:
                  self.etatPointsGPS += _("Attention : il faut au moins 3 points pour qu'ils soient pris en compte.") + "\n"
-                 retour = False   
-            if len(self.dicoPointsGPSEnPlace)<2*len(listePointsActifs):
-                 self.etatPointsGPS += _("Attention : chaque points doit être sur 2 photos au moins.") + "\n"
                  retour = False
-        if os.path.exists(os.path.join(self.repTravail,self.mesureAppuis))==False:
-            self.etatPointsGPS+=_("Saisie incomplète : les points ne seront pas pris en compte") + "\n"
-            retour = False
+
+            # sur le modèle pythonique l'élément le plus représenté dans une liste l : x=sorted(set(l),key=l.count)[-1]
+            # ou pour avoir toute l'info [(valeur,nombre),...] : [(e,a.count(e)) for e in a]
+            # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
+            # ce bout de code est dupliqué dans controlePointsGPS et actualiseListePointsGPS
+            
+            listePointsPlaces=[e[0] for e in self.dicoPointsGPSEnPlace] 
+            pointsPlaces = [(e,listePointsPlaces.count(e)) for e in listePointsPlaces]
+            self.pointsPlacesUneFois = [f[0] for f,g in set([(e,pointsPlaces.count(e)) for e in pointsPlaces]) if g==1]
+            self.pointsPlacesUneFois.sort()
+
+            # Nombre de points placés 2 fois ou plus :
+            self.pointsPlacesDeuxFoisOuPlus = [f[0] for f,g in set([(e,pointsPlaces.count(e)) for e in pointsPlaces]) if g>1]
+            
+            ############################################
+            
+            if self.pointsPlacesDeuxFoisOuPlus.__len__()<3:
+                 self.etatPointsGPS += _("Il n'y a pas 3 points placés sur 2 photos : les points GPS seront ignorés.")+"\n"
+                 retour = False
+            if self.pointsPlacesUneFois.__len__()>1:
+                 self.etatPointsGPS += _("Anomalie : les points suivants ne sont placés que sur une seule photo : ")+"\n"+\
+                                         " ".join(self.pointsPlacesUneFois)+"\n"
+            if self.pointsPlacesUneFois.__len__()==1:
+                 self.etatPointsGPS += _("Anomalie : le point suivant n'est placé que sur une seule photo : ")+"\n"+\
+                                         " ".join(self.pointsPlacesUneFois)+"\n"
+                                         
+
+        if retour==False:
+            self.etatPointsGPS+=_("Saisie incomplète : les points GPS ne seront pas pris en compte") + "\n"
+
         return retour
                          
     def controleCalibration(self):  # controle de saisie globale du repère axe, plan métrique, arrêt à la première erreur, True si pas d'erreur, sinon message
@@ -4006,11 +4100,11 @@ class Interface(ttk.Frame):
 
         try:
             self.photosUtilesAutourDuMaitre.set(int(self.photosUtilesAutourDuMaitre.get())) # met un entier (sinon galère !)
-            if self.photosUtilesAutourDuMaitre.get()<1:
+            if self.photosUtilesAutourDuMaitre.get()<1 and self.photosUtilesAutourDuMaitre.get()!=-1:
                 texte += "\n" + _("Malt mode Geomimage :") + "\n" + _("Le nombre de photos utiles autour de l'image maîtresse est trop petit : %s")  % (str(self.photosUtilesAutourDuMaitre.get())) + "\n"
         except Exception as e:
-            texte += "\n" + _("Malt mode Geomimage :") + "\n" + _("Le nombre de photos utiles autour de l'image centrale n'est pas numérique : ") + "\n" + _("Il est mis à 1.") + "\n"
-            self.photosUtilesAutourDuMaitre.set(1)
+            texte += "\n" + _("Malt mode Geomimage :") + "\n" + _("Le nombre de photos utiles autour de l'image centrale n'est pas numérique : ") + "\n" + _("Il est mis à 5.") + "\n"
+            self.photosUtilesAutourDuMaitre.set(5)
 
             
         # vérif taille image (s'il y a des images !):
@@ -4092,14 +4186,20 @@ class Interface(ttk.Frame):
     def optionsMalt(self):
         self.item710.pack_forget()
         self.item730.pack_forget()
-        self.item740.pack_forget()          
+        self.item740.pack_forget()
+        self.item750.pack_forget()                
         if self.modeMalt.get()=='GeomImage':
             self.item710.pack(pady=10)
             self.item730.pack(pady=10)            
         if self.modeMalt.get()=='Ortho':
             self.item740.pack(pady=5)
-            
-    def imageMaitresse(self):
+        if self.modeMalt.get()=='AperoDeDenis':
+            self.item750.pack(pady=5)
+            self.maltApero()            # met à jour la liste des maitresses Apero : self.listeDesMaitressesApero et la liste des tuples
+            print("self.listeDesMaitressesApero=",self.listeDesMaitressesApero)
+        self.miseAJourItem701_703()
+                                 
+    def imageMaitresse(self):       # bouton "choisir les maitresses" de l'option GeomImage
         if self.photosAvecChemin.__len__()==0:
             self.infoBulle("Choisir d'abord les photos du chantier.")
             return  
@@ -4116,7 +4216,7 @@ class Interface(ttk.Frame):
                 bulles[f]=""    # image maitresse sans masque
 
         # suppression des fichiers masques pour malt ;; ces fichiers sont créés au lancement de Malt
-        # par contre on garde les dessins des masques (_masque.tif) qui ne serontutiles qui si le nom est dans la liste des masques
+        # par contre on garde les dessins des masques (_masque.tif) qui ne seront utiles qui si le nom est dans la liste des masques
 
         for e in self.photosAvecChemin:
             supprimeFichier(os.path.splitext(e)[0]+"_Masq.xml")
@@ -4154,28 +4254,45 @@ class Interface(ttk.Frame):
         self.listeDesMasques = list(new)        # nouvelle liste des masques 
         self.miseAJourItem701_703()
 
-    def miseAJourItem701_703(self):         # Onglet Malt, Cadre geomImage
+    def miseAJourItem701_703(self):             # Onglet Malt, Cadre geomImage et AperodeDenis
         try:
             if self.listeDesMaitresses.__len__()==0:
                 self.item701.config(text=_("Image maitresse obligatoire pour GeomImage."))
+            if self.listeDesMaitressesApero.__len__()==0:
+                self.item751.config(text=_("Exécuter Tapioca/Tapas pour saisir des masques avec cette option."))
+                self.item753.config(state=DISABLED)
+            else:
+                self.item753.config(state=NORMAL)
+  
             if self.listeDesMaitresses.__len__()==1:
                 self.item701.config(text=_("image maîtresse = ")+os.path.basename(self.listeDesMaitresses[0]))
+
+            if self.listeDesMaitressesApero.__len__()==1:                
+                self.item751.config(text=_("image maîtresse = ")+os.path.basename(self.listeDesMaitressesApero[0]))
+
             
             if self.listeDesMaitresses.__len__()>1:
                 self.item701.config(text=str(self.listeDesMaitresses.__len__())+_(" images maîtresses"))
+
+            if self.listeDesMaitressesApero.__len__()>1:                 
+                self.item751.config(text=str(self.listeDesMaitressesApero.__len__())+_(" images maîtresses"))
         
             if self.listeDesMasques.__len__()==0:
-                self.item703.config(text="\n" + _("Pas de masque."))                       
-
+                self.item703.config(text="\n" + _("Pas de masque."))
+                self.item752.config(text="\n" + _("Pas de masque."))                
+                
             if self.listeDesMasques.__len__()==1:
                 self.item703.config(text="\n" + _("un seul masque : ")+os.path.basename(self.listeDesMasques[0]))  
+                self.item752.config(text="\n" + _("un seul masque : ")+os.path.basename(self.listeDesMasques[0]))  
 
             if self.listeDesMasques.__len__()>1:
-                self.item703.config(text="\n"+str(self.listeDesMasques.__len__())+_(" masques"))                       
+                self.item703.config(text="\n"+str(self.listeDesMasques.__len__())+_(" masques"))
+                self.item752.config(text="\n"+str(self.listeDesMasques.__len__())+_(" masques"))
+                
         except Exception as e:
             print(_("erreur dans miseAJour701_703 : "),str(e))                            
 
-    def tracerLesMasques(self):
+    def tracerLesMasques(self):     # Bouton de l'option GeomImage
         if self.photosAvecChemin.__len__()==0:
             self.infoBulle(_("Choisir d'abord les photos du chantier."))
             return      
@@ -4207,8 +4324,45 @@ class Interface(ttk.Frame):
         if self.masqueRetour.polygone == True:
             ajout(self.listeDesMasques,masqueEnAttente)
         self.miseAJourItem701_703()    
+
+    def tracerLesMasquesApero(self):                                            # bouton pour l'option de malt aperodedenis
+        if self.photosAvecChemin.__len__()==0:
+            self.infoBulle(_("Choisir d'abord les photos du chantier."))
+            return
+        if os.path.exists(os.path.join(self.repTravail,"Homol"))==False:
+            self.infoBulle(_("Exécuter d'abord Tapioca/Tapas."))
+            return        
+        self.fermerVisuPhoto()
+        if self.listeDesMaitressesApero.__len__()==0:
+            self.item751.config(text=_("Pas d'image maîtresse. Bizarre."),
+                                background="#ffffaa")
+            return
+
+        bulles=dict()     
+        for e in self.listeDesMasques:
+            for f in self.listeDesMaitressesApero:
+                if os.path.splitext(f)[0]+"_masque.tif"==e:
+                    bulles[f]=_("Un masque existe déjà")
+        self.choisirUnePhoto(self.listeDesMaitressesApero,
+                             _("Choisir l'image pour le masque"),
+                             _("Choisir une image maîtresse pour le masque\nen jaune = un masque existe"),
+                             mode="single",
+                             bulles=bulles)
+       
+        if self.selectionPhotosAvecChemin.__len__()==0:
+            return
+        maitre = self.selectionPhotosAvecChemin[0]
+        masqueEnAttente = os.path.splitext(maitre)[0]+"_masque.tif"
+
+        # l'utilisateur trace le masque
+        
+        self.masqueRetour = TracePolygone(fenetre,maitre,masqueEnAttente)        # L'utilisateur peut tracer le masque sur l'image maitre       
+        if self.masqueRetour.polygone == True:
+            ajout(self.listeDesMasques,masqueEnAttente)
+        self.miseAJourItem701_703()  
+
             
-    def traceMasque(self):
+    def traceMasque(self):      # Choisir le masque Bouton de l'option GeomImage ou AperoDeDenis
         self.fermerVisuPhoto()
 
         if self.listeDesMaitresses.__len__()==0:
@@ -4460,16 +4614,30 @@ class Interface(ttk.Frame):
                 for e,v in dico.items():
 
                     if e[2]==i[5] and i[0]!=e[0]:           # l'identifiant du point placé = identifiant du point gps mais le nom du point est différent
-                                                            #cela signifie que l'utilisateur à modifié le nom
+                                                            # cela signifie que l'utilisateur à modifié le nom
                         self.dicoPointsGPSEnPlace[(i[0],e[1],e[2])] = v  # ajout d'une entrée quicorrige cette anomalie (on devrait utiliser l'identifiant...)
                         try:
                             del self.dicoPointsGPSEnPlace[e]  # suppression de l'ancienen entrée
                         except: pass
 
-                    if e[2]==i[5] and i[4]==False:          #si l'identifiant est identique et le point GPS supprimé alors on supprime le point placé
+                    if e[2]==i[5] and i[4]==False:          # si l'identifiant est identique et le point GPS supprimé alors on supprime le point placé
                         try:
                             del self.dicoPointsGPSEnPlace[e]
-                        except: pass                        
+                        except: pass
+            #############################          
+            # sur le modèle pythonique l'élément le plus représenté dans une liste l : x=sorted(set(l),key=l.count)[-1]
+            # ou pour avoir toute l'info [(valeur,nombre),...] : [(e,a.count(e)) for e in a]
+            # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
+            # ce bout de code est dupliqué dans controlePointsGPS et actualiseListePointsGPS
+            
+            listePointsPlaces=[e[0] for e in self.dicoPointsGPSEnPlace] 
+            pointsPlaces = [(e,listePointsPlaces.count(e)) for e in listePointsPlaces]
+            self.pointsPlacesUneFois = [f[0] for f,g in set([(e,pointsPlaces.count(e)) for e in pointsPlaces]) if g==1]
+            self.pointsPlacesUneFois.sort()
+
+            # Nombre de points placés 2 fois ou plus :
+            self.pointsPlacesDeuxFoisOuPlus = [f[0] for f,g in set([(e,pointsPlaces.count(e)) for e in pointsPlaces]) if g>1]
+            #############################               
         
     def placerPointsGPS(self):
         if self.photosAvecChemin.__len__()==0:
@@ -5091,9 +5259,9 @@ class Interface(ttk.Frame):
             self.afficheEtat(message)
             return 
 
-        # si le mode est  différent de geomImage on lance simplement Malt
-        
-        if self.modeMalt.get()!="GeomImage":
+        # si le mode est  UrbanMne ou Ortho on lance simplement Malt
+
+        if self.modeMalt.get() in ("UrbanMNE","Ortho"):
             self.lanceMalt()
             self.lanceTawny()
             self.tousLesNuages()
@@ -5107,23 +5275,47 @@ class Interface(ttk.Frame):
         # si le mode est GeomImage il faut lancer Malt sur chaque Image Maitresse et préparer le résultat
 
         # Cas GeomImage : il faut traiter toutes les images maitresses :
-        self.nuagesDenses = list()                           #liste des nauges denses de tous les masques pour fusion en fin de boucle
-        for e in self.listeDesMaitresses:
-            self.maitreSansChemin = os.path.basename(e)
-            self.MasqueXML()                                # préparation du masque et du maitre
-            self.lanceMalt()                                # création du nuage de points
-            self.tousLesNuages()                            # création des .ply à tous les niveaux, ajout du plus dense dans la liste
-            ajout(self.nuagesDenses,self.modele3DEnCours)   # le dernier modele3dEncours est le plus dense
 
-        # création de modele3D.ply
-            self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage       
-        if self.nuagesDenses.__len__()==1:
-            try: shutil.copy(self.nuagesDenses[0],self.modele3DEnCours)
-            except Exception as e: print(_("erreur malt GeomImage copy de nuage en modele3D : "),str(e),_(" pour : "),self.nuagesDenses[0])
-        else:            
-            try: self.fusionnerPly(self.nuagesDenses,self.modele3DEnCours)     
-            except Exception as e: print(_("erreur malt GeomImage fusion des nuages en modele3D : "),str(e),_(" pour : "),"\n".join(self.nuagesDenses[0]))
-            
+        if self.modeMalt.get() in ("GeomImage"):
+            self.nuagesDenses = list()                          # liste des nuages denses de tous les masques pour fusion en fin de boucle
+            for e in self.listeDesMaitresses:
+                self.maitreSansChemin = os.path.basename(e)
+                self.MasqueXML()                                # préparation du masque et du maitre
+                self.lanceMalt()                                # création du nuage de points
+                self.tousLesNuages()                            # création des .ply à tous les niveaux, ajout du plus dense dans la liste
+                ajout(self.nuagesDenses,self.modele3DEnCours)   # le dernier modele3dEncours est le plus dense
+
+            # création de modele3D.ply
+                self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage       
+            if self.nuagesDenses.__len__()==1:
+                try: shutil.copy(self.nuagesDenses[0],self.modele3DEnCours)
+                except Exception as e: print(_("erreur malt GeomImage copy de nuage en modele3D : "),str(e),_(" pour : "),self.nuagesDenses[0])
+            else:            
+                try: self.fusionnerPly(self.nuagesDenses,self.modele3DEnCours)     
+                except Exception as e: print(_("erreur malt GeomImage fusion des nuages en modele3D : "),str(e),_(" pour : "),"\n".join(self.nuagesDenses[0]))
+
+        # Cas AperoDeDenis : on construit la liste des images maitresses et des images associées
+
+        if self.modeMalt.get() in ("AperoDeDenis"):
+            self.nuagesDenses = list()                          # liste des nuages denses de tous les masques pour fusion en fin de boucle
+            self.maltApero()                                    # Construit la liste self.maitressesEtPhotoApero  [(maitresse,photo),...]
+            for e,f in self.maitressesEtPhotoApero:
+                self.maitreSansChemin = e
+                self.photosApero = [f,e]                        # pour l'instant une seule photo
+                self.MasqueXML()                                # les masques sont saisis avec l'option GeomImage et le nom de l'image maitresse
+                self.lanceMalt()                                # création du nuage de points                
+                self.tousLesNuages()                            # création des .ply à tous les niveaux, ajout du plus dense dans la liste
+                ajout(self.nuagesDenses,self.modele3DEnCours)   # le dernier modele3dEncours est le plus dense
+
+            # création de modele3D.ply
+                self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage       
+            if self.nuagesDenses.__len__()==1:
+                try: shutil.copy(self.nuagesDenses[0],self.modele3DEnCours)
+                except Exception as e: print(_("erreur malt AperoDeDenis copy de nuage en modele3D : "),str(e),_(" pour : "),self.nuagesDenses[0])
+            else:            
+                try: self.fusionnerPly(self.nuagesDenses,self.modele3DEnCours)     
+                except Exception as e: print(_("erreur malt AperoDeDenis fusion des nuages en modele3D : "),str(e),_(" pour : "),"\n".join(self.nuagesDenses[0]))
+                
     ################################## LES DIFFENTES PROCEDURES MICMAC ###########################################################       
 
     # ------------------ PREAMBULE --------------------
@@ -5374,7 +5566,14 @@ class Interface(ttk.Frame):
                         "bascul",                           # Orientation calibrée par les points GPS, utilisé par Mlat ou C3DC
                         os.path.basename(self.dicoAppuis),                             
                         os.path.basename(self.mesureAppuis)]
-        self.lanceCommande(GCPBascule) 
+        self.lanceCommande(GCPBascule,
+                           filtre=self.filtreGCPBascule)
+
+    def filtreGCPBascule(self,ligne):
+        if "MAX" in ligne: # dans la version xxxx il y a ERRROR !
+            return ligne
+        if "||" in ligne:
+            return ligne
    
     # ------------------ MALT -----------------------
     
@@ -5385,37 +5584,52 @@ class Interface(ttk.Frame):
 
         self.ajoutLigne("\n\n---------------------------\n" + _("Préparation du lancement de Malt") + "\n")
         self.densification = "Malt"
-            
-        malt = [self.mm3d,
-                "Malt",
-                self.modeMalt.get(),
-                ".*"+self.extensionChoisie,
-                self.orientation(),
-                "NbVI=2",
-                "ZoomF="+self.zoomF.get()]                          # zoom 8,4,2,1 qui correspondent au nuage étape 5, 6, 7, 8
-
-
+        aConserver = str()
         if self.modeMalt.get()=="GeomImage":
-            if self.maitreSansChemin==str():
-                return
-            malt += ["Master="+self.maitreSansChemin]
-            try:
-                i = self.photosSansChemin.index(self.maitreSansChemin)  # il faut limiter l'éxécution aux photos "proches"  de l'image maître si besoin
-                listeAConserver = self.photosSansChemin[max(0,i-self.photosUtilesAutourDuMaitre.get()):min(i+1+self.photosUtilesAutourDuMaitre.get(),self.photosSansChemin.__len__())]
-                [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in listeAConserver]  #  Renomme les photos à ne pas traiter
-                self.ajoutLigne(_("Nombre de photos autour de la maîtresse : ")+str(self.photosUtilesAutourDuMaitre.get())+"\n"+
-                                str(listeAConserver.__len__())+_(" photos traitées par Malt :") + "\n"+"\n".join(listeAConserver)+"\n")
-            except Exception as e:
-                self.ajoutLigne("\n" + _("Erreur lors de la recherche des photos proches de la maitresse %s.") + "\n" + _("Toutes les photos sont conservées.") % (self.maitreSansChemin)+ "\n"+
-                      _("Erreur : ")+str(e)+"\n")
-
-                     
+            # Les N meilleurs fichiers en correspondances avec la maitresse
+            aConserver = self.meilleuresPhotosAutourMaitresse(self.maitreSansChemin,self.photosUtilesAutourDuMaitre.get())
+            # on renomme les autres
+            if aConserver:
+                [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in aConserver]
+                self.ajoutLigne("\n\n"+_("Photos utiles pour malt GeomImage : ")+aConserver+"\n")
+            else:
+                self.ajoutLigne("\n\n"+_("Malt sur toutes les photos"))            
+            malt = [self.mm3d,
+                    "Malt",
+                    self.modeMalt.get(),
+                    ".*"+self.extensionChoisie,  # les n meilleures photos en correspondance, les autres étant renommées
+                    self.orientation(),
+                    "NbVI=2",
+                    "ZoomF="+self.zoomF.get(),
+                    "Master="+self.maitreSansChemin]                                    
+        elif self.modeMalt.get()=="AperoDeDenis":
+            # Les N fichiers en correspondances avec la maitresse sont dans la variable self.photosApero
+            [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in self.photosApero]
+            self.ajoutLigne("\n\n"+_("Photo utile pour malt AperoDeDenis : ")+str(self.photosApero)+"\n")
+            malt = [self.mm3d,
+                    "Malt",
+                    "GeomImage",
+                    ".*"+self.extensionChoisie,  # les n meilleures photos en correspondance, les autres étant renommées
+                    self.orientation(),
+                    "NbVI=2",
+                    "ZoomF="+self.zoomF.get(),
+                    "Master="+self.maitreSansChemin]            
+        else:
+            malt = [self.mm3d,
+                    "Malt",
+                    self.modeMalt.get(),
+                    ".*"+self.extensionChoisie,
+                    self.orientation(),
+                    "NbVI=2",
+                    "ZoomF="+self.zoomF.get()]                          # zoom 8,4,2,1 qui correspondent au nuage étape 5, 6, 7, 8
+        
         self.lanceCommande(malt,
                            filtre=self.filtreMalt,
                            info=_("ATTENTION : cette procédure est longue : patience !"))
+        
+        if aConserver or self.modeMalt.get()=="AperoDeDenis":     # on renomme correctement les fichiers abandonnés pour le traitement de malt
+            [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if (os.path.exists(os.path.splitext(e)[0]) and not (os.path.exists(e)))]
                      
-        if 'listeAConserver' in locals():
-            [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if e not in listeAConserver]  #  Remise en état initial  
         
     def filtreMalt(self,ligne):
         if ligne[0]=="|":
@@ -5586,10 +5800,10 @@ class Interface(ttk.Frame):
             
         sauveEtapeNuage = self.etapeNuage
         listeModeles = list()
-        #for zoom in [[str(8-j),str(pow(2,j))] for j in range(8-int(self.etapeNuage),8)]:
-        self.maitreSansExtension = os.path.splitext(self.maitreSansChemin)[0]
-        for zoom in [[str(j),str(pow(2,8-j))] for j in range(1,int(sauveEtapeNuage)+1)]:            
-    
+        for zoom in [[str(8-j),str(pow(2,j))] for j in range(8-int(self.etapeNuage),8)]:
+            self.maitreSansExtension = os.path.splitext(self.maitreSansChemin)[0]
+
+        for zoom in [[str(j),str(pow(2,8-j))] for j in range(1,int(sauveEtapeNuage)+1)]:                        
             self.modele3DEnCours = "modele3D_"+self.maitreSansExtension+"_Zoom_"+zoom[1]+".ply"
             listeModeles.insert(0,self.modele3DEnCours)     # liste triée des modèles, le plus précis en tête 
             self.etapeNuage = zoom[0]
@@ -5603,17 +5817,13 @@ class Interface(ttk.Frame):
             if os.path.exists(e):
                 self.modele3DEnCours = e
                 return
-                
-            
+                       
         
-        
-    def lanceNuage2Ply(self):       # nuage2Ply avec un paramètre : self.etapeNuage, et crée le fichier plyself.modele3DEnCours
+    def lanceNuage2Ply(self):       # nuage2Ply avec un paramètre : self.etapeNuage, et crée le fichier ply : self.modele3DEnCours
 
-        if self.modeMalt.get()=="GeomImage":
+        if self.modeMalt.get() in ("GeomImage","AperoDeDenis"):
             self.lanceNuage2PlyGeom()
-        if self.modeMalt.get()=="UrbanMNE":
-            self.lanceNuage2PlyUrban()
-        if self.modeMalt.get()=="Ortho":
+        if self.modeMalt.get() in ("UrbanMNE","Ortho"):
             self.lanceNuage2PlyUrban()
     
     def lanceNuage2PlyGeom(self):
@@ -5818,7 +6028,7 @@ class Interface(ttk.Frame):
                              +"\n"+"\n"+"\n".join(liste)+" ?\n"+"\n"+_("Les paramètres de Tapioca/Malt seront optimisés."))==0:
             self.nouveauChantier()
             
-            # crée le repertoire de travail, copie les photos et renvoit le nombre de fichiers photos "aceptables",
+            # crée le repertoire de travail, copie les photos et renvoit le nombre de fichiers photos "acceptables",
             # met à 1 l'état du chantier crée self.photosAvecChemin et self.photosSansChemin
             # ATTENTION : Supprime l'arborescence et certains résultats.
 
@@ -5847,7 +6057,59 @@ class Interface(ttk.Frame):
     def nbMeilleuresKO(self):
         self.encadre(_("Abandon"),nouveauDepart="non")        
         pass
-    ###################### Appareil photo : affiche le nom de l'apapreil de la première photo, la focale, la taille du capteur dans dicocamera
+
+    ##################### expression régulière de la liste des meilleures photos autour d'une image maitresse (on explore le répertoire Homol
+
+    def meilleuresPhotosAutourMaitresse(self,maitresse,nombre):
+        if nombre==-1:
+            return
+        repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues     
+        if os.path.isdir(repertoireHomol)==False:
+            return 
+        listeTaille = list()
+        os.chdir(repertoireHomol)        
+        for e in os.listdir():                                  # balaie tous les fichiers contenant les points homologues
+            if maitresse.upper() in e.upper():
+                os.chdir(os.path.join(repertoireHomol,e))            
+                for f in os.listdir():
+                    listeTaille.append((f, os.path.getsize(f)))   # répertoire, nom du fichier et taille
+        os.chdir(self.repTravail)        
+        listeTaille.sort(key= lambda e:  e[1],reverse=True)     # trie la liste des fichiers par taille
+        # supprime l'extension du fichier (toto1234.JPG.dat ou .txt) et garde les N plus grands
+        listeCorrigee = [os.path.splitext(e)[0] for e,f in listeTaille[0:nombre] if os.path.exists(os.path.join(self.repTravail,os.path.splitext(e)[0]))]
+        listeCorrigee.append(maitresse)
+        return "|".join(listeCorrigee)
+
+    ###################### Stratégie APERODEDENIS pour trouver les maitresses et les images associées. (dépend des noms de répertoire et fichiers donnés par micmac)
+    # renvoie une liste de tuple : maitresse, liste des photos associées
+
+    def maltApero(self):
+        # liste des paires de photos et taille
+        listeTaille = list()
+        self.maitressesEtPhotoApero   = list()
+        repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
+        if os.path.exists(repertoireHomol)==False:
+            return
+        os.chdir(repertoireHomol)        
+        for e in os.listdir():                                  # balaie tous les fichiers contenant les points homologues
+            os.chdir(os.path.join(repertoireHomol,e))            
+            for f in os.listdir():
+                listeTaille.append((e.replace("Pastis",""), os.path.splitext(f)[0], os.path.getsize(f))) # répertoire (pastis+nomphoto), nom du fichier(nomphoto+.dat ou .txt) et taille
+        os.chdir(self.repTravail)        
+        listeTaille.sort(key= lambda e: e[2],reverse=True)     # trie la liste des fichiers par taille
+        listeFixe = list(listeTaille)
+        # première maitresse = e de la paire la plus importante, associée à f
+        while listeTaille.__len__():
+            e = listeTaille[0][0]
+            f = listeTaille[0][1]
+            t = listeTaille[0][2]
+            self.maitressesEtPhotoApero.append([e,f])        # on ajoute la maitresse et la photo associée
+            # Suppression de la liste de toutes les paires comportant e ou f
+            [listeTaille.remove((g,h,i)) for (g,h,i) in listeFixe if (e==g or e==h or f==g or f==h) and (g,h,i) in listeTaille]
+        self.listeDesMaitressesApero = [e for e,f in self.maitressesEtPhotoApero] #  MaltApero renvoit la liste des maîtresses sous forme (maitresse, photo)
+
+        
+    ###################### Appareil photo : affiche le nom de l'appareil de la première photo, la focale, la taille du capteur dans dicocamera
 
     def OutilAppareilPhoto(self,silence=None):
 
@@ -6339,6 +6601,14 @@ class Interface(ttk.Frame):
               "\n" + _("Version 2.50 :")+chr(9)+_("- Ajout de Tawny aprés Malt en mode Ortho, désactivation du message de lancement. Juin 2016") + "\n"+\
               "\n" + _("Version 3.00 :")+chr(9)+_("- Version bilingue Français/Anglais. Octobre 2016") + "\n"+\
               "\n" + _("Version 3.10 :")+chr(9)+_("- Choix des N meilleures photos pour un nouveau dossier. Novembre 2016") + "\n"+\
+              "\n" + _("Version 3.20 :")+chr(9)+_("janvier 2017") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche pour vous les maîtresses et les photos correspondantes") + "\n"+\
+              chr(9)+chr(9)+_("- Item de sélection des meilleures images pour créer un nouveau chantier. janvier 2017") + "\n"+\
+              chr(9)+chr(9)+_("- Possibilité de saisir une unité avec la distance.") + "\n"+\
+              chr(9)+chr(9)+_("- Lancement de Tapas accéléré : suppression du controle des photos") + "\n"+\
+              chr(9)+chr(9)+_("- Les photos autour de la maîtresse pour Malt sont choisies parmi les meilleures en correspondances") + "\n"+\
+              chr(9)+chr(9)+_("- Controle affiné des points GPS, message informatif détaillé") + "\n"+\
+              chr(9)+chr(9)+_("- Possibilité de supprimer UN seul point GPS sur une photo") + "\n"+\
               "----------------------------------------------------------"       
         #self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         self.cadreVide()
@@ -6520,6 +6790,12 @@ class Interface(ttk.Frame):
         self.mercurialMicMac= mercurialMm3d(self.mm3d)
         self.mm3dOK         = verifMm3d(self.mm3d)                # Booléen indiquant si la version de MicMac permet la saisie de masque 3D
 
+        # Aprés plantage durant Malt ou fusion des photos ou ply peuvent manquer : on tente une restauration
+
+        [os.rename(os.path.splitext(e)[0],e) for e in self.photosAvecChemin if (os.path.exists(os.path.splitext(e)[0]) and not (os.path.exists(e)))]
+        [os.rename(e,os.path.splitext(e)[0]+".ply") for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]==".pyl"]  # remise à l'état initial
+
+        # il reste le pb des photos déplacées pour la calibration
 
     def verifNARep(self, r2): 
         cpt = 0
@@ -7082,8 +7358,8 @@ class Interface(ttk.Frame):
         self.selectionPhotosAvecChemin = list()                             # sélection : vide pour l'instant !
         self.cherche = str()                                                # recherche
         self.fermerVisu = False                                             # permet d'identifier la sortie par le second bouton si = True (!= sortie par fermeture fenêtre)
-    
-        l = [ e for e in listeAvecChemin if not (os.path.exists(e))]          # si des photos ou répertoires manquent : abandon !
+
+        l = [ e for e in listeAvecChemin if not (os.path.exists(e))]        # BIS : si des photos ou répertoires manquent encore : abandon !
         if len(l)>0 and objets in ('photos','ply'):
             # les fichiers absents peuvent être des fichiers "pour calibration" : ils doivent alors être retirés de la liste             
             noCalib = [f for f in l if os.path.basename(f) not in [os.path.basename(g) for g in self.photosPourCalibrationIntrinseque]]
@@ -7859,14 +8135,19 @@ class Interface(ttk.Frame):
 
     def fusionnerPly(self,liste,nomFinal):
         
-        if liste.__len__()==0:
+        if liste.__len__()==0:      
             return
         if liste.__len__()==1:
             self.encadre(_("Choisir au moins 2 nuages pour la fusion."),nouveauDepart='non')
             return
+        if os.path.exists(liste[0])==False or os.path.exists(liste[1])==False:     # la liste comprend au moins 2 fichiers : existent-t-ils ?
+            self.encadreEtTrace(_("Les ply attendus n'ont pas été créé.") + "\n" + _("Consulter la trace."))
+            return
+            
         supprimeFichier(nomFinal)   # tentative de suppression du fichier résultat
         # on va fusionner tous les ply, on dénomme ceux qui ne doivent pas l'être :           
         [os.rename(e,os.path.splitext(e)[0]+".pyl") for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]=='.ply' and e not in liste]  # pour ne traiter que le nécessaire (self.photosCalibrationSansChemin)
+          
         mergePly = [self.mm3d,
                     "mergeply",
                     '.*.ply',
@@ -8534,6 +8815,73 @@ class MyDialog:
         self.top.destroy()
         return
 
+################################## Classe : Dialogue minimum modal : choix dans une liste ###########################"
+
+class choisirDansUneListe:              # mode="single" ou 'extended'
+
+    def __init__(self,fenetreParent,listeDeChoix,titre,mode='extended',boutonOk="supprimer"):
+        if len(listeDeChoix)==0:
+            return
+        self.lesChoix = listeDeChoix    
+        self.topChoix = tkinter.Toplevel(fenetreParent)         # boite de dialogue
+        self.topChoix.transient(fenetreParent)
+        self.topChoix.title(titre)
+        self.topChoix.geometry("400x250+100+100")
+        fenetreIcone(self.topChoix)   
+        f = self.topChoix                          # ttk.Frame(self.topChoix)       
+        frameSelectRep = ttk.Frame(self.topChoix)
+        invite = ttk.Label(self.topChoix,text=("Choisir :"))
+        invite.pack(pady=10,padx=10,ipadx=5,ipady=5)
+        scrollbarV = ttk.Scrollbar(frameSelectRep, orient=('vertical'))          
+        scrollbarH = ttk.Scrollbar(frameSelectRep, orient=('horizontal'))
+        self.selection = tkinter.Listbox(frameSelectRep,
+                                                   selectmode=mode,
+                                                   xscrollcommand=scrollbarH.set,
+                                                   yscrollcommand=scrollbarV.set,
+                                                   height= min(10,len(listeDeChoix)),
+                                                   width=  min(70,min(300,(5+max(len (r) for r in listeDeChoix)))))
+                                                        
+        self.selection.select_set(1)
+        listeDeChoix.sort()
+        for i in listeDeChoix:
+            self.selection.insert('end',i)
+        if len(listeDeChoix)>10:
+            scrollbarV.config(command=self.yview)
+            scrollbarV.pack(side='right', fill='y')            
+##        scrollbarH.config(command=self.xview)
+##        scrollbarH.pack(side='bottom', fill='y')
+        self.selection.pack(side='left', fill='both', expand=1)          
+        frameSelectRep.pack()         
+        self.selection.select_set(0)
+        b = ttk.Button(f,text=(boutonOk),command=self.valid)
+        b.pack(pady=5)
+        c = ttk.Button(f,text=("Annuler"),command=self.cancel)
+        c.pack(pady=5)
+        self.topChoix.grab_set()
+        fenetre.wait_window(self.topChoix)    
+
+    def yview(self, *args):
+        if args[0] == 'scroll':
+            self.selection.yview_scroll(args[1],args[2])
+        elif args[0] == 'moveto':
+            self.selection.yview_moveto(args[1])
+
+    def xview(self, *args):
+        if args[0] == 'scroll':
+            self.selection.xview_scroll(args[1],args[2])
+        elif args[0] == 'moveto':
+            self.selection.xview_moveto(args[1])            
+
+    def valid(self):
+        selectionEnCours = self.selection.curselection()
+        self.topChoix.destroy()
+        self.selectionFinale = [self.lesChoix[e] for e in selectionEnCours]
+
+
+    def cancel(self):
+        self.topChoix.destroy()
+        self.selectionFinale = list()
+
 
 
 ################################## Classe : Dialogue minimum modal : deux boutons OK KO ###########################"
@@ -8582,3 +8930,5 @@ if __name__ == "__main__":
         else:
             interface.encadre(str(messageDepart))   # affiche les infos restaurées :
         fenetre.mainloop()                          # boucle tant que l'interface existe
+
+
