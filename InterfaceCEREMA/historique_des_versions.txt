@@ -82,16 +82,118 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
       Version 3.14  30 décembre 2016
               - correction d'une régression au démarrage
        
-	    version 3.20 :  17 janvier 2017
-              MALT :
-              - lancement accéléré de MALT (le controle des photos n'est pas refait à chaque lancement)
-              Options de MALT :
-              - Ajout d'une option pour Malt : AperoDeDenis ; l'interface recherche pour vous les maitresses de l'option GeomImage et les photos correspondantes
-			        - les photos autour de la maitresse pour Malt option GeomImage sont choisies parmi les meilleures en correspondances
-              Points GPS :
-              - ajout d'un filtre pour afficher l'erreur max sur gcpbascule dans la trace (erreur positionnement des points GPS).
-              - controle affiné des points gps : on indique ceux qui ne sont placés sur une seule photo et on vérifie la présence de 3 points sur 2 photos
-              - suppression possible d'un point GPS sur une photo (avant : suppression de tous les points)
-              - Affichage dans l'état du chantier des points GPS positionnés sur une seule photo
-              - Le xml des points gps n'est créé que si toutes les contraintes sont respectèes
+	  version 3.20 :  17 janvier 2017
+		   Les photos autour de la maitresse pour Malt ne sont plus "autour" mais choisies parmi les meilleures en correspondances
+           Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche les maitresses et les photos correspondantes
+           ajout filtre pour afficher l'erreur max sur gcpbascule (erreur positionnement des points GPS.
+           controle affiné des points gps : on indique ceux qui ne sont placés sur une seule photo et on vérifie la présence de 3 points sur 2 photos
+           aprés plantage durant malt ou fusion : on renomme les JPG et les PLY lors du rédémarrage (reste pb semblable pour calibration intrinsèque)
+           suppression d'un point GPS sur une photo (avant : suppression de tous les points)
+           Affichage dans l'état du chantier des points GPS positionnés sur une seule photo
+           Non mise dans le xml des points gps positionnés une seule fois.
+           Si le controle des points GPS est négatif alors les fichiers xml ne sont pas créés
 
+	   Version 3.30 :26 janvier 2017
+      		Nouveauté : faire un masque sur une mosaique Tarama pour le mode Ortho de Malt et draper le résultat avec une orthomosaïque tawny.
+      		  1) Possibilité de créer une mosaique  aprés tapas sur toutes les photos par "Tarama" 
+      		  2) saisir un masque sur la mosaïque créée : par l'outil de saisie de masque
+      		  3) Lancer Malt option Ortho : attention les photos doivent concerner un terrain naturel tel que z=f(x,y) (un seul z pour tout (x,y)
+      		  4) Lancer Tawny pour créer une ortho-mosaïque sur le résultat de malt, pour draper le nuage densifié
+      		Le masque Malt peut être inversé : la sélection concerne l'extérieur du polygone au lieu de l'intérieur.
+      		menu edition : affichage des mosaïques Tarama et Tawny
+      		Un item de menu "expert" permettant de saisir et d'exécuter des commandes en mode "console"
+		
+-----------------------------------------------------------------------
+History of the main versions of the CEREMA AperoDeDenis interface
+   
+             Version 1.5: first version diffused on the site of the IGN the 23/11/2015.
+
+             Version 1.55: December 2015
+                Under Windows the parameter file is placed under the APPDATA directory of the user,
+                Which resolves issues related to write access rights.
+
+             Version 1.60:
+              - Added functions:
+              - Quality of photos during the last treatment
+              - Export of the site in progress
+              - Import a site (allows to copy the site on another directory, disk, computer, system)
+              - Added a menu item editing the 3D images.
+              - Several master images, several masks.
+              - Possible selection of PNG, BMP, GIF, TIF files. These files are converted to JPG.
+              - Added an item in the Tools menu to modify exifs.
+              - 'trace' files are saved in utf-8 format.
+
+             Version 2:
+              - Choice of photos for intrinsic calibration by Tapas
+              - Possibility to restart Malt without restarting Tapioca / Tapas while retaining the 3D images generated.
+              - Possible modification of the default options in the tool menu:
+              - the current job options become the default options.
+              - Preservation of all files model3D.ply for the same site.
+              - Choice of the stop zoom level of the Malt procedure: from 1 to 8.
+              - Create all corresponding .ply files at all calculated zoom levels.
+              - Added an item from the edit menu listing and viewing all generated 3D images.
+              - Choice of the number of photos to remember around the master image for Malt.
+              - Processing of videos (for example GoPro): unpacking, selection, update of exif.
+              - Added two controls on the batch of photos: same dimensions, even focal length.
+              - Added a 'history' item in the Help menu.
+
+             Version 2.10: February 2016
+              - Added a menu item editing the 3D images.
+              - Several master images, several masks for Malt.
+              - Possible selection of PNG, BMP, GIF, TIF files.
+              - Added an item in the Tools menu to modify exifs.
+
+             Version 2.20: February 2016
+              - Maintain compatible options when choosing new photos.
+
+             Version 2.30: May 2016
+              - Changing the default options (tool menu).
+              - GPS baseline calculated after Tapas.
+              - The comma becomes an accepted decimal separator.
+              - Possibility to apply GPS calibration without restarting malt.
+
+             Version 2.40: May 2016
+               - Added option (Statue or QuickMac) for C3DC.
+
+             Version 2.45: May 2016
+               - GPS baseline calculated after Tapas (and always before Malt).
+               - The comma is an accepted decimal separator. \ N "+ \
+
+             Version 2.5: June 2016
+              - Added Tawny after Malt in Ortho mode
+
+             Version 2.50: June 2016
+              - Item in the setup menu to disable the launch message.
+
+             Version 2.60: July 2016
+              - entering uncertainties on the position of gps points
+
+			Version 2.61
+						  - Fixed an upward compatibility bug on GPS points
+
+			Version 3.00: November 2016
+      			- bilingual version: addition of the English language, by Alexandre Courallet
+      			Language is requested at first launch.
+      			An item in the "Settings" menu allows you to change the language used.
+
+			Version 3.10: November 2016
+						  - Added an item to select the best photos following the homologous points
+						  (Complete and different from the choice of the best video images)
+			  
+	   Version 3.13 December 2016
+			  - the calibration distance accepts one unit
+			  - launch of Tapas acceleré
+			  - various bug fixes
+			  
+	   Version 3.14 30 December 2016
+			  - correction of a regression at start-up
+			  
+			Version 3.30: 26 January 2017
+    			New: make a mask on a Tarama mosaic for the Malt Ortho mode and drape the result with a tawny orthomosaic.
+    			1) Possibility of creating a mosaic after tapas on all the photos by "Tarama"
+    			2) enter a mask on the mosaic created: by the mask input tool
+    			3) Launch Malt option Ortho: be careful the photos must relate to a natural terrain such as z = f (x, y) (a single z for all (x, y)
+    			4) Launch Tawny to create an ortho-mosaic on the malt result, to drape the densified cloud
+    			The Malt mask can be inverted: the selection concerns the outside of the polygon instead of the inside.
+    			Menu edition: displaying Tarama and Tawny mosaics
+    			An "expert" menu item for entering and executing commands in "console" mode
