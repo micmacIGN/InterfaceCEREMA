@@ -94,15 +94,17 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
            Si le controle des points GPS est négatif alors les fichiers xml ne sont pas créés
 
 	   Version 3.30 :26 janvier 2017
-      		Nouveauté : faire un masque sur une mosaique Tarama pour le mode Ortho de Malt et draper le résultat avec une orthomosaïque tawny.
-      		  1) Possibilité de créer une mosaique  aprés tapas sur toutes les photos par "Tarama" 
-      		  2) saisir un masque sur la mosaïque créée : par l'outil de saisie de masque
-      		  3) Lancer Malt option Ortho : attention les photos doivent concerner un terrain naturel tel que z=f(x,y) (un seul z pour tout (x,y)
-      		  4) Lancer Tawny pour créer une ortho-mosaïque sur le résultat de malt, pour draper le nuage densifié
-      		Le masque Malt peut être inversé : la sélection concerne l'extérieur du polygone au lieu de l'intérieur.
-      		menu edition : affichage des mosaïques Tarama et Tawny
-      		Un item de menu "expert" permettant de saisir et d'exécuter des commandes en mode "console"
-		
+		Nouveauté : faire un masque sur une mosaique Tarama pour le mode Ortho de Malt et draper le résultat avec une orthomosaïque tawny.
+		  1) Possibilité de créer une mosaique  aprés tapas sur toutes les photos par "Tarama" 
+		  2) saisir un masque sur la mosaïque créée : par l'outil de saisie de masque
+		  3) Lancer Malt option Ortho : attention les photos doivent concerner un terrain naturel tel que z=f(x,y) (un seul z pour tout (x,y)
+		  4) Lancer Tawny pour créer une ortho-mosaïque sur le résultat de malt, pour draper le nuage densifié
+		Le masque Malt peut être inversé : la sélection concerne l'extérieur du polygone au lieu de l'intérieur.
+		menu edition : affichage des mosaïques Tarama et Tawny
+		Un item de menu "expert" permettant de saisir et d'exécuter des commandes en mode "console"
+
+		Version 3.32 : 7 février 2017
+			Possibilité de copier des points gps d'un chaniter à un autre (menu expert)
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
    
@@ -172,28 +174,31 @@ History of the main versions of the CEREMA AperoDeDenis interface
 						  - Fixed an upward compatibility bug on GPS points
 
 			Version 3.00: November 2016
-      			- bilingual version: addition of the English language, by Alexandre Courallet
-      			Language is requested at first launch.
-      			An item in the "Settings" menu allows you to change the language used.
+			- bilingual version: addition of the English language, by Alexandre Courallet
+			Language is requested at first launch.
+			An item in the "Settings" menu allows you to change the language used.
 
 			Version 3.10: November 2016
 						  - Added an item to select the best photos following the homologous points
 						  (Complete and different from the choice of the best video images)
-			  
-	   Version 3.13 December 2016
-			  - the calibration distance accepts one unit
-			  - launch of Tapas acceleré
-			  - various bug fixes
-			  
-	   Version 3.14 30 December 2016
-			  - correction of a regression at start-up
+						  
+				   Version 3.13 December 2016
+						  - the calibration distance accepts one unit
+						  - launch of Tapas acceleré
+						  - various bug fixes
+						  
+				  Version 3.14 30 December 2016
+						  - correction of a regression at start-up
 			  
 			Version 3.30: 26 January 2017
-    			New: make a mask on a Tarama mosaic for the Malt Ortho mode and drape the result with a tawny orthomosaic.
-    			1) Possibility of creating a mosaic after tapas on all the photos by "Tarama"
-    			2) enter a mask on the mosaic created: by the mask input tool
-    			3) Launch Malt option Ortho: be careful the photos must relate to a natural terrain such as z = f (x, y) (a single z for all (x, y)
-    			4) Launch Tawny to create an ortho-mosaic on the malt result, to drape the densified cloud
-    			The Malt mask can be inverted: the selection concerns the outside of the polygon instead of the inside.
-    			Menu edition: displaying Tarama and Tawny mosaics
-    			An "expert" menu item for entering and executing commands in "console" mode
+			New: make a mask on a Tarama mosaic for the Malt Ortho mode and drape the result with a tawny orthomosaic.
+			1) Possibility of creating a mosaic after tapas on all the photos by "Tarama"
+			2) enter a mask on the mosaic created: by the mask input tool
+			3) Launch Malt option Ortho: be careful the photos must relate to a natural terrain such as z = f (x, y) (a single z for all (x, y)
+			4) Launch Tawny to create an ortho-mosaic on the malt result, to drape the densified cloud
+			The Malt mask can be inverted: the selection concerns the outside of the polygon instead of the inside.
+			Menu edition: displaying Tarama and Tawny mosaics
+			An "expert" menu item for entering and executing commands in "console" mode
+			
+		Version 3.32 : 7 february 2017
+			Ability to copy gps points from one project to another (expert menu)

@@ -55,7 +55,6 @@
 #          Non mise dans le xml des points gps positionnés une seule fois.
 #          Si le controle des points GPS est négatif alors les fichiers xml ne sont pas créés
 # 3.30
-# Version future : projet : faire un masque pour le mode Ortho de Malt et draper le résultat
 # 1) créer une mosaique  aprés tapas sur toutes les photos : "Tarama" ".*.JPG" "Arbitrary"
 # 2) la mosaïque est un tif : sour le répertoire TA : TA_LeChantier.tif
 # 3) saisir un masque sur la mosaïque créée : par l'outil de saisie de masque, la masque doit s'appeler : 
@@ -73,7 +72,9 @@
 # 9) ouvrir les mosaiques par menu
 # menu expert : exécuter une ligne de commande
 # correction : self.e au lieu de e dans MyDialog
-#idée : copier les points gps d'une chantier dans un autre (en corrigeant ce qu'il faut)
+# version 3.31
+# copier les points gps d'une chantier dans un autre (en corrigeant ce qu'il faut, menu expert)
+# version 3.32 : 2 corrections mineures (lignes 3854 supprimée et 3953 orthographe)
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
 import tkinter.messagebox                   # pour le message avertissant que AperoDeDenis est déjà lancé
@@ -189,7 +190,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "3.30"
+numeroVersion = "3.32"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
@@ -1273,6 +1274,7 @@ class Interface(ttk.Frame):
 
         menuExpert = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
         menuExpert.add_command(label=_("Exécuter lignes de commande"), command=self.lignesExpert)        
+        menuExpert.add_command(label=_("Ajouter les points GPS d'un chantier"), command=self.ajoutPointsGPSAutreChantier)        
         
         # Paramétrage       
 
@@ -2503,11 +2505,11 @@ class Interface(ttk.Frame):
                                 _("Ne pas enregistrer.")) == 0:
                 self.copierParamVersChantier()
                 texte=_("Chantier précédent enregistré : %s") % (self.chantier) + "\n"       
-        bilan = self.choisirUnRepertoire(_("Choisir un chantier."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
+        bilan = self.choisirUnChantier(_("Choisir un chantier."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
             self.afficheEtat(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
             return   
-        self.fichierParamChantier  =   self.selectionRepertoireAvecChemin+os.sep+self.paramChantierSav         
+        self.fichierParamChantier  =   os.path.join(self.selectionRepertoireAvecChemin,self.paramChantierSav)
         if os.path.exists(self.fichierParamChantier):        
             self.restaureParamChantier(self.fichierParamChantier)           
             self.sauveParam()                                                   # pour assurer la cohérence entre le chantier en cours et le chantier ouvert (écrase le chantier en cours)
@@ -3850,7 +3852,6 @@ class Interface(ttk.Frame):
             texte = "\n" + _("Option incorrecte :") + "\n"+str(retour)
             self.encadreEtTrace(texte)
             return
-        
 
         self.afficheEtat(texte)
         
@@ -3867,7 +3868,6 @@ class Interface(ttk.Frame):
         os.chdir(self.repTravail)
         with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: # écriture de la description de chaque point GPS
             infile.write(self.dicoAppuisDebut)
-            print("self.listePointsGPS=",self.listePointsGPS)
             for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
                 point=self.dicoAppuis1Point.replace(_("Nom"),Nom)
                 point=point.replace("X",X)
@@ -3893,8 +3893,6 @@ class Interface(ttk.Frame):
                         point = self.mesureAppuis1Point.replace(_("NomPoint"),cle[0])
                         point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
                         point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
-                        print("Nom du point : ",Nom,"-"," Clé : ",cle[0])
-                        print("key=",key,"point=",point)
                         if  cle[0] not in self.pointsPlacesUneFois:   # on n'écrit pas le point s'il  n'est présent que sur une seule photo
                             infile.write(point)                   
                     else:
@@ -3920,7 +3918,7 @@ class Interface(ttk.Frame):
         if self.repTravail==self.repertoireData:    # si pas de chantier, pas de problème mais retour False :  pas de calibration
             return False
 
-        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
+        # listePointsGPS : liste de (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
         listePointsActifs = [f[0] for f in self.listePointsGPS]
       
         # ICI : on pourrait controler que les x,y,z et incertitudes sont bien des valeurs numériques    
@@ -3961,7 +3959,12 @@ class Interface(ttk.Frame):
             if self.pointsPlacesUneFois.__len__()==1:
                  self.etatPointsGPS += _("Anomalie : le point suivant n'est placé que sur une seule photo : ")+"\n"+\
                                          " ".join(self.pointsPlacesUneFois)+"\n"
-                                         
+                 
+        # vérification : y-a-t-il 2 points avec les mêmes coordonnées géographiques ?
+
+        xyz = [(f[1],f[2],f[3]) for f in self.listePointsGPS]
+        if xyz.__len__()!=set(xyz).__len__():
+            self.etatPointsGPS+=_("Attention : plusieurs points GPS ont les mêmes coordonnées.") + "\n"
 
         if retour==False:
             self.etatPointsGPS+=_("Saisie incomplète : les points GPS ne seront pas pris en compte") + "\n"
@@ -4671,7 +4674,7 @@ class Interface(ttk.Frame):
                                     ttk.Entry(f)
                                     )
 				   )
-
+        
         self.listeWidgetGPS[-1][0].pack(side='top')
         self.listeWidgetGPS[-1][1].pack(side='left',padx=5)
         self.listeWidgetGPS[-1][1].focus()        
@@ -6530,7 +6533,76 @@ class Interface(ttk.Frame):
         os.chdir(self.repTravail)                               # on ne sait pas ce qu'a fait l'utilisateur
         self.encadre(self.lignePourTrace,nouveauDepart="non")
         self.ecritureTraceMicMac()
+
+    def ajoutPointsGPSAutreChantier(self):
         
+        self.menageEcran()
+        bilan = self.choisirUnChantier(_("Choisir le chantier pour ajouter les points gps."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
+        if bilan!=None:
+            self.afficheEtat(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
+            return   
+        fichierParamChantierAutre  =   os.path.join(self.selectionRepertoireAvecChemin,self.paramChantierSav)
+        if os.path.exists(fichierParamChantierAutre):        
+            try:                                                                        # s'il y a une sauvegarde alors on la restaure
+                sauvegarde1=open(fichierParamChantierAutre,mode='rb')
+                r=pickle.load(sauvegarde1)
+                sauvegarde1.close()
+                listePointsGPS             =   r[12]
+                dicoPointsGPSEnPlace       =   r[20]         
+                idPointGPS                 =   r[23]
+
+                # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GPS
+                # passage vers la version 2.60 de la liste des points GPS (un item de plus dans le tuple)
+    
+                if listePointsGPS.__len__()>0:
+                    if listePointsGPS[0].__len__()==6:
+                        listePointsGPS=[[a,nom,x,y,z,ident,"10 10 10"] for a,nom,x,y,z,ident in listePointsGPS]                
+            except Exception as e:
+                self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin),nouveauDepart='non')                
+                print(_("Erreur restauration points GPS : "),str(e))
+                return
+        else:
+            self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin),nouveauDepart='non')            
+            return
+        
+        # 3 variables : self.dicoPointsGPSEnPlace, self.listePointsGPS et self.idPointGPS
+        # dicoPointsGPSEnPlace key = nom du point, photo, identifiant, value = x,y
+        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant,incertitude)
+        # self.idPointGPS : entier, identifiant du dernier point GPS
+        
+        # 1) Modifier la clé du dico lu : chemin de la photo et identifiant pat ajout de la valeur de self.idPointGPS
+        # si la photo existe alors ajout dans le dico du chantier en cours       
+
+        for  e in dicoPointsGPSEnPlace.keys():
+            f = (e[0],os.path.join(self.repTravail,os.path.basename(afficheChemin(e[1]))),e[2]+self.idPointGPS)
+            if os.path.exists(f[1]):
+                self.dicoPointsGPSEnPlace[f] = dicoPointsGPSEnPlace[e]
+                
+
+        # 2) Modifier la liste des points GPS : identifiant pat ajout de la valeur de self.idPointGPS, éviter les noms en double
+        
+        listeDesNomsEnCours = [a for a,b,c,d,e,f,g in self.listePointsGPS]
+        for a,b,c,d,e,f,g in listePointsGPS:
+            nouvelId = f + self.idPointGPS
+            if a in listeDesNomsEnCours:        #modification du nom s'il existe déjà
+                a = a + str(nouvelId)
+                listeDesNomsEnCours.append(a)
+            self.listePointsGPS.append([a,b,c,d,e,nouvelId,g])
+
+        # 3) Trouver la nouvelle valeur de self.idPointGPS
+        
+        self.idPointGPS = max ([f for a,b,c,d,e,f,g in self.listePointsGPS])
+
+
+        # mise à jour de la liste des widgets pour saisie :
+
+        self.optionsReperes()
+
+        # Affichage de l'état du chantieravec les nouveaux points GPS
+
+        self.afficheEtat()
+        
+
     ################################## Le menu AIDE ###########################################################
                 # provisoirement retirés :
                 #"            Afficher les photos après nettoyage      : visualise les photos après nettoyage\n"
@@ -6836,6 +6908,15 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("- Les photos autour de la maîtresse pour Malt sont choisies parmi les meilleures en correspondances") + "\n"+\
               chr(9)+chr(9)+_("- Controle affiné des points GPS, message informatif détaillé") + "\n"+\
               chr(9)+chr(9)+_("- Possibilité de supprimer UN seul point GPS sur une photo") + "\n"+\
+              "\n" + _("Version 3.30 :")+chr(9)+_("janvier 2017") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout de tarama : création d'une mosaïque aprés Tapas.") + "\n"+\
+              chr(9)+chr(9)+_("- le mode Ortho de Malt utilise la mosaïque tarama, avec masque") + "\n"+\
+              chr(9)+chr(9)+_("- drapage du nuage densifié par l'ortho mosaïque obtenue par Tawny") + "\n"+\
+              chr(9)+chr(9)+_("- Possibilité d'inverser les masques 2D") + "\n"+\
+              chr(9)+chr(9)+_("- Ouverture des mosaïques Tarama et Tawny par menu") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un menu 'expert' permettant de saisir une ligne de commande.") + "\n"+\
+              "\n" + _("Version 3.31 :")+chr(9)+_("février 2017") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un item du menu 'expert' : recopie les points GPS d'un chantier à un autre.") + "\n"+\
               "----------------------------------------------------------"       
         #self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         self.cadreVide()
@@ -7348,9 +7429,9 @@ class Interface(ttk.Frame):
     def avertissementNouvelleVersion(self):
         if self.avertirNouvelleVersion:
             retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
-                                       question=_("Nouvelle version : ")+
+                                       question=_("Nouvelle version disponible sur Internet : ")+"\n"+
                                                    versionInternet+"\n"+
-                                                _("Téléchargement à l'adresse : ")+"\n"+
+                                                _("Téléchargement à l'adresse : ")+"\n\n"+
                                                 "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
                                        b1=_("OK"),
                                        b2=_("Accéder au site"),
@@ -8165,7 +8246,7 @@ class Interface(ttk.Frame):
 
     ############################### Choix d'un répertoire dans la liste des répertoires de travail, avec scrollbar : charge self.selectionPhotosAvecChemin
 
-    def choisirUnRepertoire(self,titre,mode='single'):              # mode="single" ou 'extended'
+    def choisirUnChantier(self,titre,mode='single'):              # mode="single" ou 'extended'
         self.retourChoixRepertoire=_("Abandon")
         self.fichierProposes = list()
         chantierSansParametre = list()
