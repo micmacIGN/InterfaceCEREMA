@@ -104,7 +104,7 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
 		Un item de menu "expert" permettant de saisir et d'exécuter des commandes en mode "console"
 
 		Version 3.32 : 7 février 2017
-			Possibilité de copier des points gps d'un chaniter à un autre (menu expert)
+			Possibilité de copier des points gps d'un chantier à un autre (menu expert)
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
    
