@@ -75,6 +75,8 @@
 # version 3.31
 # copier les points gps d'une chantier dans un autre (en corrigeant ce qu'il faut, menu expert)
 # version 3.32 : 2 corrections mineures (lignes 3854 supprimée et 3953 orthographe)
+# Version 3.33 : correction comptage des points GPS et des points GPS avec les mêmes coordonnées ( définition de listePointsActifs  revue)
+
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
 import tkinter.messagebox                   # pour le message avertissant que AperoDeDenis est déjà lancé
@@ -190,7 +192,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "3.32"
+numeroVersion = "3.33"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
@@ -3899,12 +3901,8 @@ class Interface(ttk.Frame):
                         point = self.mesureAppuis1Point.replace(_("NomPoint"),cle[0])
                         point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
                         point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
-                        print("Nom=",Nom,"-","cle=",cle[0],"self.pointsPlacesUneFois=",self.pointsPlacesUneFois)
-                        print("key=",key," point=",point)
                         if  cle[0] not in self.pointsPlacesUneFois:   # on n'écrit pas le point s'il  n'est présent que sur une seule photo
                             infile.write(point)
-                            print("ok")
-                        print(self.pointsPlacesUneFois)
                 infile.write(self.mesureAppuisFinPhoto)
                 infile.write(self.mesureAppuisFin)
         return True
@@ -3919,7 +3917,7 @@ class Interface(ttk.Frame):
             return False
 
         # listePointsGPS : liste de (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
-        listePointsActifs = [f[0] for f in self.listePointsGPS]
+        listePointsActifs = [f[0] for f in self.listePointsGPS if f[4] and f[0]!=""]
       
         # ICI : on pourrait controler que les x,y,z et incertitudes sont bien des valeurs numériques    
         if len(listePointsActifs)==0:
@@ -3927,7 +3925,6 @@ class Interface(ttk.Frame):
             return False
         
         if listePointsActifs:
-            
             # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y            
             self.etatPointsGPS = ("\n" + _("%s points GPS placés") % (str(len(self.dicoPointsGPSEnPlace))) + "\n"  +       
                                   _("pour %s points GPS définis") % (str(len(listePointsActifs)))) + "\n" 
@@ -3962,7 +3959,7 @@ class Interface(ttk.Frame):
                  
         # vérification : y-a-t-il 2 points avec les mêmes coordonnées géographiques ?
 
-        xyz = [(f[1],f[2],f[3]) for f in self.listePointsGPS]
+        xyz = [(f[1],f[2],f[3]) for f in self.listePointsGPS if f[4] and f[0]!=""]
         if xyz.__len__()!=set(xyz).__len__():
             self.etatPointsGPS+=_("Attention : plusieurs points GPS ont les mêmes coordonnées.") + "\n"
 
@@ -4658,9 +4655,9 @@ class Interface(ttk.Frame):
         self.item655.pack(side='left',padx=20)
         self.item656.pack(side='left',padx=20)
         
-        self.onglets.add(self.item650, text="GPS")                             # affichage onglet
+        self.onglets.add(self.item650, text="GPS")                              # affichage onglet
 		
-    def affichePointCalibrationGPS(self,n,x,y,z,ident,incertitude):
+    def affichePointCalibrationGPS(self,n,x,y,z,ident,incertitude):             # affiche un point
         
         f = ttk.Frame(self.item680,height=5,relief='sunken')			# cadre d'accueil de la ligne
         
@@ -4676,6 +4673,9 @@ class Interface(ttk.Frame):
 				   )
         
         self.listeWidgetGPS[-1][0].pack(side='top')
+        if self.onglets.tab(self.onglets.select(), "text")=="GPS" and not self.listeWidgetGPS[-1][0].winfo_viewable():           
+            self.item650.configure(height=int(self.item650.cget('height'))+2)
+            #self.onglets.configure(height=int(self.item650.cget('height'))+200)
         self.listeWidgetGPS[-1][1].pack(side='left',padx=5)
         self.listeWidgetGPS[-1][1].focus()        
         self.listeWidgetGPS[-1][2].pack(side='left')        
@@ -4767,7 +4767,7 @@ class Interface(ttk.Frame):
                                                             # cela signifie que l'utilisateur à modifié le nom
                         self.dicoPointsGPSEnPlace[(i[0],e[1],e[2])] = v  # ajout d'une entrée quicorrige cette anomalie (on devrait utiliser l'identifiant...)
                         try:
-                            del self.dicoPointsGPSEnPlace[e]  # suppression de l'ancienen entrée
+                            del self.dicoPointsGPSEnPlace[e]  # suppression de l'ancienne entrée
                         except: pass
 
                     if e[2]==i[5] and i[4]==False:          # si l'identifiant est identique et le point GPS supprimé alors on supprime le point placé
@@ -4829,7 +4829,7 @@ class Interface(ttk.Frame):
         except: pass
         texte = str()
         ensemble=set(e[0] for e in self.listePointsGPS if e[4])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
-        liste=list(e[0] for e in self.listePointsGPS if e[4])
+        liste=list(e[0] for e in self.listePointsGPS if e[4])       
         if ensemble.__len__()!=liste.__len__():
             texte = _("Attention : des points portent le même nom : corriger !")
         if "" in ensemble:
@@ -6556,7 +6556,7 @@ class Interface(ttk.Frame):
     
                 if listePointsGPS.__len__()>0:
                     if listePointsGPS[0].__len__()==6:
-                        listePointsGPS=[[a,nom,x,y,z,ident,"10 10 10"] for a,nom,x,y,z,ident in listePointsGPS]                
+                        listePointsGPS = [[a,nom,x,y,z,ident,"10 10 10"] for a,nom,x,y,z,ident in listePointsGPS]                
             except Exception as e:
                 self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin),nouveauDepart='non')                
                 print(_("Erreur restauration points GPS : "),str(e))
@@ -6565,33 +6565,33 @@ class Interface(ttk.Frame):
             self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin),nouveauDepart='non')            
             return
         
-        # 3 variables : self.dicoPointsGPSEnPlace, self.listePointsGPS et self.idPointGPS
+        # 3 variables : self.dicoPointsGPSEnPlace, self.listePointsGPS et self.idPointGPS pour le chantier en cours et idem (sans self.) pour le chantier a ajouter
         # dicoPointsGPSEnPlace key = nom du point, photo, identifiant, value = x,y
         # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant,incertitude)
-        # self.idPointGPS : entier, identifiant du dernier point GPS
+        # idPointGPS : entier, identifiant du dernier point GPS 
         
-        # 1) Modifier la clé du dico lu : chemin de la photo et identifiant pat ajout de la valeur de self.idPointGPS
+        # 1) Modifier la clé du dico lu : chemin de la photo et identifiant par ajout de la valeur de self.idPointGPS
         # si la photo existe alors ajout dans le dico du chantier en cours       
 
-        for  e in dicoPointsGPSEnPlace.keys():
-            f = (e[0],os.path.join(self.repTravail,os.path.basename(afficheChemin(e[1]))),e[2]+self.idPointGPS)
-            if os.path.exists(f[1]):
-                self.dicoPointsGPSEnPlace[f] = dicoPointsGPSEnPlace[e]
+        for  nom,photo,identifiant in dicoPointsGPSEnPlace.keys():
+            nouvelId        = identifiant + self.idPointGPS
+            nouveauNom      = nom + "_" + str(nouvelId)
+            nouvellePhoto   = os.path.join(self.repTravail,os.path.basename(afficheChemin(photo)))
+            
+            if os.path.exists(nouvellePhoto):            
+                self.dicoPointsGPSEnPlace[nouveauNom,nouvellePhoto,nouvelId] = dicoPointsGPSEnPlace[nom,photo,identifiant]  # la photo existe, on ajoute au dico des points en place l'identifiant change
                 
 
         # 2) Modifier la liste des points GPS : identifiant pat ajout de la valeur de self.idPointGPS, éviter les noms en double
         
-        listeDesNomsEnCours = [a for a,b,c,d,e,f,g in self.listePointsGPS]
-        for a,b,c,d,e,f,g in listePointsGPS:
-            nouvelId = f + self.idPointGPS
-            if a in listeDesNomsEnCours:        #modification du nom s'il existe déjà
-                a = a + str(nouvelId)
-                listeDesNomsEnCours.append(a)
-            self.listePointsGPS.append([a,b,c,d,e,nouvelId,g])
+        for nom,b,c,d,e,identifiant,g in listePointsGPS:
+            nouvelId = identifiant + self.idPointGPS
+            nouveauNom = nom + "_"+ str(nouvelId)
+            self.listePointsGPS.append([nouveauNom,b,c,d,e,nouvelId,g])
 
         # 3) Trouver la nouvelle valeur de self.idPointGPS
         
-        self.idPointGPS = max ([f for a,b,c,d,e,f,g in self.listePointsGPS])
+        self.idPointGPS = 1 + max ([f for a,b,c,d,e,f,g in self.listePointsGPS])
 
 
         # mise à jour de la liste des widgets pour saisie :
