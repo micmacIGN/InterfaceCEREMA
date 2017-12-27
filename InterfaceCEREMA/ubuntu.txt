@@ -1,8 +1,4 @@
-Sous Linux/Ubuntu :
-
-Utiliser l'installateur AperoDeDenis-3.14-1.x86_64.rpm ou aperodedenis_3.14-2_amd64.deb.
-
-sinon :
+Sous Ubuntu/linux :
 
 Un pré-requis pour installer sans installateur :
 
@@ -12,7 +8,14 @@ lancer l'appli
 
 python3 AperoDeDenis.py
 
-Version 3 bilingue sous Ubuntu  :
+
+Version 3 sous Ubuntu  :
 
 Il faut recopier le répertoire "locale" dans le même répertoire que AperoDeDenis.py (pour la traduction anglaise) 
 Il faut installer python3 et pil comme indiqué dans le pré requis ci-dessus.
+
+Version 4 :
+
+La version 4 fixe 2 régressions de la version 3.2 et ajoute le calcul d'indices surfaciques.
+
+L'import des modules python suivant est nécessaire : numpy, scipy, matplotlib. 
