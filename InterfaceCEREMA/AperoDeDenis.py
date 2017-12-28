@@ -7503,7 +7503,6 @@ class Interface(ttk.Frame):
             
     def avertissementNouvelleVersion(self):
         global versionInternet
-        print("self.avertirNouvelleVersion=",self.avertirNouvelleVersion)
         if self.avertirNouvelleVersion:
             retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
                                        question=_("Nouvelle version disponible sur Internet : ")+
