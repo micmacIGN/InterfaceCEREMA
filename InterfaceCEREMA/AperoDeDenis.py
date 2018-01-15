@@ -37,13 +37,13 @@
 
 # a faire : corriger le mode d'obtention de ALL ou Line dans le calcul des indices de qualité
 # toutes les focales : la commande explore les sous-répertoires comportant la chaine JPG !!!
-# v 3.00 : bilingue (début novembre 2016, réalisation Alexandre Courallet)
+# v 3.00 : bilingue (début novembre 2016)
 # V 3.10 : sélection des meilleures photos
-# v 3.11 : sélection des meilleurs photos pour créer un nouveau chantier
+# v 3.11 : sélection des meilleurs images pour créer un nouveau chantier
 # v 3.12 : correction bogue affichage gps
 # v 3.13 : recherche exiftool et convert sous binaire-aux\windows ffmpeg absent sous bin;
 #          possibilité de saisir une unité avec la distance
-#          contrôle des photos supprimé si lanceMicMac aprés Tapas (gain de temps appréciable)
+#          controle des photos supprimé si lanceMicMac aprés Tapas.
 # v 3.14 : correction d'une régression de la v 3.13 lors de la restauration des paramètres (dûe à l'ajout de self.ffmpeg dans la sauvegarde).
 # v 3.20 : les photos autour de la maitresse pour Malt ne sont plus "autour" mais choisies parmi les meilleures en correspondances
 #          Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche les maitresses et les photos correspondantes
@@ -75,9 +75,8 @@
 # version 3.31
 # copier les points gps d'une chantier dans un autre (en corrigeant ce qu'il faut, menu expert)
 # version 3.32 : 2 corrections mineures (lignes 3854 supprimée et 3953 orthographe)
-# Version 3.33 : correction comptage des points GPS ( définition de listePointsActifs  revue)
-# Version 4.0  : Ajout du menu "analyse surfacique" (réalisation Dhia Eddine Stambouli)
-# version 4.10 : le 27 septembre 2017 : 
+# Version 3.33 : correction comptage des points GPS et des points GPS avec les mêmes coordonnées ( définition de listePointsActifs  revue)
+# Version 3.34 : janvier 2018
 # correction de : e remplacé par self.e dans MyDialog (fixe le problème du renommage des chantiers)
 # ajout de self.pasDeFocales = False aprés la mise à jour des exifs. (fixe le problème du message erroné concerné les focales manquantes)
 # modification de l'icone de la fenêtre = l'icone du cerema remplace le graindsel.
@@ -87,11 +86,7 @@
 # test de la présence de sous répertoire dans afficheetat :
 # si etatChantier>2 et pas de sous-répertoire alors etatChantier remis à 2 et
 # message "chantier nettoyé" affiché
-# le 26/10/17 : mise sous try : tortuosite = res_tortuosite[0]
-# le 5/11 : correction N° de profil sur l'affichage; ajout nom du fichier
-# le 16/11 : recollement avec le fichier portable hp retour lyon.
-# le 19/11/17 : ajout numéro version internet dans le message annoncant la nouvelle version (global)
-#               from scipy.interpolate import griddata ! marche pas avec idle mais correct !
+# la version 3.34 est rebaptisée 5.0 (suppression de l'item "indice surfacique")
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -118,22 +113,20 @@ import gettext
 import urllib.request
 import webbrowser
 import threading
-import struct
 
 
 
-################################################################################
+'''################################################################################
 #   Librairies utilisées pour le module de calcul des indices  surfaciques     #
 ################################################################################
 
 import math                                 # Pour utiliser la fonction racine carrée
 import csv                                  # Pour la lecture de la grille à partir du fichier
 import numpy as np
-
 from scipy.interpolate import griddata      # Pour l'interpolation
 import matplotlib.pyplot as plt             # Pour l'affichage des profils utilisés
-from matplotlib import cm                   # Pour choisir la couleur de des surfaces lors de l'affichage
-from mpl_toolkits.mplot3d import axes3d     # Pour l'affichage des surfaces
+from mpl_toolkits.mplot3d import Axes3D     # Pour l'affichage des surfaces
+from matplotlib import cm                   # Pour choisir la couleur de des surfaces lors de l'affichage'''
 
 ################################## Classe : Choix de la langue en cas d'absence dans les paramètres ###########################"
 
@@ -210,7 +203,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "4.11"
+numeroVersion = "5.0"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
@@ -299,7 +292,7 @@ print(heure()+_(" lancement d'aperodedenis")+version+".")
 ################################################################################
 
 
-################# Passage du fichier .ply aux coordonnées xyz ###################
+################# Passge du fichier .ply aux coordonnées xyz ###################
 class Ply2XYZ():
     def __init__(self, **kwargs):
             endian = "@"                                                    # valeur par défaut : endian du système
@@ -310,6 +303,7 @@ class Ply2XYZ():
                                                 title = _("Ply à lire"))       # choix du fichier
             if self.fichierPly==str():                                      # si pas de fichier choisi par l'utilisateur : on quitte
                 return
+            print(_("Fichier à lire : "),self.fichierPly)
             with open(self.fichierPly, 'rb') as infile:                     # lecture du fichier en mode "binaire"
                 ligne = infile.read()
 
@@ -323,55 +317,46 @@ class Ply2XYZ():
                 i+=1
                 if e==b'end_header':
                     break                                                   # tag de fin d'entête on connait la structure, fin du décodage de la structure
-                s=str(e)             
+                s=str(e)
                 if "little_endian" in s:                                    # boutisme
                         endian="<"
                 if "big_endian" in s:
                         endian=">"
                 if "element vertex" in s:                                   # nombre de points
                         nombre_points = int(s.split(" ")[-1][0:-1])
-                if "element face" in s:                                     # nombre de faces, cela termine la lecture : on ignore les faces
-                        nombre_faces = int(s.split(" ")[-1][0:-1])
-                        break
+                        print(_("nombre de points : "),str(nombre_points))
                 if "property" in s:                                         # property : liste les éléments de la structure des données pour chaque point
-                        cType = s.split(" ")[1]
-                        if cType=="float":                                    # Micmac n'utilise que les valeurs float et uchar
+                        if s.split(" ")[1]=="float":                        # Micmac n'utilsie que les valeurs float et uchar
                            fmt += "f"                                       # indique qu'il y a un float à lire
-                        elif cType=="uchar":
+                        elif s.split(" ")[1]=="uchar":
                            fmt += "B"                                       # indique qu'il y a un octet à lire
-                        elif cType=="char":
-                           fmt += "c"                                       # indique qu'il y a un octet à lire
-                        elif cType=="short":
-                           fmt += "h"                                       # indique qu'il y a deux octet à lire 
-                        elif cType=="ushort":
-                           fmt += "H"                                       # indique qu'il y a deux octet à lire
-                        elif cType=="int":
-                           fmt += "i"                                       # indique qu'il y a 4 octet à lire 
-                        elif cType=="uint":
-                           fmt += "I"                                       # indique qu'il y a 4 octet à lire
-                        elif cType=="double":
-                           fmt += "d"                                       # indique qu'il y a 8 octet à lire                              
-                        elif cType!="list":                       # la valeur list est aussi utilisée, s'il s'agit d'une autre valeur : abandon
-                            print("format non prévu pour les ply issus de micmac, abandon : ",cType)
+                        elif s.split(" ")[1]!="list":                       # la valeur list est aussi utilisée, s'il s'agit d'une autre valeur : abandon
+                            print("format non prévu pour les ply issus de micmac, abandon : ",s.split(" ")[1])
                             return
- 
+                print("ligne ",str(i)," : ",e)
+            if fmt!="fffBBB":                                               # il doit y avoir trois flottant (x,y,z) et 3 octets (Rouge, vert, bleu) sinon pas MicMac
+                print(_("Le format des données indique qu'il ne s'agit pas d'un ply généré par MicMac. Le format trouvé est : "),fmt,_(" le format attendu est : fffBBB"))
+                return
             fmt = endian+fmt                                                # le format est complété par le boutisme
+            print(_("Longueur du fichier : "),str(ligne.__len__()))
+            print(_("format du fichier > = big_endian, < = little_endian :"),endian)
+            print(_("Format des données : "),fmt,_(" longueur : "),str(struct.calcsize(fmt)))
+
             print(_("patience : écriture du fichier xyz en cours"))
             debutData = ligne.find(b"end_header",0,1000)+11                 # on extrait la zone des données utiles dans la varible "ligne" : début = aprés l'entête
             longueurData = nombre_points*struct.calcsize(fmt)               # on prend juste la longueur nécessaire (nombre de point * longueur des données du point)
             finData = debutData + longueurData
             plageData = ligne[debutData:finData]                            # extraction
+            print(_("Plage des données : début = "),str(debutData),_(" fin = "),str(finData),_(" longueur = "),str(longueurData))
             try:
-                valeur=tuple([e for e in fmt])
-                lesXYZ = [(valeur[0],valeur[1],valeur[2]) for [*valeur] in struct.iter_unpack(fmt,plageData).__iter__() ] # list comprehension extrayant les xyz de la structure décodée
-                   
+                lesXYZ = [(str(x),str(y),str(z)) for (x,y,z,r,v,b) in struct.iter_unpack(fmt,plageData).__iter__() ] # list comprehension extrayant les xyz de la structure décodée
             except Exception as e:
                 print(_("Erreur lors du décodage des données, le ply ne provient pas de micmac. Erreur : "),e)
                 return
             with open (self.fichierPlyXYZ,"w") as outfile:                  # ouverture du fichier de sortie
-                for e in lesXYZ:
-                    outfile.write(str(e[0])+" "+str(e[1])+" "+str(e[2])+"\n")                         # écriture des éléments x y et z séparé par un espace (si on veut une virgule mettre "," au lieu de " "
-            print("Fichier %s écrit sur disque" % self.fichierPlyXYZ)       # message final
+                for e in lesXYZ:                                            # pour chaque élément de la liste des xyz
+                    outfile.write(" ".join(e)+"\n")                         # écriture des éléments x y et z séparé par un espace (si on veut une virgule mettre "," au lieu de " "
+            print("Fichier %s écrit sur disque") % (self.fichierPlyXYZ)        # message final
     def fname_out(self):
         return  os.path.splitext(self.fichierPly)[0]+".xyz"
 
@@ -396,17 +381,15 @@ class Grille(object):
     def creer_grille(self,methode,step):
         mat = np.genfromtxt(self._get_nom(), delimiter=' ')
         points = mat[:,:2]
-        values = mat[:,2]       
+        values = mat[:,2]
         # les limites (x,y) de mes données
 
         min_x = min(mat[:,0])
-        
         max_x = max(mat[:,0])
 
         min_y = min(mat[:,1])
         max_y = max(mat[:,1])
-        
-        # générer un maillage avec un pas régulier, création de la grille régulière
+        # générer un maillaige avec un pas régulier, création de la grille régulière
 
         grid_x, grid_y = np.mgrid[min_x:max_x+step:step, min_y:max_y+step:step]
         grid_z = griddata(points, values, (grid_x, grid_y), method=methode, fill_value=-9999)
@@ -425,14 +408,14 @@ class Grille(object):
         min_y = min(mat[:,1])
         max_y = max(mat[:,1])
 
-        # générer un maillage avec un pas régulier, création de la grille régulière
+        # générer un maillaige avec un pas régulier, création de la grille régulière
         grid_x, grid_y = np.mgrid[min_x:max_x+step:step, min_y:max_y+step:step]
         grid_z = griddata(points, values, (grid_x, grid_y), method=methode)
         # Création du modèle 3D : Axes, légende, couleur...
         fig = plt.figure()
         ax = fig.add_subplot(111, projection='3d')
         ax.plot_surface(grid_x, grid_y, grid_z, cmap=cm.coolwarm)
-        ax.set_title(_("Méthode d'interpolation : ")+methode+"\n"+_(" pas du maillage : ")+str(step))
+        ax.set_title(methode+_(" pas du maillaige : ")+str(step))
         ax.set_xlabel('X Label')
         ax.set_ylabel('Y Label')
         ax.set_zlabel('Z Label')
@@ -441,8 +424,7 @@ class Grille(object):
 
     #sauvegarder_grille dans un fichier
     def sauvegarder_grille(self, obj, grille, step):
-        return np.savetxt(os.path.splitext(obj.fichierPly)[0]+'_regular_'+str(step).replace(".","")+'.txt',
-                          grille, fmt='%.18e', delimiter=' ', newline='\r\n', header='')
+        return np.savetxt(os.path.splitext(obj.fichierPly)[0]+'_regular_'+str(step).replace(".","")+'.txt',grille, fmt='%.18e', delimiter=' ', newline='\r\n', header='')
     # Récupérer le nom du fichier de la grille
     def nomFichier_sortie(self, obj, step):
         return os.path.splitext(obj.fichierPly)[0]+'_regular_'+str(step).replace(".", "")+'.txt'
@@ -493,9 +475,7 @@ class Conteneur(object):
 
     #calcul de la moyenne des valeurs d'un tableau
     def moyenne(self, tab):
-        if len(tab)>0:
-            return sum(tab)/len(tab)
-        return 0
+        return sum(tab)/len(tab)
 
     # Moyenne de l'écart type des hauteurs = Rq = rugosité moyenne quadratique
     def ecart_type(self):
@@ -531,11 +511,8 @@ class Conteneur(object):
                 work = [x for x in profil if x != -9999]                        # cle = identifiant du profil (utilisé pour l'affichage des profils utilisés)
                 tableau_val.append(self.pmp_profil(profil,work))                # On stocke les pmp de chaque profil dans un tableau
         moyenne_pmp = self.moyenne(tableau_val)                                  # Moyenne des pmp
-        if len(tableau_val):
-            epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-moyenne_pmp) for i in tableau_val])))/len(tableau_val)) # Ecart-type des pmp
-            return [moyenne_pmp, epsilon, keys]
-        else:
-            return list()
+        epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-moyenne_pmp) for i in tableau_val])))/len(tableau_val)) # Ecart-type des pmp
+        return [moyenne_pmp, epsilon, keys]
 
     # tortuosité de profil : longueur réelle du profil / la longeur entre les extrémités
     def tortuosity_profil(self,pas,tableau):
@@ -547,19 +524,18 @@ class Conteneur(object):
             if(tableau[i] == -9999):
                 i += 1
         calc_inter = (tableau[j]-tableau[i])**2 + (pas*(j - i))**2              # (y1-y2)**2+(x1-x2)**2
-        longueur_extremit = math.sqrt(calc_inter)                               # Distance euclidienne entre début et fin valides
+        longueur_extremit = math.sqrt(calc_inter)                               # Distance euclidienne
         longueur_profil = 0
         while(i < j):
             l = i + 1
-            while(tableau[l] == -9999):             
+            while(tableau[l] == -9999):
                 l += 1
             temp = (tableau[l]-tableau[i])**2 + (pas*(l-i))**2
-            longueur_profil += math.sqrt(temp)                                  # somme des distances en suivant le profil
+            longueur_profil += math.sqrt(temp)
             i = l
-        return longueur_profil/longueur_extremit                                # retour : tortuosité du "tableau" (= un profil)
+        return longueur_profil/longueur_extremit
 
     # tortuosité
-    
     def tortuosity(self, pas):
         tortuosite = []
         keys = []
@@ -570,14 +546,10 @@ class Conteneur(object):
             if (taux < 0.2):
                 keys.append(cle)                                                # cle = identifiant du profil (utilisé pour l'affichage des profils utilisés)
                 tortuosite.append(self.tortuosity_profil(pas,profil))           # On stocke la tortuosité de chaque profil dans un tableau
-        if len(tortuosite):
-            epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-self.moyenne(tortuosite)) for i in tortuosite])))/len(tortuosite)) # Ecart-type des tortuosité
-            return [self.moyenne(tortuosite), epsilon, keys]
-        else:
-            return 0
-    
+        epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-self.moyenne(tortuosite)) for i in tortuosite])))/len(tortuosite)) # Ecart-type des tortuosité
+        return [self.moyenne(tortuosite), epsilon, keys]
     # Afficher un profil utilisé dans les calculs de : PMP, Tortuosité
-    def affiche_profil(self, cle, step,id_profil,fichier):
+    def affiche_profil(self, cle, step):
         def nan(x):
             if(x== -9999):
                 x = 0
@@ -586,14 +558,14 @@ class Conteneur(object):
         profil = [nan(x) for x  in hauteurs.get(cle) ]
         x = np.array([i*step for i in range(len(profil))])
         profil = np.array(profil)
-        plt.plot(x, profil, label=os.path.basename(fichier)+_(" : profil n°")+str(id_profil))
+        plt.plot(x, profil, label=_("profil n°")+str(cle))
         plt.legend()
         plt.show()
         return
 
 ########################### Variables globales 2 #################################
-donnee = Conteneur()
-grid = Grille()
+#donnee = Conteneur()
+#grid = Grille()
 
 ########################### Classe pour tracer les masques
 
@@ -1363,7 +1335,7 @@ class Interface(ttk.Frame):
         mainMenu.add_cascade(label = _("Outils"),menu=menuOutils)
         mainMenu.add_cascade(label = _("Expert"),menu=menuExpert)
         mainMenu.add_cascade(label = _("Paramétrage"),menu=menuParametres)
-        mainMenu.add_cascade(label = _("Indices_surfaciques"),menu=menuIndices) #Non fonctionnel pour le moment
+        '''mainMenu.add_cascade(label = _("Indices_surfaciques"),menu=menuIndices)''' #Non fonctionnel pour le moment
         mainMenu.add_cascade(label = _("Aide"),menu=menuAide)
         
         # affichage du menu principal dans la fenêtre
@@ -1954,9 +1926,7 @@ class Interface(ttk.Frame):
         self.item7010 = ttk.Label(self.item7000,
                                     text=_(" Choisir la méthode d'interpolation "))
         self.item7020 = ttk.Label(self.item7000,
-                                    text=_("Indiquer le pas du maillage\nL'unité du pas est celle de la surface"+
-                                           "\nIl faut au moins 100 pas pour couvrir la surface"))
-             
+                                    text=_(" Choisir le pas du maillage "))
         self.item7021 = ttk.Entry(self.item7000,
                                     textvariable=self.pas_maillage)
 
@@ -1990,7 +1960,7 @@ class Interface(ttk.Frame):
 
         self.item8000 = ttk.Frame(fenetre)
         self.item8010 = ttk.Label(self.item8000,
-                                    text="\n" + _("Choisir le profil à afficher \nLe profil sera positionné sur la surface si elle est ouverte\nSinon la courbe du profil sera affichée"))
+                                    text="\n" + _("Choisir profil à afficher "))
         self.item8011 = ttk.Entry(self.item8000,
                                     textvariable=self.num_profil)
         self.item8020 = ttk.Button(self.item8000,
@@ -2374,7 +2344,7 @@ class Interface(ttk.Frame):
                                                 _("Malt    : mode, zoom final, nombre de photos autour de la maîtresse") + "\n"+
                                                 _("Tawny et ses options en saisie libre") + "\n"+
                                                 _("C3DC    : mode (Statue ou QuickMac)") + "\n\n")
-        self.tacky                      =       True    # Suite au message de Luc Girod sur le forum le 21 juin 17h
+        self.tacky                      = True  # Suite au message de Luc Girod sur le forum le 21 juin 17h
         self.chantierNettoye            =       False   # par défaut : le chantier n'est pas nettoyé !
         
     ####################### initialiseValeursParDefaut du défaut : nouveau chantier, On choisira de nouvelles photos : on oublie ce qui précéde, sauf les paramètres généraux de aperodedenis (param micmac)
@@ -2556,7 +2526,7 @@ class Interface(ttk.Frame):
         self.fichierParamChantier  =   os.path.join(self.selectionRepertoireAvecChemin,self.paramChantierSav)
         if os.path.exists(self.fichierParamChantier):        
             self.restaureParamChantier(self.fichierParamChantier)           
-            self.sauveParam()                           # pour assurer la cohérence entre le chantier en cours et le chantier ouvert (écrase le chantier en cours)
+            self.sauveParam()                                                   # pour assurer la cohérence entre le chantier en cours et le chantier ouvert (écrase le chantier en cours)
             self.afficheEtat(texte)
         else:
             self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin),nouveauDepart='non')
@@ -2804,7 +2774,6 @@ class Interface(ttk.Frame):
     ################################## LE MENU EDITION : afficher l'état, les photos, lire une trace, afficher les nuages de points ############################
                                                 
     def afficheEtat(self,entete="",finale=""):
-
         if self.pasDeMm3d():return
         self.sauveParam()
         self.avertissementNouvelleVersion()
@@ -2818,13 +2787,11 @@ class Interface(ttk.Frame):
             # Type de chantier : c'est une liste de string (on pourrait aussi mettre un dictionnaire), avec :
             # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' 
             # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
-            # [2] = 'original' ou "importé"
-
+            # [2] = 'original' ou "importé"          
             if self.typeDuChantier[0]=='photos':
                 texte = entete + '\n' + _('Répertoire des photos :') +  "\n" + afficheChemin(self.repertoireDesPhotos)
             if self.typeDuChantier[0]=='vidéo':
-                 texte = entete + "\n" + _("Répertoire de la vidéo :") + "\n" + afficheChemin(self.repertoireDesPhotos)
-                    
+                 texte = entete + "\n" + _("Répertoire de la vidéo :") + "\n" + afficheChemin(self.repertoireDesPhotos)                 
             if len(self.photosSansChemin)==0:
                texte = texte+'\n\n'+_('Aucune photo sélectionnée.') + '\n'              
             if len(self.photosSansChemin)>=1:                                   # Il ne peut en principe pas y avoir une seule photo sélectionnée
@@ -2928,6 +2895,7 @@ class Interface(ttk.Frame):
             if self.etatDuChantier == 0:                                        # pas encore de chantier
                 texte = texte+"\n" + _("Chantier en cours de définition.") + "\n"
 
+
             # un chantier avec des traitements effectués et pas de sous-répertoire : il a été nettoyé !
 
             if self.etatDuChantier >= 3 and len([f for f in os.listdir(self.repTravail) if os.path.isdir(os.path.join(self.repTravail, f))])==0:
@@ -2946,8 +2914,8 @@ class Interface(ttk.Frame):
             if self.chantierNettoye:
                  texte = texte+"\n" + _("Chantier nettoyé.") + "\n"
 
-            #Affichage de l'état du chantier :
-            
+            # Affichage de l'état du chantier :
+
             if self.etatDuChantier >= 1:                                        # le chantier est créé : il y a des photos choisies (2 enregistré,
                                                                                 # 3 en cours d'exécution,
                                                                                 # 4 arrêt aprés tapas, 5 terminé aprés malt ou c3dc, 6 modifiable mais n'existe plus)
@@ -3057,7 +3025,7 @@ class Interface(ttk.Frame):
             self.choisirUnePhoto(self.listeDesMaitresses+self.listeDesMasques+self.listeDesMaitressesApero,
                                  titre=_('Liste des images maîtresses et des masques ')+"\n"+_("communs à GeomImage et AperoDedenis"),
                                  mode='single',
-                                 message=_("Images maîtresses et masques")+"\n"+_("communs à GeomImage et AperoDedenis"),
+                                 message=_("Images maîtresses et masques"),
                                  messageBouton=_("Fermer")
                                  )            
         else:
@@ -3186,6 +3154,7 @@ class Interface(ttk.Frame):
             self.encadre(_("Pas d' ortho mosaique par Tawny. Choisir l'option Tawny de Malt."),nouveauDepart='non')    
             return
         orthoMosaiqueJPG = os.path.splitext(orthoMosaiqueTIF)[0]+".JPG"
+        print("orthoMosaiqueJPG=",orthoMosaiqueJPG)
         if not os.path.exists(orthoMosaiqueJPG):
             self.conversionJPG(liste=[orthoMosaiqueTIF])
             if not os.path.exists(orthoMosaiqueJPG):
@@ -3475,13 +3444,13 @@ class Interface(ttk.Frame):
     def modifierTacky(self):
         self.tacky = not self.tacky
         if self.tacky:
-            self.encadre(_("Tacky message au lancement activé"),nouveauDepart="non")
+            self.encadre(_("Tacky message au lancement activé"))
         else:
-            self.encadre(_("Tacky message au lancement désactivé"),nouveauDepart="non")
+            self.encadre(_("Tacky message au lancement désactivé"))
 
     def modifierLangue(self):
         self.menageEcran()
-        self.encadre(_("Sélectionnez la langue à utiliser. L'application sera redémarrée."),nouveauDepart="non")
+        self.encadre(_("Sélectionnez la langue à utiliser. L'application sera redémarrée."))
         frame = tkinter.Frame(fenetre)
         frameListe = tkinter.Frame(frame)
         frameBoutton = tkinter.Frame(frame)
@@ -4622,11 +4591,14 @@ class Interface(ttk.Frame):
             infile.write(self.masqueXML)
 
     def tracerUnMasqueSurMosaiqueTarama(self):
+        print("self.mosaiqueTaramaTIF=",self.mosaiqueTaramaTIF)
         if not os.path.exists(self.mosaiqueTaramaTIF):              # en principe existe si on arrive ici
-            return       
+            return
+        print(self.mosaiqueTaramaJPG)        
         if not os.path.exists(self.mosaiqueTaramaJPG):
             self.conversionJPG(liste=[self.mosaiqueTaramaTIF])          
         if not os.path.exists(self.mosaiqueTaramaJPG):
+            print("retour")
             return
         # l'utilisateur trace le masque
  
@@ -4897,6 +4869,7 @@ class Interface(ttk.Frame):
         if "" in ensemble:
             texte = _("Attention : un point n'a pas de nom. ")+texte
         if texte!=str():
+            print(_("controle points : ")+texte)
             self.infoBulle(texte)
             return True
         return False
@@ -5746,6 +5719,7 @@ class Interface(ttk.Frame):
         if ligne[0]=="|":
             return ligne        
         if "cMetaDataPhoto" in ligne:
+            print(_("ligne avec meta : "),ligne)
             return "\n####" + _("ATTENTION : des metadonnées nécessaires sont absentes des photos. Vérifier l'exif.") + "\n\n" 
 
     # ------------------ Meslab 1 : ouvre AperiCloud.ply avec l'outil choisi par l'utilisateur --------------------------
@@ -5876,15 +5850,17 @@ class Interface(ttk.Frame):
             return ligne        
 
     def reinitialiseMaitreEtMasque(self):                                                       # on conserve si la photo appartient au nouveau lot
-        # pas de réinitialisation des maitresses et masques aperodedenis
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
         self.maitre                     =   str()        
         self.maitreSansChemin           =   str()                                               # image maîtresse        
         self.fichierMasqueXML           =   str()                                               # nom du fichier XML décrivant le masque
         self.maitreSansExtension        =   str()
+        self.monImage_MaitrePlan        =   str()                                               # Nom de l'image maîtresse du plan repere (sans extension)
+        self.monImage_PlanTif           =   str()                                               # nom du masque correspondant
         self.listeDesMaitresses         =   list()                                              # liste des images maitresses
-        [supprimeFichier(e) for e in self.listeDesMasques]                                      # suppression des fichiers .tif des masques
         self.listeDesMasques            =   list()                                              # liste Des Masques associès aux maîtresses
+        self.listeDesMaitresses         =   list()
+        self.listeDesMasques            =   list()
         self.miseAJourItem701_703()                                                             # met à jour les windgets de l'onglet Malt
 
     def reinitialiseMaitreEtMasqueDisparus(self):                                               # on conserve les options si la photo appartient au nouveau lot (photos = liste avec chemins)
@@ -6279,7 +6255,7 @@ class Interface(ttk.Frame):
         self.menageEcran()
         repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
         if os.path.isdir(repertoireHomol)==False:
-            self.encadre("Lancer d'abord Tapioca/Tapas",nouveauDepart="non")
+            self.encadre("Lancer d'abord Tapioca/Tapas")
             return
         self.item9000.pack()
         pass
@@ -6691,9 +6667,10 @@ class Interface(ttk.Frame):
                 _("       - Importer un chantier :") + "\n"+\
                 _("            - copie le chantier sauvegardé dans un nouvel environnement (ordinateur, système d'exploitation)") + "\n"+\
                 _("            - un exemple d'intérêt : copier un chantier aprés tapas, lancer malt avec des options variées sans perdre l'original.") + "\n\n"+\
-                _("       - Du ménage ! : supprimer ou nettoyer les chantiers : chaque chantier crée une arborescence de travail.") + "\n"+\
-                _("         Cet item permet de supprimer toute l'arborescence ou seulement les répertoires devenus inutiles.") + "\n"+\
-                _("         La suppression est définitive, sans récupération possible :") + "\n"+\
+                _("       - Du ménage ! : supprimer les chantiers : chaque chantier crée une arborescence de travail.") + "\n"+\
+                _("         Cet item permet de supprimer les répertoires devenus inutiles.") + "\n"+\
+                _("         Aprés un message demandant confirmation la suppression est définitive, sans récupération possible :") + "\n"+\
+                _("         toute l'arborescence est supprimée, même les archives exportées.") + "\n\n"+\
                 _("       - Quitter : quitte l'application, le chantier en cours est conservé et sera ouvert lors de la prochaine exécution.") + "\n\n"+\
                 _("Menu Edition :") + "\n\n"+\
                 _("       - Afficher l'état du chantier : affiche les paramètres du chantier et son état d'exécution.") + "\n"+\
@@ -6811,15 +6788,7 @@ class Interface(ttk.Frame):
                 _("       - Désigner l'application convert d'ImageMagick, utile pour convertir les gif, tif et bmp en jpg (elle se trouve sous micMac\\binaire-aux).") + "\n\n"+\
                 _("       - Désigner l'application ouvrant les fichiers .PLY. Ce peut être  Meshlab, CloudCompare ou autre.") + "\n"+\
                 _("         Sous Windows Meshlab se trouve sous un répertoire nommé VCG.") + "\n\n"+\
-                _("       - Changer la langue (Français/Anglais) Réalisation Alexandre Courallet") + "\n\n"+\
-                _("       - Activer/désactiver le 'tacky' message de lancement")+ "\n\n"+\
-                _("menu Indices_surfaciques : réalisation Dhia Eddine Stambouli") + "\n\n"+\
-                _("       - Affichage de la surface interpolée : A partir d'un modele 3D calcule un maillage régulier et l'affiche ") + "\n"+\
-                _("         Le pas du maillage est dans l'unité de mesure de la surface. Il faut au moins 100 pas sur la largeur de la surface.") + "\n"+\
-                _("       - Calcul des indices : calcule de la rugosité et la tortuosité de la surface ") + "\n"+\
-                _("       - Calcul de la PMP : calcule de la profondeur moyenne de profil et de la PM texture équivalente") + "\n"+\
-                _("       Aprés calcul les profils peuvent être affichés.") + "\n"+\
-                _("       Ces calculs supposent que les modéles 3D sont des surfaces calibrées. Le pas du maillage est dans l'unité du modèle.") + "\n\n"+\
+                _("       - Activer/désactiver le 'tacky' message de lancement")+ "\n"+\
                 _("menu Aide :") + "\n\n"+\
                 _("       - Pour commencer : à lire lors de la prise en main de l'interface.") + "\n\n"+\
                 _("       - Aide : le détail des items de menu.") + "\n\n"+\
@@ -6982,13 +6951,23 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("- Ajout d'un menu 'expert' permettant de saisir une ligne de commande.") + "\n"+\
               "\n" + _("Version 3.31 :")+chr(9)+_("février 2017") + "\n"+\
               chr(9)+chr(9)+_("- Ajout d'un item du menu 'expert' : recopie les points GPS d'un chantier à un autre.") + "\n"+\
-              "\n" + _("Version 4.0 :")+chr(9)+_("Avril 2017") + "\n"+\
-              chr(9)+chr(9)+_("- Ajout d'un item du menu 'Indices_surfaciques' : calcul de la tortuosité, de la rugosité et de la PMP d'une surface.") + "\n"+\
-              "\n" + _("Version 4.10 :")+chr(9)+_("Octobre 2017") + "\n"+\
-              chr(9)+chr(9)+_("- Affichage de la taille du chantier en MO.") + "\n"+\
-              chr(9)+chr(9)+_("- 'Du ménage' propose de nettoyer le chantier sans le supprimer.") + "\n"+\
-              chr(9)+chr(9)+_("- L'icone de la fenêtre devient celle du cerema.") + "\n"+\
-              "----------------------------------------------------------"       
+              "\n" + _("Version 3.34 :")+chr(9)+_("Janvier 2018") + "\n"+\
+              chr(9)+chr(9)+_("- Du ménage! permet de conserver les résultats OU de supprimer tout le chantier.") + "\n"+\
+              chr(9)+chr(9)+_("- Affichage de la taille du dossier.") + "\n"+\
+              chr(9)+chr(9)+_("- Correction de régressions de la V 3.20.") + "\n"+\
+              chr(9)+chr(9)+_("Remarque : la version 4.11 de décembre 2017 ajoute un item métier de calcul d'indice surfacique,") + "\n"+\
+              "\n" + _("Version 5.0 :")+chr(9)+_("Janvier 2018") + "\n"+\
+              chr(9)+chr(9)+_("la version suivante 5.0 supprime l'item 'indices surfaciques'.") + "\n"+\
+              "----------------------------------------------------------"
+# correction de : e remplacé par self.e dans MyDialog (fixe le problème du renommage des chantiers)
+# ajout de self.pasDeFocales = False aprés la mise à jour des exifs. (fixe le problème du message erroné concerné les focales manquantes)
+# modification de l'icone de la fenêtre = l'icone du cerema remplace le graindsel.
+# possibilité de choisir le ménage : suppression totale ou conservation des résultats seuls
+# Affichage du gain de place en MO aprés le ménage
+# affichage de la taille du dossier en MO dans l'affichage de l'état du chantier
+# test de la présence de sous répertoire dans afficheetat :
+# si etatChantier>2 et pas de sous-répertoire alors etatChantier remis à 2 et
+# message "chantier nettoyé" affiché              
         #self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         self.cadreVide()
         self.effaceBufferTrace()        
@@ -7102,7 +7081,6 @@ class Interface(ttk.Frame):
 
        
     def sauveParamMicMac(self):
-        global versionInternet
         essai = (self.fichierParamMicmac+"essai")       # pour éviter d'écraser le fichier si le disque est plein
         try:
             sauvegarde2=open(essai,mode='wb')
@@ -7311,17 +7289,13 @@ class Interface(ttk.Frame):
             self.messageNouveauDepart =  texte
             self.nouveauDepart()    # lance une fenêtre  nouvelle sous windows (l'actuelle peut-être se polluer par certains traitements sous windows)
             return
-        try:
-            self.texte101.configure(text=texte,justify=aligne)
-            self.texte101Texte = texte  # pour encadrePlus
-            self.resul100.pack()
-        except: pass
-        try:
-            fenetre.title(self.etatSauvegarde+self.chantier+" - "+self.titreFenetre)
-            fenetre.focus_force()       # force le focus (it is impolite !)
-            fenetre.update()
-        except: pass
-        
+        self.texte101.configure(text=texte,justify=aligne)
+        self.texte101Texte = texte  # pour encadrePlus
+        self.resul100.pack()
+        fenetre.title(self.etatSauvegarde+self.chantier+" - "+self.titreFenetre)
+        fenetre.focus_force()       # force le focus (it is impolite !)
+        fenetre.update()
+
     def encadrePlus(self,plus,nbLignesmax=40):
         self.texte101Texte+=plus
         if len(self.texte101Texte.split("\n")[-1])>60:
@@ -7341,88 +7315,95 @@ class Interface(ttk.Frame):
         self.fermerModifExif()
 
         # fermeture des frames et notebook
-        try:
-            if self.item400.winfo_manager()=="pack":
-               self.item400.pack_forget()
-            if self.item450.winfo_manager()=="pack":
-               self.item450.pack_forget()
-            if self.item460.winfo_manager()=="pack":
-               self.item460.pack_forget()
-            if self.item470.winfo_manager()=="pack":
-               self.item470.pack_forget()
-            if self.item480.winfo_manager()=="pack":
-               self.item480.pack_forget()
-               
-            if self.item500.winfo_manager()=="pack":
-               self.item500.pack_forget()
-            if self.item510.winfo_manager()=="pack":
-               self.item510.pack_forget()
-            if self.item540.winfo_manager()=="pack":
-               self.item540.pack_forget()           
-            if self.item520.winfo_manager()=="pack":
-               self.item520.pack_forget()
-               
-            if self.item700.winfo_manager()=="pack":
-               self.item700.pack_forget()
-            if self.item710.winfo_manager()=="pack":
-               self.item710.pack_forget()
-            if self.item720.winfo_manager()=="pack":
-               self.item720.pack_forget()
-            if self.item730.winfo_manager()=="pack":
-               self.item730.pack_forget()
-
-            if self.item800.winfo_manager()=="pack":
-               self.item800.pack_forget()
-
-            if self.item950.winfo_manager()=="pack":
-               self.item950.pack_forget()
-            if self.item960.winfo_manager()=="pack":
-               self.item960.pack_forget()
-            if self.item965.winfo_manager()=="pack":
-               self.item965.pack_forget()
-            if self.item970.winfo_manager()=="pack":
-               self.item970.pack_forget()
-            if self.item975.winfo_manager()=="pack":
-               self.item975.pack_forget()           
-            if self.item980.winfo_manager()=="pack":
-               self.item980.pack_forget()
-            if self.item990.winfo_manager()=="pack":
-               self.item990.pack_forget()  
-
-            if self.item1000.winfo_manager()=="pack":
-               self.item1000.pack_forget()           
-            if self.item2000.winfo_manager()=="pack":
-               self.item2000.pack_forget()
-            if self.item3000.winfo_manager()=="pack":
-               self.item3000.pack_forget()
-            if self.item7000.winfo_manager()=="pack":
-               self.item7000.pack_forget()
-            if self.item8000.winfo_manager()=="pack":
-               self.item8000.pack_forget()
-            if self.item9000.winfo_manager()=="pack":
-               self.item9000.pack_forget()
-               
-            if self.resul100.winfo_manager()=="pack":
-               self.resul100.pack_forget()
-            if self.resul200.winfo_manager()=="pack":
-               self.resul200.pack_forget()           
-            if self.onglets.winfo_manager()=="pack":
-               self.onglets.pack_forget()
-               
-            if self.logo.winfo_manager()=="pack":
-               self.logo.pack_forget()           
-            if self.logo1.winfo_manager()=="pack":
-               self.logo1.pack_forget()
-            if self.logoIgn.winfo_manager()=="pack":
-               self.logoIgn.pack_forget()
-        except: pass
         
+        if self.item400.winfo_manager()=="pack":
+           self.item400.pack_forget()
+        if self.item450.winfo_manager()=="pack":
+           self.item450.pack_forget()
+        if self.item460.winfo_manager()=="pack":
+           self.item460.pack_forget()
+        if self.item470.winfo_manager()=="pack":
+           self.item470.pack_forget()
+        if self.item480.winfo_manager()=="pack":
+           self.item480.pack_forget()
+           
+        if self.item500.winfo_manager()=="pack":
+           self.item500.pack_forget()
+        if self.item510.winfo_manager()=="pack":
+           self.item510.pack_forget()
+        if self.item540.winfo_manager()=="pack":
+           self.item540.pack_forget()           
+        if self.item520.winfo_manager()=="pack":
+           self.item520.pack_forget()
+           
+        if self.item700.winfo_manager()=="pack":
+           self.item700.pack_forget()
+        if self.item710.winfo_manager()=="pack":
+           self.item710.pack_forget()
+        if self.item720.winfo_manager()=="pack":
+           self.item720.pack_forget()
+        if self.item730.winfo_manager()=="pack":
+           self.item730.pack_forget()
+
+        if self.item800.winfo_manager()=="pack":
+           self.item800.pack_forget()
+
+        if self.item950.winfo_manager()=="pack":
+           self.item950.pack_forget()
+        if self.item960.winfo_manager()=="pack":
+           self.item960.pack_forget()
+        if self.item965.winfo_manager()=="pack":
+           self.item965.pack_forget()
+        if self.item970.winfo_manager()=="pack":
+           self.item970.pack_forget()
+        if self.item975.winfo_manager()=="pack":
+           self.item975.pack_forget()           
+        if self.item980.winfo_manager()=="pack":
+           self.item980.pack_forget()
+        if self.item990.winfo_manager()=="pack":
+           self.item990.pack_forget()  
+
+        if self.item1000.winfo_manager()=="pack":
+           self.item1000.pack_forget()           
+        if self.item2000.winfo_manager()=="pack":
+           self.item2000.pack_forget()
+        if self.item3000.winfo_manager()=="pack":
+           self.item3000.pack_forget()
+        if self.item7000.winfo_manager()=="pack":
+           self.item7000.pack_forget()
+        if self.item8000.winfo_manager()=="pack":
+           self.item8000.pack_forget()
+        if self.item9000.winfo_manager()=="pack":
+           self.item9000.pack_forget()
+           
+        if self.resul100.winfo_manager()=="pack":
+           self.resul100.pack_forget()
+        if self.resul200.winfo_manager()=="pack":
+           self.resul200.pack_forget()           
+        if self.onglets.winfo_manager()=="pack":
+           self.onglets.pack_forget()
+           
+        if self.logo.winfo_manager()=="pack":
+           self.logo.pack_forget()           
+        if self.logo1.winfo_manager()=="pack":
+           self.logo1.pack_forget()
+        if self.logoIgn.winfo_manager()=="pack":
+           self.logoIgn.pack_forget()
+
         try:
             if self.frame.winfo_manager()=="pack":
                 self.frame.pack_forget()              
             self.bulle.destroy()
         except: pass             
            
+##
+##    def listeFrames(self):                                          # CREE LA LISTE DE TOUS LES FRAMES de la fenetre self
+##        self.l=list()
+##        for v,t in self.__dict__.items():                           # un print (v,t) ici affiche l'identifiant arborescent des widgets (fenetre/frame/widget)
+##            if t.__class__ in [ttk.Frame().__class__,ttk.Notebook().__class__]:
+##                self.l.append(v)
+
+
     def fermerLaBoiteAOnglets(self):    # palliatif
         # la boite à oglet n'est pas une fenêtre modale mais une frame..
         # on pallie à cela en proposant de la sauver ou pas lorsque l'on fait du ménage
@@ -7443,39 +7424,34 @@ class Interface(ttk.Frame):
         except: pass
         
     def fermerOptionsGoPro(self):
-        try:
-            if self.fermetureOptionsGoProEnCours == True:
-                return
-            if self.item2000.winfo_manager()=="":
-                return
-            self.fermetureOptionsGoProEnCours = True        
-            if self.troisBoutons(_("Fermer les options vidéo."),_("Enregistrer les options vidéos saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
-                self.optionsGoProOK()
-            else:
-                self.optionsGoProKO()
-            self.fermetureOptionsGoProEnCours = False
-        except: pass
+        if self.fermetureOptionsGoProEnCours == True:
+            return
+        if self.item2000.winfo_manager()=="":
+            return
+        self.fermetureOptionsGoProEnCours = True        
+        if self.troisBoutons(_("Fermer les options vidéo."),_("Enregistrer les options vidéos saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
+            self.optionsGoProOK()
+        else:
+            self.optionsGoProKO()
+        self.fermetureOptionsGoProEnCours = False        
 
     def fermerModifExif(self):
-        try:
-            if self.fermetureModifExif == True:
-                return
-            if self.item3000.winfo_manager()=="":
-                return
-            self.fermetureModifExif = True        
-            if self.troisBoutons(_("Fermer la modification des exifs."),_("Enregistrer les valeurs saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
-                self.exifOK()
-            else:
-                self.exifKO()
-            self.fermetureModifExif = False
-        except: pass
+        if self.fermetureModifExif == True:
+            return
+        if self.item3000.winfo_manager()=="":
+            return
+        self.fermetureModifExif = True        
+        if self.troisBoutons(_("Fermer la modification des exifs."),_("Enregistrer les valeurs saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
+            self.exifOK()
+        else:
+            self.exifKO()
+        self.fermetureModifExif = False
 
 ######################### recherche de la dernière version d'aperodedenis sur le net
 
     def verifieVersion(self):       # va lire la version dans le titre de la page GitHub, puis compare avec la version mémorisée.
                                 # Affiche un message si besoin.
                                 # lancé par un thread (pour éviter le retard éventuel de connexion à internet si pas de connexion
-        global versionInternet
         try:
             sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
             htmlLu = str(sock.read(30000))
@@ -7486,8 +7462,7 @@ class Interface(ttk.Frame):
             finTitre = htmlLu.find('"',titre+9)
             versionInternet = htmlLu[debutTitre:finTitre]
         except Exception as e:
-            pass
-            # print(_("erreur connexion internet : "),str(e))
+            print(_("erreur connexion internet : "),str(e))
             return
 
             # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
@@ -7497,15 +7472,14 @@ class Interface(ttk.Frame):
             self.messageVersion = True              # Version à jour; activation message pour le futur
         elif (compteur==1 and
                 (self.versionInternetAncienne!=versionInternet        # nouvelle version sur internet
-                or self.messageVersion)                               # version déjà vue mais acccord pour réaffichage
+                and self.messageVersion)                               # version déjà vue mais acccord pour réaffichage
                ):
             self.avertirNouvelleVersion = True
             
     def avertissementNouvelleVersion(self):
-        global versionInternet
         if self.avertirNouvelleVersion:
             retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
-                                       question=_("Nouvelle version disponible sur Internet : ")+
+                                       question=_("Nouvelle version disponible sur Internet : ")+"\n"+
                                                    versionInternet+"\n"+
                                                 _("Téléchargement à l'adresse : ")+"\n\n"+
                                                 "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
@@ -7625,14 +7599,12 @@ class Interface(ttk.Frame):
                             shutil.rmtree(r)
                         except:
                             espaceGagne-=sizeDirectoryMO(r)
-                            
-
-            
             texte = "Ménage effectué"
             texte += "\n\n"+_("Espace disque récupéré : ")+str(espaceGagne)+" MO"
                 
             self.encadre(texte,nouveauDepart='non')
             return
+        
     ############################### Message proposant une question et deux, trois ou 4 Boutons
     # si b2="" alors pas de second bouton    retour : 0, 1, 2, 3 : numéro du bouton
     def troisBoutons(self,titre=_('Choisir'),question=_("Choisir : "),b1='OK',b2='KO',b3=None,b4=None):
@@ -7785,7 +7757,8 @@ class Interface(ttk.Frame):
             if lue==None:
                 return            
             self.lignePourTrace = self.lignePourTrace+str(lue)             # la trace détaillée en fin de MicMac, dans le répertoire de travail, sous le nom traceTotale
-        except Exception as e: print("Erreur ajout trace compléte : ",str(e)) 
+        except Exception as e: print(e) 
+
             
     def ajoutTraceSynthese(self,filtree=''):
         try:
@@ -7801,8 +7774,7 @@ class Interface(ttk.Frame):
             self.texte201.insert('end',str(filtree))                  
             self.texte201.update()
             self.texte201.see('end') 
-        except Exception as e: print("Erreur ajout trace synthèse : ",str(e)) 
-
+        except Exception as e:  print(e)
 
 
     def effaceBufferTrace(self):
@@ -7910,7 +7882,7 @@ class Interface(ttk.Frame):
         
         self.b1 = ttk.Button(self.topVisuPhoto,text=messageBouton,command=self.validPhoto)  # le premier bouton (fermer ou OK
         if boutonDeux!=None:
-            c = ttk.Button(self.topVisuPhoto,text=boutonDeux,command=self.cloreVisuPhoto)   # le second bouton si demandé
+            c = ttk.Button(self.topVisuPhoto,text=boutonDeux,command=self.cloreVisuPhoto)   # le second bouon si demandé
             self.b1.pack(pady=5)
             c.pack(pady=5)
         else:
@@ -8038,7 +8010,7 @@ class Interface(ttk.Frame):
         self.photosSansChemin = list([os.path.basename(x) for x in self.photosAvecChemin])   # liste des noms de photos copiès, sans le chemin. [tuple]            
 
         if self.photosSansChemin.__len__()==0:
-            self.encadre(_("Aucune image décompactée : consulter la trace."),nouveauDepart="non")
+            self.encadre(_("Aucune image décompactée : consulter la trace."))
             self.ecritureTraceMicMac()          # on écrit les fichiers trace
             return            
 
@@ -8564,7 +8536,7 @@ class Interface(ttk.Frame):
         listeTaille = list()
         repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
         if os.path.isdir(repertoireHomol)==False:
-            self.encadre(_("Lancer d'abord Tapioca/Tapas"),nouveauDepart="non")
+            self.encadre(_("Lancer d'abord Tapioca/Tapas"))
             return
         
         os.chdir(repertoireHomol)        
@@ -8660,108 +8632,103 @@ class Interface(ttk.Frame):
         ################### Indices surfaciques ################################
 
     def afficheSurf(self):
-        traite = Ply2XYZ()
-        self.encadre(_("Création de la grille ..."),nouveauDepart="non")
-        grid._set_nom(traite.fname_out())        
         self.majParametre()
-
-        try:
-            pas = float(self.pas_maillage.get())
-        except:
-            self.encadre(_("Saisir un nombre positif pour le pas du maillage"),nouveauDepart="non")
-            return
-        if pas<=0:
-            self.encadre(_("Saisir un nombre positif pour le pas du maillage"),nouveauDepart="non")
-            return
-        
+        while(1):
+            try:
+                float(self.pas_maillage.get())
+                break
+            except:
+                self.encadre(_("Saisir une valeur numérique"))
+                time.sleep(1)
+                self.majParametre()
+        pas = float(self.pas_maillage.get())
         methode_interpolation = self.methode_interpol.get()
 
-        self.encadre(_("Passage en coordonnées xyz"),nouveauDepart="non")
-
-        self.encadre(_("Création de la grille effectuée."),nouveauDepart="non")
+        self.encadre(_("Passage en coordonnées xyz"))
+        traite = Ply2XYZ()
+        self.encadre(_("Création de la grille ..."))
+        grid._set_nom(traite.fname_out())
         grid.affiche_grille(methode_interpolation,pas)
- 
+        self.encadre(_("Création de la grille ..."))
+
     def calculIndices(self):
         self.majParametre()
-        try:
-            pas = float(self.pas_maillage.get())
-        except:
-            self.encadre(_("Saisir un nombre positif pour le pas du maillage"),nouveauDepart="non")
-            return
-        if pas<=0:
-            self.encadre(_("Saisir un nombre positif pour le pas du maillage"),nouveauDepart="non")
-            return
+        while(1):
+            try:
+                float(self.pas_maillage.get())
+                break
+            except:
+                self.encadre(_("Saisir une valeur numérique"))
+                time.sleep(1)
+                self.majParametre()
+        pas = float(self.pas_maillage.get())
         methode_interpolation = self.methode_interpol.get()
-        self.encadre(_("Passage en coordonnées xyz"),nouveauDepart="non")
+
+        self.encadre(_("Passage en coordonnées xyz"))
         traite = Ply2XYZ()
-        self.encadre(_("Création de la grille ..."),nouveauDepart="non")
-        grid._set_nom(traite.fname_out())        
+        self.encadre(_("Création de la grille ..."))
+        grid._set_nom(traite.fname_out())
         grille_reg = grid.creer_grille(methode_interpolation, pas)
         grid.sauvegarder_grille(traite, grille_reg,pas)
 
         # Calculs
 
         donnee._set_nom(grid.nomFichier_sortie(traite,pas))
-        self.encadre(_("Le calcul peut durer quelques minutes ..."),nouveauDepart="non")
+        self.encadre(_("Le calcul peut durer quelques minutes ..."))
         rugosite = donnee.ecart_type()
         res_tortuosite = donnee.tortuosity(pas)
-        try:
-            tortuosite = res_tortuosite[0]
-            ecarType = res_tortuosite[1]
-            cles = res_tortuosite[2]
-            self.encadreEtTrace(_("Rugosité moyenne quadratique : ") + str.format('{0:.3f}',rugosite[0]) +" +/- " +str.format('{0:.3f}',rugosite[1])+
-                        "\r\n " + _("Tortuosité moyenne : ") + str.format('{0:.3f}',tortuosite) +" +/- " +str.format('{0:.3f}',ecarType)+
-                        "\n " + _("nombre de profils utilisés : ") + str(len(cles))+
-                        "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"")
-        except:
-            self.encadreEtTrace(_("indices non calculés : celà peut être dû à des vides dans le nuage de points."))            
-            return
+        tortuosite = res_tortuosite[0]
+        ecarType = res_tortuosite[1]
+        cles = res_tortuosite[2]
+        self.encadre(_("Rugosité moyenne quadratique : ") + str.format('{0:.3f}',rugosite[0]) +" +/- " +str.format('{0:.3f}',rugosite[1])+
+                    "\r\n " + _("Tortuosité moyenne : ") + str.format('{0:.3f}',tortuosite) +" +/- " +str.format('{0:.3f}',ecarType)+
+                    "\n " + _("nombre de profils utilisés : ") + str(len(cles))+
+                    "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"")
+
         self.majAffiche_profil()
         while( self.affOK()):
             while(1):
                 try:
+                    int(self.num_profil.get())
                     if(int(self.num_profil.get()) not in range(cles[-1]-cles[0]+1)):
                         self.encadre(_("Choisir une valeur valide ")+
-                                        "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"\r\n",nouveauDepart="non")
+                                        "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"\r\n")
                         self.majAffiche_profil()
                     else:
                         break
                 except:
-                    self.encadre(_("Saisir une valeur numérique pour le pas de maillage"),nouveauDepart="non")
+                    self.encadre(_("Saisir une valeur numérique"))
                     time.sleep(1)
-                    self.encadre("\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0]),nouveauDepart="non")
+                    self.encadre("\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0]))
                     self.majAffiche_profil()
             id_profil = int(self.num_profil.get())
-            donnee.affiche_profil(cles[id_profil], pas,id_profil,traite.fichierPly)
-            break
+            donnee.affiche_profil(cles[id_profil], pas)
 
     def calculPmp(self):
         self.majParametre()
-        try:
-            pas = float(self.pas_maillage.get())
-        except:
-            self.encadre(_("Saisir un nombre positif pour le pas du maillage"),nouveauDepart="non")
-            return
-        if pas<=0:
-            self.encadre(_("Saisir un nombre positif pour le pas du maillage"),nouveauDepart="non")
-            return   
+        while(1):
+            try:
+                float(self.pas_maillage.get())
+                break
+            except:
+                self.encadre(_("Saisir une valeur numérique"))
+                time.sleep(1)
+                self.majParametre()
+        pas = float(self.pas_maillage.get())
         methode_interpolation = self.methode_interpol.get()
-        self.encadre(_("Passage en coordonnées xyz"),nouveauDepart="non")
+
+        self.encadre(_("Passage en coordonnées xyz"))
         traite = Ply2XYZ()
-        self.encadre(_("Création de la grille ..."),nouveauDepart="non")
-        grid._set_nom(traite.fname_out())           # nom du fichier écrit par Ply2XYZ passé à la l'objet grille de nom grid
+        self.encadre(_("Création de la grille ..."))
+        grid._set_nom(traite.fname_out())
         grille_reg = grid.creer_grille(methode_interpolation, pas)
         grid.sauvegarder_grille(traite, grille_reg,pas)
         donnee._set_nom(grid.nomFichier_sortie(traite,pas))
-        self.encadre(_("Le calcul peut durer quelques minutes ..."),nouveauDepart="non")
+        self.encadre(_("Le calcul peut durer quelques minutes ..."))
         res_pmp = donnee.pmp()
-        if not res_pmp.__len__():
-            self.encadre(_("Pas de résultat."),nouveauDepart="non")
-            return
         prof_mDeprofil = res_pmp[0]
         cles = res_pmp[2]
-        
-        self.encadreEtTrace(_("Profondeur moyenne de profil (moyenne) : ") + str.format('{0:.3f}',prof_mDeprofil) + " +/- " +str.format('{0:.3f}',res_pmp[1])+
+        self.encadre(_("Profondeur moyenne de profil (moyenne) : ") + str.format('{0:.3f}',prof_mDeprofil) + " +/- " +str.format('{0:.3f}',res_pmp[1])+
                        "\n" + _("Profondeur de texture équivalente : ")+ str.format('{0:.3f}',0.8*prof_mDeprofil+0.2)+ " +/- " +str.format('{0:.3f}',.8*res_pmp[1]+0.2)+
                        "\n " + _("nombre de profils utilisés : ")+str(len(cles))+
                        "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"")
@@ -8770,21 +8737,20 @@ class Interface(ttk.Frame):
         while( self.affOK()):
             while(1):
                 try:
-                    int(self.num_profil.get())      #juste pour générer une erreur si pas entier !      
+                    int(self.num_profil.get())
                     if(int(self.num_profil.get()) not in range(cles[-1]-cles[0]+1)):
                         self.encadre(_("Choisir une valeur valide ") +
-                                        "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"\r\n",nouveauDepart="non")
+                                        "\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0])+"\r\n")
                         self.majAffiche_profil()
                     else:
                         break
                 except:
-                    self.encadre(_("Saisir un nombre entier"),nouveauDepart="non")
+                    self.encadre(_("Saisir une valeur numérique"))
                     time.sleep(1)
-                    self.encadre("\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0]),nouveauDepart="non")
+                    self.encadre("\n " + _("id profil entre : ")+str(0)+"-"+str(cles[-1]-cles[0]))
                     self.majAffiche_profil()
             id_profil = int(self.num_profil.get())
-            donnee.affiche_profil(cles[id_profil], pas,id_profil,traite.fichierPly)
-            break
+            donnee.affiche_profil(cles[id_profil], pas)
 
     ################### Conversion au format jpg, information de l'Exif
 
@@ -8804,11 +8770,11 @@ class Interface(ttk.Frame):
                 i=os.path.basename(e)
                 nouveauJPG = os.path.splitext(i)[0]+".JPG"                
                 convert = [self.convertMagick,i,'-quality 100',nouveauJPG]
+                print(convert)
                 os.system(" ".join(convert))
         os.chdir(curdir)
         
     # mise à jour des paramètres de surfaces
-    
     def majParametre(self):
         self.menageEcran()
         self.item7000.pack()
@@ -8817,8 +8783,7 @@ class Interface(ttk.Frame):
 
     def surfOK(self):
         self.item7000.pack_forget()
-        if self.pas_maillage.get()!="0":
-            self.encadreEtTrace(_("Paramètres mis à jour") + "\n"+
+        self.encadreEtTrace(_("Paramètres mis à jour") + "\n"+
                             _("Méthode = ")+self.methode_interpol.get()+"\n"+
                             _("Pas du maillage = ")+self.pas_maillage.get()+"\n")
         self.item7000.quit()
@@ -8987,7 +8952,7 @@ class Interface(ttk.Frame):
                                        b3=_("Ne rien changer"))
             if retour == 0: 
                 supprimeFichier(self.fichierSauvOptions)
-                self.encadre(_("Options par défaut réinitialisées"),nouveauDepart="non")
+                self.encadre(_("Options par défaut réinitialisées"))
             elif retour == 1:
                 optionsOK = self.sauveOptions()
                 if optionsOK==True:
@@ -9079,10 +9044,10 @@ class Interface(ttk.Frame):
 
     def nouveauDepart(self):
         try: self.copierParamVersChantier()                          # sauvegarde du chantier, des param...
-        except Exception as e: print("erreur nouveau départ copier : ",str(e))
+        except: pass
         try: self.ecritureTraceMicMac()                              # on écrit les fichiers trace
-        except Exception as e: print("erreur nouveau départ ecriture : ",str(e))
-        
+        except: pass
+
 # faut-il différencier linux et windows ?
         if self.systeme=='posix':
             if self.messageNouveauDepart==str():
@@ -9096,8 +9061,10 @@ class Interface(ttk.Frame):
            messageDepart = self.messageNouveauDepart            # ce message sera repris dans la nouvelle "interface"
            if "fenetre" in globals():
                 time.sleep(0.2)
-                fenetre.destroy()
-        
+                try:
+                    fenetre.destroy()                                # relance une nouvelle "interface"
+                except: pass
+            
     # quitter
             
     def quitter(self):
@@ -9271,8 +9238,7 @@ def fenetreIcone(fenetre=""):       # Icone au format GIF pour être géré par 
     if fenetre=="":
          return
     photo = tkinter.PhotoImage(data=iconeTexte)
-    try:    fenetre.tk.call('wm', 'iconphoto', fenetre._w, photo)
-    except: pass
+    fenetre.tk.call('wm', 'iconphoto', fenetre._w, photo)
 
 def sizeDirectoryMO(path):  
     size = 0  
@@ -9280,9 +9246,8 @@ def sizeDirectoryMO(path):
         for fic in files:  
             size += os.path.getsize(os.path.join(root, fic)) 
     return round(size/1000000)
-
     
-'''################################## Crée un fichier contenant l'icone de l'application et en renvoie le nom conserver pour exemple de fichier temporaire
+'''################################## Crée un fichier contenant l'icone de l'application et en renvoie le nom conserver pour exemple de ficheir temporaire
 
 def iconeGrainSel():
     iconeTexte = "AAABAAIAICAQAAEABADoAgAAJgAAABAQEAABAAQAKAEAAA4DAAAoAAAAIAAAAEAAAAABAAQAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAgAAAAICAAIAAAACAAIAAgIAAAICAgADAwMAAAAD/AAD/AAAA//8A/wAAAP8A/wD//wAA////AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADiLcAAAAAAAAAAAAAAAADeL/4hxAAAAAAAAAAAAMze4s7iP+DMAAAAAAAADi/i3kQELj//4hxAAAAAAv/+LkwAAAb//j/j/8AAAA4uIuxAAAAOIuIj/i/MAABO4v7kRAAAbu7uIiLixAAA4ObuzEQAAO3k4uIiLEAAAO7M5ORAAETk4m4/4sAAAADixMQAAETOTm3iP+zAAAAB7cxABMTOTM3uL//gQAAAAuDERNXiPuLe4j4+LAAAAAI8xA3iP/4uIj//7gwAAAAA4MReP///4i/j/ixAAAAAAO3MTiP+Ii/i4uzEAAAAAABezM7i4iL+7tzEAAAAAAAAYiJOTi/+LixEAAAAAAAAAP/+3ObiIiLcQAAAAAAAAAH//i4iLiIixAAAAAAAAAAA//7iLiL+7cAAAAAAAAAAAP/iIj7i3MwAAAAAAAAAAABiIv7+4kwAAAAAAAAAAAAAL+Ii4sQAAAAAAAAAAAAAAA7iIuRAAAAAAAAAAAAAAAAAbuDMAAAAAAAAAAAAAAAAAABEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAoAAAAEAAAACAAAAABAAQAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAgAAAAICAAIAAAACAAIAAgIAAAICAgADAwMAAAAD/AAD/AAAA//8A/wAAAP8A/wD//wAA////AAAAAAAAAAAAAAAAAHMAAAAAAAM4v4cAAAAYixAL/4hwADi3EAi4iLEDs7EAG5v4MAOBEBOTiPMAB7AY+LiPgwABcY//i/swAACLO4i4EAAAA/iYv7EAAAAB/4i4MAAAAACL+zAAAAAAADixAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=="        
@@ -9446,6 +9411,35 @@ class choisirDansUneListe:              # mode="single" ou 'extended'
         self.selectionFinale = list()
 
 
+
+################################## Classe : Dialogue minimum modal : deux boutons OK KO ###########################"
+
+   
+def MyDialog_OK_KO(parent=None,titre=_("Question"),b1="OK",b2="KO"):
+    top = tkinter.Toplevel(parent,width=200,relief='sunken')
+    top.transient(parent)
+    top.geometry("400x250+100+100")
+    fenetreIcone(top)                
+    l=ttk.Label(top, text=titre)
+    l.pack(pady=10,padx=10)
+    b = ttk.Button(top, text=b1, command=ok)
+    b.pack(pady=5)
+    c = ttk.Button(top, text=b2, command=ko)
+    c.pack(pady=5)
+    top.grab_set()
+    parent.wait_window(top)
+    parent.mainloop()
+        
+def ok(event='none'):
+    print("OK")
+    try: f.destroy()
+    except: pass
+    return 1
+        
+def ko(event=None):
+    print("KO")
+    return 0  
+
 ################################## Style pur TTK  ###########################"
 
 def monStyle():
@@ -9463,9 +9457,7 @@ if __name__ == "__main__":
             interface.afficheEtat()
         else:
             interface.encadre(str(messageDepart))   # affiche les infos restaurées :
-        try:
-            fenetre.mainloop()                     # boucle tant que l'interface existe
-        except Exception as e: print("erreur mainloop : ",str(e))
-    print("fin programme")
+        try: fenetre.mainloop()                     # boucle tant que l'interface existe
+        except: pass
 
 
