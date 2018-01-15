@@ -127,7 +127,11 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
                   - Un message parfois non pertinent sur l'absence de focales
                   
             Version 4.11 : Noël 2017
-      
+			        - Diffusion de la version 4.10 sur GitHub
+			
+		        Version 5.0 : janvier 2018 
+			        - Suppression de l'item "Indices surfaciques" de la version 4.0
+			
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
    
