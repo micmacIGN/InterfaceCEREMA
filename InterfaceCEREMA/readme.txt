@@ -1,10 +1,13 @@
-Pr‚alable : 
+ï»¿L'interface CEREMA offre une interface graphique conviviale pour 
+MICMAC, l'outil de photogrammÃ©trie libre de l'IGN.
 
-L'application MicMac de l'IGN doit ˆtre install‚e.
+PrÃ©alable : 
+
+L'application MicMac de l'IGN doit Ãªtre installÃ©e ( http://logiciels.ign.fr/?Micmac )
 
 ----------------------------------------------------
 
-Installation de l'interface CEREMA sous Windows 64 bits :
+Installation de l'interface CEREMA sous Windows 64 bits ou 32 bitss:
 
 Utiliser l'installateur windows .msi
 
@@ -16,8 +19,7 @@ utiliser les installateurs .deb ou .rpm
 
 ----------------------------------------------------
 
-Installation sous les autres systŠmes (mac, windows 32 bits) :
-
+Installation sous les autres systÃ¨mes (mac) :
 
 voir la documentation
 
