@@ -6653,7 +6653,7 @@ class Interface(ttk.Frame):
     def ajoutPointsGPSDepuisFichier(self):
 
 
-        fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GPS  : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
+        fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GPS : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
                                                   filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
                                                   multiple=False)
         
@@ -6669,7 +6669,7 @@ class Interface(ttk.Frame):
                     except: break
                     self.listePointsGPS.append([nom,x,y,z,True,self.idPointGPS,(" ").join([dx,dy,dz])])
                     nbAjout += 1
-                    print("nbAjout=",nbAjout)
+
    
         # Déterminer la nouvelle valeur de self.idPointGPS
         
@@ -6682,7 +6682,8 @@ class Interface(ttk.Frame):
         # Affichage de l'état du chantieravec les nouveaux points GPS
 
         self.encadre (str(nbAjout)+_(" points GSP ajoutés."),nouveauDepart='non')            
-                       
+        if nbAjout>15:
+           self.encadre (str(nbAjout)+_(" points GSP ajoutés : c'est beaucoup, sans doute trop (pb affichage options GPS)"),nouveauDepart='non') 
 
     ################################## Le menu AIDE ###########################################################
                 # provisoirement retirés :
@@ -7006,7 +7007,8 @@ class Interface(ttk.Frame):
               "\n" + _("Version 5.0 :")+chr(9)+_("Janvier 2018") + "\n"+\
               chr(9)+chr(9)+_("la version suivante 5.0 supprime l'item 'indices surfaciques'.") + "\n"+\
               "\n" + _("Version 5.1 :")+chr(9)+_("décembre 2018") + "\n"+\
-              chr(9)+chr(9)+_("la version 5.1 permet d'oublier les photos ayant servies à la calibration de l'appareil pour l'exécution de Tapas.'.") + "\n"+\
+              chr(9)+chr(9)+_("- permet d'oublier les photos ayant servies à la calibration de l'appareil pour l'exécution de Tapas.") + "\n"+\
+              chr(9)+chr(9)+_("- insertion d'un fichier texte de points GPS par le menu expert (séparateur espace : nom,x,y,z,dx,dy,dz.") + "\n"+\
               "----------------------------------------------------------"
 # correction de : e remplacé par self.e dans MyDialog (fixe le problème du renommage des chantiers)
 # ajout de self.pasDeFocales = False aprés la mise à jour des exifs. (fixe le problème du message erroné concerné les focales manquantes)
