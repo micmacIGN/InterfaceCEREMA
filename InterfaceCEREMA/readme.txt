@@ -1,25 +1,19 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
-Préalable : 
+Version 5.1 le 4 décembre 2018 : utiliser le source aperodedenis.py 
 
-L'application MicMac de l'IGN doit être installée ( http://logiciels.ign.fr/?Micmac )
+2 nouveautés : 
 
-----------------------------------------------------
+- saisie des points GPS à partir d'un fichier texte (séparateur espace  : nom, x,y,z, dx,dy,dz)
+- Images pour calibrer l'appareil photo indépendantes des images pour construire le nuage
 
-Installation de l'interface CEREMA sous Windows 64 bits ou 32 bitss:
+Des installateurs facilitent l'installation des anciennes versions :
 
-Utiliser l'installateur windows .msi
+Version 5 sous windows (msi)
+Version 3 sous Linux (deb et rpm)
 
-----------------------------------------------------
+Sous mac : voir la documentation
+ 
 
-Installation de l'interface CEREMA sous Linux ou Ubuntu :
-
-utiliser les installateurs .deb ou .rpm
-
-----------------------------------------------------
-
-Installation sous les autres systèmes (mac) :
-
-voir la documentation
-
+L'application MicMac de l'IGN doit être installée ( https://github.com/micmacIGN ou http://logiciels.ign.fr/?Micmac )
