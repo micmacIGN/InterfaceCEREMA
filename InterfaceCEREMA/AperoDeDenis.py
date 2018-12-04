@@ -87,6 +87,7 @@
 # si etatChantier>2 et pas de sous-répertoire alors etatChantier remis à 2 et
 # message "chantier nettoyé" affiché
 # la version 3.34 est rebaptisée 5.0 (suppression de l'item "indice surfacique")
+# Version 5.1 : 4 décembre 2018 : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appalreil photo 
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -203,7 +204,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.0"
+numeroVersion = "5.1"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
@@ -1565,9 +1566,10 @@ class Interface(ttk.Frame):
         self.item540 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour le check button, fera un encadrement
         self.item550 = ttk.Checkbutton(self.item540, variable=self.arretApresTapas, text=_("Arrêter le traitement après TAPAS"))
         self.item550.pack(ipady=5)
+
         self.item525.pack()
         self.item526.pack()
-        #self.item527.pack() # je ne comprends plus l'intérêt de cet item : la suite s'accomode très bien de 2 focales différentes... 
+        self.item527.pack() # je ne comprends plus l'intérêt de cet item : la suite s'accomode très bien de 2 focales différentes... mais si : camille utilise des photos d'un autre site
         self.item528.pack() 
         
         # Calibration : 950
@@ -5619,6 +5621,8 @@ class Interface(ttk.Frame):
                      "Tapas",
                      self.modeCheckedTapas.get(),
                      '.*'+self.extensionChoisie,
+                     "ForCalib=1",
+                     "SauvAutom=NONE",
                      "Out=Calib",
                      "ExpTxt="+self.exptxt]        
             self.lanceCommande(tapas,
@@ -6635,6 +6639,14 @@ class Interface(ttk.Frame):
         # Affichage de l'état du chantieravec les nouveaux points GPS
 
         self.afficheEtat()
+
+    #Ajout de points GPS à partir d'un fichier de points : format =
+        # #F=N X Y Z Ix Iy Iz
+        # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01 
+    
+    def ajoutPointsGPSDepuisFichier(self):
+
+        pass
         
 
     ################################## Le menu AIDE ###########################################################
@@ -6958,6 +6970,8 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("Remarque : la version 4.11 de décembre 2017 ajoute un item métier de calcul d'indice surfacique,") + "\n"+\
               "\n" + _("Version 5.0 :")+chr(9)+_("Janvier 2018") + "\n"+\
               chr(9)+chr(9)+_("la version suivante 5.0 supprime l'item 'indices surfaciques'.") + "\n"+\
+              "\n" + _("Version 5.1 :")+chr(9)+_("décembre 2018") + "\n"+\
+              chr(9)+chr(9)+_("la version 5.1 permet d'oublier les photos ayant servies à la calibration de l'appareil pour l'exécution de Tapas.'.") + "\n"+\
               "----------------------------------------------------------"
 # correction de : e remplacé par self.e dans MyDialog (fixe le problème du renommage des chantiers)
 # ajout de self.pasDeFocales = False aprés la mise à jour des exifs. (fixe le problème du message erroné concerné les focales manquantes)
