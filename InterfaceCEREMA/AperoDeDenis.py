@@ -1289,6 +1289,8 @@ class Interface(ttk.Frame):
         menuExpert = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
         menuExpert.add_command(label=_("Exécuter lignes de commande"), command=self.lignesExpert)        
         menuExpert.add_command(label=_("Ajouter les points GPS d'un chantier"), command=self.ajoutPointsGPSAutreChantier)        
+        menuExpert.add_command(label=_("Ajouter les points GPS à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)        
+
         
         # Paramétrage       
 
@@ -2442,7 +2444,7 @@ class Interface(ttk.Frame):
         
     # Calibration
 
-        self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant)
         self.idPointGPS                 =   0				# identifiant des points, incrémenté de 1 a chaque insertion
         self.dicoPointsGPSEnPlace       =   dict()                      # dictionnaire des points GPS placés dans les photos (créé par la classe CalibrationGPS)
         self.dicoLigneHorizontale       =   dict()                      # les deux points de la ligne horizontale              
@@ -2791,7 +2793,7 @@ class Interface(ttk.Frame):
             # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
             # [2] = 'original' ou "importé"          
             if self.typeDuChantier[0]=='photos':
-                texte = entete + '\n' + _('Répertoire des photos :') +  "\n" + afficheChemin(self.repertoireDesPhotos)
+                texte = entete + _('Répertoire des photos :') +  "\n" + afficheChemin(self.repertoireDesPhotos)
             if self.typeDuChantier[0]=='vidéo':
                  texte = entete + "\n" + _("Répertoire de la vidéo :") + "\n" + afficheChemin(self.repertoireDesPhotos)                 
             if len(self.photosSansChemin)==0:
@@ -2878,7 +2880,7 @@ class Interface(ttk.Frame):
                         texte = texte+"\n"+str(self.listeDesMasques.__len__())+_(" masques") + "\n"
                     if self.listeDesMaitresses.__len__()>0 and self.photosUtilesAutourDuMaitre.get()>0:                        
                         texte = texte+_("%s photos utiles autour de la maîtresse") %(str(self.photosUtilesAutourDuMaitre.get()))+"\n"
-                        texte = texte+_("les meilleures photos en correspondances seront choisies")+ "\n"
+                        #texte = texte+_("les meilleures photos en correspondances seront choisies")+ "\n"
 
                 if self.modeMalt.get()=="Ortho":
                     if self.tawny.get():
@@ -2890,7 +2892,7 @@ class Interface(ttk.Frame):
                     if self.listeDesMaitressesApero.__len__()>1:
                         texte = texte+'\n' + str(self.listeDesMaitressesApero.__len__())+_(' images maîtresses')
                         
-                texte = texte+"\n" + _("arrêt au zoom : ")+self.zoomF.get()+"\n"
+                texte = texte + _("arrêt au zoom : ")+self.zoomF.get()+"\n"
                      
             # état du chantier :
             
@@ -3156,7 +3158,6 @@ class Interface(ttk.Frame):
             self.encadre(_("Pas d' ortho mosaique par Tawny. Choisir l'option Tawny de Malt."),nouveauDepart='non')    
             return
         orthoMosaiqueJPG = os.path.splitext(orthoMosaiqueTIF)[0]+".JPG"
-        print("orthoMosaiqueJPG=",orthoMosaiqueJPG)
         if not os.path.exists(orthoMosaiqueJPG):
             self.conversionJPG(liste=[orthoMosaiqueTIF])
             if not os.path.exists(orthoMosaiqueJPG):
@@ -3906,7 +3907,7 @@ class Interface(ttk.Frame):
         os.chdir(self.repTravail)
         with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: # écriture de la description de chaque point GPS
             infile.write(self.dicoAppuisDebut)
-            for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+            for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant)
                 point=self.dicoAppuis1Point.replace(_("Nom"),Nom)
                 point=point.replace("X",X)
                 point=point.replace("Y",Y)
@@ -3952,7 +3953,7 @@ class Interface(ttk.Frame):
         if self.repTravail==self.repertoireData:    # si pas de chantier, pas de problème mais retour False :  pas de calibration
             return False
 
-        # listePointsGPS : liste de (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
+        # listePointsGPS : liste de (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant, incertitude)
         listePointsActifs = [f[0] for f in self.listePointsGPS if f[4] and f[0]!=""]
       
         # ICI : on pourrait controler que les x,y,z et incertitudes sont bien des valeurs numériques    
@@ -4593,14 +4594,13 @@ class Interface(ttk.Frame):
             infile.write(self.masqueXML)
 
     def tracerUnMasqueSurMosaiqueTarama(self):
-        print("self.mosaiqueTaramaTIF=",self.mosaiqueTaramaTIF)
+
         if not os.path.exists(self.mosaiqueTaramaTIF):              # en principe existe si on arrive ici
             return
-        print(self.mosaiqueTaramaJPG)        
+      
         if not os.path.exists(self.mosaiqueTaramaJPG):
             self.conversionJPG(liste=[self.mosaiqueTaramaTIF])          
         if not os.path.exists(self.mosaiqueTaramaJPG):
-            print("retour")
             return
         # l'utilisateur trace le masque
  
@@ -4647,7 +4647,8 @@ class Interface(ttk.Frame):
         # message en haut de fenêtre
         
         self.item670 = ttk.Frame(self.item650,height=10,relief='sunken')
-        texte = _("3 points minimum, chaque point doit être placé sur au moins 2 photos") + "\n\n"
+        texte = _("Insertion à partir d'un fichier texte : voir menu expert.") + "\n\n"
+        texte+= _("Pour être pris en compte 3 points doivent être placés sur au moins 2 photos") + "\n\n"
         texte+= _("La calibration par points GPS se fait aprés Tapas et avant Malt.") + "\n"
         texte+= _("Elle est prioritaire sur la calibration par axe, plan et métrique.")
         self.item671=ttk.Label(self.item670,text=texte,justify='left')
@@ -4675,15 +4676,15 @@ class Interface(ttk.Frame):
         self.item654.pack_forget()
         self.item655.pack_forget()
         self.item656.pack_forget()
-        
+            
         # Affichage de la liste des points actuellement saisis:
         self.item680 = ttk.Frame(self.item650,height=10,relief='sunken') 
         self.listeWidgetGPS = list()							# liste des widgets affichés, qui sera abondée au fur et à mesure par copie de self.listePointsGPS		
         self.listePointsGPS.sort(key=lambda e: e[0])                                    # tri par ordre alpha du nom
 
-        for n,x,y,z,actif,ident,incertitude in self.listePointsGPS:					# affichage de tous les widgets nom,x,y,z,actif ou supprimé (booléen), identifiant
-            if actif:                                                                   # listePointsGPS : liste de tuples (nom du point, x gps, y gps, z gps, booléen actif, identifiant)
-                self.affichePointCalibrationGPS(n,x,y,z,ident,incertitude)				# ajoute une ligne d'affichage
+        for n,x,y,z,actif,ident,incertitude in self.listePointsGPS:			# affichage de tous les widgets nom,x,y,z,actif ou supprimé (booléen), identifiant
+            if actif:                                                                   # listePointsGPS : liste de tuples (nom du point, x gps, y gps, z gps, booléen actif ou supprimé, identifiant)
+                self.affichePointCalibrationGPS(n,x,y,z,ident,incertitude)		# ajoute une ligne d'affichage
 
         self.item680.pack()
         self.item653.pack(side='left',padx=20)					    	# affichage des boutons en bas d'onglet
@@ -4735,7 +4736,7 @@ class Interface(ttk.Frame):
             self.infoBulle(_("Soyez raisonnable : pas plus de 30 points GPS !"))
             return
         nom = chr(65+self.listePointsGPS.__len__())
-        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS,"10 10 10"])     # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant,incertitude)
+        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS,"10 10 10"])     # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant,incertitude)
         self.idPointGPS += 1						    # identifiant du point suivant
         self.optionsReperes()						    # affichage avec le nouveau point
         self.onglets.select(self.item650)                    		    # active l'onglet (il a été supprimé puis recréé par optionsReperes)  
@@ -4748,7 +4749,7 @@ class Interface(ttk.Frame):
             self.infoBulle(_("Aucun point à supprimer !"))
             return
 						
-        self.actualiseListePointsGPS()                      # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+        self.actualiseListePointsGPS()                      # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant)
         listeIdentifiants = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] ] # liste des noms,identifiants si point non supprimé
 
         self.messageSiPasDeFichier = 0                                           #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
@@ -4786,7 +4787,7 @@ class Interface(ttk.Frame):
         except: pass
         dico = dict(self.dicoPointsGPSEnPlace)              # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
         for a,nom,x,y,z,ident,incertitude in self.listeWidgetGPS:
-            for i in self.listePointsGPS:                   # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant)
+            for i in self.listePointsGPS:                   # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant)
                 if i[5] == ident:
                     self.listePointsGPS.remove(i)
                     i[0] = nom.get()
@@ -4835,7 +4836,7 @@ class Interface(ttk.Frame):
         if self.erreurPointsGPS():
             return
         
-        liste = list ([(n,ident) for n,x,y,z,actif,ident,incertitude in self.listePointsGPS if actif])    # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
+        liste = list ([(n,ident) for n,x,y,z,actif,ident,incertitude in self.listePointsGPS if actif])    # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant, incertitude)
         self.messageSiPasDeFichier  = 0                                             #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
         self.choisirUnePhoto(
                              self.photosAvecChemin,
@@ -4864,10 +4865,10 @@ class Interface(ttk.Frame):
         try: self.bulle.destroy()
         except: pass
         texte = str()
-        ensemble=set(e[0] for e in self.listePointsGPS if e[4])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif, identifiant, incertitude)
-        liste=list(e[0] for e in self.listePointsGPS if e[4])       
+        ensemble=set(e[0] for e in self.listePointsGPS if e[4])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant, incertitude)
+        liste=list(e[0] for e in self.listePointsGPS if e[4])
         if ensemble.__len__()!=liste.__len__():
-            texte = _("Attention : des points portent le même nom : corriger !")
+            texte = _("Impossible : des points portent le même nom : modifier ou supprimer !")
         if "" in ensemble:
             texte = _("Attention : un point n'a pas de nom. ")+texte
         if texte!=str():
@@ -5658,11 +5659,11 @@ class Interface(ttk.Frame):
             else:
                 print("self.calibSeule.get()=",self.calibSeule.get())
                 
-    #####################################################
+    # lancement de Tapas en autocalibration : AutoCal au lieu du mode de calibration chosit par l'utilisateur (ou Figee...)
                 
             tapas = [self.mm3d,
                      "Tapas",
-                     self.modeCheckedTapas.get(),
+                     "AutoCal",
                      '.*'+self.extensionChoisie,
                      'InCal=Calib',
                      'Out=Arbitrary',
@@ -5671,6 +5672,9 @@ class Interface(ttk.Frame):
                                filtre=self.filtreTapas,
                                info=_("Recherche l'orientation des prises de vues") + "\n\n") 
 
+
+    # lance Tapas sans calibration préalable : 
+    
         else:
             
             tapas = [self.mm3d,
@@ -6605,7 +6609,7 @@ class Interface(ttk.Frame):
         
         # 3 variables : self.dicoPointsGPSEnPlace, self.listePointsGPS et self.idPointGPS pour le chantier en cours et idem (sans self.) pour le chantier a ajouter
         # dicoPointsGPSEnPlace key = nom du point, photo, identifiant, value = x,y
-        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif, identifiant,incertitude)
+        # listePointsGPS : 7-tuples (  nom du point, x, y et z gps, booléen actif ou supprimé, identifiant,incertitude)
         # idPointGPS : entier, identifiant du dernier point GPS 
         
         # 1) Modifier la clé du dico lu : chemin de la photo et identifiant par ajout de la valeur de self.idPointGPS
@@ -6621,11 +6625,12 @@ class Interface(ttk.Frame):
                 
 
         # 2) Modifier la liste des points GPS : identifiant pat ajout de la valeur de self.idPointGPS, éviter les noms en double
-        
+        nbAjout = 0
         for nom,b,c,d,e,identifiant,g in listePointsGPS:
             nouvelId = identifiant + self.idPointGPS
             nouveauNom = nom + "_"+ str(nouvelId)
             self.listePointsGPS.append([nouveauNom,b,c,d,e,nouvelId,g])
+            nbAjout += 1
 
         # 3) Trouver la nouvelle valeur de self.idPointGPS
         
@@ -6636,18 +6641,48 @@ class Interface(ttk.Frame):
 
         self.optionsReperes()
 
-        # Affichage de l'état du chantieravec les nouveaux points GPS
+        # Affichage de l'état du chantier avec les nouveaux points GPS
 
-        self.afficheEtat()
+        self.encadre (str(nbAjout)+_(" points GSP ajoutés."),nouveauDepart='non')            
 
-    #Ajout de points GPS à partir d'un fichier de points : format =
+
+    # Ajout de points GPS à partir d'un fichier de points : format =
         # #F=N X Y Z Ix Iy Iz
         # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01 
     
     def ajoutPointsGPSDepuisFichier(self):
 
-        pass
+
+        fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GPS  : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
+                                                  filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
+                                                  multiple=False)
         
+        if len(fichierPointsGPS)==0:
+            return 
+        nbAjout = 0
+        with open(fichierPointsGPS, "r") as fichier:              
+            for ligne in fichier:
+                if ligne[0]!="#":
+                    self.idPointGPS += 1
+                    try:
+                         nom,x,y,z,dx,dy,dz=ligne.split()
+                    except: break
+                    self.listePointsGPS.append([nom,x,y,z,True,self.idPointGPS,(" ").join([dx,dy,dz])])
+                    nbAjout += 1
+                    print("nbAjout=",nbAjout)
+   
+        # Déterminer la nouvelle valeur de self.idPointGPS
+        
+        self.idPointGPS += 1
+
+        # mise à jour de la liste des widgets pour saisie :
+
+        self.optionsReperes()
+        
+        # Affichage de l'état du chantieravec les nouveaux points GPS
+
+        self.encadre (str(nbAjout)+_(" points GSP ajoutés."),nouveauDepart='non')            
+                       
 
     ################################## Le menu AIDE ###########################################################
                 # provisoirement retirés :
