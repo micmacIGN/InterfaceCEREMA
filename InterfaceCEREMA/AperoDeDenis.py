@@ -1561,8 +1561,8 @@ class Interface(ttk.Frame):
         self.item525 = ttk.Button(self.item520,text=_("Choisir quelques photos pour la calibration intrinsèques"),command=self.imagesCalibrationIntrinseques)  
         self.item526 = ttk.Label(self.item520, text="")
         self.item527 = ttk.Checkbutton(self.item520, variable=self.calibSeule,
-                                       text=_(" N'utiliser ces photos que pour la calibration") + "\n" +  _("(exemple : focales différentes)")) # inutile ?
-        self.item528 = ttk.Label(self.item520, text=_("Toutes ces photos doivent avoir la même focale,") + "\n" + _("éventuellement différente de la focale des autres photos."))
+                                       text=_(" N'utiliser ces photos que pour la calibration")) # inutile ?
+        self.item528 = ttk.Label(self.item520, text=_("Toutes ces photos doivent avoir la même focale."))
         self.item510 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour le check button, fera un encadrement
         self.item530 = ttk.Checkbutton(self.item510, variable=self.lancerTarama, text=_("lancer Tarama après TAPAS : mosaique pouvant définir un masque pour Malt/ortho)"))
         self.item530.pack(ipady=5)
@@ -1800,7 +1800,7 @@ class Interface(ttk.Frame):
         
         self.onglets.add(self.item400,text="Tapioca")               # add onglet to Notebook        
         self.onglets.add(self.item500,text="Tapas")                 # add onglet to Notebook
-        self.onglets.add(self.item950,text="Calibration")           # add onglet to Notebook
+        self.onglets.add(self.item950,text="Mise à l'échelle")      # add onglet to Notebook
         self.onglets.add(self.item700,text="Malt")
         self.onglets.add(self.item800,text="C3DC")
 
@@ -4648,7 +4648,7 @@ class Interface(ttk.Frame):
         # message en haut de fenêtre
         
         self.item670 = ttk.Frame(self.item650,height=10,relief='sunken')
-        texte = _("Insertion à partir d'un fichier texte : voir menu expert.") + "\n\n"
+        texte = _("Insertion à partir d'un fichier texte : fermer cette fenêtre puis voir menu expert.") + "\n\n"
         texte+= _("Pour être pris en compte 3 points doivent être placés sur au moins 2 photos") + "\n\n"
         texte+= _("La calibration par points GPS se fait aprés Tapas et avant Malt.") + "\n"
         texte+= _("Elle est prioritaire sur la calibration par axe, plan et métrique.")
@@ -5604,7 +5604,7 @@ class Interface(ttk.Frame):
     # ------------------ TAPAS ----------------------- Avec ou sans calibrationj intrinsèque
         
     def lanceTapas(self):
-        
+        print("lance tapas début photossanschemin=",self.photosSansChemin)
         self.messageRetourTapas = str()
         if self.photosPourCalibrationIntrinseque.__len__()>0:       # s'il y a des photos pour calibration intrinsèque
             self.photosCalibrationSansChemin = [os.path.basename(f) for f in self.photosPourCalibrationIntrinseque]
@@ -5615,7 +5615,7 @@ class Interface(ttk.Frame):
             
             self.ajoutLigne(_("Calibration intrinsèque lancée sur les photos : ") + "\n"+str("\n".join(self.photosCalibrationSansChemin)+"\n"))
 
-            # limitation aux seules images pour la calibration :
+            # limitation aux seules images pour la calibration par suppression de l'extension des photos ne servant pas à calibrer :
             
             [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin] 
 
@@ -5632,20 +5632,22 @@ class Interface(ttk.Frame):
                                info=_("Calibration intrinsèque, pour trouver les réglages de l'appareil photo sur quelques photos") + "\n" + _("Recherche d'un point de convergence au centre de l'image.") + "\n\n")
 
             #  Remise en état initial des photos pour calibration
+            
             [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]  
             
             if os.path.isdir("Ori-Calib")==False:
                 self.messageRetourTapas = _("La calibration intrinsèque n'a pas permis de trouver une orientation.") + "\n"
                 self.ajoutLigne(self.messageRetourTapas)         
+                self.ajoutLigne(_("Calibration intrinsèque effectuée mais pas d'orientation trouvée."))              
                 return
-                self.ajoutLigne(_("Calibration intrinsèque effectuée."))
-
 
             if self.photosSansChemin.__len__()-self.photosCalibrationSansChemin.__len__()<2 and self.calibSeule.get():
                 self.messageRetourTapas = _("Une seule photo pour Tapas sans les photos de calibration : insuffisant.") + "\n"
                 self.ajoutLigne(self.messageRetourTapas)
                 return
-
+            
+            self.ajoutLigne(_("Calibration intrinsèque effectuée."))
+            
     #####################################################
             
             # exclusion des images pour la calibration si elles ne servent plus après :
@@ -5661,7 +5663,7 @@ class Interface(ttk.Frame):
                 print("self.calibSeule.get()=",self.calibSeule.get())
                 
     # lancement de Tapas en autocalibration : AutoCal au lieu du mode de calibration chosit par l'utilisateur (ou Figee...)
-                
+             
             tapas = [self.mm3d,
                      "Tapas",
                      "AutoCal",
@@ -5672,7 +5674,6 @@ class Interface(ttk.Frame):
             self.lanceCommande(tapas,
                                filtre=self.filtreTapas,
                                info=_("Recherche l'orientation des prises de vues") + "\n\n") 
-
 
     # lance Tapas sans calibration préalable : 
     
@@ -6644,7 +6645,7 @@ class Interface(ttk.Frame):
 
         # Affichage de l'état du chantier avec les nouveaux points GPS
 
-        self.encadre (str(nbAjout)+_(" points GSP ajoutés."),nouveauDepart='non')            
+        self.encadre (str(nbAjout)+_(" points GPS ajoutés."),nouveauDepart='non')            
 
 
     # Ajout de points GPS à partir d'un fichier de points : format =
@@ -6653,6 +6654,7 @@ class Interface(ttk.Frame):
     
     def ajoutPointsGPSDepuisFichier(self):
 
+        self.menageEcran()
 
         fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GPS : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
                                                   filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
@@ -6682,9 +6684,9 @@ class Interface(ttk.Frame):
         
         # Affichage de l'état du chantieravec les nouveaux points GPS
 
-        self.encadre (str(nbAjout)+_(" points GSP ajoutés."),nouveauDepart='non')            
+        self.encadre (str(nbAjout)+_(" points GPS ajoutés."),nouveauDepart='non')            
         if nbAjout>15:
-           self.encadre (str(nbAjout)+_(" points GSP ajoutés : c'est beaucoup, sans doute trop (pb affichage options GPS)"),nouveauDepart='non') 
+           self.encadre (str(nbAjout)+_(" points GPS ajoutés : c'est beaucoup, sans doute trop (pb affichage options GPS)"),nouveauDepart='non') 
 
     ################################## Le menu AIDE ###########################################################
                 # provisoirement retirés :
@@ -7468,7 +7470,7 @@ class Interface(ttk.Frame):
             if self.onglets.winfo_manager()=="":
                 return
             self.fermetureOngletsEnCours = True        
-            if self.troisBoutons(_("Fermer les options."),_("Enregistrer les options saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
+            if self.troisBoutons(_("Fermer les options."),_("La boîte de dialogue 'options' est ouverte et va être fermée.\nVoulez-vous enregistrer les options saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
                 self.finOptionsOK()
             else:
                 self.finOptionsKO()
