@@ -1288,6 +1288,7 @@ class Interface(ttk.Frame):
 
         menuExpert = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
         menuExpert.add_command(label=_("Exécuter lignes de commande"), command=self.lignesExpert)        
+        menuExpert.add_separator()  
         menuExpert.add_command(label=_("Ajouter les points GPS d'un chantier"), command=self.ajoutPointsGPSAutreChantier)        
         menuExpert.add_command(label=_("Ajouter les points GPS à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)        
 
