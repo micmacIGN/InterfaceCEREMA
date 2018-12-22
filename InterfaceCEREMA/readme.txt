@@ -1,13 +1,18 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
-Version 5.1 le 4 décembre 2018 : utiliser le source aperodedenis.py 
+Version 5.11 le 21 décembre 2018 : utiliser le source aperodedenis.py 
 
-2 nouveautés : 
+Plusieurs nouveautés dans la version 5.11 : 
 
-- saisie des points GPS à partir d'un fichier texte (séparateur espace  : nom, x,y,z, dx,dy,dz)
-- Images pour calibrer l'appareil photo indépendantes des images pour construire le nuage
-
+- menu MicMac/options : l'onglet "calibration" est renommé : "mise à l'échelle"
+- menu MicMac/option/Tapas : les photos pour calibrer l'appareil photo sont, ou pas, indépendantes des photos utilisées pour construire le nuage
+- menu outils/nom de l'appareil photo : affichage des dimensions des photos et du numéro de série de l'appareil (si présent dans l'exif)
+- Menu Expert, nouveaux item :
+  - saisie des points GPS à partir d'un fichier texte (séparateur espace  : nom, x,y,z, dx,dy,dz)
+  - possibilité de répartir les photos suivant plusieurs appareils photos 
+  - liste des différents appareils photos présent dans le lot de photos
+  
 Des installateurs facilitent l'installation des anciennes versions :
 
 Version 5 sous windows (msi)
