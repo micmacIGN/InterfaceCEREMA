@@ -87,7 +87,10 @@
 # si etatChantier>2 et pas de sous-répertoire alors etatChantier remis à 2 et
 # message "chantier nettoyé" affiché
 # la version 3.34 est rebaptisée 5.0 (suppression de l'item "indice surfacique")
-# Version 5.1 : 4 décembre 2018 : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appalreil photo 
+# Version 5.1 : 4 décembre 2018 : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appareil photo
+# ajout d'un item dans le menu expert : copier les coordonnées des points gps à partir d'un fichier texte
+# modification des onglets Malt et C3DC, réunis dans un même onglet "Densification"
+# renommage de l'onglet "calibration" en "mise à l'échelle"
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -1270,7 +1273,7 @@ class Interface(ttk.Frame):
 
         menuOutils = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
 
-        menuOutils.add_command(label=_("Nom et focale de l'appareil photo"), command=self.OutilAppareilPhoto)
+        menuOutils.add_command(label=_("Nom et focale de l'appareil photo, dimension des photos"), command=self.OutilAppareilPhoto)
         menuOutils.add_command(label=_("Toutes les focales des photos"), command=self.toutesLesFocales)          
         menuOutils.add_command(label=_("Mettre à jour DicoCamera.xml"), command=self.miseAJourDicoCamera)        
         menuOutils.add_separator()
@@ -1289,9 +1292,11 @@ class Interface(ttk.Frame):
         menuExpert = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
         menuExpert.add_command(label=_("Exécuter lignes de commande"), command=self.lignesExpert)        
         menuExpert.add_separator()  
-        menuExpert.add_command(label=_("Ajouter les points GPS d'un chantier"), command=self.ajoutPointsGPSAutreChantier)        
         menuExpert.add_command(label=_("Ajouter les points GPS à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)        
-
+        menuExpert.add_command(label=_("Ajouter les points GPS d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)        
+        menuExpert.add_separator()
+        menuExpert.add_command(label=_("Définir plusieurs appareils photos"), command=self.plusieursAppareils)        
+        menuExpert.add_command(label=_("Liste des appareils photos"), command=self.listeAppareils)
         
         # Paramétrage       
 
@@ -1485,6 +1490,7 @@ class Interface(ttk.Frame):
 
         # pour C3DC
 
+        self.choixDensification = tkinter.StringVar()                      # 
         self.modeC3DC           = tkinter.StringVar()
 
         # L'onglet :
@@ -1575,7 +1581,7 @@ class Interface(ttk.Frame):
         self.item527.pack() # je ne comprends plus l'intérêt de cet item : la suite s'accomode très bien de 2 focales différentes... mais si : camille utilise des photos d'un autre site
         self.item528.pack() 
         
-        # Calibration : 950
+        # Mise à l'échelle : 950
         
         self.item950 = ttk.Frame(  self.onglets,
                                    height=5,
@@ -1674,11 +1680,24 @@ class Interface(ttk.Frame):
                                    relief='sunken') 
         self.item991 = ttk.Label(self.item990,text='\n' + _('Pour annuler la calibration mettre la distance = 0'))       
         self.item991.pack()
+
+        # Item de la densification : 600, recevra item700 (Malt) ou Item800 (C3DC)
+
+        self.item600 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.15cm")
+        self.item605 = ttk.Frame(self.item600,height=50,relief='sunken',padding="0.15cm")      # pour le check button, fera un encadrement
+        self.item606 = ttk.Radiobutton(self.item605, text=_("Utiliser C3DC"),   variable=self.choixDensification, value='C3DC', command=self.optionsDensification)
+        self.item607 = ttk.Radiobutton(self.item605, text=_("Utiliser MALT"),   variable=self.choixDensification, value='Malt', command=self.optionsDensification)           
+        self.item605.pack(pady=3)  
+        self.item606.pack(side='left')
+        self.item607.pack(side='left')
+    
         
         # Onglet Malt  : item700
 
-        self.item700 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")
-        
+        self.item700 = ttk.Frame(self.item600,height=5,relief='sunken',padding="0.15cm")
+        self.item709 = ttk.Label(self.item700, text= _("Option de Malt :" ))
+        self.item709.pack(anchor='w') 
+
         self.modesMalt = [(_('UrbanMNE pour photos urbaines'),'UrbanMNE'),
                           (_("GeomImage pour photos du sol ou d'objets"),'GeomImage'),
                           (_('Ortho pour orthophotos de terrain naturel [f(x,y)=z)]'),'Ortho'),
@@ -1697,23 +1716,24 @@ class Interface(ttk.Frame):
             if self.modesMalt==m:
                 b.state(['selected'])
                 self.modeMalt.set(m)                        # positionne la valeur initiale sélectionnée
+                
 
         # Boites item710 et 730 dans item700 pour l'option GeomImage
         
-        self.item710 = ttk.Frame(self.item700,height=50,relief='sunken',padding="0.2cm")    # pour le check button, fera un encadrement
+        self.item710 = ttk.Frame(self.item700,height=50,relief='sunken',padding="0.15cm")    # pour le check button, fera un encadrement
         self.item701 = ttk.Label(self.item710)                                              # nom ou nombre d'images maitresses
         self.item702 = ttk.Button(self.item710,text=_("Choisir les maîtresses"),command=self.imageMaitresse)
         self.item703 = ttk.Label(self.item710)                                              # nom ou nombre de masques
         self.item704 = ttk.Button(self.item710,text=_('Tracer les masques'),command=self.tracerLesMasques) 
         self.item705 = ttk.Label(self.item710,text=_("Attention : Le masque 3D de C3DC a la priorité sur Malt") + "\n" + _("Pour supprimer un masque : supprimer la maitresse"))
-        self.item730 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour nb photos à retenir
+        self.item730 = ttk.Frame(self.item700,relief='sunken',padding="0.15cm")      # fera un encadrement pour nb photos à retenir
         self.item732 = ttk.Label(self.item730,text=_("Nombre de photos à retenir autour de l'image maitresse (-1 = toutes) :"))
         self.item733 = ttk.Entry(self.item730,width=5,textvariable=self.photosUtilesAutourDuMaitre)        
 
 
         # Boite item720 pour le niveau de zoom final
         
-        self.item720 = ttk.Frame(self.item700,relief='sunken',padding="0.2cm")      # fera un encadrement pour le zoom 
+        self.item720 = ttk.Frame(self.item700,relief='sunken',padding="0.15cm")      # fera un encadrement pour le zoom 
         self.item722 = ttk.Label(self.item720,text=_("Zoom final : 8, 4, 2 ou 1 (8=le plus rapide, 1=le plus précis)"))
         self.item723 = ttk.Entry(self.item720,width=5,textvariable=self.zoomF)
 
@@ -1739,20 +1759,18 @@ class Interface(ttk.Frame):
         self.item751 = ttk.Label(self.item750,text=_("La saisie des masques n'est active qu'aprés Tapas."))  # nom ou nombre d'images maitresses
         self.item752 = ttk.Label(self.item750,text=_("Pas de masque."))                     # nom ou nombre de masque
         self.item753 = ttk.Button(self.item750,text=_('Tracer les masques'),command=self.tracerLesMasquesApero)  
-        self.item754 = ttk.Label(self.item750,text=_("Attention : Le masque 3D de C3DC a la priorité sur Malt") + "\n"
-                                 + _("Pour supprimer un masque : supprimer la maitresse dans l'option GeomImage")+"\n"
-                                 + _("Remarque : les masques sont communs à GeomImage et AperoDeDenis")+"\n"
-                                 + _("Consulter la documentation."))
+        self.item754 = ttk.Label(self.item750,text= _("Pour supprimer un masque : supprimer la maitresse dans l'option GeomImage")+"\n"
+                                                     + _("Consulter la documentation."))
 
                                          
         self.item701.pack()
         self.item702.pack()         
         self.item703.pack()                
-        self.item704.pack(ipady=2,pady=10)
-        self.item705.pack()    
+        self.item704.pack(ipady=2,pady=3)
+        self.item705.pack()        
         self.item722.pack(side='left')
         self.item723.pack(side='left')
-        self.item720.pack(pady=10)        
+        self.item720.pack(pady=3)        
         self.item732.pack(side='left')
         self.item733.pack(side='left')        
         self.item741.pack()
@@ -1761,28 +1779,25 @@ class Interface(ttk.Frame):
         self.item744.pack()
         self.item751.pack()
         self.item752.pack()        
-        self.item753.pack(ipady=2,pady=10)
+        self.item753.pack(ipady=2,pady=3)
         self.item754.pack()
 
         
         # Boite item800 pour l'onglet C3DC
         
-        self.item800 = ttk.Frame(self.onglets,height=5,relief='sunken',padding="0.3cm")
-        
-        #self.item810 = ttk.Radiobutton(self.item800, text="Ground",     variable=self.modeC3DC, value='Ground') non supportée
+        self.item800 = ttk.Frame(self.item600,height=5,relief='sunken',padding="0.3cm")     
+        self.item808 = ttk.Label(self.item800, text= _("Option de C3DC :" ))
         self.item811 = ttk.Radiobutton(self.item800, text=_("Statue - avec drapage"),     variable=self.modeC3DC, value='Statue')
         self.item812 = ttk.Radiobutton(self.item800, text=_("QuickMac - rapide, sans drapage"),   variable=self.modeC3DC, value='QuickMac')
-        #self.item810.pack(anchor='w')
+        self.item808.pack(anchor='w')          
         self.item811.pack(anchor='w')
-        self.item812.pack(anchor='w')
-        #self.item810.state(['disabled'])                # dans micmac : non supporté
-       
-        self.item801 = ttk.Button(self.item800,text=_('Tracer le masque 3D sur le nuage AperiCloud'),command=self.affiche3DApericloud)              
-        self.item801.pack(ipady=2,pady=10)
+        self.item812.pack(anchor='w')       
+        self.item801 = ttk.Button(self.item800,text=_('Tracer un masque 3D'),command=self.affiche3DApericloud)              
+        self.item801.pack(ipady=2,pady=3)
         self.item802 = ttk.Button(self.item800,text=_('Supprimer le masque 3D'),command=self.supprimeMasque3D)              
-        self.item802.pack(ipady=2,pady=10)        
+      
         self.item803 = ttk.Label(self.item800, text= \
-                                                   _("Dans l'outil : " ) +"\n"+\
+                                                   _("Dans la boîte de dialogue pour tracer le masque : " ) +"\n"+\
                                                    _("Définir le masque : F9 ") + "\n"+\
                                                    _("Ajouter un point : clic gauche") + "\n"+\
                                                    _("Fermer le polygone : clic droit") + "\n"+\
@@ -1790,19 +1805,18 @@ class Interface(ttk.Frame):
                                                    _("Sauver le masque : Ctrl S.") + "\n"+
                                                    _("Quitter : Ctrl Q.") + "\n\n"+
                                                    _("Agrandir les points : Maj +") + "\n\n"+\
-                                                   _("Saisie simultanée de plusieurs masques disjoints possible") + "\n\n"+\
-                                                   _("C3DC a la priorité sur le masque 2D de Malt"))
-        self.item803.pack(ipady=2,pady=10)
-        self.item804 = ttk.Label(self.item800, text= "")
-        self.item804.pack(ipady=2,pady=10)
+                                                   _("Saisie simultanée de plusieurs masques disjoints possible"))
+        self.item803.pack(ipady=2,pady=3)
+        self.item802.pack(ipady=2,pady=3)  
+        self.item804 = ttk.Label(self.item800, text= "")    # état du masque (créé, supprimé, absent, absence de nuage non dense)
+        self.item804.pack(ipady=2,pady=3)
         
         # Ajout des onglets dans la boite à onglet :
         
         self.onglets.add(self.item400,text="Tapioca")               # add onglet to Notebook        
         self.onglets.add(self.item500,text="Tapas")                 # add onglet to Notebook
         self.onglets.add(self.item950,text="Mise à l'échelle")      # add onglet to Notebook
-        self.onglets.add(self.item700,text="Malt")
-        self.onglets.add(self.item800,text="C3DC")
+        self.onglets.add(self.item600,text="Densification")
 
 
         # boutons  généraux à la boite à onglet :
@@ -2363,8 +2377,9 @@ class Interface(ttk.Frame):
     # 2 : chantier enregistré
     # 3 : micmac lancé, pendant l'exécution de Tapioca et tapas, reste si plantage
     # 4 : arrêt aprés tapas et durant malt en cours d'exécution
-    # 5 : malt terminé
+    # 5 : densification terminée OK
     # 6 : rendu modifiable aprés une première exécution
+    # 7 : densification effectuée mais pas de nuage dense généré
     # - 1 : en cours de suppression
         
         self.etatDuChantier             =   0
@@ -2430,7 +2445,7 @@ class Interface(ttk.Frame):
         self.dicoInfoBullesAAfficher    = None                  # pour passer l'info à afficherLesInfosBullesDuDico (dans choisirUnePhoto)
         self.listeDesMaitresses         = list()
         self.listeDesMasques            = list()
-        self.densification              = ""                    # la densification en cours : Malt ou C3DC
+        self.choixDensification.set("C3DC")                     # la densification par défaut : C3DC
         self.zoomI                      = ""                    # le niveau de zoom initial en reprise de Malt
         self.listeDesMaitressesApero    = list()                # les maitresses pour l'option AperoDeDenis (recalculées en fonction du répertoire Homol)
         self.reinitialiseMaitreEtMasque()                       # initialise toutes les variables lièes à l'image maitresse et au masque 
@@ -2442,6 +2457,7 @@ class Interface(ttk.Frame):
     # C3DC
 
         self.modeC3DC.set("Statue")                             # valeur possible : Statue, Ground,  QuickMac
+        self.choixDensification.set("C3DC")                     # valeur possible : C3DC ou MALT
         
     # Calibration
 
@@ -2835,40 +2851,41 @@ class Interface(ttk.Frame):
             if self.arretApresTapas.get()==1:
                 texte = texte+_('Arrêt demandé après Tapas') + '\n'
               
-            # Calibration
+            # Mise à l'échelle
 
             if self.controleCalibration():
-                texte = texte+'\n' + _('Calibration présente') + '\n'+self.etatCalibration
+                texte = texte+'\n' + _("Mise à l'échelle présente") + '\n'+self.etatCalibration
             else:
                 if self.distance.get()=='0':
-                    texte = texte+'\n' + _('Calibration annulée : distance=0') + '\n'
+                    texte = texte+'\n' + _("Mise à l'échelle invalide : distance=0") + '\n'
                 elif self.etatCalibration!=str():             # calibration incomplète
-                    texte = texte+"\n" + _("Calibration incomplète :") + "\n"+self.etatCalibration+"\n"   
+                    texte = texte+"\n" + _("Mise à l'échelle incomplète :") + "\n"+self.etatCalibration+"\n"   
 
             # Points GPS
    
             self.controlePointsGPS()
             texte = texte+self.etatPointsGPS
                  
-            # Masque 3D pour D3DC ou alors Malt et image maîtresse et masque :
-            
-            malt = True                                                             # a priori on éxécute malt
-            if self.mm3dOK:                                                         # La version de MicMac autorise les masques 3D
-                if self.existeMasque3D():
-                    texte = texte+'\n' + _('C3DC : Masque 3D') + '\n'
-                    malt = False                                                    # on éxécutera C3DC
-                    self.densification = "C3DC"
-            else:
+            # C3DC est-il installé ?
+
+            if not self.mm3dOK:         # La version de MicMac n'autorise pas les masques 3D : info
                 texte = texte + "\n" + _("La version installée de Micmac n'autorise pas les masques en 3D") + "\n"
 
-            # Malt si pas c3dc
+            # C3DC est choisi :
+            
+            if self.choixDensification.get()=="C3DC":            
+                if self.existeMasque3D():
+                    texte = texte+'\n' + _('Densification : C3DC avec masque 3D') + '\n'
+                else:
+                    texte = texte+'\n' + _('Densification : C3DC sans Masque') + '\n'
+                    
+            # Malt est choisi : 
 
-            if malt:
-                self.densification = "Malt"
-                texte = texte+'\n' + 'Malt :\n' + _('Mode : ')+self.modeMalt.get()
+            if self.choixDensification.get()=="Malt":
+                texte = texte+'\n' + 'Densification : Malt\n' + _('Mode : ')+self.modeMalt.get()
                 if self.modeMalt.get()=="GeomImage":
                     if self.listeDesMaitresses.__len__()==0:
-                        texte = texte+"\n" + _("Pas d'image maîtresse")
+                        texte = texte+"\n" + _("Pas d'image maîtresse\n")
                     if self.listeDesMaitresses.__len__()==1:
                         texte = texte+'\n' + _('Image maîtresse : ')+os.path.basename(self.listeDesMaitresses[0])
                     if self.listeDesMaitresses.__len__()>1:
@@ -2881,7 +2898,6 @@ class Interface(ttk.Frame):
                         texte = texte+"\n"+str(self.listeDesMasques.__len__())+_(" masques") + "\n"
                     if self.listeDesMaitresses.__len__()>0 and self.photosUtilesAutourDuMaitre.get()>0:                        
                         texte = texte+_("%s photos utiles autour de la maîtresse") %(str(self.photosUtilesAutourDuMaitre.get()))+"\n"
-                        #texte = texte+_("les meilleures photos en correspondances seront choisies")+ "\n"
 
                 if self.modeMalt.get()=="Ortho":
                     if self.tawny.get():
@@ -2946,16 +2962,17 @@ class Interface(ttk.Frame):
                 texte = texte+_("Chantier terminé.")+ "\n"
             if self.etatDuChantier == 6:		
                 texte = texte+"\n" + _("Chantier exécuté puis débloqué.") + "\n"
-
+            if self.etatDuChantier == 7:		
+                texte = texte+"\n" + _("La densification a echoué : pas de nuage dense généré.") + "\n"
+                
             # Résultat des traitements :
-            
-              
+                          
             if os.path.exists('AperiCloud.ply'):
                texte = texte+_("Nuage de point non densifié généré après Tapas.") + "\n"
                nbPly=1
 
             if os.path.exists(self.modele3DEnCours):
-               texte = texte+_("Nuage de point densifié généré après %s") %(self.densification)+".\n"
+               texte = texte+_("Nuage de point densifié généré.")+".\n"
                nbPly+=1
             if self.etatDuChantier in (4,5,6) and nbPly==0:
                texte = texte+_("Aucun nuage de point généré.") + "\n"
@@ -3776,13 +3793,13 @@ class Interface(ttk.Frame):
     
         if self.etatDuChantier==5:		                # Chantier terminé
             retour = self.troisBoutons(  titre=_('Le chantier %(x)s est terminé.') % {"x" : self.chantier},
-                                         question=_("Le chantier est terminé après ")+self.densification+".\n"+
+                                         question=_("Le chantier est terminé après ")+self.choixDensification.get()+".\n"+
                                          _("Vous pouvez :") + "\n"+
-                                         _(" - Nettoyer le chantier pour modifier les options de Tapioca et Tapas") + "\n"+
-                                         _(" - Conserver les traitements de Tapioca/Tapas pour modifier les options de Malt ou C3DC") + "\n"+
+                                         _(" - Modifier les options de Tapioca et Tapas") + "\n"+
+                                         _(" - Conserver les traitements de Tapioca/Tapas pour relancer la densification") + "\n"+
                                          _(" - Ne rien faire.") + "\n",                                    
                                          b1=_('Modifier les options de Tapioca et Tapas'),
-                                         b2=_('Modifier les options de Malt ou C3DC'),
+                                         b2=_('Modifier les options de la densification'),
                                          b3=_('Ne rien faire'),)
             if retour==-1:                                      # -1 : fermeture fenêtre, abandon
                 self.afficheEtat()
@@ -3804,7 +3821,7 @@ class Interface(ttk.Frame):
         self.sauveParamChantier()
         self.menageEcran()
   
-        if self.etatDuChantier in (0,1,2,6):                        # sinon self.etatDuChantier vaut 4 et on va direct à Malt ou C3DC
+        if self.etatDuChantier in (0,1,2,6,7):                      # sinon self.etatDuChantier vaut 4 et on va direct à Malt ou C3DC
             self.onglets.add(self.item400)                          # tapioca
             self.onglets.add(self.item500)                          # tapas
             self.onglets.add(self.item950)                          # Calibration            
@@ -3829,32 +3846,25 @@ class Interface(ttk.Frame):
             self.onglets.hide(self.item950)                         # Calibration
             self.item720.pack(pady=10)                              # Malt
             self.optionsMalt()                                      # La frame Image Maitre à afficher n'est pas "fixe"
-            selection = self.item700
+            selection = self.item600
 
-        #Onglet C3DC :
+        # Onglet Densification :
+        
+        self.optionsDensification()                                 # onglet Densification variable suivant Malt ou C3DC          
     
-        if not self.mm3dOK:                                             # ne pas proposer C3DC si MicMac ne l'accepte pas
-            os.chdir(self.repTravail)
-            if os.path.exists(self.masque3DSansChemin):
-                supprimeFichier(self.masque3DSansChemin)                # suppression des anciens masques 3D 
-                supprimeFichier(self.masque3DBisSansChemin)
-                self.ajoutLigne(_("Suppression du masque 3D : la version de MicMac ne comporte pas C3DC"))
-                self.ecritureTraceMicMac()
-            try: self.onglets.hide(self.item800)
-            except: pass
-
-        else:                                                       #Si l'onglet existe on met à jour les messages :
-
+        if not self.mm3dOK:                                         # ne pas proposer C3DC si MicMac ne l'accepte pas
+            self.item804.configure(text= _("La version de Micmac installée ne propose pas le module C3DC. Choisir MALT."),foreground='red',style="C.TButton")            
+        else:                                                       # Si l'onglet existe on met à jour les messages :
             os.chdir(self.repTravail)        
             if os.path.exists("AperiCloud.ply")==False:
-                self.item804.configure(text= _("pas de fichier AperiCloud.ply pour construire le masque :") + "\n" + _("lancer Micmac pour en constituer un."),foreground='red',style="C.TButton")
+                self.item804.configure(text= _("Pas de nuage Apericloud : pour construire un masque") + "\n" + _("lancer Tapioca/tapas."),foreground='red',style="C.TButton")
                 self.item801.configure(state = "disable")
             else:
                 self.item801.configure(state = "normal")
-            if self.existeMasque3D():
-                self.item804.configure(text = _("Masque 3D créé"),foreground='black')
-            else:
-                self.item804.configure(text = _("Pas de masque 3D"),foreground='black')            
+                if self.existeMasque3D():
+                    self.item804.configure(text = _("Masque 3D créé"),foreground='red')
+                else:
+                    self.item804.configure(text = _("Pas de masque 3D"),foreground='black')            
             
 
         # met à jour les infos sur les maîtresses et les masques
@@ -4317,6 +4327,27 @@ class Interface(ttk.Frame):
         if self.modeTapioca.get()=='Line':
             self.item470.pack(pady=15)
 
+    def optionsDensification(self):
+        self.item700.pack_forget()
+        self.item800.pack_forget()
+       
+        if self.choixDensification.get()=='C3DC':
+            self.item801.pack(ipady=2,pady=3)       # bouton pour créer un masque
+            self.item802.pack(ipady=2,pady=3)       # bouton pour supprimer le masque
+            self.item803.pack(ipady=2,pady=3)       # Aide pour le widget IGN création de masque 3D
+            self.item804.pack(ipady=2,pady=3)       # info sur la présence du masque    
+            self.item800.pack(pady=15)              # regroupe les widgets 801 à 804
+            if os.path.exists("AperiCloud.ply")==False:
+                   self.item801.pack_forget()
+                   self.item802.pack_forget()
+                   self.item803.pack_forget()                   
+            if not(self.existeMasque3D()):
+                   self.item802.pack_forget()                                   
+
+        if self.choixDensification.get()=='Malt':
+            self.item700.pack(pady=15)
+        
+
     #""""""""""""""""""""""""   Options de Malt
             
     def imagesCalibrationIntrinseques(self):
@@ -4619,9 +4650,11 @@ class Interface(ttk.Frame):
         
         try:                                                                # marche pas si on est en visu
             if self.existeMasque3D():
-                self.item804.configure(text= _("Masque 3D créé"),foreground='black') 
+                self.item804.configure(text= _("Masque 3D créé"),foreground='red')
+                self.item802.pack()     # bouton "supprimer"
             else:
-                self.item804.configure(text= _("Abandon : pas de masque créé."),foreground='red')                
+                self.item804.configure(text= _("Abandon : pas de masque créé."),foreground='red')
+                self.item802.forget()   # bouton "supprimer"
         except: pass
 
 
@@ -4629,6 +4662,7 @@ class Interface(ttk.Frame):
         supprimeFichier(self.masque3DSansChemin)                # suppression définitive des fichiers pour le masque 3D 
         supprimeFichier(self.masque3DBisSansChemin)        
         self.item804.configure(text= _("Masque 3D supprimé."),foreground='red')
+        self.item802.forget()
         
             
     #""""""""""""""""""""""" Options de CalibrationGPS : faire correspondre des points (x,y,z) numérotés de 1 à N, avec des pixels des images.
@@ -4648,9 +4682,9 @@ class Interface(ttk.Frame):
         # message en haut de fenêtre
         
         self.item670 = ttk.Frame(self.item650,height=10,relief='sunken')
-        texte = _("Insertion à partir d'un fichier texte : fermer cette fenêtre puis voir menu expert.") + "\n\n"
+        texte = _("Insertion des points à partir d'un fichier texte : fermer cette fenêtre puis voir menu expert.") + "\n\n"
         texte+= _("Pour être pris en compte 3 points doivent être placés sur au moins 2 photos") + "\n\n"
-        texte+= _("La calibration par points GPS se fait aprés Tapas et avant Malt.") + "\n"
+        texte+= _("La calibration par points GPS se fait avant la densification.") + "\n"
         texte+= _("Elle est prioritaire sur la calibration par axe, plan et métrique.")
         self.item671=ttk.Label(self.item670,text=texte,justify='left')
         self.item671.pack(pady=10,padx=10,ipady=2,ipadx=2,fill="y")        
@@ -4693,7 +4727,7 @@ class Interface(ttk.Frame):
         self.item655.pack(side='left',padx=20)
         self.item656.pack(side='left',padx=20)
         
-        self.onglets.add(self.item650, text="GPS")                              # affichage onglet
+        self.onglets.add(self.item650, text="Points GPS")                              # affichage onglet
 		
     def affichePointCalibrationGPS(self,n,x,y,z,ident,incertitude):             # affiche un point
         
@@ -4711,7 +4745,7 @@ class Interface(ttk.Frame):
 				   )
         
         self.listeWidgetGPS[-1][0].pack(side='top')
-        if self.onglets.tab(self.onglets.select(), "text")=="GPS" and not self.listeWidgetGPS[-1][0].winfo_viewable():           
+        if self.onglets.tab(self.onglets.select(), "text")=="Points GPS" and not self.listeWidgetGPS[-1][0].winfo_viewable():           
             self.item650.configure(height=int(self.item650.cget('height'))+2)
             #self.onglets.configure(height=int(self.item650.cget('height'))+200)
         self.listeWidgetGPS[-1][1].pack(side='left',padx=5)
@@ -5097,7 +5131,7 @@ class Interface(ttk.Frame):
     def lanceMicMac(self):                                      # vérification du choix de photos, de présence de l'éxécutable, du choix de l'extension, de la copie effective dans le répertoire de travail
 
         if self.etatDuChantier==5:		                # Chantier terminé
-            self.encadre(_("Le chantier %(chant)s est terminé après %(densif)s") % {"chant" : self.chantier, "densif" : self.densification} + ".\n\n"+
+            self.encadre(_("Le chantier %(chant)s est terminé après %(densif)s") % {"chant" : self.chantier, "densif" : self.choixDensification} + ".\n\n"+
                          _("Vous pouvez modifier les options puis relancer MicMac."),nouveauDepart='non')
             return
             
@@ -5137,13 +5171,8 @@ class Interface(ttk.Frame):
         if self.etatDuChantier==1:                              # Des photos mais fichier paramètre non encore enregistré, on enregistre et on poursuit
             self.enregistreChantier()                           # sauvegarde du fichier paramètre sous le répertoire du chantier : modif etatduchantier = 2
 
-  
-
-
-
     # on lance Tapioca ou on repart après erreur : Les photos sont-elles correctes ?
-
-        
+       
         self.encadre(_("Controle des photos en cours....\nPatienter jusqu'à la fin du controle."),nouveauDepart='non')
         self.controlePhotos()
         self.menageEcran()   
@@ -5206,17 +5235,17 @@ class Interface(ttk.Frame):
             
             retour = self.troisBoutons(  titre=_('Continuer le chantier %s après tapas ?') % (self.chantier),
                                          question =  _("Le chantier est arrêté après tapas. Vous pouvez :") + "\n"+
-                                                     _(" - lancer Malt, ou C3DC, pour obtenir un nuage dense") + "\n"+
+                                                     _(" - lancer la densification") + "\n"+
                                                      _(" - débloquer le chantier pour modifier les paramètres de Tapioca/tapas") + "\n"+
                                                      _(" - ne rien faire") + "\n",
-                                         b1=_('Lancer ')+self.densification,
+                                         b1=_('Lancer la densification '),
                                          b2=_('Débloquer le chantier - garder les résultats'),
                                          b3=_('Abandon'))
             if retour == -1:                                    # fermeture de la fenêtre
                 self.afficheEtat(entete=_("abandon de Malt"))
                 return
             self.cadreVide()                                    # début de la trace : fenêtre texte pour affichage des résultats. 
-            if retour == 0:                                     # b1 : Lancer malt ou C3DC                   
+            if retour == 0:                                     # b1 : Lancer la densification                  
                 self.ajoutLigne(heure()+_(" Reprise du chantier %s arrêté aprés TAPAS - La trace depuis l'origine sera disponible dans le menu édition.") % (self.chantier))
                 self.suiteMicmac()                              # on poursuit par Malt ou C3DC
                 return
@@ -5235,12 +5264,12 @@ class Interface(ttk.Frame):
     # est-il possible de relancer Malt en conservant le niveau de zoom déjà atteint ??? pas sur, sauf en passant par Micmac
 ##    
 ##        if self.etatDuChantier==5:		                # Chantier terminé
-##            if self.densification=="C3DC":
-##                self.encadre("Le chantier "+self.chantier+" est terminé après "+self.densification+".\n\n"+
+##            if self.choixDensification.get()=="C3DC":
+##                self.encadre("Le chantier "+self.chantier+" est terminé après "+self.choixDensification.get()+".\n\n"+
 ##                             "Vous pouvez modifier les options puis relancer MicMac.")
 ##                return
 ##            if self.zoomF.get()=="1":
-##                self.encadre("Le chantier "+self.chantier+" est terminé après "+self.densification+", avec un zoom final de 1.\n\n"+
+##                self.encadre("Le chantier "+self.chantier+" est terminé après "+self.choixDensification.get()+", avec un zoom final de 1.\n\n"+
 ##                             "Vous pouvez modifier les options puis relancer MicMac.")
 ##                return
 ##            
@@ -5377,13 +5406,11 @@ class Interface(ttk.Frame):
             self.encadre(ligne,nouveauDepart='non')
             return
 
-        if not(self.existeMasque3D() or self.existeMaitre2D()):
-            ligne = (_("Pas de masque 3D, ou d'image maîtresse pour Malt.") + "\n"+
+        if self.choixDensification.get()=="Malt" and not self.existeMaitre2D():
+            ligne = (_("Pas d'image maîtresse pour Malt option geoimage.") + "\n"+
                      _("Le traitement ne peut se poursuivre.") + "\n"+
                      _("Définir une image maîtresse") +"\n"+                     
-                     _("ou Changer le mode 'GeomImage' qui impose une image maîtresse") + "\n"+
-                     _("ou définir un masque 3D") + "\n"+
-                     _("Pour cela utiliser l'item option/Malt ou option/C3DC du menu MicMac") + "\n")
+                     _("ou Changer le mode 'GeomImage' qui impose une image maîtresse") )
             self.encadre(ligne,nouveauDepart='non')
             return
                
@@ -5394,7 +5421,7 @@ class Interface(ttk.Frame):
             self.lanceBascule()
 
 
-        # Si un modele3D existe déjà on le renomme pour le conserver (limité à 20 exemplaire !)
+        # Si un modele3D existe déjà on le renomme pour le conserver (limité à 20 exemplaires !)
         
         if os.path.exists("modele3D.ply"):
             for i in range(1,20):
@@ -5408,10 +5435,10 @@ class Interface(ttk.Frame):
                         self.ajoutLigne("\n" + _("Le fichier Modele3D.ply précédent n'a pu être renommé. Il sera remplacé."))
                     break
         
-        # malt ou D3CD : suivant que le masque 3 D existe ou pas, avec préférence au masque 3D,
+        # malt ou D3CD 
         # la production sera self.modele3DEnCours
         
-        if self.existeMasque3D():                               
+        if self.choixDensification.get()=="C3DC":                               
             self.lanceC3DC()                                    # C3DC crée directement le fichier self.modele3DEnCours
         else:
             self.suiteMicmacMalt()
@@ -5421,12 +5448,15 @@ class Interface(ttk.Frame):
         retour = self.ouvreModele3D()
         texte = ""
         if  retour == -1 :
-             texte = _("Pas de nuage de points aprés Malt ou C3DC.")
+            texte = _("Pas de nuage de points aprés Malt ou C3DC.")
+            self.etatDuChantier = 7     # 7 : chantier terminé sans génération de nuage dense
+        else:
+            self.etatDuChantier = 5     # 5 : chantier terminé OK            
         if retour == -2 :
             texte = _("Programme pour ouvrir les .PLY non trouvé.")        
         ligne = texte + "\n\n-------------- " + _("Fin du traitement MicMac ")+heure()+" --------------\n\n"       
         self.ajoutLigne(ligne)
-        self.etatDuChantier = 5     # 5 : chantier terminé          
+         
         self.messageNouveauDepart =  texte
         self.nouveauDepart()        # sauvegarde les paramètres, écrit la trace, relance "interface" si on est sous nt (nécessaire : suiteMicmac doit être autonome)
         
@@ -5771,7 +5801,7 @@ class Interface(ttk.Frame):
                         "GCPBascule",
                         '.*'+self.extensionChoisie,
                         "Arbitrary",                        # orientation obtenue aprés tapas, nuage non densifié
-                        "bascul",                           # Orientation calibrée par les points GPS, utilisé par Mlat ou C3DC
+                        "bascul",                           # Orientation calibrée par les points GPS, utilisé par Malt ou C3DC
                         os.path.basename(self.dicoAppuis),                             
                         os.path.basename(self.mesureAppuis)]
         self.lanceCommande(GCPBascule,
@@ -5791,7 +5821,6 @@ class Interface(ttk.Frame):
                             #                  si il y a un masque il faut les 2 fichiers maitre_Masq.xml et maitre_Masq.tif sans les indiquer dans la syntaxe
 
         self.ajoutLigne("\n\n---------------------------\n" + _("Préparation du lancement de Malt") + "\n")
-        self.densification = "Malt"
         aConserver = str()
         if self.modeMalt.get()=="GeomImage":
             # Les N meilleurs fichiers en correspondances avec la maitresse
@@ -5992,16 +6021,22 @@ class Interface(ttk.Frame):
         
     def lanceC3DC(self):
         # Si on a un masque 3D on l'utilise et on ne cherche pas plus loin :
-        self.densification = "C3DC"
-        # exclusion des images pour la calibration si demandé :
-                    
-        C3DC = [self.mm3d,
-                "C3DC",
-                self.modeC3DC.get(),
-                ".*"+self.extensionChoisie,
-                self.orientation(),
-                "Masq3D="+self.masque3DSansChemin,
-                "Out="+self.modele3DEnCours]
+        if self.existeMasque3D():            
+            C3DC = [self.mm3d,
+                    "C3DC",
+                    self.modeC3DC.get(),
+                    ".*"+self.extensionChoisie,
+                    self.orientation(),
+                    "Masq3D="+self.masque3DSansChemin,
+                    "Out="+self.modele3DEnCours]
+        else:
+            C3DC = [self.mm3d,
+                    "C3DC",
+                    self.modeC3DC.get(),
+                    ".*"+self.extensionChoisie,
+                    self.orientation(),
+                    "Out="+self.modele3DEnCours]
+            
         self.lanceCommande(C3DC,
                            filtre=self.filtreC3DC,
                            info=_("ATTENTION : cette procédure est longue : patience !"))
@@ -6375,6 +6410,10 @@ class Interface(ttk.Frame):
             texte = texte+_("Nom de l'appareil photo inacessible.")
         else:
             texte = texte+_("Nom de l'appareil photo : ")+self.nomCamera+"\n"
+
+        self.numeroSerieCamera = self.tagExif("SerialNumber")
+        if self.numeroSerieCamera!=str():
+            texte = texte+_("Numéro de série de l'appareil photo : ")+self.numeroSerieCamera+"\n"
             
         self.focale35MM = self.tagExif("FocalLengthIn35mmFormat")
             
@@ -6397,12 +6436,19 @@ class Interface(ttk.Frame):
         else:
             self.tailleCapteurAppareil()
             if self.tailleCapteur==str():
-                texte = texte + "\n\n" + _("L'appareil est inconnu dans DicoCamera.XML.") + "\n\n"                          
+                texte = texte + "\n" + _("L'appareil est inconnu dans DicoCamera.XML.") + "\n"                          
             else:
-                texte = texte + "\n\n" + _("L'appareil est connu dans DicoCamera.XML.") + "\n\n"+\
+                texte = texte + "\n" + _("L'appareil est connu dans DicoCamera.XML.") + "\n"+\
                           _("Taille du capteur en mm : ")+"\n\n"+self.tailleCapteur+"."
+                
+        self.controlePhotos()
+        if self.dimensionsDesPhotos:
+            if self.dimensionsOK:
+                texte += "\nDimensions des photos en pixel :\n"+str(self.dimensionsDesPhotos[0][1][0])+" - "+str(self.dimensionsDesPhotos[0][1][1])   
+            else:
+                lesDimensions = set([y for (x,y) in self.dimensionsDesPhotos])
+                texte += "\n\nPlusieurs dimensions pour les photos :\n"+str(lesDimensions)
 
-        
         # écriture du résultat dans le fichier trace et présentation à l'écran
         
         self.effaceBufferTrace()
@@ -6412,8 +6458,10 @@ class Interface(ttk.Frame):
             return        
         self.encadre(texte,nouveauDepart='non')
 
+        if self.nombreDeExifTagDifferents("Model")>1:
+            self.encadrePlus("\n\n"+_("Attention : les photos proviennent de plusieurs appareils différents. Voir le menu expert."))
         
-    # tag dans l'exif : renvoi la valeur du tag 'tag' dans l'exif de la première photo (on suppose qu'elles sont identiques pour toutes les photos)
+    # tag dans l'exif : renvoi la valeur du tag 'tag' dans l'exif d'une photo ou de la première photo (on suppose qu'elles sont identiques pour toutes les photos)
                           
     def tagExif(self,tag,photo=""):
         if photo=="":photo=self.photosAvecChemin[0]
@@ -6688,6 +6736,63 @@ class Interface(ttk.Frame):
         if nbAjout>15:
            self.encadre (str(nbAjout)+_(" points GPS ajoutés : c'est beaucoup, sans doute trop (pb affichage options GPS)"),nouveauDepart='non') 
 
+    def plusieursAppareils(self):
+        self.menageEcran()
+        if self.etatDuChantier in [1,2]:                       # 1 = avec photo ; 2 = enregistré, plus = traitement effectué
+            if self.troisBoutons(_("Plusieurs appareils photos"),
+                                 _("Lorque les photos choisies proviennent de plusieurs appareils photos")              + "\n"+
+                                 _("les TAGS 'model' doivent être différenciés dans l'exif des photos.")                + "\n"+
+                                 _("La calibration s'effectue alors pour chaque appareil.")                             + "\n"+                                 
+                                 _("AperoDeDenis propose de modifier ces tags soit : " )                                + "\n"+
+                                 _("  - en y ajoutant le numéro de série de l'appareil (parfois présent dans l'exif" )  + "\n"+
+                                 _("  - en y ajoutant le préfixe du nom du fichier de la photo" )  + "\n"+                                 
+                                 _("    le préfixe = les 3 premiers caractères du nom de fichier.") + "\n"                                 ,                              
+                                 _("Ne rien faire"),
+                                 _("Modifier les tags 'model'")) == 0:
+                self.encadre(_("Abandon, le chantier n'est pas modifié."),nouveauDepart='non')
+                return
+        else:
+            self.encadre(_("La prise en compte de plusieurs appareils photos doit se faire après la selection des photos")+" \n"+
+                          _("et AVANT tout traitement.\nChoisir des photos ou créer un nouveau chantier."),nouveauDepart='non')
+            return
+        self.encadre(_("Recherche des modifications possibles du modèle d'appareil photo. Patience !."),nouveauDepart='non')    
+        # Modification des tags "model" demandée : vérification qu'il y a un seul modèle d'appareil dans les photos
+        # ceci pour éviter, entre autre, de renouveler l'opération
+        if self.nombreDeExifTagDifferents("Model")>1:
+            self.encadre(   _("Les photos proviennent déjà de plusieurs appareils différents.")+"\n"+
+                            _("Liste des appareils :"+"\n"+
+                              str(self.lesTags)+"\n"+
+                            _("Pas de modification du chantier")
+                         ),nouveauDepart='non')
+            return
+        # Toutes les photos proviennent du même modèle d'appareil photo : y-a-t-il plusieurs numéro de série ?
+        if self.nombreDeExifTagDifferents("SerialNumber")>1:
+            # OUI : plusieurs appareils identifiès par leur numéro de série, on modifie les tag "Model" :
+            self.encadre(_("Modification du modèle de l'appareil photo en cours : ajout du numéro de série.")+"\n"+
+                         _("Attention : procédure longue si beaucoup de photos."),nouveauDepart='non')
+            [self.lanceCommande([self.exiftool,"-Model="+self.tagExif("Model",photo)+" "+self.tagExif("SerialNumber",photo),photo]) for photo in self.photosAvecChemin]
+            self.encadre(_("Fin :\nModéle de l'appareil photo modifié par ajout du numéro de série."),nouveauDepart='non')
+            return
+        if self.nombreDePrefixes(self.photosSansChemin)>1:
+            self.encadre(_("Modification du modèle de l'appareil photo en cours : ajout du préfixe du nom de fichier.")+"\n"+
+                         _("Attention : procédure longue si beaucoup de photos."),nouveauDepart='non')
+            [self.lanceCommande([self.exiftool,"-Model="+self.tagExif("Model",photo)+" "+os.path.basename(photo)[:3],photo]) for photo in self.photosAvecChemin]
+            self.encadre(_("Fin : \nModéle de l'appareil photo modifié : ajout du préfixe du nom de fichier sur 3 caractères."),nouveauDepart='non')
+            return           
+        self.encadre(_("Modéle de l'appareil photo non modifiable :")+" \n"+_("pas de numéro de série multiple pour les appareils photos,")+
+                       "\n"+_("pas de préfixe multiple pour les noms de fichiers."),nouveauDepart='non')
+
+    def listeAppareils(self):
+        self.encadre(_("Recherche des noms d'appareil photos. Patience !."),nouveauDepart='non')    
+        nb = self.nombreDeExifTagDifferents("Model")
+        if nb>1:
+            self.encadre(_("Les photos proviennent de ")+str(nb)+_(" appareils photos différents : ")+"\n\n"+"\n".join(self.lesTags),nouveauDepart='non')
+        elif nb==1:
+            self.encadre(_("Les photos proviennent d'un seul appareil : ")+"\n\n"+"\n".join(self.lesTags),nouveauDepart='non')
+        else:
+            self.encadre(_("L'exif des photos ne contient pas le nom de l'appareil photo."),nouveauDepart='non')
+
+        
     ################################## Le menu AIDE ###########################################################
                 # provisoirement retirés :
                 #"            Afficher les photos après nettoyage      : visualise les photos après nettoyage\n"
@@ -6746,11 +6851,13 @@ class Interface(ttk.Frame):
                 _("            Fusionner des images 3D                    : permet de fusionner plusieurs PLY en un seul") + "\n\n"+\
                 _("Menu MicMac :") + "\n\n"+\
                 _("       - Choisir les photos : permet choisir les photos JPG, GIF, TIF ou BMP pour le traitement.") + "\n\n"+\
-                _("         Remarque  : les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert).") + "\n"+\
+                _("         Les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert).") + "\n"+\
                 _("         Un EXIF avec la focale utilisée pour la prise de vue est nécessaire : si besoin l'ajouter (menu Outil/ajout exif).") + "\n"+\
-                _("         Remarque  : ")+ "\n"+\
-                _("                     Le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils)") + "\n\n"+\
-                _("       - Options : choisir les options des modules Tapioca, Tapas (nuage non densifié)  puis de Malt (nuage densifié) : ") + "\n\n"+\
+                _("         Remarques : 1) Si l'exif ne comporte pas la focale équivalente en 35 mm alors ")+ "\n"+\
+                _("                     le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils)") + "\n\n"+\
+                _("                     2) Si les photos proviennent de plusieurs appareils alors les tags 'model' des exif doivent") + "\n"+\
+                _("                     être différenciés (voir menu Expert)") + "\n\n"+\
+                _("       - Options : choisir les options des modules Tapioca, Tapas, GPS (nuage non densifié)  puis de densification : ") + "\n\n"+\
                 _("         Les options suivantes concernent le calcul du nuage de points NON densifié :") + "\n\n"+\
                 _("                    - Tapioca : options et sous options associées (échelles, fichier xml)")+ "\n"+\
                 _("                    - Tapas   : choix d'un mode de calcul, possibilité d'arrêter le traitement après tapas.") + "\n"+\
@@ -6758,13 +6865,13 @@ class Interface(ttk.Frame):
                 _("                                Typiquement sur les photos de plus grande focale si il y a 2 focales différentes.")+ "\n"+\
                 _("                                L'arrêt après Tapas est nécessaire pour décrire le masque 2D ou 3D.") + "\n"+\
                 _("                                Produit une image 3D non densifiée avec position des appareils photos.") + "\n"+\
-                _("                    - Calibration : définir un axe, une zone plane, une distance pour définir le repère du chantier.") + "\n\n"+\
+                _("                    - Mise à l'échelle : définir un axe, une zone plane, une distance pour définir le repère du chantier.") + "\n\n"+\
                 _("                    - GPS : définir les points de calage GPS qui permettent de géolocaliser la scène.") + "\n\n"+\
                 _("                            Pour être utilisé chaque point, minimum 3, doit être placé sur au moins 2 photos.") + "\n\n"+\
                 _("                            Cette option est utilisée pour le nuage de point non densifié ET pour le nuage densifié.") + "\n\n"+\
-                _("         Les 3 options suivantes concernent le calcul du nuage de points densifié :") + "\n\n"+\
-                _("                    - Malt    : choix du mode et du niveau de densification.") + "\n"+\
-                _("                                Si le mode est GeomImage : ") + "\n"+\
+                _("         Les 2 options suivantes concernent le calcul du nuage de points densifié :") + "\n\n"+\
+                _("                    - Densification    : choix du module de densification : C3DC (récent) ou Malt (ancien).") + "\n"+\
+                _("                      - Malt : Si le mode est GeomImage : ") + "\n"+\
                 _("                                  désigner une ou plusieurs images maîtresses") + "\n"+\
                 _("                                  dessiner si besoin le ou les masques associés.") + "\n"+\
                 _("                                  Seuls les points visibles sur les images maitres seront sur l'image 3D finale.") + "\n"+\
@@ -6773,15 +6880,16 @@ class Interface(ttk.Frame):
                 _("                                  Supprimer une image maîtresse de la liste réinitialise le masque.") + "\n\n"+\
                 _("                                  Nombre de photos utiles autour de l'image maîtresse :") + "\n"+\
                 _("                                    Permet de limiter les recherches aux images entourant chaque image maîtresse.") + "\n\n"+\
-                _("                               Choix du niveau de densification final : 8,4,2 ou 1.") + "\n"+\
+                _("                                  Choix du niveau de densification final : 8,4,2 ou 1.") + "\n"+\
                 _("                                  Le niveau 1 est le plus dense. ") + "\n"+\
                 _("                                  La géométrie est revue à chaque niveau et de plus en plus précise : ") + "\n"+\
                 _("                                    la densification s'accroît, et la géométrie s'affine aussi.") + "\n\n"+\
-                _("                    - C3DC    : dessiner le masque 3D sur le nuage de points AperiCloud généré par Tapas..") + "\n"+\
+                _("                      - C3DC : choix par défaut.") + "\n"+\
+                _("                               Possibilité de dessiner un masque 3D sur le nuage de points non dense.") + "\n"+\
                 _("                                Les touches fonctions à utiliser sont décrites dans l'onglet.") + "\n"+\
                 _("                                Le masque limite la zone en 3 dimensions de l'image finale.") + "\n"+\
                 _("                                L'outil de saisie est issu de micmac.") + "\n\n"+\
-                _("                    - GPS     : définir les points de calage GPS qui permettent de géolocaliser la scène.") + "\n"+\
+                _("                    - GPS    : définir les points de calage GPS qui permettent de géolocaliser la scène.") + "\n"+\
                 _("                                Pour être utilisé chaque point, minimum 3, doit être placé sur au moins 2 photos.") + "\n\n"+\
                 _("                                Le bouton 'appliquer' permet de calibrer le modèle non densifié immédiatement.") + "\n\n"+\
                 _("       - Lancer MicMac : enregistre le chantier et lance le traitement avec les options par défaut ou choisies par l'item 'options'.") + "\n"+\
@@ -6811,10 +6919,10 @@ class Interface(ttk.Frame):
                 _("         Attention : cette étape n'est pas effective pour toutes les versions de MicMac. La version mercurial 5508 fonctionne.") + "\n\n"+\
                 _("         Une fois les images sélectionnées le chantier est créé : utiliser le menu MicMac comme pour un chantier normal.") + "\n\n"+\
                 _("menu Outils :") + "\n\n"+\
-                _("       - Affiche le nom et la focale de l'appareil photo : fabricant, modèle et focale de la première photo.") + "\n"+\
+                _("       - Afficher le nom et la focale de l'appareil photo : fabricant, modèle et focale de la première photo.") + "\n"+\
                 _("         Il y a 2 types de focales : focale effective et focale équivalente 35 mm.") + "\n"+\
                 _("         Indique si l'appareil photo est connu dans '/XML MicMac/DicoCamera.xml'.") + "\n\n"+\
-                _("       - Affiche toutes les focales des photos : focales et focales equivalentes en 35mm.") + "\n"+\
+                _("       - Afficher toutes les focales des photos : focales et focales equivalentes en 35mm.") + "\n"+\
                 _("         Si les focales ne sont pas identiques pour toutes les photos : utiliser la calibration intrinséque de tapas.") + "\n\n"+\
                 _("       - Mettre à jour DicoCamera.xml : ajouter la taille du capteur dans '/XML MicMac/DicoCamera.xml'.") + "\n"+\
                 _("         La taille du capteur dans DicoCamera.xml est requise si la focale équivalente 35mm est absente de l'exif.") + "\n"+\
@@ -6828,8 +6936,21 @@ class Interface(ttk.Frame):
                 _("         La présence de photos avec peu de points homologues peut faire échouer le traitement.") + "\n"+\
                 _("         Il est parfois préférable de traiter peu de photos mais de bonne qualité.") + "\n\n"+\
                 _("       - Modifier l'exif des photos : permet la création et la modification des exifs des photos du chantier.") + "\n\n"+\
+                _("menu Expert :") + "\n\n"+\
+                _("       - Ouvrir une console permettant de passer des commandes MicMac.") + "\n"+\
+                _("       - Insérer de points GPS à partir d'un fichier texte, séparateur espace, format : X Y Z dx dy dz ") + "\n"+\
+                _("         Le caractère # en début de ligne signale un commentaire.") + "\n\n"+\
+                _("       - Recopier des points GPS à partir d'un autre chantier.") + "\n"+\
+                _("       - Définir plusieurs appareils photos.") + "\n"+\
+                _("         Si le lot de photos provient de plusieurs appareils de même type il faut informer MicMac de cette situation.") + "\n"+\
+                _("         Plusieurs solutions existent dans MicMac.") + "\n"+\
+                _("         AperoDeDenis propose de modifier le tag 'model' de l'exif des photos :") + "\n"+\
+                _("           - en utilisant le numéro de série de l'appareil présent dans l'exif") + "\n"+\
+                _("           - à défaut en utilisant 3 caractères du préfixe des noms de fichiers, que l'utilisateur a préparé de telle sorte") + "\n"+\
+                _("             que chaque préfixe corresponde à un appareil. Certains appareil proposent de modifier qyqtématiquement ce préfixe.") + "\n"+\
+                _("       - Lister les appareils photos présent dans le lot de photos.") + "\n\n"+\
                 _("menu Paramétrage :") + "\n\n"+\
-                _("       - Affiche les paramètres : visualise les chemins de micmac\\bin, d'exiftool, du fichier pour visualiser les .ply (Meshlab ou Cloud Compare),") + "\n"+\
+                _("       - Afficher les paramètres : visualise les chemins de micmac\\bin, d'exiftool, du fichier pour visualiser les .ply (Meshlab ou Cloud Compare),") + "\n"+\
                 _("         ainsi que le répertoire où se trouve les fichiers paramètres de l'interface.") + "\n"+\
                 _("         Ces paramètres sont sauvegardés de façon permanente dans le fichier :")+\
                 "         "+self.fichierParamMicmac+"." + "\n\n"+\
@@ -7012,6 +7133,8 @@ class Interface(ttk.Frame):
               "\n" + _("Version 5.1 :")+chr(9)+_("décembre 2018") + "\n"+\
               chr(9)+chr(9)+_("- permet d'oublier les photos ayant servies à la calibration de l'appareil pour l'exécution de Tapas.") + "\n"+\
               chr(9)+chr(9)+_("- insertion d'un fichier texte de points GPS par le menu expert (séparateur espace : nom,x,y,z,dx,dy,dz.") + "\n"+\
+              chr(9)+chr(9)+_("- affichage des dimensions des photos dans le menu outils/nom de l'appareil photo") + "\n"+\
+              chr(9)+chr(9)+_("- Amélioration de libellés de boites de dialogue, suppression du polysème 'calibration'") + "\n"+\
               "----------------------------------------------------------"
 # correction de : e remplacé par self.e dans MyDialog (fixe le problème du renommage des chantiers)
 # ajout de self.pasDeFocales = False aprés la mise à jour des exifs. (fixe le problème du message erroné concerné les focales manquantes)
@@ -7022,7 +7145,7 @@ class Interface(ttk.Frame):
 # test de la présence de sous répertoire dans afficheetat :
 # si etatChantier>2 et pas de sous-répertoire alors etatChantier remis à 2 et
 # message "chantier nettoyé" affiché              
-        #self.encadre (aide4,50,aligne='left',nouveauDepart='non')
+# self.encadre (aide4,50,aligne='left',nouveauDepart='non')
         self.cadreVide()
         self.effaceBufferTrace()        
         self.ajoutLigne(aide4)
@@ -7118,13 +7241,13 @@ class Interface(ttk.Frame):
                          self.typeDuChantier,
                          self.listeDesMaitresses,
                          self.listeDesMasques,
-                         self.densification,
+                         self.choixDensification.get(),
                          self.modeC3DC.get(),
                          self.tawny.get(),
                          self.tawnyParam.get(),
                          version,
                          self.exifsDesPhotos,
-                         self.lancerTarama.get()
+                         self.lancerTarama.get(),
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -7282,13 +7405,14 @@ class Interface(ttk.Frame):
             self.typeDuChantier             =   r[38]
             self.listeDesMaitresses         =   r[39]
             self.listeDesMasques            =   r[40]
-            self.densification              =   r[41]
+            self.choixDensification.set     (r[41])
             self.modeC3DC.set               (r[42])
             self.tawny.set                  (r[43])
             self.tawnyParam.set             (r[44])
             # r[45] est la version : inutile pour l'instant (v2.61]
             self.exifsDesPhotos             =   r[46]
-            self.lancerTarama.set           (r[47])            
+            self.lancerTarama.set           (r[47])
+      
         except Exception as e: print(_("Erreur restauration param chantier : "),str(e))    
         
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GPS
@@ -7389,7 +7513,9 @@ class Interface(ttk.Frame):
            self.item540.pack_forget()           
         if self.item520.winfo_manager()=="pack":
            self.item520.pack_forget()
-           
+
+        if self.item600.winfo_manager()=="pack":
+           self.item600.pack_forget()     
         if self.item700.winfo_manager()=="pack":
            self.item700.pack_forget()
         if self.item710.winfo_manager()=="pack":
@@ -8994,6 +9120,17 @@ class Interface(ttk.Frame):
         lesExtensions=set([os.path.splitext(x)[1].upper() for x in liste])                  # on vérifie l'unicité de l'extension :
         self.lesExtensions=list(lesExtensions)                                              # liste pour être slicable
         return len(self.lesExtensions)
+
+    def nombreDePrefixes(self,liste,longueurPrefixe=3):
+        lesPrefixes=set([x[0:longueurPrefixe].upper() for x in liste])                  # on vérifie l'unicité des préfixes :
+        self.lesPrefixes=list(lesPrefixes)                                              # liste pour être slicable
+        return len(self.lesPrefixes)
+
+    def nombreDeExifTagDifferents(self,tag="SerialNumber"):                           # on vérifie l'unicité des tags numéros de série ou autre
+        lesTags = set([self.tagExif(tag,photo) for photo in self.photosAvecChemin])
+        self.lesTags=[ tag for tag in lesTags if tag !=""]        
+        return len (self.lesTags)
+    
 ########################################################   Modifier les options par défaut
 
 
