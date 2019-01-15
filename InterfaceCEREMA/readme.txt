@@ -13,12 +13,19 @@ Plusieurs nouveautés dans la version 5.11 :
   - possibilité de répartir les photos suivant plusieurs appareils photos 
   - liste des différents appareils photos présent dans le lot de photos
   
+ et sous la  version 5.2 :
+- lancement automatique de campari après GCP_bascul s'il y a les bons paramètres.
+- ajout dans le menu expert de la consultation du log mm3d
+- mise à jour de dico camera pour "tous" les appareils photos du lot de données
+
+
 Des installateurs facilitent l'installation des anciennes versions :
 
 Version 5 sous windows (msi)
 Version 3 sous Linux (deb et rpm)
 
+Un installateur pour la version 5.2 sous windows ewst en préparation.
+
 Sous mac : voir la documentation
  
-
 L'application MicMac de l'IGN doit être installée ( https://github.com/micmacIGN ou http://logiciels.ign.fr/?Micmac )
