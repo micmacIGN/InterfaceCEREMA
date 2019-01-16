@@ -14,17 +14,16 @@ Plusieurs nouveautés dans la version 5.11 :
   - liste des différents appareils photos présent dans le lot de photos
   
  et sous la  version 5.2 :
-- lancement automatique de campari après GCP_bascul s'il y a les bons paramètres.
-- ajout dans le menu expert de la consultation du log mm3d
-- mise à jour de dico camera pour "tous" les appareils photos du lot de données
+- lancement automatique de campari après GCP_bascul (menu MicMac/options/points gps)
+- ajout de la consultation du log mm3d (menu expert)
+- mise à jour de dicocamera.xml pour "tous" les appareils photos du lot de données (menu outils)
+- ajout d'un chantier à partir d'un répertoire (menu fichier)
 
 
 Des installateurs facilitent l'installation des anciennes versions :
 
-Version 5 sous windows (msi)
+Version 5.2 sous windows 64 bits
 Version 3 sous Linux (deb et rpm)
-
-Un installateur pour la version 5.2 sous windows ewst en préparation.
 
 Sous mac : voir la documentation
  

@@ -98,6 +98,7 @@
 # ajout dans le menu expert de la consultation du log mm3d
 # mise à jour de dico camera pour "tous" les appareils photos du lot de données
 # fix bug sur mise à jour de l'exif mal pris en compte, suppression des variables pasDeFocales et uneseulefocale.
+# ajout de l'item " ajout d'un chantier à partir d'un répertoire" dans le menu fichier
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -1227,7 +1228,9 @@ class Interface(ttk.Frame):
         menuFichier.add_command(label=_("Exporter le chantier en cours"), command=self.exporteChantier)
         menuFichier.add_command(label=_("Importer un chantier"), command=self.importeChantier)         
         menuFichier.add_separator()        
-        menuFichier.add_command(label=_("Du ménage !"), command=self.supprimeRepertoires)        
+        menuFichier.add_command(label=_("Ajouter un chantier à partir d'un répertoire"), command=self.ajoutRepertoireCommechantier)
+        menuFichier.add_separator()        
+        menuFichier.add_command(label=_("Du ménage !"), command=self.supprimeRepertoires)               
         menuFichier.add_separator()        
         menuFichier.add_command(label=_("Quitter"), command=self.quitter)
 
@@ -2828,6 +2831,27 @@ class Interface(ttk.Frame):
         except Exception as e:
             self.encadre(_("Anomalie lors de l'importation : ")+str(e),nouveauDepart='non')
             return
+        
+    def ajoutRepertoireCommechantier(self): # ajoute un répertoire dans le liste des chantiers : le répertoire doit contenir  le fichier paramChantier.sav
+        self.menageEcran()
+        nouveauRepChantier  = tkinter.filedialog.askdirectory(title='Désigner le répertoire contenant un chantier ',
+                                                        initialdir=self.repTravail)
+        if os.path.isdir(nouveauRepChantier):       # c'est bien un répertoire
+            param = os.path.join(nouveauRepChantier,self.paramChantierSav)
+            if os.path.isfile(param): # il existe un fichier paramètre
+                if nouveauRepChantier in self.tousLesChantiers:
+                    self.encadre(_("Le répertoire du nouveau chantier \n %s \n est déjà un chantier.\n Abandon.") % (nouveauRepChantier),nouveauDepart='non')
+                    return
+            # on ajoute le chantier dans les paramètres généraux
+                self.repTravail = nouveauRepChantier
+                ajout(self.tousLesChantiers,nouveauRepChantier)         # on ajoute le chantier dans les paramètres généraux
+                self.restaureParamChantier(param)
+                self.typeDuChantier[2] = 'ajouté'
+                self.sauveParam()                                       # pour assurer la cohérence entre le chantier en cours et le chantier ouvert (écrase le chantier en cours)
+                self.afficheEtat()
+            else:
+                self.encadre(_("Le répertoire ne contient pas le fichier :\n")+self.paramChantierSav+_("\nCe n'est pas un chantier.\nAbandon."),nouveauDepart="non")
+            
 
     def copierParamVersChantier(self):                                                  # copie du fichier paramètre sous le répertoire du chantier, pour rejouer et trace
         try:
@@ -2994,8 +3018,7 @@ class Interface(ttk.Frame):
                 # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' 
                 # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
                 # [2] = 'original' ou "importé"          
-                
-                if self.typeDuChantier[1]=="renommé" or self.typeDuChantier[2]=="importé":
+                if self.typeDuChantier[1]=="renommé" or self.typeDuChantier[2]=="importé" or self.typeDuChantier[2]=="ajouté":
                     texte = texte + _("Chemin du chantier :") + "\n"+afficheChemin(os.path.dirname(self.repTravail))+"\n\n"
             else:
                 texte = texte+"\n" + _("Chantier en attente d'enregistrement.") + "\n"
@@ -3751,7 +3774,7 @@ class Interface(ttk.Frame):
     # Type de chantier : c'est une liste de string (on pourrait aussi mettre un dictionnaire), avec :
     # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' 
     # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
-    # [2] = 'original' ou "importé"
+    # [2] = 'original' ou "importé" ou "ajouté" 
         # définit les fichiers trace vides, débuter la trace à vide (tout nouveau choix de photos efface la trace précédente
         self.typeDuChantier =   ['photos','initial','original']
         self.definirFichiersTrace()                             # affecte leur noms auc fichiers trace, existant ou pas, sous le répertoire de travail
@@ -7051,6 +7074,8 @@ class Interface(ttk.Frame):
                 _("       - Importer un chantier :") + "\n"+\
                 _("            - copie le chantier sauvegardé dans un nouvel environnement (ordinateur, système d'exploitation)") + "\n"+\
                 _("            - un exemple d'intérêt : copier un chantier après tapas, lancer malt avec des options variées sans perdre l'original.") + "\n\n"+\
+                _("       - Ajouter le répertoire d'un chantier :") + "\n"+\
+                _("            - ajoute le chantier présent sous le répertoire indiqué. Alternative moins robuste à l'export/import)") + "\n"+\
                 _("       - Du ménage ! : nettoyer ou supprimer les chantiers : chaque chantier crée une arborescence de travail assez lourde.") + "\n"+\
                 _("         Le nettoyage ne garde que les photos, les modèles 3D résultats, les traces, les paramètres : gain de place assuré !.") + "\n"+\
                 _("         La suppression supprime tout le chantier.") + "\n"+\
