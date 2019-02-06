@@ -129,8 +129,22 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
             Version 4.11 : Noël 2017
 			        - Diffusion de la version 4.10 sur GitHub
 			
-		        Version 5.0 : janvier 2018 
+		     Version 5.0 : janvier 2018 
 			        - Suppression de l'item "Indices surfaciques" de la version 4.0
+			Version 5.1 : 4 décembre 2018 : 
+					- Options/Tapas : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appareil photo
+					- ajout d'un item dans le menu expert : copier les coordonnées des points gps à partir d'un fichier texte
+					- modification des onglets Malt et C3DC, réunis dans un même onglet "Densification"
+					- renommage de l'onglet "calibration" en "mise à l'échelle"
+			Version 5.2 janvier 2019 : 
+					- ajout des paramètres pour Campari dans la fenêtre options/points GPS
+					- ajout dans le menu expert de la consultation du log mm3d
+					- possibilité de renommer dans l'exif des appareils photos différents 
+					- mise à jour de dico camera pour "tous" les appareils photos du lot de données
+					- ajout de l'item " ajout d'un chantier à partir d'un répertoire" dans le menu fichier
+			version 5.21 février 2019 :
+					- ajout possibilité de passer une commande "python" dans le menu expert
+					- Modification de l'option "Autocal" de Tapas : Figee (au lieu de Autocal) : permet de 'figer' la calibration initiale					
 			
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
