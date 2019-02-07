@@ -3474,9 +3474,11 @@ class Interface(ttk.Frame):
             texte=_("Programme exiftool :") + "\n"+afficheChemin(self.exiftool)
         self.encadre(texte,nouveauDepart='non')         
         
-        # Choisir le répertoire de Meshlab ou CLoudCompare :
+        # Choisir le répertoire de exiftool :
+        _filetypes = [] if sys.platform == 'darwin' else [("exiftool","exiftool*"),(_("Tous"),"*")]
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.exiftool),                                                 
-                                                  filetypes=[("exiftool","exiftool*"),(_("Tous"),"*")],multiple=False,
+                                                  filetypes=_filetypes,
+                                                  multiple=False,
                                                   title = _("Recherche exiftool"))
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Fichier exiftool inchangé :") + "\n\n"+afficheChemin(self.exiftool)
@@ -3495,9 +3497,11 @@ class Interface(ttk.Frame):
             texte=_("Programme convert :") + "\n"+afficheChemin(self.convertMagick)
         self.encadre(texte,nouveauDepart='non')         
         
-        # Choisir le répertoire de Meshlab ou CLoudCompare :
+        # Choisir le répertoire de convert d'ImageMagick :
+        _filetypes = [] if sys.platform == 'darwin' else [("convert",("convert*","avconv*")),(_("Tous"),"*")]
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.exiftool),                                                 
-                                                  filetypes=[("convert",("convert*","avconv*")),(_("Tous"),"*")],multiple=False,
+                                                  filetypes=_filetypes,
+                                                  multiple=False,
                                                   title = _("Recherche convert"))
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Fichier convert inchangé :") + "\n\n"+afficheChemin(self.convertMagick)
@@ -3516,8 +3520,10 @@ class Interface(ttk.Frame):
             texte=_("Programme ouvrant les .PLY :") + "\n"+afficheChemin(self.meshlab)
         self.encadre(texte,nouveauDepart='non')                       
         # Choisir le répertoire de Meshlab ou CLoudCompare 
+        _filetypes = [] if sys.platform == 'darwin' else [(_("meshlab ou CloudCompare"),("meshlab*","Cloud*")),(_("Tous"),"*")]
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.meshlab),                                                 
-                                                  filetypes=[(_("meshlab ou CloudCompare"),("meshlab*","Cloud*")),(_("Tous"),"*")],multiple=False,
+                                                  filetypes=_filetypes,
+                                                  multiple=False,
                                                   title = _("Recherche fichier Meshlab sous VCG, ou CloudCompare"))
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Fichier Meshlab ou cloud compare :") + "\n\n"+afficheChemin(self.meshlab)
@@ -3537,8 +3543,10 @@ class Interface(ttk.Frame):
         self.encadre(texte,nouveauDepart='non')         
         
         # Choisir le répertoire de ffmpeg:
+        _filetypes = [] if sys.platform == 'darwin' else [("ffmpeg","ffmpeg*"),(_("Tous"),"*")]
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.ffmpeg),                                                 
-                                                  filetypes=[("ffmpeg","ffmpeg*"),(_("Tous"),"*")],multiple=False,
+                                                  filetypes=_filetypes,
+                                                  multiple=False,
                                                   title = _("Recherche ffmpeg"))
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Fichier ffmpeg inchangé :") + "\n\n"+afficheChemin(self.ffmpeg)
