@@ -99,10 +99,13 @@
 # mise à jour de dico camera pour "tous" les appareils photos du lot de données
 # fix bug sur mise à jour de l'exif mal pris en compte, suppression des variables pasDeFocales et uneseulefocale.
 # ajout de l'item " ajout d'un chantier à partir d'un répertoire" dans le menu fichier
-# version 5.21
+# version 5.21 janvier 2019
 # python 3.5 nécessaire pour renommer un chantier (commonpath)
 # ajout possibilité de passer une commande "python" dans le menu expert
 # Modification de l'option "Autocal" de Tapas : Figee (au lieu de Autocal) : permet de 'figer' la calibration initiale
+# version 5.22 11 février 2019
+# fix 2 issues
+#
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -2685,8 +2688,8 @@ class Interface(ttk.Frame):
         self.photosAvecChemin   = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.photosAvecChemin]
         self.listeDesMaitresses = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.listeDesMaitresses]
         self.listeDesMasques    = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.listeDesMasques]                              
-        self.lesTagsExif        = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.lesTagsExif]
-        print(self.photosAvecChemin)
+        self.lesTagsExif        = dict()
+
         # le répertoire où se trouvent les photos pour la calibration change après Tapas :
  
         if self.photosPourCalibrationIntrinseque:
@@ -4807,7 +4810,7 @@ class Interface(ttk.Frame):
 
         for n,x,y,z,actif,ident,incertitude in self.listePointsGPS:			# affichage de tous les widgets nom,x,y,z,actif ou supprimé (booléen), identifiant
             if actif:                                                                   # listePointsGPS : liste de tuples (nom du point, x gps, y gps, z gps, booléen actif ou supprimé, identifiant)
-                self.affichePointCalibrationGPS(x,y,z,ident,incertitude)		# ajoute une ligne d'affichage
+                self.affichePointCalibrationGPS(n,x,y,z,ident,incertitude)		# ajoute une ligne d'affichage
 
         self.item680.pack()
         self.item653.pack(side='left',padx=20)					    	# affichage des boutons en bas d'onglet
@@ -8016,9 +8019,10 @@ class Interface(ttk.Frame):
 
 ######################### recherche de la dernière version d'aperodedenis sur le net
 
-    def verifieVersion(self):       # va lire la version dans le titre de la page GitHub, puis compare avec la version mémorisée.
+    def verifieVersion(self):   # va lire la version dans le titre de la page GitHub, puis compare avec la version mémorisée.
                                 # Affiche un message si besoin.
                                 # lancé par un thread (pour éviter le retard éventuel de connexion à internet si pas de connexion
+        return # supprimé le 11/02/2019 (entete github modifiée)
         try:
             sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
             htmlLu = str(sock.read(30000))
@@ -8035,6 +8039,7 @@ class Interface(ttk.Frame):
             # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
 
         if  not versionInternet: return
+        print("version internet : ",htmlLu)
         if numeroVersion in versionInternet:
             self.messageVersion = True              # Version à jour; activation message pour le futur
         elif (compteur==1 and
