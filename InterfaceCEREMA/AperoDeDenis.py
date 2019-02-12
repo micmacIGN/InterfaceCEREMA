@@ -222,7 +222,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.21"
+numeroVersion = "5.22"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
@@ -7513,7 +7513,7 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("- affichage des noms des appareils photos présents dans le chantier (menu expert)") + "\n"+\
               chr(9)+chr(9)+_("- affichage du log des traitement MicMac : mm3d-logFile.txt (menu expert)") + "\n"+\
               chr(9)+chr(9)+_("- amélioration de la fonction console système (Expert/Exécuter une commande)") + "\n"+\
-              "\n" + _("Version 5.21 :")+chr(9)+_("février 2019") + "\n"+\
+              "\n" + _("Version 5.22 :")+chr(9)+_("février 2019") + "\n"+\
               chr(9)+chr(9)+_("- Argument de Tapas aprés calibration : Figee (au lieu de Autocal)") + "\n"+\
               chr(9)+chr(9)+_("- Ajout dans le menu expert d'un console python") + "\n"+\
               "----------------------------------------------------------"
