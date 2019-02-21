@@ -5223,13 +5223,13 @@ class Interface(ttk.Frame):
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
             return
         nbGroupes = self.regroupementSuivantPointsHomologues()
-        if nbGroupes>1:
+        if (nbGroupes>1 and not self.calibSeule.get()) or (nbGroupes>2 and self.calibSeule.get()):
             message = _("Pourquoi MicMac s'arrête : ") + "\n"+_("Les photos définissent plusieurs scènes disjointes") + "\n\n"+\
                       _("MicMac ne peut travailler que sur une seule scène : toutes les photos doivent former une seule scéne.") + "\n"+\
                       _("Les photos se répartissent en :") + str(nbGroupes)+_(" groupes distincts (consulter la trace) : ")+"\n" +\
                       "\n".join([str(e)[:100] for e in self.lesGroupesDePhotos])
             self.ajoutLigne(message)
-            self.ajoutLigne(_("Les groupes de photos séparés : ")+"\n"+"\n".join([str(e) for e in self.lesGroupesDePhotos]))
+            self.ajoutLigne("\n"+_("Les groupes de photos séparés : ")+"\n"+"\n".join([str(e) for e in self.lesGroupesDePhotos]))
             self.messageNouveauDepart =  message
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace              
             return
@@ -6846,9 +6846,12 @@ class Interface(ttk.Frame):
             [(  self.encadrePlus("."),
                 self.lanceCommande([self.exiftool,"-Model="+self.tagExif("Model",photo)+" "+os.path.basename(photo)[:3],photo]))
              for photo in self.photosAvecChemin]
+            # exiftool crée des copies "_original" des fichiers initiaux, on les supprime ;  
+            [supprimeFichier(x) for x in os.listdir(self.repTravail) if os.path.splitext(x)[1]=="JPG_original"]
             message = _("Fin : \nModéle de l'appareil photo modifié : ajout du préfixe du nom de fichier sur 3 caractères.")
         else:
-            message = (_("Modéle de l'appareil photo non modifiable :")+" \n"+_("pas de numéro de série multiple pour les appareils photos,")+
+            message = (_("Modéle de l'appareil photo non modifiable :")+
+                       " \n"+_("pas de numéro de série multiple pour les appareils photos,")+
                        "\n"+_("pas de préfixe multiple pour les noms de fichiers."))
         self.encadre(message,nouveauDepart='non')
         self.ajoutLigne(message)            
