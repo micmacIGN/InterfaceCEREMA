@@ -104,8 +104,20 @@
 # ajout possibilité de passer une commande "python" dans le menu expert
 # Modification de l'option "Autocal" de Tapas : Figee (au lieu de Autocal) : permet de 'figer' la calibration initiale
 # version 5.22 11 février 2019
-# fix 2 issues
-#
+# fix 2 issues :
+#  - suppression du l'annonce d'une nouvelle version sur internet (incorrecte)
+#  - suppression d'un bug concernant les tags de l'exif suite au renommage d'un chantier, bug de la version 5.1
+# version 5.30 21 février 2019 :
+#  - dans les items "qualité des photos" ajout des photos "isolées", en disjontion de toutes les autres.
+#    Ces photos font "planter" le traitement tapas
+#  - Ajout d'un fonction vérifiant le nombre de scènes disjointes en terme de points homologues.
+#    lorsqu'il y a plusieurs scènes l'orientation est impossible : arrêt de micmac aprés tapioca.
+#  - Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique
+#  - Ajout de cette fonction dans l'item "outils/qualité des photos du dernier traitement"
+#  - prise en compte de l'issue concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...)
+#  - suppression des lignes de codes inutilisées concernant les indices surfaciques
+#  - Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub
+#  - la recherche systématique d'une nouvelle version est réactivée (désactivée en version 5.22
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -133,19 +145,6 @@ import urllib.request
 import webbrowser
 import threading
 from textwrap import wrap
-
-
-'''################################################################################
-#   Librairies utilisées pour le module de calcul des indices  surfaciques     #
-################################################################################
-
-import math                                 # Pour utiliser la fonction racine carrée
-import csv                                  # Pour la lecture de la grille à partir du fichier
-import numpy as np
-from scipy.interpolate import griddata      # Pour l'interpolation
-import matplotlib.pyplot as plt             # Pour l'affichage des profils utilisés
-from mpl_toolkits.mplot3d import Axes3D     # Pour l'affichage des surfaces
-from matplotlib import cm                   # Pour choisir la couleur de des surfaces lors de l'affichage'''
 
 ################################## Classe : Choix de la langue en cas d'absence dans les paramètres ###########################"
 
@@ -222,7 +221,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.21"
+numeroVersion = "5.30"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
@@ -306,285 +305,6 @@ print(heure()+_(" lancement d'aperodedenis")+version+".")
 
 ############################ FIN DE L'INITIALISATION #########################################################
 
-################################################################################
-#                  Classes pour le calcul d'indices de surfaces                #
-################################################################################
-
-
-################# Passge du fichier .ply aux coordonnées xyz ###################
-class Ply2XYZ():
-    def __init__(self, **kwargs):
-            endian = "@"                                                    # valeur par défaut : endian du système
-            fmt = str()                                                     # format de codage des données dans le ply ce format est utilisé par struct
-            i = int()
-            self.fichierPly = tkinter.filedialog.askopenfilename(
-                                                filetypes=[("Ply","*.ply"),(_("Tous"),"*")],multiple=False,
-                                                title = _("Ply à lire"))       # choix du fichier
-            if self.fichierPly==str():                                      # si pas de fichier choisi par l'utilisateur : on quitte
-                return
-            print(_("Fichier à lire : "),self.fichierPly)
-            with open(self.fichierPly, 'rb') as infile:                     # lecture du fichier en mode "binaire"
-                ligne = infile.read()
-
-            lignes =ligne.splitlines()                                      # coupure du flux bianire en "lignes"
-            if lignes[0]!=b'ply':                                           # vérification que le tag "ply" est présent en entête de fichier
-                    print(_("Il ne s'agit pas d'un fichier ply issu de MicMac !"))
-                    return                                                  # Abandon si pas fichier ply
-            self.fichierPlyXYZ = os.path.splitext(self.fichierPly)[0]+".xyz"# nom du fichier xyz qui sera écrit
-            print(_("Fichier à écrire : "),self.fichierPlyXYZ)                 # information sur le nom du fichier
-            for e in lignes:                                                # décodage des lignes d'entête qui indique la structure du fichier
-                i+=1
-                if e==b'end_header':
-                    break                                                   # tag de fin d'entête on connait la structure, fin du décodage de la structure
-                s=str(e)
-                if "little_endian" in s:                                    # boutisme
-                        endian="<"
-                if "big_endian" in s:
-                        endian=">"
-                if "element vertex" in s:                                   # nombre de points
-                        nombre_points = int(s.split(" ")[-1][0:-1])
-                        print(_("nombre de points : "),str(nombre_points))
-                if "property" in s:                                         # property : liste les éléments de la structure des données pour chaque point
-                        if s.split(" ")[1]=="float":                        # Micmac n'utilsie que les valeurs float et uchar
-                           fmt += "f"                                       # indique qu'il y a un float à lire
-                        elif s.split(" ")[1]=="uchar":
-                           fmt += "B"                                       # indique qu'il y a un octet à lire
-                        elif s.split(" ")[1]!="list":                       # la valeur list est aussi utilisée, s'il s'agit d'une autre valeur : abandon
-                            print("format non prévu pour les ply issus de micmac, abandon : ",s.split(" ")[1])
-                            return
-                print("ligne ",str(i)," : ",e)
-            if fmt!="fffBBB":                                               # il doit y avoir trois flottant (x,y,z) et 3 octets (Rouge, vert, bleu) sinon pas MicMac
-                print(_("Le format des données indique qu'il ne s'agit pas d'un ply généré par MicMac. Le format trouvé est : "),fmt,_(" le format attendu est : fffBBB"))
-                return
-            fmt = endian+fmt                                                # le format est complété par le boutisme
-            print(_("Longueur du fichier : "),str(ligne.__len__()))
-            print(_("format du fichier > = big_endian, < = little_endian :"),endian)
-            print(_("Format des données : "),fmt,_(" longueur : "),str(struct.calcsize(fmt)))
-
-            print(_("patience : écriture du fichier xyz en cours"))
-            debutData = ligne.find(b"end_header",0,1000)+11                 # on extrait la zone des données utiles dans la varible "ligne" : début = après l'entête
-            longueurData = nombre_points*struct.calcsize(fmt)               # on prend juste la longueur nécessaire (nombre de point * longueur des données du point)
-            finData = debutData + longueurData
-            plageData = ligne[debutData:finData]                            # extraction
-            print(_("Plage des données : début = "),str(debutData),_(" fin = "),str(finData),_(" longueur = "),str(longueurData))
-            try:
-                lesXYZ = [(str(x),str(y),str(z)) for (x,y,z,r,v,b) in struct.iter_unpack(fmt,plageData).__iter__() ] # list comprehension extrayant les xyz de la structure décodée
-            except Exception as e:
-                print(_("Erreur lors du décodage des données, le ply ne provient pas de micmac. Erreur : "),e)
-                return
-            with open (self.fichierPlyXYZ,"w") as outfile:                  # ouverture du fichier de sortie
-                for e in lesXYZ:                                            # pour chaque élément de la liste des xyz
-                    outfile.write(" ".join(e)+"\n")                         # écriture des éléments x y et z séparé par un espace (si on veut une virgule mettre "," au lieu de " "
-            print("Fichier %s écrit sur disque") % (self.fichierPlyXYZ)        # message final
-    def fname_out(self):
-        return  os.path.splitext(self.fichierPly)[0]+".xyz"
-
-####################### Création de grille régulière ###########################
-
-class Grille(object):
-
-    # Constructeur
-    def __init__(self):
-        self.nom= _("nom du fichier contenant les données : à déterminer")
-
-    # accesseurs // property
-    def _set_nom(self, nomFichier):
-        self.nom = nomFichier
-
-    def _get_nom(self):
-        return self.nom
-
-    #Méthodes
-    #création de la grille régulière
-
-    def creer_grille(self,methode,step):
-        mat = np.genfromtxt(self._get_nom(), delimiter=' ')
-        points = mat[:,:2]
-        values = mat[:,2]
-        # les limites (x,y) de mes données
-
-        min_x = min(mat[:,0])
-        max_x = max(mat[:,0])
-
-        min_y = min(mat[:,1])
-        max_y = max(mat[:,1])
-        # générer un maillaige avec un pas régulier, création de la grille régulière
-
-        grid_x, grid_y = np.mgrid[min_x:max_x+step:step, min_y:max_y+step:step]
-        grid_z = griddata(points, values, (grid_x, grid_y), method=methode, fill_value=-9999)
-        return grid_z
-
-    def affiche_grille(self, methode, step):
-
-        mat = np.genfromtxt(self._get_nom(), delimiter=' ')
-        points = mat[:,:2]
-        values = mat[:,2]
-        # les limites (x,y) de mes données
-
-        min_x = min(mat[:,0])
-        max_x = max(mat[:,0])
-
-        min_y = min(mat[:,1])
-        max_y = max(mat[:,1])
-
-        # générer un maillaige avec un pas régulier, création de la grille régulière
-        grid_x, grid_y = np.mgrid[min_x:max_x+step:step, min_y:max_y+step:step]
-        grid_z = griddata(points, values, (grid_x, grid_y), method=methode)
-        # Création du modèle 3D : Axes, légende, couleur...
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.plot_surface(grid_x, grid_y, grid_z, cmap=cm.coolwarm)
-        ax.set_title(methode+_(" pas du maillaige : ")+str(step))
-        ax.set_xlabel('X Label')
-        ax.set_ylabel('Y Label')
-        ax.set_zlabel('Z Label')
-        plt.show()
-        return
-
-    #sauvegarder_grille dans un fichier
-    def sauvegarder_grille(self, obj, grille, step):
-        return np.savetxt(os.path.splitext(obj.fichierPly)[0]+'_regular_'+str(step).replace(".","")+'.txt',grille, fmt='%.18e', delimiter=' ', newline='\r\n', header='')
-    # Récupérer le nom du fichier de la grille
-    def nomFichier_sortie(self, obj, step):
-        return os.path.splitext(obj.fichierPly)[0]+'_regular_'+str(step).replace(".", "")+'.txt'
-
-################## Manipulation des données et traitement ######################
-
-class Conteneur(object):
-
-    # Constructeur
-    def __init__(self):
-        self.nom = _("nom du fichier contenant les données : à déterminer")
-
-
-    # accesseurs // property
-    def _set_nom(self, nomFichier):
-        self.nom = nomFichier
-    def _get_nom(self):
-        return self.nom
-
-
-    # Méthodes
-    def charger_data(self):                                                     # on ne charge pas les points avec -9999 comme valeur (correspond à nan)
-        fname = open(self._get_nom())
-        lignes = csv.reader(fname, delimiter=' ')
-        hauteurs = {}
-        cle = 1
-        for line in lignes:
-            valeur = [float(i) for i in line[:len(line)-1] if float(i) != -9999]  # chaque ligne est une liste, on ne prend que les valeurs différentes de -9999
-            if(len(valeur) != 0):
-                hauteurs[cle] = valeur
-            else :
-                hauteurs[cle] = None                                            # si valeur est vide on lui donne None comme valeur
-            cle += 1
-        fname.close()
-        return hauteurs
-
-    def charger_all(self):                                                     # on prend toutes les valeurs
-        fname = open(self._get_nom())
-        lignes = csv.reader(fname, delimiter=' ')
-        hauteurs = {}
-        cle = 1
-        for line in lignes:
-            valeur =  [float(i) for i in line[:len(line)-1] ]
-            hauteurs[cle] = valeur
-            cle += 1
-        fname.close()
-        return hauteurs
-
-    #calcul de la moyenne des valeurs d'un tableau
-    def moyenne(self, tab):
-        return sum(tab)/len(tab)
-
-    # Moyenne de l'écart type des hauteurs = Rq = rugosité moyenne quadratique
-    def ecart_type(self):
-        hauteurs = self.charger_data()
-        valeur = []                                                             # On stocke Rq de chaque profil dans cette liste
-        for val in hauteurs.values():
-            if(val != None):
-                mean = self.moyenne(val)
-                temp = list(map(lambda x : x*x, [(i-mean) for i in val]))
-                valeur.append(math.sqrt(self.moyenne(temp)))
-        rugo = self.moyenne(valeur)                                          # on fait la moyenne des Rq
-        epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-rugo) for i in valeur])))/len(valeur)) # Ecart-type des Rq
-        return [rugo, epsilon]
-
-    # pmp_profil : profondeur moyenne de profil
-    def pmp_profil(self, profil, tableau):
-        pivot = int(len(profil)/2)
-        pic1 = max(profil[:pivot+1])                            # le plus haut pic dans la 1ére moitié du profil
-        pic2 = max(profil[pivot+1:])                            # le plus haut pic dans la 2éme moitié du profil
-        resultat = 0.5*(pic1+pic2) - self.moyenne(tableau)      # Moyenne des 2 pics - profil moyen
-        return resultat
-
-    # pmp
-    def pmp(self):
-        tableau_val =[]
-        keys = []
-        hauteurs = self.charger_all()                                           # Dictionnaire avec toutes les valeurs
-        for cle in range(1, len(hauteurs)+1) :
-            profil = hauteurs.get(cle)
-            taux = profil.count(-9999)/len(profil)
-            if ( taux < 0.2):                                 # On ne prend pas les profils avec plus de 20% (de -9999)  de l'information contenue dans profil
-                keys.append(cle)
-                work = [x for x in profil if x != -9999]                        # cle = identifiant du profil (utilisé pour l'affichage des profils utilisés)
-                tableau_val.append(self.pmp_profil(profil,work))                # On stocke les pmp de chaque profil dans un tableau
-        moyenne_pmp = self.moyenne(tableau_val)                                  # Moyenne des pmp
-        epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-moyenne_pmp) for i in tableau_val])))/len(tableau_val)) # Ecart-type des pmp
-        return [moyenne_pmp, epsilon, keys]
-
-    # tortuosité de profil : longueur réelle du profil / la longeur entre les extrémités
-    def tortuosity_profil(self,pas,tableau):
-        j = len(tableau)-1                                                      # Dans cette méthode on ne prend pas en compte les cellules où on a -9999
-        i = 0
-        while(tableau[j] == -9999 or tableau[i] == -9999):
-            if(tableau[j] == -9999) :
-                j -= 1
-            if(tableau[i] == -9999):
-                i += 1
-        calc_inter = (tableau[j]-tableau[i])**2 + (pas*(j - i))**2              # (y1-y2)**2+(x1-x2)**2
-        longueur_extremit = math.sqrt(calc_inter)                               # Distance euclidienne
-        longueur_profil = 0
-        while(i < j):
-            l = i + 1
-            while(tableau[l] == -9999):
-                l += 1
-            temp = (tableau[l]-tableau[i])**2 + (pas*(l-i))**2
-            longueur_profil += math.sqrt(temp)
-            i = l
-        return longueur_profil/longueur_extremit
-
-    # tortuosité
-    def tortuosity(self, pas):
-        tortuosite = []
-        keys = []
-        hauteurs = self.charger_all()
-        for cle in range(1,len(hauteurs)+1):
-            profil = hauteurs.get(cle)
-            taux = profil.count(-9999)/len(profil)
-            if (taux < 0.2):
-                keys.append(cle)                                                # cle = identifiant du profil (utilisé pour l'affichage des profils utilisés)
-                tortuosite.append(self.tortuosity_profil(pas,profil))           # On stocke la tortuosité de chaque profil dans un tableau
-        epsilon = math.sqrt(sum(list(map(lambda x : x*x, [(i-self.moyenne(tortuosite)) for i in tortuosite])))/len(tortuosite)) # Ecart-type des tortuosité
-        return [self.moyenne(tortuosite), epsilon, keys]
-    # Afficher un profil utilisé dans les calculs de : PMP, Tortuosité
-    def affiche_profil(self, cle, step):
-        def nan(x):
-            if(x== -9999):
-                x = 0
-            return x
-        hauteurs = self.charger_all()
-        profil = [nan(x) for x  in hauteurs.get(cle) ]
-        x = np.array([i*step for i in range(len(profil))])
-        profil = np.array(profil)
-        plt.plot(x, profil, label=_("profil n°")+str(cle))
-        plt.legend()
-        plt.show()
-        return
-
-########################### Variables globales 2 #################################
-#donnee = Conteneur()
-#grid = Grille()
 
 ########################### Classe pour tracer les masques
 
@@ -1339,6 +1059,8 @@ class Interface(ttk.Frame):
         menuParametres.add_command(label=_("Changer la langue"), command = self.modifierLangue)
         menuParametres.add_separator() 
         menuParametres.add_command(label=_("Désactive/Active le tacky message de lancement..."),command=self.modifierTacky)    ## Meslab
+        menuParametres.add_separator() 
+        menuParametres.add_command(label=_("Vérifie la présence d'une nouvelle version sur GitHub"),command=self.verifVersion)    ## Meslab
 
         # Indices surfaciques
 
@@ -1384,8 +1106,8 @@ class Interface(ttk.Frame):
 
         # Pour suivre les nouvelles versions
 
-        self.versionInternetAncienne    =   str()       # Dernière version lue sur GitHub
-        self.messageVersion             =   bool(True)  # l'utilisateur peut désactiver l'affichage du message d'avertissement
+        self.versionInternetAncienne    =   str()       # Dernière version lue sur GitHub (ne sert plus)
+        self.messageVersion             =   bool(True)  # l'utilisateur peut désactiver l'affichage du message d'avertissement (False)
        
         # initialisation variables globales et propre au contexte local :
 
@@ -2683,8 +2405,6 @@ class Interface(ttk.Frame):
 
     def redefinirLesChemins(self):       # Mettre self.repTravail dans les chemins des images, des  maitres et masques et dans les dictionnaires, sauver
                                          # si le chantier n'est plus sous le répertoire des photos alors le répertoire des photos devient le chantier lui même       
-        print(" redéfinir vers : ",self.repTravail)
-        print(self.photosAvecChemin)
         self.photosAvecChemin   = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.photosAvecChemin]
         self.listeDesMaitresses = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.listeDesMaitresses]
         self.listeDesMasques    = [os.path.join(self.repTravail,os.path.basename(afficheChemin(e))) for e in self.listeDesMasques]                              
@@ -2757,9 +2477,10 @@ class Interface(ttk.Frame):
     def importeChantier(self):
         self.menageEcran()
         try:
-            self.encadre(_("Choisir le nom de l'archive à importer."),nouveauDepart='non')        
+            self.encadre(_("Choisir le nom de l'archive à importer."),nouveauDepart='non')
             archive = tkinter.filedialog.askopenfilename( initialdir=self.repTravail,                                                 
-                                                        filetypes=[(_("Export"),"*.exp"),(_("Tous"),"*")],multiple=False,
+                                                        filetypes=[(_("Export"),"*.exp"),(_("Tous"),"*")],
+                                                        multiple=False,
                                                         title = _("Chantier à importer"))
             if archive==str():
                 self.encadre(_("Importation abandonnée."),nouveauDepart='non')
@@ -2859,6 +2580,7 @@ class Interface(ttk.Frame):
                 if nouveauRepChantier in self.tousLesChantiers:
                     self.encadre(_("Le répertoire du nouveau chantier \n %s \n est déjà un chantier.\n Abandon.") % (nouveauRepChantier),nouveauDepart='non')
                     return
+                self.encadre(_("Répertoire correct. Patience..."))
             # on ajoute le chantier dans les paramètres généraux
                 ajout(self.tousLesChantiers,nouveauRepChantier)         # on ajoute le chantier dans les paramètres généraux
                 self.restaureParamChantier(param)
@@ -2870,7 +2592,7 @@ class Interface(ttk.Frame):
                 ajout(self.tousLesChantiers,nouveauRepChantier)         # on ajoute le chantier dans les paramètres généraux
                 self.afficheEtat()
             else:
-                self.encadre(_("Le répertoire ne contient pas le fichier :\n")+self.paramChantierSav+_("\nCe n'est pas un chantier.\nAbandon."),nouveauDepart="non")
+                self.encadre(_("Le répertoire ne contient pas le fichier :\n")+self.paramChantierSav+_("Ce n'est pas un chantier.\nAbandon."),nouveauDepart="non")
             
 
     def copierParamVersChantier(self):                                                  # copie du fichier paramètre sous le répertoire du chantier, pour rejouer et trace
@@ -3478,8 +3200,10 @@ class Interface(ttk.Frame):
         self.encadre(texte,nouveauDepart='non')         
         
         # Choisir le répertoire de Meshlab ou CLoudCompare :
+        _filetypes = [] if sys.platform == 'darwin' else [("exiftool","exiftool*"),(_("Tous"),"*")]
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.exiftool),                                                 
-                                                  filetypes=[("exiftool","exiftool*"),(_("Tous"),"*")],multiple=False,
+                                                  filetypes=_filetypes,
+                                                  multiple=False,
                                                   title = _("Recherche exiftool"))
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Fichier exiftool inchangé :") + "\n\n"+afficheChemin(self.exiftool)
@@ -3498,9 +3222,11 @@ class Interface(ttk.Frame):
             texte=_("Programme convert :") + "\n"+afficheChemin(self.convertMagick)
         self.encadre(texte,nouveauDepart='non')         
         
-        # Choisir le répertoire de Meshlab ou CLoudCompare :
+        # Choisir le répertoire de convert :
+        _filetypes = [] if sys.platform == 'darwin' else [("convert",("convert*","avconv*")),(_("Tous"),"*")]        
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.exiftool),                                                 
-                                                  filetypes=[("convert",("convert*","avconv*")),(_("Tous"),"*")],multiple=False,
+                                                  filetypes=_filetypes,
+                                                  multiple=False,
                                                   title = _("Recherche convert"))
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Fichier convert inchangé :") + "\n\n"+afficheChemin(self.convertMagick)
@@ -3518,9 +3244,11 @@ class Interface(ttk.Frame):
         else:
             texte=_("Programme ouvrant les .PLY :") + "\n"+afficheChemin(self.meshlab)
         self.encadre(texte,nouveauDepart='non')                       
-        # Choisir le répertoire de Meshlab ou CLoudCompare 
+        # Choisir le répertoire de Meshlab ou CLoudCompare
+        _filetypes = [] if sys.platform == 'darwin' else [(_("meshlab ou CloudCompare"),("meshlab*","Cloud*")),(_("Tous"),"*")]                
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.meshlab),                                                 
-                                                  filetypes=[(_("meshlab ou CloudCompare"),("meshlab*","Cloud*")),(_("Tous"),"*")],multiple=False,
+                                                  filetypes=_filetypes,
+                                                  multiple=False,
                                                   title = _("Recherche fichier Meshlab sous VCG, ou CloudCompare"))
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Fichier Meshlab ou cloud compare :") + "\n\n"+afficheChemin(self.meshlab)
@@ -3540,8 +3268,10 @@ class Interface(ttk.Frame):
         self.encadre(texte,nouveauDepart='non')         
         
         # Choisir le répertoire de ffmpeg:
+        _filetypes = [] if sys.platform == 'darwin' else [("ffmpeg","ffmpeg*"),(_("Tous"),"*")]            
         source=tkinter.filedialog.askopenfilename(initialdir=os.path.dirname(self.ffmpeg),                                                 
-                                                  filetypes=[("ffmpeg","ffmpeg*"),(_("Tous"),"*")],multiple=False,
+                                                  filetypes=_filetypes,
+                                                  multiple=False,
                                                   title = _("Recherche ffmpeg"))
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Fichier ffmpeg inchangé :") + "\n\n"+afficheChemin(self.ffmpeg)
@@ -3623,8 +3353,7 @@ class Interface(ttk.Frame):
         repIni = ""                                     # répertoire initial de la boite de dialogue
         self.lesTagsExif = dict()                        # réinitialise la mémo des exifs
         if os.path.isdir(self.repertoireDesPhotos):
-            repIni = self.repertoireDesPhotos
-    
+            repIni = self.repertoireDesPhotos   
         photos=tkinter.filedialog.askopenfilename(title=_('Choisir des photos'),
                                                   initialdir=repIni,
                                                   filetypes=[(_("Photos"),("*.JPG","*.jpg","*.BMP","*.bmp","*.TIF","*.tif")),(_("Tous"),"*")],
@@ -5493,6 +5222,18 @@ class Interface(ttk.Frame):
             self.messageNouveauDepart =  message
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
             return
+        nbGroupes = self.regroupementSuivantPointsHomologues()
+        if nbGroupes>1:
+            message = _("Pourquoi MicMac s'arrête : ") + "\n"+_("Les photos définissent plusieurs scènes disjointes") + "\n\n"+\
+                      _("MicMac ne peut travailler que sur une seule scène : toutes les photos doivent former une seule scéne.") + "\n"+\
+                      _("Les photos se répartissent en :") + str(nbGroupes)+_(" groupes distincts (consulter la trace) : ")+"\n" +\
+                      "\n".join([str(e)[:100] for e in self.lesGroupesDePhotos])
+            self.ajoutLigne(message)
+            self.ajoutLigne(_("Les groupes de photos séparés : ")+"\n"+"\n".join([str(e) for e in self.lesGroupesDePhotos]))
+            self.messageNouveauDepart =  message
+            self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace              
+            return
+
 
         # points homologues trouvés, second module : Tapas positionne les prises de vue dans l'espace       
         
@@ -5790,7 +5531,8 @@ class Interface(ttk.Frame):
             if self.echelle2PourMessage!="":
                 return "\n" + _("Recherche des points remarquables et des correspondances sur une image de taille %s pixels.") % (self.echelle2PourMessage) + "\n\n"
             return ligne
-
+        if 'MAXLINELENGTH' in ligne:
+            return "\n"+ligne+"\n"+_("Trop de photos pour Windows. Une idée : Utiliser Linux.")
     # ------------------ TAPAS ----------------------- Avec ou sans calibrationj intrinsèque
         
     def lanceTapas(self):
@@ -7349,6 +7091,7 @@ class Interface(ttk.Frame):
         aide2 = _("Interface graphique pour lancer les modules de MICMAC : quelques conseils.") + "\n\n"+\
                 _("Prises de vue  :") + "\n"+\
                 _("                - Le sujet doit être immobile durant toutes la séance de prise de vue.") + "\n"+\
+                _("                - Le sujet doit être unique et d'un seul tenant") + "\n"+\
                 _("                - Le sujet doit être bien éclairé, la prise de vue en plein jour doit être recherchée.") + "\n"+\
                 _("                - Les photos doivent être nettes, attention à la profondeur de champ :") + "\n"+\
                 _("                  utiliser la plus petite ouverture possible (nombre F le plus grand, par exemple 22).") + "\n"+\
@@ -7397,7 +7140,7 @@ class Interface(ttk.Frame):
                 _("                        0) Prenez un pastis") + "\n"+\
                 _("                        1) si erreur dans la trace : 'Radiale distorsion abnormaly high' :") + "\n"+\
                 _("                           modifier le type d'appareil pour l'orientation (radialstd ou radialbasic ou RadialExtended ou...)") + "\n"+\
-                _("                        2) Eliminer les photos ayant les plus mauvais scores") + "\n"+\
+                _("                        2) Eliminer les photos ayant les plus mauvais scores, les photos ou groupe de photos 'isolées") + "\n"+\
                 _("                        3) si ce n'est pas suffisant ne garder que les meilleures photos (typiquement : moins de 10)") + "\n"+\
                 _("                           Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.")+ "\n"+\
                 _("                        4) Augmenter l'échelle des photos pour tapioca, mettre -1 au lieu de la valeur par défaut.") + "\n"+\
@@ -7516,16 +7259,19 @@ class Interface(ttk.Frame):
               "\n" + _("Version 5.21 :")+chr(9)+_("février 2019") + "\n"+\
               chr(9)+chr(9)+_("- Argument de Tapas aprés calibration : Figee (au lieu de Autocal)") + "\n"+\
               chr(9)+chr(9)+_("- Ajout dans le menu expert d'un console python") + "\n"+\
+              "\n" + _("Version 5.22 :")+chr(9)+_("11 février 2019") + "\n"+\
+              chr(9)+chr(9)+_("- fix 2 issues remontées sur github, numéro de version inchangée : 5.21") + "\n"+\
+              "\n" + _("Version 5.30 :")+chr(9)+_("21 février 2019") + "\n"+\
+              chr(9)+chr(9)+_("- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.") + "\n"+\
+              chr(9)+chr(9)+_("  Ces photos font 'planter' la recherche de l'orientation.") + "\n"+\
+              chr(9)+chr(9)+_("- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.") + "\n"+\
+              chr(9)+chr(9)+_("  Plusieurs scènes sans point homologue commun font planter la recherche d'une orientation.") + "\n"+\
+              chr(9)+chr(9)+_("  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.") + "\n"+\
+              chr(9)+chr(9)+_("- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.") + "\n"+\
+              chr(9)+chr(9)+_("- prise en compte de l'issue concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.") + "\n"+\
               "----------------------------------------------------------"
-# correction de : e remplacé par self.e dans MyDialog (fixe le problème du renommage des chantiers)
-# modification de l'icone de la fenêtre = l'icone du cerema remplace le graindsel.
-# possibilité de choisir le ménage : suppression totale ou conservation des résultats seuls
-# Affichage du gain de place en MO après le ménage
-# affichage de la taille du dossier en MO dans l'affichage de l'état du chantier
-# test de la présence de sous répertoire dans afficheetat :
-# si etatChantier>2 et pas de sous-répertoire alors etatChantier remis à 2 et
-# message "chantier nettoyé" affiché              
-# self.encadre (aide4,50,aligne='left',nouveauDepart='non')
+
         self.cadreVide()
         self.effaceBufferTrace()        
         self.ajoutLigne(aide4)
@@ -7707,7 +7453,7 @@ class Interface(ttk.Frame):
             #r2[8] est la version : inutile pour l'instant (v3.00)
             #r2[9] est la langue
             self.ffmpeg                     =   r3[5]
-            self.versionInternetAncienne    =   r2[11]
+            self.versionInternetAncienne    =   r2[11]  # ne sert plus
             self.messageVersion             =   r2[12]            
         except Exception as e: print(_("Erreur restauration param généraux : "),str(e))
 
@@ -8019,36 +7765,26 @@ class Interface(ttk.Frame):
 
 ######################### recherche de la dernière version d'aperodedenis sur le net
 
-    def verifieVersion(self):   # va lire la version dans le titre de la page GitHub, puis compare avec la version mémorisée.
+    def verifieVersion(self):   # va lire la version dans la page GitHub : doit être au début du fichier readme.txt
                                 # Affiche un message si besoin.
                                 # lancé par un thread (pour éviter le retard éventuel de connexion à internet si pas de connexion
-        return # supprimé le 11/02/2019 (entete github modifiée)
+                                # un seul lancement par session
+        
+        if compteur>1 or self.messageVersion==False:    # inutile si relance de l'interface ou si l'utilisateur ne veut pas être averti
+            return
         try:
             sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
-            htmlLu = str(sock.read(30000))
+            htmlLu = str(sock.read(100000))
             sock.close
-            moi = htmlLu.find("JOUIN")
-            titre = htmlLu.find("title=",moi)
-            debutTitre = titre+7
-            finTitre = htmlLu.find('"',titre+9)
-            versionInternet = htmlLu[debutTitre:finTitre]
-        except Exception as e:
-            print(_("erreur connexion internet : "),str(e))
+        except:
             return
+        
+        # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
 
-            # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
-
-        if  not versionInternet: return
-        print("version internet : ",htmlLu)
-        if numeroVersion in versionInternet:
-            self.messageVersion = True              # Version à jour; activation message pour le futur
-        elif (compteur==1 and
-                (self.versionInternetAncienne!=versionInternet        # nouvelle version sur internet
-                and self.messageVersion)                               # version déjà vue mais acccord pour réaffichage
-               ):
+        if numeroVersion not in htmlLu:             # version utilisateur non trouvée dans version GitHub
             self.avertirNouvelleVersion = True
             
-    def avertissementNouvelleVersion(self):
+    def avertissementNouvelleVersion(self): # n'apparait qu'une fois par session (role de avertirNouvelleVersion) 
         if self.avertirNouvelleVersion:
             retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
                                        question=_("Nouvelle version disponible sur Internet : ")+"\n"+
@@ -8057,16 +7793,32 @@ class Interface(ttk.Frame):
                                                 "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
                                        b1=_("OK"),
                                        b2=_("Accéder au site"),
-                                       b3=_("Ne plus me le rappeler"))
-            if retour == 2: 
-                self.messageVersion = True             
+                                       b3=_("Ne plus me le rappeler"))           
             if retour == 1: 
                 webbrowser.open("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
-                self.messageVersion = True
             if retour == 2:
                 self.messageVersion = False
             self.avertirNouvelleVersion = False
-   
+
+    def verifVersion(self):
+        self.encadre(_("Recherche sur internet en cours, patience..."),nouveauDepart='non')        
+        try:
+            sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
+            htmlLu = str(sock.read(100000))
+            sock.close
+        except Exception as e:
+            self.encadre(_("Erreur lors de la tentative de connexion à internet : ")+str(e),nouveauDepart='non')
+            return
+        
+        # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
+
+        if numeroVersion not in htmlLu:             # version utilisateur non trouvée dans version GitHub
+            self.avertirNouvelleVersion = True
+            self.avertissementNouvelleVersion()
+            self.menageEcran()
+        else:
+            self.encadre(_("Version actuelle à jour"),nouveauDepart='non')
+           
     #################################### Supprime (ou conserve) les répertoires de travail 
     
     def supprimeRepertoires(self):
@@ -9037,6 +8789,15 @@ class Interface(ttk.Frame):
     #################### Examen du nombre de points homologues  dans le répertoire homol sous le répertoire passé en paramètre, affichage
 
     def nombrePointsHomologues(self,repertoire=""):
+        message = ""
+        nbGroupes = self.regroupementSuivantPointsHomologues()
+        if nbGroupes>1:
+            message = _("ATTENTION : Les photos définissent plusieurs scènes disjointes") + "\n\n"+\
+                      _("MicMac ne peut travailler que sur une seule scène : toutes les photos doivent former une seule scéne.") + "\n"+\
+                      _("Les photos se répartissent en :") + str(nbGroupes)+_(" groupes distincts (consulter la trace) : ")+"\n" +\
+                      "\n".join([str(e)[:100] for e in self.lesGroupesDePhotos])
+            self.ajoutLigne(_("Les groupes de photos séparés : ")+"\n"+"\n".join([str(e) for e in self.lesGroupesDePhotos]))
+            self.ecritureTraceMicMac()
         self.menageEcran()
         cas = str()
         if repertoire=="":
@@ -9055,36 +8816,36 @@ class Interface(ttk.Frame):
             self.encadre(_("Le traitement n'a donné aucun point homologue.") + "\n\n" + _("Consulter la trace."),nouveauDepart='non')
             return
         
-        #somme des scores de chaque photo : préparation des données
+        # somme des scores de chaque photo : préparation des données
         homol = dict()
         nb = dict()
         moyenne = dict()
         for photo in self.photosSansChemin:
             homol[photo] = 0                    # nombre total des points homologue de l'image
             nb[photo] = 0                       # nombre d'images "comparées" 
-
+            moyenne[photo] = 0
 
         os.chdir(repertoireHomol)
         nbPoints = 0
         for e in os.listdir():                   # balaie tous les fichiers contenant les points homologues         
             os.chdir(os.path.join(repertoireHomol,e))
             for f in os.listdir():
-                if os.path.isfile(f):                               # fichier : on calcule le nombre de points homologues dans le fichier
+                if os.path.isfile(f):           # fichier : on calcule le nombre de points homologues dans le fichier
                     nbPoints = 0
                     if f[-3:]=="dat":
                         taille = os.path.getsize(f)
-                        nbPoints = (taille-8)/44      # fichier binaire
-                    if f[-3:]=="txt":                               # fichier texte
-                        with  open(f) as infile:                    # il faut lire de fichier (longueur variable)
+                        nbPoints = (taille-8)/44    # fichier binaire : 44 octets par point homologue
+                    if f[-3:]=="txt":               # fichier texte : une ligne par point homologue
+                        with  open(f) as infile:    # il faut lire de fichier (longueur variable)
                             nbPoints = infile.readlines().__len__()
                     for photo in self.photosSansChemin:
-                        if photo in e:
+                        if photo in e: # nom de la photo dans le nom du répertoire : on incrémente le nb points
                             homol[photo] += nbPoints
                             nb[photo] += 1
                             moyenne[photo] = homol[photo]/nb[photo]
 
         
-    #on crée le rapport : nombre moyen de points homologues, trié du + grand au plus petit : dans ajouLigne
+    # on crée le rapport : nombre moyen de points homologues, trié du + grand au plus petit : dans ajouLigne
 
         listeHomol = list(moyenne.items())
         listeHomol.sort(key=lambda e: e[1],reverse=True)
@@ -9103,7 +8864,37 @@ class Interface(ttk.Frame):
         ligneFiltre = self.ligneFiltre  # l'écriture de la trace efface self.ligneFiltre et encadre doit être en fin de paragraphe
         self.ecritureTraceMicMac()
         os.chdir(self.repTravail)       
-        self.encadre(ligneFiltre,nouveauDepart='non')
+        self.encadre(message+ligneFiltre,nouveauDepart='non')
+
+    #################### Regroupement des photos reliées par des points homologues : renvoi le nombre de groupes
+    ## s'il y a plusieurs groupes isolés les uns des autres alors : pas d'orientation possible
+    
+    def regroupementSuivantPointsHomologues(self):
+        def ajout(groupe,liste):                       
+            for p in liste:
+                if p in dico and p not in exclure:
+                    exclure.append(p)
+                    ajout(groupe,dico[p])
+                    if p not in groupe:
+                        groupe.append(p)
+            
+        repertoireHomol = os.path.join(self.repTravail,"Homol")
+        groupe = dict()
+        dico = dict()
+        exclure = list()
+        for e in os.listdir(repertoireHomol):   # balaie tous les répertoires d'Homol : crée une liste par répertoire
+            dico[e[6:]] = list()
+            for f in os.listdir(os.path.join(repertoireHomol,e)):
+                dico[e[6:]].append(f[:-4])          # nom des photos (sans prefixe/suffixe) dans un dictionnaires de listes
+        for p in self.photosSansChemin:             # recherche pour chaque photo du groupe d'appartenance
+            groupe[p] = list()                      # chaque photo n'appartient qu'à un seul groupe
+            if p in dico : ajout(groupe[p],dico[p]) # récursivité sur les listes de photos ayant des points homologues
+            else: groupe[p] = p                  # il faut ajouter les groupes avec une seule photo isolée (ignorés dans Homol):
+
+        # les regroupements sont faits : la variable groupe[p] est soit une liste vide, soit la liste de tous les éléments du groupe
+        self.lesGroupesDePhotos = [e for e in groupe.values() if e]
+        return self.lesGroupesDePhotos.__len__()            
+                
 
 ################## Sélection des N meilleures photos en fonction de leur nombre de points homologues....
 ################## remarque : on sélectionne les meilleurs couples, avec un petit effort sur le premier item des éléments de listeTaille
