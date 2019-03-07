@@ -1,7 +1,33 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
-Version du 21 février 2019 : V 5.30
+Version du 8 mars 2019 : V 5.31
+- Les échelles par défaut de Tapioca sont calculées suivant les photos : 60% de la dimension maxi des photos
+- suppresssion des items de menu outils\qualité des photos line et qualité des photos ALL,
+  maintient de la qualité des photos sur le dernier traitement
+- Ajout d'un controle d'unicité de la scène aprés le premier passage, rapide, de Tapioca MultiScale :
+  évite de se lancer dans une recherche approfondie de points homologues si l'échec est prévu
+- Ajout de 1 item au menu outils : retirer des photos au chantier
+- optimisation de la fonction "Expert/plusieurs appareils"
+- l'installateur msi pour Windows installe un item dans le menu démarrer, un raccourci sur le bureau et
+  ajoute le répertoire d'installation au path
+
+Plusieurs nouveautés dans la version 5.30 février 2019:
+- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
+  Ces photos font 'planter' la recherche de l'orientation.
+- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
+  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
+  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
+- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
+- prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
+- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
+
+dans les versions 5.2 :
+- lancement automatique de campari après GCP_bascul (menu MicMac/options/points gps)
+- ajout de la consultation du log mm3d (menu expert)
+- mise à jour de dicocamera.xml pour "tous" les appareils photos du lot de données (menu outils)
+- ajout d'un chantier à partir d'un répertoire (menu fichier)
+- ajout d'un item dans le menu expert : ouverture d'une console pour lancer des commandes "python"
 
 Plusieurs nouveautés dans la version 5.11 : 
 
@@ -13,22 +39,7 @@ Plusieurs nouveautés dans la version 5.11 :
   - possibilité de répartir les photos suivant plusieurs appareils photos 
   - liste des différents appareils photos présents dans le lot de photos
   
-dans les versions 5.2 :
-- lancement automatique de campari après GCP_bascul (menu MicMac/options/points gps)
-- ajout de la consultation du log mm3d (menu expert)
-- mise à jour de dicocamera.xml pour "tous" les appareils photos du lot de données (menu outils)
-- ajout d'un chantier à partir d'un répertoire (menu fichier)
-- ajout d'un item dans le menu expert : ouverture d'une console pour lancer des commandes "python"
-
-dans la version 5.30 :
-- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
-  Ces photos font 'planter' la recherche de l'orientation.
-- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
-  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
-  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
-- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
-- prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
-- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
+Pour plus de détail voir l'item de menu "Aide/historique" ou le code source.
 
 
 Des installateurs facilitent l'installation de certaines versions :
