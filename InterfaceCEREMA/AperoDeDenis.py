@@ -134,6 +134,12 @@
 #    la modification est faite une seule fois, non cumulative
 #  - fonction "encadre" : la valeur par défaut du paramètre nouveauDepart passe de 'oui' à 'non'
 #    les appels à la fonction encadre sont modifiés en conséquence
+# 5.32 :
+#  - l'item de menu "rechercher la présence d'une nouvelle version sur GitHub" est désormais placé dans le menu Outils.
+#    cet item propose de visualiser la page web de téléchargement ou le readme.txt sur GitHub.
+#  - correction d'un bug : la modification des tag "model" des exif met à jour la variable self.lesTagsExifs
+#  - accélération importante du traitement de la modification des tag "model"
+#  - ajout d'une verrue dans lanceCommande pour essayer de traiter la cas d'une ligne de commande dont la longueur serait supérieure à 8191 sous Windows
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -238,7 +244,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.31"
+numeroVersion = "5.32"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
@@ -1039,6 +1045,8 @@ class Interface(ttk.Frame):
         menuOutils.add_command(label=_("Modifier l'exif des photos"), command=self.majExif)
         menuOutils.add_separator()
         menuOutils.add_command(label=_("Modifier les options par défaut"), command=self.majOptionsParDefaut)
+        menuOutils.add_separator()
+        menuOutils.add_command(label=_("Vérifie la présence d'une nouvelle version sur GitHub"),command=self.verifVersion)    ## Meslab
 
         # mode Expert
 
@@ -1075,7 +1083,6 @@ class Interface(ttk.Frame):
         menuParametres.add_separator() 
         menuParametres.add_command(label=_("Désactive/Active le tacky message de lancement..."),command=self.modifierTacky)    ## Meslab
         menuParametres.add_separator() 
-        menuParametres.add_command(label=_("Vérifie la présence d'une nouvelle version sur GitHub"),command=self.verifVersion)    ## Meslab
      
         # Aide
         
@@ -6337,8 +6344,10 @@ class Interface(ttk.Frame):
             self.ajoutLigne(message)
             self.encadrePlus(message)
 
-        self.ecritureTraceMicMac()        
-    # tag dans l'exif : renvoi la valeur du tag 'tag' dans l'exif d'une photo ou de la première photo (on suppose qu'elles sont identiques pour toutes les photos)
+        self.ecritureTraceMicMac()
+        
+    # tag dans l'exif : renvoi la valeur du tag 'tag' dans l'exif d'une photo
+    # si pas de photo précise : la première photo (on suppose qu'elles sont identiques pour toutes les photos)
                           
     def tagExif(self,tag,photo=""):
         if photo=="":photo=self.photosAvecChemin[0]
@@ -6738,19 +6747,22 @@ class Interface(ttk.Frame):
                 self.encadre(_("Abandon, le chantier n'est pas modifié."))
                 return
         # Modification des tags "model" demandée : 
-        self.lesTagsExif = dict() # supprimer les anciennes mémorisations des tags        
         self.encadre(_("Modification du modèle de l'appareil photo en cours : ajout du préfixe du nom du fichier.")+"\n"+
-                     _("Attention : procédure longue si beaucoup de photos.")+"\n")            
-        for photo in self.photosAvecChemin:
+                     _("Attention : procédure longue si beaucoup de photos.")+"\n")
+        commande = [self.exiftool,]
+        for photo in self.photosSansChemin:
             self.encadrePlus(".")
             prefix = os.path.basename(photo)[:3]
             model = self.tagExif("Model",photo)
             if not prefix in model:
                 nbModif += 1
-                self.lanceCommande([self.exiftool,"-Model="+model+" "+prefix,photo])
-                self.lanceCommande([self.exiftool,"-toto=123",photo])
+                nouveauTag = model+" "+prefix
+                commande.extend(["-Model="+nouveauTag,photo])
+                self.lesTagsExif["Model",photo] = nouveauTag
                 supprimeFichier(photo+"_original")           # exiftool crée des copies "_original" des fichiers initiaux, on les supprime ;
             else: nbConserve += 1
+        os.chdir(self.repTravail)
+        if nbModif: self.lanceCommande(commande)
         message = "\n"+_("Modéle de l'appareil photo modifié : ajout du préfixe du nom de fichier sur 3 caractères.")+"\n\n"
         message += _("Nombre de fichiers modifiés : %s") % str(nbModif) + "\n"
         if nbConserve:
@@ -7694,42 +7706,61 @@ class Interface(ttk.Frame):
 
         if numeroVersion not in htmlLu:             # version utilisateur non trouvée dans version GitHub
             self.avertirNouvelleVersion = True
-            
+           
     def avertissementNouvelleVersion(self): # n'apparait qu'une fois par session (role de avertirNouvelleVersion) 
         if self.avertirNouvelleVersion:
             retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
                                        question=_("Nouvelle version disponible sur Internet : ")+"\n"+
-                                                   versionInternet+"\n"+
                                                 _("Téléchargement à l'adresse : ")+"\n\n"+
                                                 "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
                                        b1=_("OK"),
-                                       b2=_("Accéder au site"),
+                                       b2=_("Ouvrir la page web"),
                                        b3=_("Ne plus me le rappeler"))           
             if retour == 1: 
-                webbrowser.open("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
+                threading.Thread(target=ouvrirPageWEBAperoDeDenis).start() # ouverture de la page WEB dans un thread
             if retour == 2:
                 self.messageVersion = False
             self.avertirNouvelleVersion = False
+            self.encadre(" page ouverte : https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
 
     def verifVersion(self):
         self.encadre(_("Recherche sur internet en cours, patience..."))        
         try:
-            sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
+            sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA/readme.txt")
             htmlLu = str(sock.read(100000))
             sock.close
         except Exception as e:
-            self.encadre(_("Erreur lors de la tentative de connexion à internet : ")+str(e))
+            self.encadre(_("Erreur lors de la tentative de connexion à internet : ")+"\n"+str(e))
             return
         
         # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
-
+        
         if numeroVersion not in htmlLu:             # version utilisateur non trouvée dans version GitHub
-            self.avertirNouvelleVersion = True
-            self.avertissementNouvelleVersion()
-            self.menageEcran()
+            retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
+                                       question=_("Nouvelle version disponible sur Internet : ")+"\n"+
+                                                _("Téléchargement à l'adresse : ")+"\n\n"+
+                                                "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
+                                       b1=_("OK"),
+                                       b2=_("Ouvrir la page web"),
+                                       b3=_("Lire le readme.txt"
+                                       ))            
+            if retour == 1:
+                threading.Thread(target=ouvrirPageWEBAperoDeDenis).start()  # ouverture de la page WEB dans un thread
+            if retour == 2:
+                threading.Thread(target=lireReadMe).start()  # ouverture de la page WEB dans un thread
+            self.encadre(_("Nouvelle version disponible"))
         else:
+            retour = self.troisBoutons(titre=_("Version de l'interface AperoDeDenis à jour"),
+                                       question=_("Version disponible sur Internet : ")+"\n"+
+                                                _("Téléchargement à l'adresse : ")+"\n\n"+
+                                                "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
+                                       b1=_("Abandon"),
+                                       b2=_("Ouvrir la page web"),
+                                       )
+            if retour == 1:
+                threading.Thread(target=ouvrirPageWEBAperoDeDenis).start()  # ouverture de la page WEB dans un thread
             self.encadre(_("Version actuelle à jour"))
-           
+                                
     #################################### Supprime (ou conserve) les répertoires de travail 
     
     def supprimeRepertoires(self):
@@ -7909,11 +7940,40 @@ class Interface(ttk.Frame):
     ################################## lance une procédure et éxécute une commande sur chaque ligne de l'output ################################################
 
     def lanceCommande(self,commande,filtre=lambda e: e,info="",attendre=True):
-
         commande = [e for e in commande if e.__len__()>0]       # suppression des arguments "vides"
         commandeTexte=" ".join(commande)                        # Format concaténé des arguments
         self.ajoutLigne("\n\n"+heure()+_(" : lancement de ")+commandeTexte+"\n\n"+info+"\n")
-
+        self.ecritureTraceMicMac()
+        
+        # limitation à 8191 caractère de la ligne de commande sous windows : mais pas sur que cela marche
+        # par exemple pour exiftool les paramètres sont dépendants les uns des autres : il vont par groupe
+        # aussi avertissement utilisateur :
+        
+        if len(commandeTexte)>8000 and os.name=="nt":
+            texte = (_("Sous Windows la longueur d'une ligne de commande est limitée à 8191 caractères") +"\n"+
+                     _("AperoDeDenis essaie d'éxécuter la une commande dont la longueur est de %s") % len(commandeTexte) +"\n"+
+                     _("Il est possible que ce soit un échec : dans ce cas il faut utiliser un autre système d'exploitation") +"\n"+
+                     _("ou diminuer le nombre de photos, la longueur des chemins...") +"\n"+
+                     _("Voici les 200 premiers caractères de la commande :") +"\n"+
+                     commandeTexte[:200]+"\n"+
+                     _("Toute la commande se trouve dans la trace"))
+            self.troisBoutons(titre=_("Problème de longueur de commande"),question=texte,b1='OK')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
+            
+            d = commande[1:]
+            while 1:
+                if len(d):
+                    c = commande[0]
+                    chaine=str()
+                    while len(chaine)<8000:
+                        if len(d):
+                            if len(d[0])+len(chaine)<8000:
+                                c.append(commande[i])   # ajout à la commande
+                                chaine+=commande[i]     # ajout à la chaine pour controler la longueur
+                                del d[0]                # pour s'arrêter si tout est épuisé
+                            self.lanceCommande(self,c,filtre,attendre)
+                            
+        # lance la commande
+                                
         try:
             self.exe = subprocess.Popen(commande,
                                    shell=self.shell,
@@ -7940,7 +8000,8 @@ class Interface(ttk.Frame):
                 break                                   # si la lecture ne se fait pas c'est que le processus est "mort", on arrête
         
         self.ajoutLigne("\n"+heure()+_(" : fin de ")+commandeTexte+"\n")
-
+        self.ecritureTraceMicMac()
+        
     ########################## Opérations sur les Fichiers TRACE
 
     def definirFichiersTrace(self):     # affectation des noms des fichiers trace. pas de création : en effet le plus souvent ils existent déjà, il faut seulement les retrouver
@@ -9073,11 +9134,11 @@ class Interface(ttk.Frame):
         self.lesPrefixes=list(lesPrefixes)                                              # liste pour être slicable
         return len(self.lesPrefixes)
 
-    def nombreDeExifTagDifferents(self,tag="SerialNumber"):                           # on vérifie l'unicité des tags numéros de série ou autre
+    def nombreDeExifTagDifferents(self,tag="SerialNumber"):     # on vérifie l'unicité des valeurs pour un tag (numéros de série par défaut)
         lesTags = [[self.encadrePlus("."),self.tagExif(tag,photo)] for photo in self.photosAvecChemin]
         lesTags = set([e1 for e0,e1 in lesTags])
-        self.lesTags=[ tag for tag in lesTags if tag !=""]        
-        return len (self.lesTags)
+        self.lesTags=[ tag for tag in lesTags if tag !=""]      # abonde la liste des valeurs trouvées dans self.lesTags    
+        return len (self.lesTags)                               # renvoie le nombre de valeurs différentes : 0, 1 , plus
     
 ########################################################   Modifier les options par défaut
 
@@ -9387,7 +9448,13 @@ def sizeDirectoryMO(path):
         for fic in files:  
             size += os.path.getsize(os.path.join(root, fic)) 
     return round(size/1000000)
-    
+
+def ouvrirPageWEBAperoDeDenis():
+    webbrowser.open("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")  
+
+def lireReadMe():
+    webbrowser.open("https://raw.githubusercontent.com/micmacIGN/InterfaceCEREMA/master/InterfaceCEREMA/readme.txt")  
+                                       
 '''################################## Crée un fichier contenant l'icone de l'application et en renvoie le nom conserver pour exemple de ficheir temporaire
 
 def iconeGrainSel():

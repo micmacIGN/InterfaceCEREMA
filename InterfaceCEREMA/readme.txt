@@ -1,7 +1,12 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
-Version du 8 mars 2019 : V 5.31
+Version du 12 mars 2019 : V 5.32
+- la recherche d'une nouvelle version sur le web propose la visualisation du fichier "readme.txt" (Outils/véifier la présence...)
+- sous windows : avertissement si la longueur d'une ligne de commande dépasse 8191 caractères, risque de plantage 
+- correction bug lors de la définition de plusieurs appareils photos, amélioration de la vitesse du traitement 
+
+Version du 8 mars 2019 : 5.31
 - Les échelles par défaut de Tapioca sont calculées suivant les photos : 60% de la dimension maxi des photos
 - suppresssion des items de menu outils\qualité des photos line et qualité des photos ALL,
   maintient de la qualité des photos sur le dernier traitement
