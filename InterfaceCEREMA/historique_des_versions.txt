@@ -1,4 +1,4 @@
-Historique des principales versions de l'interface CEREMA AperoDeDenis
+﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
    
              Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
@@ -145,6 +145,15 @@ Historique des principales versions de l'interface CEREMA AperoDeDenis
 			version 5.21 février 2019 :
 					- ajout possibilité de passer une commande "python" dans le menu expert
 					- Modification de l'option "Autocal" de Tapas : Figee (au lieu de Autocal) : permet de 'figer' la calibration initiale					
+			version 5.30 21 février 2019 :
+              				- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
+              				  Ces photos font 'planter' la recherche de l'orientation.
+              				- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
+              				  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
+              				  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
+              				- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
+              				- prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
+              				- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
 			
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
