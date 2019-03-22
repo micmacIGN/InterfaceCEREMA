@@ -1,12 +1,9 @@
-﻿L'interface CEREMA offre une interface graphique conviviale pour 
-MICMAC, l'outil de photogrammétrie libre de l'IGN.
-
-Version du 12 mars 2019 : V 5.32
+## Version 5.32 (12 mars 2019)
 - la recherche d'une nouvelle version sur le web propose la visualisation du fichier "readme.txt" (Outils/véifier la présence...)
 - sous windows : avertissement si la longueur d'une ligne de commande dépasse 8191 caractères, risque de plantage 
 - correction bug lors de la définition de plusieurs appareils photos, amélioration de la vitesse du traitement 
 
-Version du 8 mars 2019 : 5.31
+## Version 5.31 (8 mars 2019)
 - Les échelles par défaut de Tapioca sont calculées suivant les photos : 60% de la dimension maxi des photos
 - suppresssion des items de menu outils\qualité des photos line et qualité des photos ALL,
   maintient de la qualité des photos sur le dernier traitement
@@ -17,7 +14,7 @@ Version du 8 mars 2019 : 5.31
 - l'installateur msi pour Windows installe un item dans le menu démarrer, un raccourci sur le bureau et
   ajoute le répertoire d'installation au path
 
-Plusieurs nouveautés dans la version 5.30 février 2019:
+## Version 5.30 (février 2019)
 - dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
   Ces photos font 'planter' la recherche de l'orientation.
 - Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
@@ -27,14 +24,14 @@ Plusieurs nouveautés dans la version 5.30 février 2019:
 - prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
 - Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
 
-dans les versions 5.2 :
+## Version 5.2
 - lancement automatique de campari après GCP_bascul (menu MicMac/options/points gps)
 - ajout de la consultation du log mm3d (menu expert)
 - mise à jour de dicocamera.xml pour "tous" les appareils photos du lot de données (menu outils)
 - ajout d'un chantier à partir d'un répertoire (menu fichier)
 - ajout d'un item dans le menu expert : ouverture d'une console pour lancer des commandes "python"
 
-Plusieurs nouveautés dans la version 5.11 : 
+## Version 5.11
 
 - menu MicMac/options : l'onglet "calibration" est renommé : "mise à l'échelle"
 - menu MicMac/option/Tapas : les photos pour calibrer l'appareil photo sont, ou pas, indépendantes des photos utilisées pour construire le nuage
@@ -43,16 +40,3 @@ Plusieurs nouveautés dans la version 5.11 :
   - saisie des points GPS à partir d'un fichier texte (séparateur espace  : nom, x,y,z, dx,dy,dz)
   - possibilité de répartir les photos suivant plusieurs appareils photos 
   - liste des différents appareils photos présents dans le lot de photos
-  
-Pour plus de détail voir l'item de menu "Aide/historique" ou le code source.
-
-
-Des installateurs facilitent l'installation de certaines versions :
-
-Version 5.3 sous windows 64 bits
-Version 5.0 sous windows 32 bits
-Version 3 sous Linux (deb et rpm)
-
-Sous mac : voir la documentation
- 
-L'application MicMac de l'IGN doit être installée ( https://github.com/micmacIGN ou http://logiciels.ign.fr/?Micmac )
