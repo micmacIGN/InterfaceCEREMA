@@ -4,6 +4,8 @@ MICMAC, l'outil de photogrammétrie libre de l'IGN.
 Version du 25 mars 2019 : 5.33
 - Possibilité de relancer un chantier non terminé en conservant les points homologues.
 - ajout d'un item au menu expert : modifier la longueur du préfixe utilisé pour définir plusieurs appareils. 
+- suppression pour les anciennes versions des installateurs windows 32 bits et linux.
+  Ces installateurs (msi 32 bit pour la version 5.0 ; deb et rpm pour la version 3.14) restent disponibles dans l'historique Github. 
 
 Version du 12 mars 2019 : 5.32
 - la recherche d'une nouvelle version sur le web propose la visualisation du fichier "readme.txt" (Outils/véifier la présence...)
@@ -51,12 +53,7 @@ Plusieurs nouveautés dans la version 5.11 :
 Pour plus de détail voir l'item de menu "Aide/historique" ou le code source.
 
 
-Des installateurs facilitent l'installation de certaines versions :
-
-Version 5.3 sous windows 64 bits
-Version 5.0 sous windows 32 bits
-Version 3 sous Linux (deb et rpm)
-
-Sous mac : voir la documentation
+Un installateur msi facilite l'installation de la version 5.33 sous Windows 64 bits.
+Sous linux et mac/os : voir la documentation
  
 L'application MicMac de l'IGN doit être installée ( https://github.com/micmacIGN ou http://logiciels.ign.fr/?Micmac )
