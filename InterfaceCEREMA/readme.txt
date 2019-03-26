@@ -1,6 +1,12 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+version 5.34 suite aux conseils de Xavier Rolland (26/03/19)
+- remplacement global de GPS par GCP = Ground Control Point
+- Au retour de saisie des points GCP : fenêtre liste des photos
+- l'affichage des coordonnées des points saisis devient optionnel
+- la limite du zoom dans la fenêtre de saisie des points est augmentée
+
 Le 25 mars 2019 : ajout d'un tutoriel pour prendre en main MicMac à travers l'interface CEREMA.
 
 Version du 25 mars 2019 : 5.33

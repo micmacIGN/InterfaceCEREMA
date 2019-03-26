@@ -10,50 +10,50 @@
 # - affichage des heures avec les secondes
 # - Controle que le nom du répertoire bin de micmac ne comporte pas d'espace.
 #v 2.41
-# correction d'un bogue sur la suppression des points gps
-# autorise 30 points gps
+# correction d'un bogue sur la suppression des points GCP
+# autorise 30 points GCP
 # 2.42
-# suppression bogue suppression de points gps multiples
+# suppression bogue suppression de points GCP multiples
 # gcpbascule après tapas ET toujours avant malt
 # 2.43
 # les conséquences du choix de nouvelles photos sont modifiées de trois façons :
-# - si des emplacements de points GPS doivent être supprimés alors il y a demande à l'utilisateur
+# - si des emplacements de points GCP doivent être supprimés alors il y a demande à l'utilisateur
 # - le nettoyage du chantier est moins brutal : les fichiers exp (exports) et ply sont conservés.
 # - le chantier est enregistré avant de rendre la main (si l'utilsiateur ne validait pas un enregistrement ultérieur le chantier devenait inaccessible)
 # ajout de import tkinter.messagebox pour le message d'avertissement si AperoDeDenis est dèjà lancé sous windows
 # 2.44
-# Accepte les virgules comme séparateur décimal pour les points gps : remplacement des virgules saisies dans les coordonnées gps par des points
+# Accepte les virgules comme séparateur décimal pour les points GCP : remplacement des virgules saisies dans les coordonnées GCP par des points
 # 2.45
 # accepte la virgule pour la distance de la calibration métrique (remplace virguule par point)
-# nouveau bouton : lance la calibration gps
+# nouveau bouton : lance la calibration GCP
 #
 # ajout de tawny après Malt, avec saisie libre des options (mosaiquage du résultat de malt/ortho)
 # 2.50
 # Active/désactive le tacky message de lancement
 # 2.6
-# saisie de l'incertitude sur la position des points GPS
+# saisie de l'incertitude sur la position des points GCP
 # 2.61
-# correction d'un bogue de compatibilité ascendante (changement de structure de la liste des points gps. Le 14/09/2016
+# correction d'un bogue de compatibilité ascendante (changement de structure de la liste des points GCP. Le 14/09/2016
 
 # a faire : corriger le mode d'obtention de ALL ou Line dans le calcul des indices de qualité
 # toutes les focales : la commande explore les sous-répertoires comportant la chaine JPG !!!
 # v 3.00 : bilingue (début novembre 2016)
 # V 3.10 : sélection des meilleures photos
 # v 3.11 : sélection des meilleurs images pour créer un nouveau chantier
-# v 3.12 : correction bogue affichage gps
+# v 3.12 : correction bogue affichage GCP
 # v 3.13 : recherche exiftool et convert sous binaire-aux\windows ffmpeg absent sous bin;
 #          possibilité de saisir une unité avec la distance
 #          controle des photos supprimé si lanceMicMac après Tapas.
 # v 3.14 : correction d'une régression de la v 3.13 lors de la restauration des paramètres (dûe à l'ajout de self.ffmpeg dans la sauvegarde).
 # v 3.20 : les photos autour de la maitresse pour Malt ne sont plus "autour" mais choisies parmi les meilleures en correspondances
 #          Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche les maitresses et les photos correspondantes
-#          ajout filtre pour afficher l'erreur max sur gcpbascule (erreur positionnement des points GPS.
-#          controle affiné des points gps : on indique ceux qui ne sont placés sur une seule photo et on vérifie la présence de 3 points sur 2 photos
+#          ajout filtre pour afficher l'erreur max sur gcpbascule (erreur positionnement des points GCP.
+#          controle affiné des points GCP : on indique ceux qui ne sont placés sur une seule photo et on vérifie la présence de 3 points sur 2 photos
 #          après plantage durant malt ou fusion : on renomme les JPG et les PLY lors du rédémarrage (reste pb semblable pour calibration intrinsèque)
-#          suppression d'un point GPS sur une photo (avant : suppression de tous les points)
-#          Affichage dans l'état du chantier des points GPS positionnés sur une seule photo
-#          Non mise dans le xml des points gps positionnés une seule fois.
-#          Si le controle des points GPS est négatif alors les fichiers xml ne sont pas créés
+#          suppression d'un point GCP sur une photo (avant : suppression de tous les points)
+#          Affichage dans l'état du chantier des points GCP positionnés sur une seule photo
+#          Non mise dans le xml des points GCP positionnés une seule fois.
+#          Si le controle des points GCP est négatif alors les fichiers xml ne sont pas créés
 # 3.30
 # 1) créer une mosaique  après tapas sur toutes les photos : "Tarama" ".*.JPG" "Arbitrary"
 # 2) la mosaïque est un tif : sour le répertoire TA : TA_LeChantier.tif
@@ -73,9 +73,9 @@
 # menu expert : exécuter une ligne de commande
 # correction : self.e au lieu de e dans MyDialog
 # version 3.31
-# copier les points gps d'une chantier dans un autre (en corrigeant ce qu'il faut, menu expert)
+# copier les points GCP d'une chantier dans un autre (en corrigeant ce qu'il faut, menu expert)
 # version 3.32 : 2 corrections mineures (lignes 3854 supprimée et 3953 orthographe)
-# Version 3.33 : correction comptage des points GPS et des points GPS avec les mêmes coordonnées ( définition de listePointsActifs  revue)
+# Version 3.33 : correction comptage des points GCP et des points GCP avec les mêmes coordonnées ( définition de listePointsActifs  revue)
 # Version 3.34 : janvier 2018
 # correction de : e remplacé par self.e dans MyDialog (fixe le problème du renommage des chantiers)
 # ajout de self.pasDeFocales = False après la mise à jour des exifs. (fixe le problème du message erroné concerné les focales manquantes)
@@ -88,12 +88,12 @@
 # message "chantier nettoyé" affiché
 # la version 3.34 est rebaptisée 5.0 (suppression de l'item "indice surfacique")
 # Version 5.1 : 4 décembre 2018 : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appareil photo
-# ajout d'un item dans le menu expert : copier les coordonnées des points gps à partir d'un fichier texte
+# ajout d'un item dans le menu expert : copier les coordonnées des points GCP à partir d'un fichier texte
 # modification des onglets Malt et C3DC, réunis dans un même onglet "Densification"
 # renommage de l'onglet "calibration" en "mise à l'échelle"
 # Version 5.2 janvier 2019 : 
 # correction bug sur l'affichage des photos pour calibration après Tapas
-# ajout des paramètres pour Campari dans la fenêtre des options/points GPS
+# ajout des paramètres pour Campari dans la fenêtre des options/points GCP
 # lancement automatique de campari après GCP_bascul s'il y a les bons paramètres.
 # ajout dans le menu expert de la consultation du log mm3d
 # mise à jour de dico camera pour "tous" les appareils photos du lot de données
@@ -150,6 +150,11 @@
 #    SI le chantier est arrété après Tapas ou non terminé correctement
 ############# Risque : on redéfinit photosAvecChemin et photosSansChemin en gardant le nom !!!! A modifier ligne 5615
 ############# vérifier "supprimer des photos"
+# version 5.34 suite aux conseils de Xavier Rolland (26/03/19)
+# - remplacement global de GCP par GCP (sauf définition dans l'aide)
+# - Au retour de saisie des points GCP : fenêtre liste des photos
+# - l'affichage des coordonnées en pixels devient optionnel
+# - la limite du zoom dans la fenêtre de saisie des points GCP est augmentée
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -164,7 +169,7 @@ import sys                                  # info système
 import subprocess                           # appel des procédures MicMac
 import signal
 import traceback                            # uniquement pour pv : affiche les propriétés des variables (qui sert pour débug)
-from   PIL import Image                     # pour travailler sur les images, définir le masque, placer les points GPS : PIL
+from   PIL import Image                     # pour travailler sur les images, définir le masque, placer les points GCP : PIL
 from   PIL import ImageTk
 from   PIL import ImageDraw
 import base64
@@ -254,7 +259,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.33"
+numeroVersion = "5.34"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
@@ -349,7 +354,7 @@ class TracePolygone():
         self.root.geometry( "900x900" )                     # Taille
         self.dimMaxiCanvas = 600                            # dimension max du canvas accueillant l'image       
         self.facteurZoom = 2                                # valeur du changement de niveau de zoom lorsque l'utilisateur "zoom" (par la molette de la souris)
-        self.maxScale = 8                                   # Nb de zooms maximum autorisé
+        self.maxScale = 100                                   # Nb de zooms maximum autorisé
         self.listeSauveImages = list()                      # mémorisation des images zoomées pour accélérer le retour en arrière (deZoom)
         self.listePointsJPG = list()                        # liste des points du polygone
         self.polygone = False                               # deviendra vrai lorsque le polygone sera effectif
@@ -508,7 +513,7 @@ class TracePolygone():
             return       
         self.redrawZoom(event)  
 
-    def redrawZoom(self, event):                                # l'utilisateur zoom avant avec la molette de la souris : mémo du zoom précédent   
+    def redrawZoom(self, event):                                # l'utilisateur zoom avant avec la molette de la souris : mémo du zoom précédent
         if self.scale>self.maxScale:                            # si l'échelle passe à plusieurs pixels écran pour un pixel image on arrête
              self.infoBulle(event,texte=_("Zoom maximum atteint")) # l'utilisateur est informé
              return
@@ -658,14 +663,15 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
             
         self.file = image                   # nom de la photo avec chemin (au moins relatif)        
         self.root = tkinter.Toplevel()
-        self.root.title( _("Calibration GPS ")+image)
+        self.root.title( _("Calibration GCP ")+image)
         self.root.title(_("Position des points sur la photo  : ")+image)       # titre
         fenetreIcone(self.root)
         self.root.geometry( "900x900" )    
         self.dimMaxiCanvas = 600            # dimension max du canvas accueillant l'image
         self.facteurZoom = 2                # valeur du changement de niveau de zoom lorsque l'utilisateur "zoom" (par la molette de la souris)
-        self.maxScale = 8                   # zoom max autorisé
-        self.couleurTexte = 'white'
+        self.maxScale = 100                 # zoom max autorisé
+        self.listeCouleurs = ["black","white","blue","red","green","yellow"]
+        self.couleurTexte = self.listeCouleurs[0]
         self.xyInfo = True
         self.listeSauveImages = list()      # mémorisation des images zoomés pour accélérer le retour en arrière (deZoom)
         self.xDrag = -1
@@ -673,10 +679,11 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         self.imgTk_id = 'none'
         self.dicoBoutons = dict()           # key = nom du point, value = référence du bouton correspondant dans la fenêtre, dico utile localement        
         self.dicoPointsJPG = dejaPlaces     # key = (nom du point,nom de la photo), value = tuple à 2 valeurs : (x,y dans le jpeg) dico utile globalement
-        self.retourSiAbandon = dejaPlaces
+        self.retourSiAbandon = dict(dejaPlaces)
         self.boutonActif = ttk.Button()
         self.tempo = 0
         self.points = points                # pour la suppression d'un point
+        self.afficheXY = False              # on n'affiche pas (par défaut) les coordonnées xy des points placés sur une image
         
         # initialisations de l'affichage de l'image, dimensions du cadre, positionnement :
         self.imageFichier = Image.open(self.file)
@@ -716,14 +723,17 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         self.boutonAbandon.pack(side='left',pady=2,ipady=2,padx=5)
         self.frame3.pack(pady=10)
         self.frame4 = ttk.Frame(self.root,borderwidth = 2,relief = "sunken")        
-        self.boutonchangerCouleurTexte = ttk.Button(self.frame4, text=_("Changer la couleur des libellés"),command = self.changerCouleurTexte)        
-        self.boutonchangerCouleurTexte.pack(pady=2,ipady=2,padx=5)
+        self.boutonchangerCouleurTexte = ttk.Button(self.frame4, text=_("Changer la couleur des libellés"),command = self.changerCouleurTexte)
+        self.boutonchangerAffichageXY = ttk.Button(self.frame4, text=_("Afficher les coordonnées pixels xy des points"),command = self.supprimeXY)
+        self.boutonchangerCouleurTexte.pack(side='left',pady=2,ipady=2,padx=5)
+        self.boutonchangerAffichageXY.pack(side='left',pady=2,ipady=2,padx=5)
         self.frame4.pack(pady=10)
 
-        # message d'inforamtion
+        # message d'information
 
         self.frame5 = ttk.Frame(self.root,borderwidth = 2)
         ttk.Label(self.frame5,text=_("Utiliser la molette pour zoomer/dezoomer pendant la saisie.")).pack()
+        ttk.Label(self.frame5,text=_("la position du curseur devient le centre du zoom suivant.")).pack()        
         self.frame5.pack()
         
         # évènements
@@ -851,7 +861,10 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
     def afficheUnPoint(self,xJPG,yJPG,bouton):
         self.xyJPGVersCanvas(xJPG,yJPG)
         self.canvas.create_oval(self.xFrame-5, self.yFrame-5,self.xFrame+5, self.yFrame+5,fill='yellow',tag=bouton)
-        self.canvas.create_text(self.xFrame, self.yFrame+20,text = bouton+" x="+str(xJPG)+" y="+str(yJPG),tag=bouton,fill=self.couleurTexte)
+        if self.afficheXY:
+            self.canvas.create_text(self.xFrame, self.yFrame+20,text = bouton+" x="+str(xJPG)+" y="+str(yJPG),tag=bouton,fill=self.couleurTexte)
+        else:
+            self.canvas.create_text(self.xFrame, self.yFrame+20,text = bouton,tag=bouton,fill=self.couleurTexte)
       
     def activerBouton(self,boutonChoisi):                                                               # appui sur un bouton "ajouter un point"
         self.boutonActif.state(["!active","!focus","!pressed",'!selected'])                             # RAZ état de l'ancien bouton
@@ -873,15 +886,17 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         self.afficheImage()
 
     def changerCouleurTexte(self):
-        if self.couleurTexte=='white':
-            self.couleurTexte = 'black'
-        else:
-            if self.couleurTexte=='black':
-                self.couleurTexte = 'blue'
-            else:
-                if self.couleurTexte=='blue':
-                    self.couleurTexte = 'white'
+        self.listeCouleurs.insert(0,self.listeCouleurs.pop()) # pythonesque : passe de (1,2,3) à (3,1,2)
+        self.couleurTexte = self.listeCouleurs[0]
         self.afficherTousLesPoints()
+
+    def supprimeXY(self):
+        self.afficheXY = not self.afficheXY
+        if self.afficheXY:
+            self.boutonchangerAffichageXY.config(text=_("Supprimer les coordonnées pixels xy des points placés"))
+        else:
+            self.boutonchangerAffichageXY.config(text=_("Afficher les coordonnées pixels xy des points placés"))
+        self.afficheImage()
         
     def infoBulle(self,event,texte=" "):                                # affiche une infobulle sous le curseur.
         try: self.bulle.destroy()
@@ -900,7 +915,7 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         self.dicoPointsJPG = self.retourSiAbandon
         self.quitter()
 
-    def supprimerTousLesPoints(self):                                   # suppression de la localisation de tous les points GPS présents sur l'image self.file
+    def supprimerTousLesPoints(self):                                   # suppression de la localisation de tous les points GCP présents sur l'image self.file
         aSupprimer = dict(self.dicoPointsJPG)                           # self.dicoPointsJPG[(self.boutonChoisi,self.file,self.numBoutonChoisi)] = (self.xJPG,self.yJPG)
         for cle in aSupprimer:                                          # 
             if cle[1]==self.file:
@@ -1004,7 +1019,7 @@ class Interface(ttk.Frame):
         menuEdition.add_command(label=_("Visualiser les maîtresses et les masques"), command=self.afficherLesMaitresses)
         menuEdition.add_command(label=_("Visualiser le masque sur mosaique Tarama"), command=self.afficherMasqueTarama)        
         menuEdition.add_command(label=_("Visualiser le masque 3D"), command=self.afficheMasqueC3DC)
-        menuEdition.add_command(label=_("Visualiser les points GPS"), command=self.afficherLesPointsGPS)
+        menuEdition.add_command(label=_("Visualiser les points GCP"), command=self.afficherLesPointsGPS)
         menuEdition.add_separator()        
         menuEdition.add_command(label=_("Visualiser la ligne horizontale/verticale"), command=self.afficherLigneHV)
         menuEdition.add_command(label=_("Visualiser la zone plane"), command=self.afficherZonePlane)
@@ -1067,8 +1082,8 @@ class Interface(ttk.Frame):
         menuExpert.add_command(label=_("Exécuter une ligne de commande système"), command=self.lignesExpert)
         menuExpert.add_command(label=_("Exécuter une commande python"), command=self.lignesPython)        
         menuExpert.add_separator()  
-        menuExpert.add_command(label=_("Ajouter les points GPS à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)        
-        menuExpert.add_command(label=_("Ajouter les points GPS d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)        
+        menuExpert.add_command(label=_("Ajouter les points GCP à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)        
+        menuExpert.add_command(label=_("Ajouter les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)        
         menuExpert.add_separator()
         menuExpert.add_command(label=_("Définir plusieurs appareils photos"), command=self.plusieursAppareils)
         menuExpert.add_command(label=_("Définir la longueur du préfixe des photos ; %s") % (self.nbCaracteresDuPrefixe), command=self.longueurPrefixe)        
@@ -1177,7 +1192,7 @@ class Interface(ttk.Frame):
         self.masque3DSansChemin         =   "AperiCloud_selectionInfo.xml"                      # nom du fichier XML du masque 3D, fabriqué par 
         self.masque3DBisSansChemin      =   "AperiCloud_polyg3d.xml"                            # nom du second fichier XML pour le masque 3D
         self.dicoAppuis                 =   "Dico-Appuis.xml"                                   # nom du fichier XML des points d'appui (nom, X,Y,Z,incertitude) pour Bascule
-        self.mesureAppuis               =   "Mesure-Appuis.xml"                                 # nom du XML positionnant les points d'appuis GPS dans les photos
+        self.mesureAppuis               =   "Mesure-Appuis.xml"                                 # nom du XML positionnant les points d'appuis GCP dans les photos
         self.miseAEchelle               =   "MiseAEchelle.xml"                                  # pour l'axe des x, le plan 
         self.dicoCameraUserRelatif      =   "include/XML User/DicoCamera.xml"                   # relatif au répertoire MicMac
         self.dicoCameraGlobalRelatif    =   "include/XML_MicMac/DicoCamera.xml"                 # relatif au répertoire MicMac
@@ -1250,7 +1265,7 @@ class Interface(ttk.Frame):
 
         self.distance           = tkinter.StringVar()
 
-        # pour Campari : pour l'onglet des points GPS :
+        # pour Campari : pour l'onglet des points GCP :
 
         self.incertitudeCibleGPS    =   tkinter.StringVar()
         self.incertitudePixelImage  =   tkinter.StringVar()
@@ -2091,7 +2106,7 @@ class Interface(ttk.Frame):
                                                 _("Les options par défaut concernent :") + "\n"+
                                                 _("Points homologues : All, MulScale, line ,les échelles et delta") + "\n"+
                                                 _("Orientation : RadialExtended,RadialStandard, Radialbasic, arrêt après Tapas") + "\n"+
-                                                _("Points GPS : options de CAMPARI") + "\n"+                                                 
+                                                _("Points GCP : options de CAMPARI") + "\n"+                                                 
                                                 _("Densification Malt : mode, zoom final, nombre de photos autour de la maîtresse") + "\n"+
                                                 _("Densification Malt Ortho : Tawny et ses options en saisie libre") + "\n"+
                                                 _("Densification C3DC : mode (Statue ou QuickMac)") + "\n\n")
@@ -2194,23 +2209,25 @@ class Interface(ttk.Frame):
         self.modeC3DC.set("Forest")                             # valeur possible : Statue, Ground,  QuickMac, Forest...
         self.choixDensification.set("C3DC")                     # valeur possible : C3DC ou MALT
         
-    # Calibration par points GPS 
+    # Calibration par points GCP 
 
-        self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant)
+        self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
         self.idPointGPS                 =   0				# identifiant des points, incrémenté de 1 a chaque insertion
-        self.dicoPointsGPSEnPlace       =   dict()                      # dictionnaire des points GPS placés dans les photos (créé par la classe CalibrationGPS)
+        self.dicoPointsGPSEnPlace       =   dict()                      # dictionnaire des points GCP placés dans les photos (créé par la classe CalibrationGPS)
         self.listeWidgetGPS             =   str()                       # liste des widgets pour la saisie
 
     # et mise à l'échelle
     
         self.dicoLigneHorizontale       =   dict()                      # les deux points de la ligne horizontale              
         self.dicoLigneVerticale         =   dict()                      # les 2 points décrivant une ligne 
-        self.planProvisoireHorizontal   =   "planHorizontal.tif"
+        self.planProvisoireHorizontal   =   "planHorizontal.tif"        # nom du fichier masque plan
         self.planProvisoireVertical     =   "planVertical.tif"
+        self.savePlanH                  =   "savePlanH"                 # sauvegarde utile si abandon
+        self.savePlanV                  =   "savePlanV"
         self.distance.set("")
         self.dicoCalibre                =   dict()                      # les 2 points décrivant un segment de longueur donnée sur 2 photos
 
-    # affichage des points gps ou distance dans la boite de dialogue de visu:saisie des photos
+    # affichage des points GCP ou distance dans la boite de dialogue de visu:saisie des photos
 
         self.dicoPointsAAfficher        =   None                        # pour passer l'info à afficherTousLesPointsDuDico (dans choisirUnePhoto)
         
@@ -2663,12 +2680,12 @@ class Interface(ttk.Frame):
                 elif self.etatCalibration!=str():             # calibration incomplète
                     texte = texte+"\n" + _("Mise à l'échelle incomplète :") + "\n"+self.etatCalibration+"\n"   
 
-            # Points GPS
+            # Points GCP
             if self.listePointsGPS:
                 if self.controlePointsGPS():
-                    texte += "\n"+_("Points GPS : Saisie complète, les points seront pris en compte") + "\n"
+                    texte += "\n"+_("Points GCP : Saisie complète, les points seront pris en compte") + "\n"
                 else:
-                    texte += "\n"+_("Points GPS : Saisie incomplète, les points ne seront pas pris en compte") + "\n"                    
+                    texte += "\n"+_("Points GCP : Saisie incomplète, les points ne seront pas pris en compte") + "\n"                    
                     
             # C3DC est-il installé ?
 
@@ -2835,10 +2852,10 @@ class Interface(ttk.Frame):
     def afficherLesPointsGPS(self):
         photosAvecPointsGPS = [ e[1] for e in self.dicoPointsGPSEnPlace.keys() ]    # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
         if photosAvecPointsGPS.__len__()==0:
-            self.encadre(_("Aucun point GPS saisi."))
+            self.encadre(_("Aucun point GCP saisi."))
             return
         self.choisirUnePhoto(photosAvecPointsGPS,
-                             titre=_('Affichage des photos avec points GPS'),
+                             titre=_('Affichage des photos avec points GCP'),
                              mode='single',
                              message=_("seules les photos avec points sont montrées."),
                              messageBouton=_("Fermer"),
@@ -3386,7 +3403,7 @@ class Interface(ttk.Frame):
             return            
 
 
-##        # si des points GPS placés sur d'anciennes photos : vont-ils être supprimés ?
+##        # si des points GCP placés sur d'anciennes photos : vont-ils être supprimés ?
 ##        
 ##        NbPointsSupprimes = int()
 ##        if self.dicoPointsGPSEnPlace.__len__()>0:
@@ -3396,7 +3413,7 @@ class Interface(ttk.Frame):
 ##                if e not in photosChoisies:
 ##                    NbPointsSupprimes+=1        # le compte n'y est pas (si positif)
 ##            if NbPointsSupprimes>0:
-##                if self.troisBoutons(_("ATTENTION !"),_("ATTENTION : des points GPS ont été précedemment placés sur des photos non choisies pour ce chantier.") + "\n"+
+##                if self.troisBoutons(_("ATTENTION !"),_("ATTENTION : des points GCP ont été précedemment placés sur des photos non choisies pour ce chantier.") + "\n"+
 ##                                         _("Les emplacements de ces points vont être supprimés si vous validez cette sélection de photos."),
 ##                              b1=_('Valider la sélection de photos'),
 ##                              b2=_('Abandonner'))==1:
@@ -3618,7 +3635,7 @@ class Interface(ttk.Frame):
             if retour==0:                                       # 1 : on nettoie, on passe à l'état 2  (b1))
                 self.nettoyerChantier()
 
-            if retour==1:                                       # modifier les options de malt C3DC et points GPS      (b2))
+            if retour==1:                                       # modifier les options de malt C3DC et points GCP      (b2))
                 self.etatDuChantier = 4
 
 
@@ -3682,7 +3699,7 @@ class Interface(ttk.Frame):
         
         # dernier onglet (qui se régénére, forcément le dernier)
 
-        self.optionsReperes()                                       # points GPS, en nombre variable # points de repères calés dans la scène
+        self.optionsReperes()                                       # points GCP, en nombre variable # points de repères calés dans la scène
 
         self.onglets.pack(fill='none', padx=2, pady=0)              # on active la boite à onglet
         self.item450.pack()                                         # et les 2 boutons en bas
@@ -3694,7 +3711,7 @@ class Interface(ttk.Frame):
         self.onglets.pack_forget()      # on ferme la boite à onglets             
         texte = str()
 
-        # on enregistre les options de calibration et de GPS 
+        # on enregistre les options de calibration et de GCP 
         
         self.finCalibrationGPSOK()                                      # mise à jour des options de calibration
         self.finRepereOK()                                              # mise à jour des options de repérage (axe Ox, plan horizontal, distance
@@ -3720,13 +3737,13 @@ class Interface(ttk.Frame):
         if self.dicoPointsGPSEnPlace.__len__()==0:                  # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
             return False
         if self.controlePointsGPS()==False:                         # retour False si problème !
-            self.encadre(_("Points GPS non conformes. Nom est absent ou en double. Vérifiez."))
+            self.encadre(_("Points GCP non conformes. Nom est absent ou en double. Vérifiez."))
             return False
         
         oschdir(self.repTravail)
-        with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: # écriture de la description de chaque point GPS
+        with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: # écriture de la description de chaque point GCP
             infile.write(self.dicoAppuisDebut)
-            for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant)
+            for Nom,X,Y,Z,num,ident,incertitude in self.listePointsGPS:        # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
                 point=self.dicoAppuis1Point.replace(_("Nom"),Nom)
                 point=point.replace("X",X)
                 point=point.replace("Y",Y)
@@ -3772,18 +3789,18 @@ class Interface(ttk.Frame):
         if self.repTravail==self.repertoireData:    # si pas de chantier, pas de problème mais retour False :  pas de calibration
             return False
 
-        # listePointsGPS : liste de (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant, incertitude)
+        # listePointsGPS : liste de (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant, incertitude)
         listePointsActifs = [f[0] for f in self.listePointsGPS if f[4] and f[0]!=""]
       
         # ICI : on pourrait controler que les x,y,z et incertitudes sont bien des valeurs numériques    
         if len(listePointsActifs)==0:
-            self.etatPointsGPS += _("Pas de points GPS.") + "\n"
+            self.etatPointsGPS += _("Pas de points GCP.") + "\n"
             return False
         
         if listePointsActifs:
             # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y            
-            self.etatPointsGPS = ("\n" + _("%s points GPS placés") % (str(len(self.dicoPointsGPSEnPlace))) + "\n"  +       
-                                  _("pour %s points GPS définis") % (str(len(listePointsActifs)))) + "\n" 
+            self.etatPointsGPS = ("\n" + _("%s points GCP placés") % (str(len(self.dicoPointsGPSEnPlace))) + "\n"  +       
+                                  _("pour %s points GCP définis") % (str(len(listePointsActifs)))) + "\n" 
             if len(listePointsActifs)<3:
                  self.etatPointsGPS += _("Attention : il faut au moins 3 points pour qu'ils soient pris en compte.") + "\n"
                  retour = False
@@ -3804,7 +3821,7 @@ class Interface(ttk.Frame):
             ############################################
             
             if self.pointsPlacesDeuxFoisOuPlus.__len__()<3:
-                 self.etatPointsGPS += _("Il n'y a pas 3 points placés sur 2 photos : les points GPS seront ignorés.")+"\n"
+                 self.etatPointsGPS += _("Il n'y a pas 3 points placés sur 2 photos : les points GCP seront ignorés.")+"\n"
                  retour = False
             if self.pointsPlacesUneFois.__len__()>1:
                  self.etatPointsGPS += _("Anomalie : les points suivants ne sont placés que sur une seule photo : ")+"\n"+\
@@ -3817,10 +3834,10 @@ class Interface(ttk.Frame):
 
         xyz = [(f[1],f[2],f[3]) for f in self.listePointsGPS if f[4] and f[0]!=""]
         if xyz.__len__()!=set(xyz).__len__():
-            self.etatPointsGPS+=_("Attention : plusieurs points GPS ont les mêmes coordonnées.") + "\n"
+            self.etatPointsGPS+=_("Attention : plusieurs points GCP ont les mêmes coordonnées.") + "\n"
 
         if retour==False:
-            self.etatPointsGPS+=_("Saisie incomplète : les points GPS ne seront pas pris en compte") + "\n"
+            self.etatPointsGPS+=_("Saisie incomplète : les points GCP ne seront pas pris en compte") + "\n"
 
         return retour
                          
@@ -4476,7 +4493,7 @@ class Interface(ttk.Frame):
             
     #""""""""""""""""""""""" Options de CalibrationGPS : faire correspondre des points (x,y,z) numérotés de 1 à N, avec des pixels des images.
 
-    def optionsReperes(self):				        # en entrée : self.listePointsGPS qui comporte la liste des points GPS a affiche, sauvegardée        
+    def optionsReperes(self):				        # en entrée : self.listePointsGPS qui comporte la liste des points GCP a affiche, sauvegardée        
 
         try: self.item650.destroy()				# suppression de l'onglet s'il existait
         except: pass
@@ -4491,18 +4508,18 @@ class Interface(ttk.Frame):
         
         self.item670 = ttk.Frame(self.item650,relief='sunken')
         texte = _("3 points doivent être placés sur au moins 2 photos") + "\n"
-        texte+= _("Les points GPS sont prioritaires sur la mise à l'échelle.\n")
+        texte+= _("Les points GCP sont prioritaires sur la mise à l'échelle.\n")
         self.item671=ttk.Label(self.item670,text=texte,justify='left')
         self.item671.pack(pady=1,padx=5,ipady=1,ipadx=1,fill="y")        
         self.item670.pack(side='top',pady=5,padx=5)
 
-        # demande info globale pour Campari : erreur orientation cible gps et pixel image
+        # demande info globale pour Campari : erreur orientation cible GCP et pixel image
         
         self.item672 = ttk.Frame(self.item650,height=10,relief='sunken')        
-        self.item673 = ttk.Label(self.item672,text=_('CAMPARI : incertitude cible GPS :'))        
-        self.item674 = ttk.Entry(self.item672,textvariable=self.incertitudeCibleGPS)          # incertitude globale cible GPS
+        self.item673 = ttk.Label(self.item672,text=_('CAMPARI : incertitude cible GCP :'))        
+        self.item674 = ttk.Entry(self.item672,textvariable=self.incertitudeCibleGPS)          # incertitude globale cible GCP
         self.item675 = ttk.Label(self.item672,text=_('incertitude pixel image :'))        
-        self.item676 = ttk.Entry(self.item672,textvariable=self.incertitudePixelImage)          # incertitude globale cible GPS
+        self.item676 = ttk.Entry(self.item672,textvariable=self.incertitudePixelImage)          # incertitude globale cible GCP
         self.item673.pack(side="left",pady=5,padx=5,ipady=1,ipadx=1)
         self.item674.pack(side="left")
         self.item675.pack(side="left")
@@ -4536,7 +4553,7 @@ class Interface(ttk.Frame):
         self.listePointsGPS.sort(key=lambda e: e[0])                                    # tri par ordre alpha du nom
 
         for n,x,y,z,actif,ident,incertitude in self.listePointsGPS:			# affichage de tous les widgets nom,x,y,z,actif ou supprimé (booléen), identifiant
-            if actif:                                                                   # listePointsGPS : liste de tuples (nom du point, x gps, y gps, z gps, booléen actif ou supprimé, identifiant)
+            if actif:                                                                   # listePointsGPS : liste de tuples (nom du point, x GCP, y GCP, z GCP, booléen actif ou supprimé, identifiant)
                 self.affichePointCalibrationGPS(n,x,y,z,ident,incertitude)		# ajoute une ligne d'affichage
 
         self.item680.pack()
@@ -4548,8 +4565,8 @@ class Interface(ttk.Frame):
         # placer l'onglet vant l'onglet "Densification"
  
         placeDensification = self.onglets.index("end")-1        # Densification est le dernier onglet
-        self.onglets.add(self.item650, text="Points GPS")
-        self.onglets.insert(self.item650, placeDensification)   # affichage onglet Points GPS en avant dernière position
+        self.onglets.add(self.item650, text="Points GCP")
+        self.onglets.insert(self.item650, placeDensification)   # affichage onglet Points GCP en avant dernière position
 		
     def affichePointCalibrationGPS(self,n,x,y,z,ident,incertitude):             # affiche un point
         
@@ -4567,7 +4584,7 @@ class Interface(ttk.Frame):
 				   )
         
         self.listeWidgetGPS[-1][0].pack(side='top')
-        if self.onglets.tab(self.onglets.select(), "text")=="Points GPS" and not self.listeWidgetGPS[-1][0].winfo_viewable():           
+        if self.onglets.tab(self.onglets.select(), "text")=="Points GCP" and not self.listeWidgetGPS[-1][0].winfo_viewable():           
             self.item650.configure(height=int(self.item650.cget('height'))+2)
 
         self.listeWidgetGPS[-1][1].pack(side='left',padx=5)
@@ -4585,28 +4602,28 @@ class Interface(ttk.Frame):
                                         
 
     def ajoutPointCalibrationGPS(self):
-        if self.onglets.tab(self.onglets.select(), "text")=="GPS" and not self.item452.winfo_viewable():                       # controle la visibilité des boutons " valider les options" et "annuler"
-            self.infoBulle(_("Agrandissez la fenêtre avant d'ajouter un point GPS !") + "\n" + _("(ou si impossible : supprimer un point)"))
+        if self.onglets.tab(self.onglets.select(), "text")=="GCP" and not self.item452.winfo_viewable():                       # controle la visibilité des boutons " valider les options" et "annuler"
+            self.infoBulle(_("Agrandissez la fenêtre avant d'ajouter un point GCP !") + "\n" + _("(ou si impossible : supprimer un point)"))
             return
         self.actualiseListePointsGPS()
         if [ e[0] for e in self.listePointsGPS if e[4]].__len__()>=30:                     
-            self.infoBulle(_("Soyez raisonnable : pas plus de 30 points GPS !"))
+            self.infoBulle(_("Soyez raisonnable : pas plus de 30 points GCP !"))
             return
         nom = chr(65+self.listePointsGPS.__len__())
-        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS,"1 1 1"])     # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant,incertitude)
+        self.listePointsGPS.append([nom,"","","",True,self.idPointGPS,"1 1 1"])     # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant,incertitude)
         self.idPointGPS += 1						    # identifiant du point suivant
         self.optionsReperes()						    # affichage avec le nouveau point
         self.onglets.select(self.item650)                    		    # active l'onglet (il a été supprimé puis recréé par optionsReperes)  
         self.actualiseListePointsGPS()
         
-    def supprPointsGPS(self):       # Suppression des points GPS
+    def supprPointsGPS(self):       # Suppression des points GCP
         try: self.bulle.destroy()
         except: pass        
         if self.listePointsGPS.__len__()==0:                # pas de points : on sort
             self.infoBulle(_("Aucun point à supprimer !"))
             return
 						
-        self.actualiseListePointsGPS()                      # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant)
+        self.actualiseListePointsGPS()                      # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
         listeIdentifiants = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] ] # liste des noms,identifiants si point non supprimé
 
         self.messageSiPasDeFichier = 0                                           #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
@@ -4638,13 +4655,13 @@ class Interface(ttk.Frame):
         self.optionsReperes()
         self.onglets.select(self.item650)                   # active l'onglet (il a été supprimé puis recréé par optionsReperes) 
         
-    def actualiseListePointsGPS(self):                      # actualise les valeurs saisies pour les points GPS
-        # n'éxécuter que s'il y a eu saisie de points gps : self.listeWidgetGPS existe !
+    def actualiseListePointsGPS(self):                      # actualise les valeurs saisies pour les points GCP
+        # n'éxécuter que s'il y a eu saisie de points GCP : self.listeWidgetGPS existe !
         try: self.bulle.destroy()
         except: pass
         dico = dict(self.dicoPointsGPSEnPlace)              # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
         for a,nom,x,y,z,ident,incertitude in self.listeWidgetGPS:
-            for i in self.listePointsGPS:                   # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant)
+            for i in self.listePointsGPS:                   # listePointsGPS : 6-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
                 if i[5] == ident:
                     self.listePointsGPS.remove(i)
                     i[0] = nom.get()
@@ -4657,14 +4674,14 @@ class Interface(ttk.Frame):
                     
                 for e,v in dico.items():
 
-                    if e[2]==i[5] and i[0]!=e[0]:           # l'identifiant du point placé = identifiant du point gps mais le nom du point est différent
+                    if e[2]==i[5] and i[0]!=e[0]:           # l'identifiant du point placé = identifiant du point GCP mais le nom du point est différent
                                                             # cela signifie que l'utilisateur à modifié le nom
                         self.dicoPointsGPSEnPlace[(i[0],e[1],e[2])] = v  # ajout d'une entrée quicorrige cette anomalie (on devrait utiliser l'identifiant...)
                         try:
                             del self.dicoPointsGPSEnPlace[e]  # suppression de l'ancienne entrée
                         except: pass
 
-                    if e[2]==i[5] and i[4]==False:          # si l'identifiant est identique et le point GPS supprimé alors on supprime le point placé
+                    if e[2]==i[5] and i[4]==False:          # si l'identifiant est identique et le point GCP supprimé alors on supprime le point placé
                         try:
                             del self.dicoPointsGPSEnPlace[e]
                         except: pass
@@ -4693,11 +4710,15 @@ class Interface(ttk.Frame):
         if self.erreurPointsGPS():
             return
         
-        liste = list ([(n,ident) for n,x,y,z,actif,ident,incertitude in self.listePointsGPS if actif])    # listePointsGPS : 7-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant, incertitude)
-        self.messageSiPasDeFichier  = 0                                             #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
+        liste = list ([(n,ident) for n,x,y,z,actif,ident,incertitude in self.listePointsGPS if actif])    # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant, incertitude)
+        if not liste:
+            self.infoBulle(_("Définir au moins un point avant de le placer."))
+            return
+        
+        self.messageSiPasDeFichier  = 0                         #  pour affichage de message dans choisirphoto, difficile a passer en paramètre
         self.choisirUnePhoto(
                              self.photosAvecChemin,
-                             message=_("Choisir une photo pour placer les points GPS : "),
+                             message=_("Choisir une photo pour placer les points GCP : "),
                              mode='single',
                              dicoPoints=self.dicoPointsGPSEnPlace)          # dicoPointsGPSEnPlace key = (nom point, photo, identifiant), value = (x,y)
         self.messageSiPasDeFichier  = 1
@@ -4713,16 +4734,15 @@ class Interface(ttk.Frame):
                                       liste,                                                            # liste des identifiants en "string" des points
                                       self.dicoPointsGPSEnPlace,                                        # les points déjà placés key = nom point, photo, identifiant
                                       )                                                                 # value = x,y
-        try:
+        if self.calibre:
             self.dicoPointsGPSEnPlace = self.calibre.dicoPointsJPG                                     # si pas de retour !
-        except:
-            pass
+            self.placerPointsGPS()
         
-    def erreurPointsGPS(self):          # regarde si la liste des points GPS comporte une erreur : nom absent ou en double, retourne True si erreur
+    def erreurPointsGPS(self):          # regarde si la liste des points GCP comporte une erreur : nom absent ou en double, retourne True si erreur
         try: self.bulle.destroy()
         except: pass
         texte = str()
-        ensemble=set(e[0] for e in self.listePointsGPS if e[4])     # listePointsGPS : 6-tuples (nom du point, x, y et z gps, booléen actif ou supprimé, identifiant, incertitude)
+        ensemble=set(e[0] for e in self.listePointsGPS if e[4])     # listePointsGPS : 6-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant, incertitude)
         liste=list(e[0] for e in self.listePointsGPS if e[4])
         if ensemble.__len__()!=liste.__len__():
             texte = _("Impossible : des points portent le même nom : modifier ou supprimer !")
@@ -4746,16 +4766,16 @@ class Interface(ttk.Frame):
         if self.erreurPointsGPS():                      # erreur : nom en double ou point sans nom, affiche une info bulle, retourne True si pb
             return                 
 
-        if self.controlePointsGPS()==False:               # les points GPS sont assez nombreux et présents sur assez de photos, retourne False si Pb
-            self.infoBulle(_("Points GPS non conformes :") + "\n"+self.etatPointsGPS)            
+        if self.controlePointsGPS()==False:               # les points GCP sont assez nombreux et présents sur assez de photos, retourne False si Pb
+            self.infoBulle(_("Points GCP non conformes :") + "\n"+self.etatPointsGPS)            
             return
         
         if self.finCalibrationGPSOK()==False:          # création des fichiers xml qui vont bien (dicoAppuis, mesureAppuis) return False si problème
-            self.infoBulle(_("Points GPS non conformes :") + "\n"+self.etatPointsGPS)
+            self.infoBulle(_("Points GCP non conformes :") + "\n"+self.etatPointsGPS)
             return
       
         self.infoBulle(_("Patienter :") + "\n" + _("le nuage est en cours de calibration"))
-        self.lanceBascule()                 # calibration suivant les points GPS
+        self.lanceBascule()                 # calibration suivant les points GCP
         
        # Apericloud  crée le nuage 3D des points homologues puis visualisation :
         
@@ -4787,7 +4807,6 @@ class Interface(ttk.Frame):
         # en retour une liste : self.selectionPhotosAvecChemin        
 
         if self.selectionPhotosAvecChemin.__len__()==0:
-            print("pas de photos choisie")
             return
         self.dicoLigneVerticale = dict()                        # on efface le dico vertical (l'un ou l'autre)              
         horizonVierge = dict()
@@ -4855,10 +4874,10 @@ class Interface(ttk.Frame):
             self.infoBulle(_("Choisir d'abord les photos du chantier."))
             return  
         self.messageSiPasDeFichier  = 0
-        if self.planProvisoireVertical=="planVertical.tif":
-            bulles = {self.monImage_MaitrePlan:_("Plan vertical")}
-        else:
-            bulles = {self.monImage_MaitrePlan:_("Plan horizontal")}            
+        if os.path.exists(self.planProvisoireVertical):   
+            bulles = {self.monImage_MaitrePlan:_("Plan vertical sur cette photo")}
+        if os.path.exists(self.planProvisoireHorizontal):   
+            bulles = {self.monImage_MaitrePlan:_("Plan horizontal sur cette photo")}             
         self.choisirUnePhoto(
                              self.photosAvecChemin,
                              message=_("Une photo pour placer le plan vertical : "),
@@ -4870,26 +4889,24 @@ class Interface(ttk.Frame):
 
         if self.selectionPhotosAvecChemin.__len__()==0:
             return
-        
-        self.planProvisoireHorizontal = str()        #un seul plan : le dernier
-        self.planProvisoireVertical = str()
-        
-        self.planProvisoireVertical = "planVertical.tif" #os.path.splitext(self.selectionPhotosAvecChemin[0])+"_planvertical.tif"     # Nom du fichier masque, à partir du fichier maître, imposé par micmac
+        self.saveAvantPlan()    # en cas d'abandon par l'utilisateur permet de restaurer l'état initial       
         self.monImage_MaitrePlan = self.selectionPhotosAvecChemin[0]
         self.planV = TracePolygone(fenetre,
                                    self.monImage_MaitrePlan,
                                    self.planProvisoireVertical,
                                    labelBouton=_("Délimiter un plan vertical"))                                       # L'utilisateur peut tracer le masque sur l'image maitre 
+        if not self.planV.polygone:
+            self.restaurePlan()
 
     def planHorizontal(self):
         if self.photosAvecChemin.__len__()==0:
             self.infoBulle(_("Choisir d'abord les photos du chantier."))
             return       
         self.messageSiPasDeFichier  = 0
-        if self.planProvisoireVertical=="planVertical.tif":
-            bulles = {self.monImage_MaitrePlan:_("Plan vertical")}
-        else:
-            bulles = {self.monImage_MaitrePlan:_("Plan horizontal")}          
+        if os.path.exists(self.planProvisoireVertical):   
+            bulles = {self.monImage_MaitrePlan:_("Plan vertical sur cette photo")}
+        if os.path.exists(self.planProvisoireHorizontal):   
+            bulles = {self.monImage_MaitrePlan:_("Plan horizontal sur cette photo")}          
         self.choisirUnePhoto(
                              self.photosAvecChemin,
                              message=_("Une photo pour placer le plan horizontal : "),
@@ -4901,16 +4918,25 @@ class Interface(ttk.Frame):
 
         if self.selectionPhotosAvecChemin.__len__()==0:
             return
-        
-        self.planProvisoireHorizontal = str()    #un seul plan : le dernier
-        self.planProvisoireVertical = str()
-        
-        self.planProvisoireHorizontal = "planHorizontal.tif" # os.path.splitext(self.selectionPhotosAvecChemin[0])+"_planhorizontal.tif"     # Nom du fichier masque, à partir du fichier maître, imposé par micmac
+        self.saveAvantPlan()        # en cas d'abandon par l'utilisateur permet de restaurer l'état initial  
         self.monImage_MaitrePlan = self.selectionPhotosAvecChemin[0]
         self.planH = TracePolygone(fenetre,
                                    self.monImage_MaitrePlan,
                                    self.planProvisoireHorizontal,
                                    labelBouton=_("Délimiter un plan horizontal"))                                       # L'utilisateur peut tracer le masque sur l'image maitre 
+        if not self.planH.polygone:
+            self.restaurePlan()
+            
+    def saveAvantPlan(self):
+        self.saveMaitre = str(self.monImage_MaitrePlan)
+        if os.path.exists(self.planProvisoireHorizontal): (os.replace(self.planProvisoireHorizontal,self.savePlanH))
+        if os.path.exists(self.planProvisoireVertical): (os.replace(self.planProvisoireVertical,self.savePlanV))
+                                                         
+    def restaurePlan(self):
+        self.monImage_MaitrePlan = str(self.saveMaitre)
+        if os.path.exists(self.savePlanH): (os.replace(self.savePlanH,self.planProvisoireHorizontal))
+        if os.path.exists(self.savePlanV): (os.replace(self.savePlanV,self.planProvisoireVertical))
+
         
     def placer2Points(self):
         if self.photosAvecChemin.__len__()==0:
@@ -5222,7 +5248,7 @@ class Interface(ttk.Frame):
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
             return
 
-        # Si un fichier de calibration par axe plan et métrique est valide on lance apero, même s'il y a une calibration par points GPS (sera bon si GPS échoue)
+        # Si un fichier de calibration par axe plan et métrique est valide on lance apero, même s'il y a une calibration par points GCP (sera bon si GCP échoue)
 
         if self.controleCalibration():              # calibration OK = True
                 self.lanceApero()
@@ -5231,12 +5257,12 @@ class Interface(ttk.Frame):
                 self.ajoutLigne(heure()+_("Calibration incomplète : ")+self.etatCalibration)
 
 
-        # calibrage de l'orientation suivant des points GPS, un axe ox, un plan déterminé par un masque
+        # calibrage de l'orientation suivant des points GCP, un axe ox, un plan déterminé par un masque
         # si il existe un fichier XML de points d'appuis : self.mesureAppuis
               
         if os.path.exists(self.mesureAppuis):
             
-            self.lanceBascule()         # des points GPS : on calibre dessus, cela remplace la calibration précédente
+            self.lanceBascule()         # des points GCP : on calibre dessus, cela remplace la calibration précédente
             
 
         # troisième module : Apericloud  crée le nuage 3D des points homologues puis visualisation :
@@ -5303,7 +5329,7 @@ class Interface(ttk.Frame):
             self.encadre(ligne)
             return
                
-        # calibrage de l'orientation suivant des points GPS (possiblement modifiés après tapas)
+        # calibrage de l'orientation suivant des points GCP (possiblement modifiés après tapas)
         # si il existe un fichier XML de points d'appuis : self.mesureAppuis
               
         if os.path.exists(self.mesureAppuis):
@@ -5676,7 +5702,7 @@ class Interface(ttk.Frame):
     # l'orientation en entrée est soit :
     #  - Arbitrary (pas de calibration)
     #  - echelle3 (calibration par axe plan et métrique
-    #  - bascul (calibration par points gps)
+    #  - bascul (calibration par points GCP)
     
     def lanceApericloud(self):
            
@@ -5724,11 +5750,11 @@ class Interface(ttk.Frame):
                     "Arbitrary"]                 
         self.lanceCommande(tarama)
         
-    # ------------------ GCPBascule : utilise les points GPS-----------------------    
+    # ------------------ GCPBascule : utilise les points GCP-----------------------    
 
     def lanceBascule(self):             # une alternative est Campari
 
-        self.ajoutLigne("\n\n---------------------------\n" + _("Prise en compte des points GPS : nécessite au minimum 3 points, chacun sur 2 photos") + "\n")
+        self.ajoutLigne("\n\n---------------------------\n" + _("Prise en compte des points GCP : nécessite au minimum 3 points, chacun sur 2 photos") + "\n")
         if len(self.dicoPointsGPSEnPlace)<6:
             self.ajoutLigne("\n" + _("Le nombre minimum de points placés sur les photos n'est pas atteint. Abandon.") + "\n")
             return
@@ -5736,7 +5762,7 @@ class Interface(ttk.Frame):
                         "GCPBascule",
                         '.*'+self.extensionChoisie,
                         "Arbitrary",                        # orientation obtenue après tapas, nuage non densifié
-                        "bascul",                           # Orientation calibrée par les points GPS, utilisé par Malt ou C3DC
+                        "bascul",                           # Orientation calibrée par les points GCP, utilisé par Malt ou C3DC
                         os.path.basename(self.dicoAppuis),                             
                         os.path.basename(self.mesureAppuis)]
         self.lanceCommande(GCPBascule,
@@ -5759,21 +5785,21 @@ class Interface(ttk.Frame):
             float(self.incertitudePixelImage.get())
         except Exception as e:
             self.ajoutLigne("\n" + _("Campari non lancé : paramètres incorrects : ") + "\n"+
-                            "incertitude sur cible gps : "+self.incertitudeCibleGPS.get() + "\n"+
+                            "incertitude sur cible GCP : "+self.incertitudeCibleGPS.get() + "\n"+
                             "incertitude sur pixel image : "+self.incertitudePixelImage.get() + "\n"+                            
                             str(e))            
             return
-        if not os.path.exists(os.path.join(self.repTravail,"Ori-bascul")):      # orientation obtenue après Tapas et GCPbascule (points GPS OK)
+        if not os.path.exists(os.path.join(self.repTravail,"Ori-bascul")):      # orientation obtenue après Tapas et GCPbascule (points GCP OK)
             self.ajoutLigne("\n" + _("Campari non lancé : pas d'orientation 'bascul'") + "\n")            
             return
         
-        self.ajoutLigne("\n\n---------------------------\n" + _("Campari : correction points GPS") + "\n")
+        self.ajoutLigne("\n\n---------------------------\n" + _("Campari : correction points GCP") + "\n")
     # Campari "MyDir\IMG_.*.jpg" OriIn OriOut GCP=[GroundMeasures.xml,0.1,ImgMeasures.xml,0.5]
         campari = [  self.mm3d,
                         "campari",
                         '.*'+self.extensionChoisie,
                         "bascul",                        # orientation obtenue après tapas, nuage non densifié
-                        "campari",                       # Orientation calibrée par les points GPS, utilisé par Malt ou C3DC
+                        "campari",                       # Orientation calibrée par les points GCP, utilisé par Malt ou C3DC
                         "GCP=["+os.path.basename(self.dicoAppuis)+","+self.incertitudeCibleGPS.get()+","+os.path.basename(self.mesureAppuis)+","+self.incertitudePixelImage.get()+"]"]
         self.lanceCommande(campari,
                            filtre=self.filtreCampari)
@@ -5912,9 +5938,9 @@ class Interface(ttk.Frame):
                     del self.dicoCalibre[key]
 
 
-        #Points GPS
+        #Points GCP
         # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
-        # Suppression des points GPS placés sur des photos non choisies dans le nouveau choix
+        # Suppression des points GCP placés sur des photos non choisies dans le nouveau choix
         # l'utilisateur a été prévenu
         
         if self.dicoPointsGPSEnPlace.__len__()>0:
@@ -6672,7 +6698,7 @@ class Interface(ttk.Frame):
     def ajoutPointsGPSAutreChantier(self):
         
         self.menageEcran()
-        bilan = self.choisirUnChantier(_("Choisir le chantier pour ajouter les points gps."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
+        bilan = self.choisirUnChantier(_("Choisir le chantier pour ajouter les points GCP."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
             self.afficheEtat(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
             return   
@@ -6686,15 +6712,15 @@ class Interface(ttk.Frame):
                 dicoPointsGPSEnPlace       =   r[20]         
                 idPointGPS                 =   r[23]
 
-                # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GPS
-                # passage vers la version 2.60 de la liste des points GPS (un item de plus dans le tuple)
+                # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
+                # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
     
                 if listePointsGPS.__len__()>0:
                     if listePointsGPS[0].__len__()==6:
                         listePointsGPS = [[a,nom,x,y,z,ident,"10 10 10"] for a,nom,x,y,z,ident in listePointsGPS]                
             except Exception as e:
                 self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin))                
-                print(_("Erreur restauration points GPS : "),str(e))
+                print(_("Erreur restauration points GCP : "),str(e))
                 return
         else:
             self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin))            
@@ -6702,8 +6728,8 @@ class Interface(ttk.Frame):
         
         # 3 variables : self.dicoPointsGPSEnPlace, self.listePointsGPS et self.idPointGPS pour le chantier en cours et idem (sans self.) pour le chantier a ajouter
         # dicoPointsGPSEnPlace key = nom du point, photo, identifiant, value = x,y
-        # listePointsGPS : 7-tuples (  nom du point, x, y et z gps, booléen actif ou supprimé, identifiant,incertitude)
-        # idPointGPS : entier, identifiant du dernier point GPS 
+        # listePointsGPS : 7-tuples (  nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant,incertitude)
+        # idPointGPS : entier, identifiant du dernier point GCP 
         
         # 1) Modifier la clé du dico lu : chemin de la photo et identifiant par ajout de la valeur de self.idPointGPS
         # si la photo existe alors ajout dans le dico du chantier en cours       
@@ -6717,7 +6743,7 @@ class Interface(ttk.Frame):
                 self.dicoPointsGPSEnPlace[nouveauNom,nouvellePhoto,nouvelId] = dicoPointsGPSEnPlace[nom,photo,identifiant]  # la photo existe, on ajoute au dico des points en place l'identifiant change
                 
 
-        # 2) Modifier la liste des points GPS : identifiant pat ajout de la valeur de self.idPointGPS, éviter les noms en double
+        # 2) Modifier la liste des points GCP : identifiant pat ajout de la valeur de self.idPointGPS, éviter les noms en double
         nbAjout = 0
         for nom,b,c,d,e,identifiant,g in listePointsGPS:
             nouvelId = identifiant + self.idPointGPS
@@ -6734,12 +6760,12 @@ class Interface(ttk.Frame):
 
         self.optionsReperes()
 
-        # Affichage de l'état du chantier avec les nouveaux points GPS
+        # Affichage de l'état du chantier avec les nouveaux points GCP
 
-        self.encadre (str(nbAjout)+_(" points GPS ajoutés."))            
+        self.encadre (str(nbAjout)+_(" points GCP ajoutés."))            
 
 
-    # Ajout de points GPS à partir d'un fichier de points : format =
+    # Ajout de points GCP à partir d'un fichier de points : format =
         # #F=N X Y Z Ix Iy Iz
         # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01 
     
@@ -6747,7 +6773,7 @@ class Interface(ttk.Frame):
 
         self.menageEcran()
 
-        fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GPS : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
+        fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GCP : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
                                                   filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
                                                   multiple=False)
         
@@ -6773,11 +6799,11 @@ class Interface(ttk.Frame):
 
         self.optionsReperes()
         
-        # Affichage de l'état du chantieravec les nouveaux points GPS
+        # Affichage de l'état du chantieravec les nouveaux points GCP
 
-        self.encadre (str(nbAjout)+_(" points GPS ajoutés."))            
+        self.encadre (str(nbAjout)+_(" points GCP ajoutés."))            
         if nbAjout>15:
-           self.encadre (str(nbAjout)+_(" points GPS ajoutés : c'est beaucoup, sans doute trop (pb affichage options GPS)")) 
+           self.encadre (str(nbAjout)+_(" points GCP ajoutés : c'est beaucoup, sans doute trop (pb affichage options GCP)")) 
 
     def longueurPrefixe(self):
         new = MyDialog(fenetre,_("Longueur du préfixe actuelle %s")%(self.nbCaracteresDuPrefixe),
@@ -6905,7 +6931,7 @@ class Interface(ttk.Frame):
                 _("            Visualiser les maitresses et les masques   : visualise les masques 2D pour la densification Malt/géoimage.") + "\n"+\
                 _("            Visualiser le masque sur mosaïque TARAMA   : visualise le masque défini sur la mosaïque TARAMA.") + "\n"+\
                 _("            Visualiser le masque 3D                    : visualise le masque 3D pour la densification C3DC") + "\n"+\
-                _("            Visualiser les points GPS                  : visu des seules photos avec points GPS.") + "\n"+\
+                _("            Visualiser les points GCP                  : visu des seules photos avec points GCP.") + "\n"+\
                 "\n"+\
                 _("            Visualiser la ligne horizontale/verticale  : visualise le repère Ox ou Oy pour la mise à l'échelle.") + "\n"+\
                 _("            Visualiser la zone plane                   : visualise la zone plane") + "\n"+\
@@ -6930,7 +6956,7 @@ class Interface(ttk.Frame):
                 _("                     le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils)") + "\n\n"+\
                 _("                     2) Si les photos proviennent de plusieurs appareils alors les tags 'model' des exif doivent") + "\n"+\
                 _("                     être différenciés (voir menu Expert)") + "\n\n"+\
-                _("       - Options : choisir les options des modules Tapioca, Tapas, GPS (nuage non densifié)  puis de densification : ") + "\n\n"+\
+                _("       - Options : choisir les options des modules Tapioca, Tapas, GCP (nuage non densifié)  puis de densification : ") + "\n\n"+\
                 _("                   Consulter le wiki MicMac pour obtenir de l'info sur les options, par exemple : https://micmac.ensg.eu/index.php/Tapas") + "\n\n"+\
                 _("         Les options suivantes concernent le calcul du nuage de points NON densifié :") + "\n\n"+\
                 _("                    - Points homologues : Tapioca : options et sous options associées (échelles, fichier xml)")+ "\n"+\
@@ -6945,11 +6971,12 @@ class Interface(ttk.Frame):
                 _("                                Produit une image 3D non densifiée avec position des appareils photos.") + "\n\n"+\
                 _("                    - Mise à l'échelle : définir un axe, une zone plane, une distance pour définir le repère du chantier.") + "\n\n"+\
                 _("                                cette mise à l'échelle s'effectue sur le nuage de points homologues") + "\n\n"+\
-                _("                    - GPS : définir les points de calage (coordonnées GPS ou repère local) qui permettent de (géo)localiser la scène.") + "\n"+\
+                _("                    - GCP : Ground Control Point : point de repère marqués sur le terrain, coordonnées repérées localement ou par GPS.") + "\n"+\
+                _("                    - GCP : définir les points de calage qui permettent de (géo)localiser la scène.") + "\n"+\
                 _("                            Une première ligne permet de définir les options du module CAMPARI qui améliore la précision des calculs.") + "\n"+\
-                _("                            Il faut indiquer la précision des cibles GPS (en unité du GPS) et la précision des points images (en pixels).") + "\n"+\
-                _("                            CAMPARI ne sera lancé que si les points GPS sont corrects ainsi que les 2 paramètres ci-dessus.") + "\n\n"+\
-                _("                            Pour être utilisé chaque point GPS, au minimum 3, doit être placé sur au moins 2 photos.") + "\n"+\
+                _("                            Il faut indiquer la précision des cibles GCP (en unité du GCP) et la précision des points images (en pixels).") + "\n"+\
+                _("                            CAMPARI ne sera lancé que si les points GCP sont corrects ainsi que les 2 paramètres ci-dessus.") + "\n\n"+\
+                _("                            Pour être utilisé chaque point GCP, au minimum 3, doit être placé sur au moins 2 photos.") + "\n"+\
                 _("                            Le bouton 'appliquer' permet de calibrer le modèle non densifié immédiatement sur le nuage de points homologues.") + "\n\n"+\
                 _("                    - Densification    : choix du module de densification : C3DC (récent) ou Malt (ancien).") + "\n"+\
                 _("                      - Malt : Si le mode est GeomImage : ") + "\n"+\
@@ -7019,9 +7046,9 @@ class Interface(ttk.Frame):
                 _("menu Expert :") + "\n\n"+\
                 _("       - Ouvrir une console permettant de passer des commandes système et MicMac (mm3d).") + "\n\n"+\
                 _("       - Ouvrir une console permettant de passer des commandes Python (ex. : afficher une variable.") + "\n\n"+\
-                _("       - Insérer de points GPS à partir d'un fichier texte, séparateur espace, format : X Y Z dx dy dz ") + "\n"+\
+                _("       - Insérer de points GCP à partir d'un fichier texte, séparateur espace, format : X Y Z dx dy dz ") + "\n"+\
                 _("         Le caractère # en début de ligne signale un commentaire.") + "\n\n"+\
-                _("       - Recopier des points GPS à partir d'un autre chantier.") + "\n\n"+\
+                _("       - Recopier des points GCP à partir d'un autre chantier.") + "\n\n"+\
                 _("       - Définir plusieurs appareils photos.") + "\n"+\
                 _("         Si le lot de photos provient de plusieurs appareils de même type il faut informer MicMac de cette situation.") + "\n"+\
                 _("         AperoDeDenis propose de modifier le tag 'model' de l'exif des photos :") + "\n"+\
@@ -7101,7 +7128,7 @@ class Interface(ttk.Frame):
                 _("                         Ces conseils ne sont pas toujours vérifiés : modifeir votre choix s'il échoue. ") + "\n"+\
                 _("                         L'arrêt après l'orientation permet de définir un masque 3D, pour la densification par C3DC.") + "\n"       +\
                 _("               - Mise à l'échelle : permet de définir un repère et une métrique (axe, plan et distance, tous obligatoires).") + "\n\n"+\
-                _("               - Points GPS: définir au moins 3 points cotés et les placer sur 2 photos. L'état du chantier indique s'ils sont pris en compte") + "\n\n"+\
+                _("               - Points GCP: définir au moins 3 points cotés et les placer sur 2 photos. L'état du chantier indique s'ils sont pris en compte") + "\n\n"+\
                 _("               - Densification par Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtresses.") + "\n"          +\
                 _("                        Seuls les points visibles sur ces images seront conservés dans le nuage de points.") + "\n"                +\
                 _("                        Sur ces images maîtresses tracer les masque délimitant la partie 'utile' de la photo.") + "\n"+\
@@ -7193,8 +7220,8 @@ class Interface(ttk.Frame):
               "\n" + _("Version 2.30 : ")+\
               chr(9)+_("- Modification des options par défaut dans le menu outils.") + "\n"+\
               "\n" + _("Version 2.40 :")+chr(9)+_("- Choix de l'option (Statue ou QuickMac) pour C3DC. Avril 2016") + "\n"+\
-              "\n" + _("Version 2.45 :")+chr(9)+_("- Référentiel GPS calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.") + "\n"+\
-              chr(9)+chr(9)+_("- Possiblité d'appliquer la calibration GPS sans relancer malt. Mai 2016") + "\n"+\
+              "\n" + _("Version 2.45 :")+chr(9)+_("- Référentiel GCP calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.") + "\n"+\
+              chr(9)+chr(9)+_("- Possiblité d'appliquer la calibration GCP sans relancer malt. Mai 2016") + "\n"+\
               "\n" + _("Version 2.50 :")+chr(9)+_("- Ajout de Tawny après Malt en mode Ortho, désactivation du message de lancement. Juin 2016") + "\n"+\
               "\n" + _("Version 3.00 :")+chr(9)+_("- Version bilingue Français/Anglais. Octobre 2016") + "\n"+\
               "\n" + _("Version 3.10 :")+chr(9)+_("- Choix des N meilleures photos pour un nouveau dossier. Novembre 2016") + "\n"+\
@@ -7204,8 +7231,8 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("- Possibilité de saisir une unité avec la distance.") + "\n"+\
               chr(9)+chr(9)+_("- Lancement de Tapas accéléré : suppression du controle des photos") + "\n"+\
               chr(9)+chr(9)+_("- Les photos autour de la maîtresse pour Malt sont choisies parmi les meilleures en correspondances") + "\n"+\
-              chr(9)+chr(9)+_("- Controle affiné des points GPS, message informatif détaillé") + "\n"+\
-              chr(9)+chr(9)+_("- Possibilité de supprimer UN seul point GPS sur une photo") + "\n"+\
+              chr(9)+chr(9)+_("- Controle affiné des points GCP, message informatif détaillé") + "\n"+\
+              chr(9)+chr(9)+_("- Possibilité de supprimer UN seul point GCP sur une photo") + "\n"+\
               "\n" + _("Version 3.30 :")+chr(9)+_("janvier 2017") + "\n"+\
               chr(9)+chr(9)+_("- Ajout de tarama : création d'une mosaïque après Tapas.") + "\n"+\
               chr(9)+chr(9)+_("- le mode Ortho de Malt utilise la mosaïque tarama, avec masque") + "\n"+\
@@ -7214,7 +7241,7 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("- Ouverture des mosaïques Tarama et Tawny par menu") + "\n"+\
               chr(9)+chr(9)+_("- Ajout d'un menu 'expert' permettant de saisir une ligne de commande.") + "\n"+\
               "\n" + _("Version 3.31 :")+chr(9)+_("février 2017") + "\n"+\
-              chr(9)+chr(9)+_("- Ajout d'un item du menu 'expert' : recopie les points GPS d'un chantier à un autre.") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un item du menu 'expert' : recopie les points GCP d'un chantier à un autre.") + "\n"+\
               "\n" + _("Version 3.34 :")+chr(9)+_("Janvier 2018") + "\n"+\
               chr(9)+chr(9)+_("- Du ménage! permet de conserver les résultats OU de supprimer tout le chantier.") + "\n"+\
               chr(9)+chr(9)+_("- Affichage de la taille du dossier.") + "\n"+\
@@ -7224,11 +7251,11 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("la version suivante 5.0 supprime l'item 'indices surfaciques'.") + "\n"+\
               "\n" + _("Version 5.1 :")+chr(9)+_("décembre 2018") + "\n"+\
               chr(9)+chr(9)+_("- permet d'oublier les photos ayant servies à la calibration de l'appareil pour l'exécution de Tapas.") + "\n"+\
-              chr(9)+chr(9)+_("- insertion d'un fichier texte de points GPS par le menu expert (séparateur espace : nom,x,y,z,dx,dy,dz.") + "\n"+\
+              chr(9)+chr(9)+_("- insertion d'un fichier texte de points GCP par le menu expert (séparateur espace : nom,x,y,z,dx,dy,dz.") + "\n"+\
               chr(9)+chr(9)+_("- affichage des dimensions des photos dans le menu outils/nom de l'appareil photo") + "\n"+\
               chr(9)+chr(9)+_("- Amélioration de libellés de boites de dialogue, suppression du polysème 'calibration'") + "\n"+\
               "\n" + _("Version 5.2 :")+chr(9)+_("janvier 2019") + "\n"+\
-              chr(9)+chr(9)+_("- ajout du modulé CAMPARI après chaque géolocalisation par points GPS (améliore les valeurs des Z).") + "\n"+\
+              chr(9)+chr(9)+_("- ajout du modulé CAMPARI après chaque géolocalisation par points GCP (améliore les valeurs des Z).") + "\n"+\
               chr(9)+chr(9)+_("- répartition des photos provenant de plusieurs appareils par modification du 'model' dans l'exif (menu expert)") + "\n"+\
               chr(9)+chr(9)+_("- affichage des noms des appareils photos présents dans le chantier (menu expert)") + "\n"+\
               chr(9)+chr(9)+_("- affichage du log des traitement MicMac : mm3d-logFile.txt (menu expert)") + "\n"+\
@@ -7255,6 +7282,11 @@ class Interface(ttk.Frame):
               "\n" + _("Version 5.32 - 5.33 :")+chr(9)+_("25 mars 2019") + "\n"+\
               chr(9)+chr(9)+_("- Possibilité de relancer un chantier non terminé en conservant les points homologues.") + "\n"+\
               chr(9)+chr(9)+_("- ajout d'un item au menu expert : modifier la longueur du préfixe utilisé pour définir plusieurs appareils.") + "\n"+\
+              "\n" + _("Version 5.34 :")+chr(9)+_("26 mars 2019, suivant les conseils de Xavier Rolland") + "\n"+\
+              chr(9)+chr(9)+_("- l'affichage des coordonnées en pixels des point GCP devient optionnel.") + "\n"+\
+              chr(9)+chr(9)+_("- Au retour de saisie des points GCP : fenêtre liste des photos.") + "\n"+\
+              chr(9)+chr(9)+_("- remplacement global de GCP par GCP (sauf définition dans l'aide)") + "\n"+\
+              chr(9)+chr(9)+_("- zoom plus important possible sur la fenêtre de saisie des points GCP") + "\n"+\
               "----------------------------------------------------------"
 
         self.cadreVide()
@@ -7534,8 +7566,8 @@ class Interface(ttk.Frame):
             self.lesTagsExif                = r[51]
         except Exception as e: print(_("Erreur restauration param chantier : "),str(e))    
         
-        # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GPS
-        # passage vers la version 2.60 de la liste des points GPS (un item de plus dans le tuple)
+        # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
+        # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
     
         if self.listePointsGPS.__len__()>0:
             if self.listePointsGPS[0].__len__()==6:
@@ -8774,14 +8806,14 @@ class Interface(ttk.Frame):
 
     def orientation(self):                              # définit le répertoire qui contient l'orientation la plus récente : 
                                                         # soit Arbitrary après tapas(même si absent) soit echelle3 après calibration par axe, plan et métrique
-                                                        # soit bascul après calibration par points GPS
+                                                        # soit bascul après calibration par points GCP
                                                         # soit campari après bascul et campari
                                                         
 
         if os.path.exists(os.path.join(self.repTravail,"Ori-campari")):      # orientation obtenue après campari (bascule faite et campari aussi)
             return "campari"
 
-        if os.path.exists(os.path.join(self.repTravail,"Ori-bascul")):      # orientation obtenue après Tapas et GCPbascule (points GPS OK)
+        if os.path.exists(os.path.join(self.repTravail,"Ori-bascul")):      # orientation obtenue après Tapas et GCPbascule (points GCP OK)
             return "bascul"
         
         if os.path.exists(os.path.join(self.repTravail,"Ori-echelle3")):    # # orientation obtenue après Tapas et calibration 
