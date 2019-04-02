@@ -1,6 +1,12 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+version 5.40 01 avril 2019 :
+	modification ergonomie saisies des points GPC, photo suivante/précédente dans fenêtre de saisie
+	corrections de bugs
+	ajout du drapage pour les option quickmac micmac et BigMac de c3dc
+	modification de l'option par défaut de c3dc : BigMac
+	
 version 5.34 suite aux conseils de Xavier Rolland (26/03/19)
 - remplacement global de GPS par GCP = Ground Control Point
 - Au retour de saisie des points GCP : fenêtre liste des photos

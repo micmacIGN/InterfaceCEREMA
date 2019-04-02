@@ -154,6 +154,13 @@
               				- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
               				- prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
               				- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
+			version 5.40 mars 2019 :
+			modification ergonomie saisies des points GPC, photo suivante/précédente dans fenêtre de saisie
+			corrections de bugs
+			ajout du drapage pour les option quickmac micmac et bigmap de c3dc
+			modification de l'option par défaut de c3dc : bigmac
+			
+			
 			
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
