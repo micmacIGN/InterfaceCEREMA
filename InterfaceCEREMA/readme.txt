@@ -1,6 +1,10 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+Version 5.41 4 avril 2019:
+- l'item renommer un chantier remplacé par "Enregistrer sous..." avec un fonctionnement standard (sauf changement d'unité disque)
+- amélioration de la fonction "du ménage", correction d'un bug
+
 version 5.40 01 avril 2019 :
 	modification ergonomie saisies des points GPC, photo suivante/précédente dans fenêtre de saisie
 	corrections de bugs
