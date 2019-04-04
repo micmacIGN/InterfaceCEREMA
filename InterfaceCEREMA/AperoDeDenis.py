@@ -166,9 +166,18 @@
 # - message complété par des conseils si la densification échoue
 # - ajout du drapage pour les options de c3dc : BigMac QuickMac et MicMac
 # - changement d'une option par défaut : C3DC bigmac (avec drapage)
+# Version 5.41 :
+# - suppression d'un bug dans "du ménage" : le nettoyege des chantiers, s'effectuaient sur le chantier en cours uniquement, même s'il n'éatait pas choisi !
+# - affichage de la liste des répertoires supprimés aprés nettoyage par du ménage.
+# - en cas d'absence de répertoire locale et de lancement par le script (sans exe) il y avait plantage (__cached__ non instancié)
+# - SI répertoire locale absent alors on informe direct que la version bilingue n'est pas installée (avent : info après avoir choisi la langue)
+# - l'item renommer un chantier remplacé par "Enregistrer sous..." avec un fonctionnement standard (sauf changeùent d'unité disque)
+# - Si du ménage a été fait le chantier est indiqué comme nettoyé lors de l'ouverture suivante, avec indication dans la trace
+# 
 # reste a faire :
 # choix abandon = valider pour la saisie des lignes horizontale et verticale, a corriger
 # présenter à l'utilisateur les écarts sur les points gcp (bascule et campari) mieux que dans la trace
+# ajouter des indications pour aider à choisir le type de densification Malt ou 3dc
 # le message "débloquer le chantier suite à lancer MicMac est parfois invalide : l chantier est déjà débloqué" !
 # si l'absence de nuage dense est susceptible de correction alors donner le conseil à l'utilisateur (exemple : voir les conseils de l'aide)
 # revoir les pack dans l'apropos (mal placés)
@@ -178,7 +187,7 @@
 # la création d'un nuage dense reste même si des essais ultérieurs foirent : risque de confusion
 ############# Risque : on redéfinit photosAvecChemin et photosSansChemin en gardant le nom !!!! A modifier ligne 5615
 ############# vérifier "supprimer des photos"
-
+# problème ménage : suppression des répertoires
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -282,7 +291,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.40"
+numeroVersion = "5.41"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -307,8 +316,11 @@ if not os.path.isdir(os.path.join(repertoire_script,"locale")):
     if __file__ in globals():
         repertoire_script = os.path.dirname(os.path.abspath(__file__))
 if not os.path.isdir(os.path.join(repertoire_script,"locale")):
-    if __cached__ in globals():
-        repertoire_script = os.path.dirname(os.path.abspath(__cached__))        
+    try:
+        if __cached__ in globals():
+            repertoire_script = os.path.dirname(os.path.abspath(__cached__))
+    except:
+            pass
 if not os.path.isdir(os.path.join(repertoire_script,"locale")):
     repertoire_script = os.getcwd()
 
@@ -1067,8 +1079,8 @@ class Interface(ttk.Frame):
         menuFichier.add_command(label=_("Nouveau chantier"), command=self.nouveauChantier)           
         menuFichier.add_command(label=_("Ouvrir un chantier"), command=self.ouvreChantier)
         menuFichier.add_separator()        
-        menuFichier.add_command(label=_("Enregistrer le chantier en cours"), command=self.enregistreChantierAvecMessage)
-        menuFichier.add_command(label=_("Renommer ou déplacer le chantier en cours"), command=self.renommeChantier)         
+        menuFichier.add_command(label=_("Enregistrer"), command=self.enregistreChantierAvecMessage)
+        menuFichier.add_command(label=_("Enregistrer sous..."), command=self.enregistrerChantierSous)         
         menuFichier.add_separator()
         menuFichier.add_command(label=_("Exporter le chantier en cours"), command=self.exporteChantier)
         menuFichier.add_command(label=_("Importer un chantier"), command=self.importeChantier)         
@@ -2370,7 +2382,7 @@ class Interface(ttk.Frame):
                                 _("Ne pas enregistrer.")) == 0:
                 self.copierParamVersChantier()
                 texte=_("Chantier précédent enregistré : %s") % (self.chantier) + "\n"       
-        bilan = self.choisirUnChantier(_("Choisir un chantier."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
+        bilan = self.choisirUnChantier(_("Choisir un chantier."))        # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
             self.afficheEtat()
             return   
@@ -2396,6 +2408,33 @@ class Interface(ttk.Frame):
         self.copierParamVersChantier()          # on enregistre, ou on réenregistre 
         return True
 
+    def enregistrerChantierSous(self):
+        nouveauRepChantier  = tkinter.filedialog.asksaveasfilename(
+                                                                    initialdir = "/",
+                                                                    title = "Enregistrer chantier sous",
+                                                                    defaultextension="",
+                                                                    initialfile=self.chantier,
+                                                                    parent=fenetre,
+                                                                    filetypes = (("*.","*."),("all files","*.*")))
+        print("nouveauRepChantier=",nouveauRepChantier)
+        if os.path.splitdrive(nouveauRepChantier)[0].upper()!=os.path.splitdrive(self.repTravail)[0].upper():
+            self.encadre(_("Le nouveau répertoire ") + "\n\n" +
+                         nouveauRepChantier + "\n\n" +
+                         _("implique un changement de disque. \nCette version ne permet pas encore ce changement automatiquement.") + "\n" +
+                         _("La prochaine version intégrera cette fonctionalité.\n\n"+
+                         _("Utiliser les item\nFichier/Export puis Fichier/Import\npour exporter puis importer le chantier sur un autre support.")))
+            return
+
+        if os.path.isdir(nouveauRepChantier):       # c'est bien un répertoire
+            self.encadre("répertoire existe, supprimé"+nouveauRepChantier)
+            supprimeRepertoire(nouveauRepChantier)
+        elif os.path.isfile(nouveauRepChantier):       # c'est un fichier
+            self.encadre("fichier existe, supprimé")
+            supprimeFichier(nouveauRepChantier)
+        else: self.encadre("ni fichier ni repertoire existant")
+        self.deplaceChantier(nouveauRepChantier)
+
+            
     def renommeChantier(self):
         self.menageEcran()        
         if self.etatDuChantier==0:
@@ -2438,8 +2477,12 @@ class Interface(ttk.Frame):
                              _("Choisissez un autre nom."))
                 return
         except: pass
+        self.deplaceChantier(nouveauRepertoire)
+
+    def deplaceChantier(self,nouveauRepertoire):
+        nouveauChantier = os.path.basename(nouveauRepertoire)
         self.fermerVisuPhoto()                                                    # fermer tous les fichiers potentiellement ouvert.
-        oschdir(self.repertoireData)                                             # quitter le répertoire courant
+        oschdir(self.repertoireData)                                              # quitter le répertoire courant
         try: self.meshlabExe1.kill()
         except: pass                                                              # fermer meshlab si possible
         try: self.meshlabExe2.kill()
@@ -2448,7 +2491,8 @@ class Interface(ttk.Frame):
             time.sleep(0.1)
             os.renames (self.repTravail,nouveauRepertoire)                               # RENOMMER
         except Exception as e:
-            self.encadre(_("Le renommage du chantier ne peut se faire actuellement,") + "\n" + _("soit le nom fourni est incorrect,") + "\n"+
+            self.encadre(_("Le renommage du chantier ne peut se faire actuellement,") + "\n" +
+                         _("soit le nom fourni est incorrect,") + "\n"+
                          _("soit un fichier du chantier est ouvert par une autre application.") + "\n"+
                          _("soit l'explorateur explore l'arborescence.") + "\n" + _("erreur : ") + "\n\n"+str(e))
             return
@@ -2465,8 +2509,13 @@ class Interface(ttk.Frame):
     # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
     # [2] = 'original' ou "importé"
         self.typeDuChantier[1] = 'renommé'
-
-        self.encadreEtTrace("\n---------\n"+ heure() + "\n" + _("Chantier :") + "\n" + ancienChantier + "\n" + _("renommé en :") + "\n" + self.chantier + "\n" + _("Répertoire : ") + self.repTravail + "\n") 
+        self.encadreEtTrace("\n---------\n"+ heure() + "\n" +
+                            _("Chantier :") + "\n" +
+                            ancienChantier + "\n" +
+                            _("renommé en :") + "\n" +
+                            self.chantier + "\n" + 
+                            _("enregistré sous le répertoire : ") +"\n" + 
+                            self.repTravail + "\n") 
 
     def redefinirLesChemins(self):       # Mettre self.repTravail dans les chemins des images, des  maitres et masques et dans les dictionnaires, sauver
                                          # si le chantier n'est plus sous le répertoire des photos alors le répertoire des photos devient le chantier lui même       
@@ -2813,22 +2862,24 @@ class Interface(ttk.Frame):
 
 
             # un chantier avec des traitements effectués et pas de sous-répertoire : il a été nettoyé !
-
-            if self.etatDuChantier >= 3 and len([f for f in os.listdir(self.repTravail) if os.path.isdir(os.path.join(self.repTravail, f))])==0:
+            lesRepertoires = [f for f in os.listdir(self.repTravail) if os.path.isdir(os.path.join(self.repTravail, f))]
+            if self.etatDuChantier >= 3 and lesRepertoires.__len__()==0:
                 self.chantierNettoye = True                
                 self.etatDuChantier = 2
                 self.sauveParam()
+                self.ajoutLigne("\n"+heure()+_("****** ouverture du chantier."))
+                self.ajoutLigne("\n"+_("Le chantier a été nettoyé, les résultats et les traces sont conservées."))
+                self.ecritureTraceMicMac()
                 
-            # chantier nettoyé mais relancé depuis donc etatDuChantier >= 3 :
-                
+            # chantier nettoyé mais relancé depuis donc etatDuChantier >= 3 :                
             if self.chantierNettoye and self.etatDuChantier>=3:
                 self.chantierNettoye = False                 # le chantier a été relancé, n'est plus nettoyé
 
             # Message si chantier nettoyé non relancé :
                 
             if self.chantierNettoye:
-                 texte = texte+"\n" + _("Chantier nettoyé.") + "\n"
-
+                texte = texte+"\n" + _("Chantier nettoyé.") + "\n"
+                
             # Affichage de l'état du chantier :
 
             if self.etatDuChantier >= 1:                                        # le chantier est créé : il y a des photos choisies (2 enregistré,
@@ -2840,7 +2891,7 @@ class Interface(ttk.Frame):
                 # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
                 # [2] = 'original' ou "importé"          
                 if self.typeDuChantier[1]=="renommé" or self.typeDuChantier[2]=="importé" or self.typeDuChantier[2]=="ajouté":
-                    texte = texte + _("Chemin du chantier :") + "\n"+afficheChemin(os.path.dirname(self.repTravail))+"\n\n"
+                    texte = texte + _("Chemin du chantier :") + "\n"+self.repTravail+"\n\n"
             else:
                 texte = texte+"\n" + _("Chantier en attente d'enregistrement.") + "\n"
             if self.etatDuChantier in (2,3,4,5,6,35) and self.etatSauvegarde=="":		
@@ -3374,6 +3425,9 @@ class Interface(ttk.Frame):
 
     def modifierLangue(self):
         self.menageEcran()
+        if not os.path.isdir(repertoire_langue):
+            self.encadre(_("Version bilingue non installée."))
+            return
         self.encadre(_("Sélectionnez la langue à utiliser. L'application sera redémarrée."))
         frame = tkinter.Frame(fenetre)
         frameListe = tkinter.Frame(frame)
@@ -3700,7 +3754,7 @@ class Interface(ttk.Frame):
             retour = self.troisBoutons(  titre=_('Le chantier %(x)s est terminé.') % {"x" : self.chantier},
                                          question=_("Le chantier est terminé après ")+self.choixDensification.get()+".\n"+
                                          _("Vous pouvez :") + "\n"+
-                                         _(" - Modifier les options 'points homologues' et 'orientation'") + "\n"+
+                                         _(" - Modifier les options 'points homologues' et 'orientation' : supprime les traitements effectués") + "\n"+
                                          _(" - Conserver les points homologues et l'orientation pour relancer la densification") + "\n"+
                                          _(" - Ne rien faire.") + "\n",                                    
                                          b1=_("Modifier les options des points homologues et d'orientation"),
@@ -4975,6 +5029,7 @@ class Interface(ttk.Frame):
             self.infoBulle(_("Choisir d'abord les photos du chantier."))
             return  
         self.messageSiPasDeFichier  = 0
+        bulles={}
         if os.path.exists(self.planProvisoireVertical):   
             bulles = {self.monImage_MaitrePlan:_("Plan vertical sur cette photo")}
         if os.path.exists(self.planProvisoireHorizontal):   
@@ -5004,6 +5059,7 @@ class Interface(ttk.Frame):
             self.infoBulle(_("Choisir d'abord les photos du chantier."))
             return       
         self.messageSiPasDeFichier  = 0
+        bulles={}
         if os.path.exists(self.planProvisoireVertical):   
             bulles = {self.monImage_MaitrePlan:_("Plan vertical sur cette photo")}
         if os.path.exists(self.planProvisoireHorizontal):   
@@ -5246,7 +5302,7 @@ class Interface(ttk.Frame):
                 self.suiteMicmac()                              # on poursuit par Malt ou C3DC
                 return
             if retour==1:                                       # b2 : débloquer le chantier, effacer les points homologues
-                self.nettoyerChantier()                         # self.etatChantier remis à 2
+                self.nettoyerChantier()                         # self.etatDuChantier remis à 2
                 self.afficheEtat(_("Chantier réinitialisé : points homologues effacés.")+ "\n")
                 return
 
@@ -7440,6 +7496,9 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("- amélioration ergonomie saisie des points gcp (flèches : photo suivante/précédente).") + "\n"+\
               chr(9)+chr(9)+_("- corrections de quelques bugs sur la prise en compte des points gcp (voir entête du code source).") + "\n"+\
               chr(9)+chr(9)+_("- correction du changeement de langue si appel depuis un raccourci.") + "\n"+\
+              "\n" + _("Version 5.41 :")+chr(9)+_("avril 2019") + "\n"+\
+              chr(9)+chr(9)+_("- amélioration ergonomie de la fonction 'du ménage', correction de bug).") + "\n"+\
+              chr(9)+chr(9)+_("- Fichier/renommer le chantier devient fichier/enregistrer sous....") + "\n"+\
               "----------------------------------------------------------"
 
         self.cadreVide()
@@ -8022,7 +8081,8 @@ class Interface(ttk.Frame):
                              mode='extended',
                              message=_("Multiselection possible."),
                              boutonDeux=_("Annuler"),
-                             objets=_('repertoires'))      # renvoi  : self.selectionPhotosAvecChemin
+                             objets=_('repertoires'),
+                             testPresenceRepertoire=False)      # renvoi  : self.selectionPhotosAvecChemin
         # rien à faire
         
         if len(self.selectionPhotosAvecChemin)==0:
@@ -8031,7 +8091,7 @@ class Interface(ttk.Frame):
         # Nettoyage effectif à faire
 
         if len(self.selectionPhotosAvecChemin)==1:
-            self.troisBoutons(_('Suppression ou nettoyage des répertoires de travail superflus'),
+            self.troisBoutons(_('Suppression du chantier ou nettoyage des répertoires de travail superflus'),
                              _('Le chantier suivant va être supprimé ou nettoyé :') + '\n\n'+'\n'.join(self.selectionPhotosAvecChemin),
                              _('Supprimer totalement le chantier'),
                              _('Nettoyer le chantier, conserver les résultats'),                            
@@ -8040,7 +8100,7 @@ class Interface(ttk.Frame):
             if self.repTravail in self.selectionPhotosAvecChemin:
                 attention=_("ATTENTION : le chantier en cours va être nettoyéé.") + "\n\n"
 
-            self.troisBoutons(_('Suppression ou nettoyage des répertoires de travail superflus'),
+            self.troisBoutons(_('Suppression des chantiers ou nettoyage des répertoires de travail superflus'),
                              _('Les chantiers suivant vont être supprimés ou nettoyés :') + '\n\n'+'\n'.join(self.selectionPhotosAvecChemin),
                              _('Supprimer totalement les chantiers'),
                              _('Nettoyer les chantier, conserver les résultats'),                              
@@ -8072,9 +8132,9 @@ class Interface(ttk.Frame):
                     except: pass
                     self.encadrePlus("...")
             if len(supprime)>=1:        
-                texte = texte+_("Compte rendu de la suppression :") + "\n\n" + _("Repertoires supprimés :") + "\n\n" + "\n".join(supprime)+"\n"
+                texte = texte+_("Compte rendu de la suppression :") + "\n\n" + _("Chantiers supprimés :") + "\n\n" + "\n".join(supprime)+"\n"
             else:
-                texte = texte+_("Compte rendu de la suppression :") + "\n\n" + _("Aucun répertoire supprimé.") + "\n\n"+'\n'.join(supprime)+"\n"
+                texte = texte+_("Compte rendu de la suppression :") + "\n\n" + _("Un chantier supprimé :") + "\n\n"+'\n'.join(supprime)+"\n"
                 
             if len(conserve)==0:
                     texte = texte+'\n\n' + _('Tous les chantiers demandés sont supprimés.')
@@ -8086,25 +8146,50 @@ class Interface(ttk.Frame):
             self.sauveParam()                                   # mémorisation de la suppression
             self.encadre(texte)
             return
-
-        # Nettoyage chantiers
-
+        
+        
         if self.bouton==1:       # suppression des sous répertoires, conserve les résultats
-            self.encadre(_("Suppression des sous-répertoires en cours...."))      
-            for e in self.selectionPhotosAvecChemin:
-                if os.path.exists(e):
-                    rep = [f for f in os.listdir(e) if os.path.isdir(os.path.join(e, f))]
-                    for r in rep:
-                        espaceGagne+=sizeDirectoryMO(r)
-                        try:
-                            shutil.rmtree(r)
-                        except:
-                            espaceGagne-=sizeDirectoryMO(r)
+            listeDesRepertoiresSupprimes = list()
+            self.encadre(_("Suppression des sous-répertoires en cours...."))          
+            for chantier in self.selectionPhotosAvecChemin:
+                if os.path.exists(chantier):
+                    lesRepertoires = [f for f in os.listdir(chantier) if os.path.isdir(os.path.join(chantier, f))]   # les sous-répertoires du chantier, pas les fichiers
+                    for nom in lesRepertoires:
+                        cheminASupprimer = os.path.join(chantier,nom)
+                        taille = sizeDirectoryMO(cheminASupprimer)
+                        try:                    # la suppression peut planter pour moult raison
+                            espaceGagne += taille                            
+                            shutil.rmtree(cheminASupprimer)
+                            listeDesRepertoiresSupprimes += [cheminASupprimer + " : "+ str(taille)+" MO",]
+                        except Exception as g:
+                            espaceGagne -= taille
             texte = "Ménage effectué"
             texte += "\n\n"+_("Espace disque récupéré : ")+str(espaceGagne)+" MO"
-                
+            if listeDesRepertoiresSupprimes:
+                texte += "\n\n"+_("Les répertoires supprimés : ")
+                texte += "\n"+"\n".join(listeDesRepertoiresSupprimes)
+            else:
+                texte += "\n\n"+_("Aucun répertoire à supprimer")
             self.encadre(texte)
             return
+
+# extrait de nettoyer chantier, a mettre en oeuvre pour le ménage : modifier l'état du chantier et indiquer l'action dans la trace
+
+##        self.etatDuChantier = 2                
+##        self.enregistreChantier()
+##        # retour à l'état initial pour les photos de calibration : copie des photos sous repTravail,
+##        if self.calibSeule.get():
+##            [os.rename(e,os.path.join(self.repTravail,os.path.basename(e))) for e in self.photosPourCalibrationIntrinseque]           
+##            self.photosPourCalibrationIntrinseque = [os.path.join(self.repTravail,os.path.basename(e)) for e in self.photosPourCalibrationIntrinseque]
+##            self.photosAvecChemin = [os.path.join(self.repTravail,os.path.basename(e)) for e in self.photosAvecChemin]+self.photosPourCalibrationIntrinseque
+##            self.photosSansChemin = [os.path.basename(g) for g in self.photosAvecChemin]
+##        listeAConserver  = os.listdir(self.repTravail)
+##        supprimeArborescenceSauf(self.repTravail,listeAConserver)
+##        self.sauveParam()
+##        self.ajoutLigne("\n ****** " + _("Chantier réinitialisé, points homologues supprimés, sur demande utilisateur. Prochain départ : Tapioca.")+"\n")
+##        self.ecritureTraceMicMac()
+
+
         
     ############################### Message proposant une question et deux, trois ou 4 Boutons
     # si b2="" alors pas de second bouton    retour : 0, 1, 2, 3 : numéro du bouton
@@ -8338,14 +8423,15 @@ class Interface(ttk.Frame):
                         boutonDeux=None,                                    # texte d'un second bouton : fermeture, renvoyant une liste vide
                         dicoPoints=None,                                    # dictionnaire de points à afficher :  key = (nom point, photo, identifiant), value = (x,y)
                         objets='photos',                                    # par défaut la liste est une liste de fichiers, alternative : répertoires, ply
-                        bulles=dict()):                                     # dictionnaires d'info bulle : key = photo, value = infobulle               
+                        bulles=dict(),                                       # dictionnaires d'info bulle : key = photo, value = infobulle
+                        testPresenceRepertoire=True):                                   # ne pas vérifier l'existence du répertoire de travail self.repTravail (cas : ménage)
         self.selectionPhotosAvecChemin = list()                             # sélection : vide pour l'instant !
         if len(listeAvecChemin)==0:                                         # pas de photos : on sort
             self.encadre(_("Pas de photos pour cette demande."))
             return
-        if not os.path.exists(self.repTravail):
-            self.encadre(_("Le répertoire du chantier n'est pas accessible."))
-            return            
+        if testPresenceRepertoire and not os.path.exists(self.repTravail):
+            self.encadre(_("Le répertoire du chantier n'est pas accessible. Relancer l'ouverture d'un chantier"))
+            return          
         self.cherche = str()                                                # recherche
         self.fermerVisu = False                                             # permet d'identifier la sortie par le second bouton si = True (!= sortie par fermeture fenêtre)
         l = [ e for e in listeAvecChemin if not (os.path.exists(e))]        # BIS : si des photos ou répertoires manquent encore : abandon !
@@ -8897,7 +8983,7 @@ class Interface(ttk.Frame):
                                                    height= min(10,len(self.fichierProposes)),
                                                    width=  min(70,min(300,(5+max(len (r) for r in self.fichierProposes))))
                                                    )       
-        self.selectionRepertoire.select_set(1)
+        self.selectionRepertoire.select_set(0)
         self.fichierProposes.sort(key=os.path.basename)
         for i in self.fichierProposes:
             texte=format2Colonnes(os.path.basename(i),afficheChemin(os.path.dirname(i)),100)
@@ -8918,7 +9004,7 @@ class Interface(ttk.Frame):
                           _("Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :") + "\n\n"+"\n".join(chantierSansParametre))
             d.pack(pady=5)
         if len(chantierSansRepertoire)>0:
-            f = ttk.Label(f,text="\n\n"+_("Il y a des chantiers sans répertoire,") + "\n" + 
+            f = ttk.Label(f,text="\n\n"+_("Il y a des chantiers sur disque externe non connecté ou dont le répertoire a été supprimé,") + "\n" + 
                           _("Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :") + "\n\n"+"\n".join(chantierSansRepertoire))
             f.pack(pady=5)            
         fenetre.wait_window(self.topRepertoire)    
@@ -9578,7 +9664,7 @@ def blancAuNoir(p):
     else:
         return 255
 
-def ajout(liste,item):                                  # ajout d'un item dns une liste en s'assurant qu'il n'y a pas de doublons et avec un tri:
+def ajout(liste,item):                                  # ajout d'un item dans une liste en s'assurant qu'il n'y a pas de doublons et avec un tri:
     if liste.__class__()==list():
         try:
             liste.append(item)
