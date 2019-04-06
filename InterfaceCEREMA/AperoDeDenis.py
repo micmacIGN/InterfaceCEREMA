@@ -173,7 +173,10 @@
 # - SI répertoire locale absent alors on informe direct que la version bilingue n'est pas installée (avent : info après avoir choisi la langue)
 # - l'item renommer un chantier remplacé par "Enregistrer sous..." avec un fonctionnement standard (sauf changeùent d'unité disque)
 # - Si du ménage a été fait le chantier est indiqué comme nettoyé lors de l'ouverture suivante, avec indication dans la trace
-# 
+# Version 5.42 6 avril 2019
+# correction option aperodedenis de Malt lorsqu'il y a des photos pour calibration uniquement
+# corrction écriture de la trace
+#
 # reste a faire :
 # choix abandon = valider pour la saisie des lignes horizontale et verticale, a corriger
 # présenter à l'utilisateur les écarts sur les points gcp (bascule et campari) mieux que dans la trace
@@ -216,6 +219,7 @@ import urllib.request
 import webbrowser
 import threading
 from textwrap import wrap
+import glob
 
 ################################## Classe : Choix de la langue en cas d'absence dans les paramètres ###########################"
 
@@ -291,7 +295,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.41"
+numeroVersion = "5.42"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -2257,6 +2261,7 @@ class Interface(ttk.Frame):
         self.arretApresTapas.set(0)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.lancerTarama.set(0)                                # 0 : on ne lance pas Tarama (mosaique des photos après Tapas)       
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
+        self.photosCalibrationSansChemin = list()
         self.calibSeule.set(True)                               # par défaut : uniquement pour la calibration
         self.mosaiqueTaramaTIF = str() 
         self.mosaiqueTaramaJPG = str()
@@ -2418,7 +2423,7 @@ class Interface(ttk.Frame):
                                                                     filetypes = (("*.","*."),("all files","*.*")))
         print("nouveauRepChantier=",nouveauRepChantier)
         if os.path.splitdrive(nouveauRepChantier)[0].upper()!=os.path.splitdrive(self.repTravail)[0].upper():
-            self.encadre(_("Le nouveau répertoire ") + "\n\n" +
+            self.encadre(_("Le nouveau chemin ") + "\n\n" +
                          nouveauRepChantier + "\n\n" +
                          _("implique un changement de disque. \nCette version ne permet pas encore ce changement automatiquement.") + "\n" +
                          _("La prochaine version intégrera cette fonctionalité.\n\n"+
@@ -3519,10 +3524,13 @@ class Interface(ttk.Frame):
 
         if self.lesExtensions[0].upper() not in ".JPG.JPEG":
             
-            if self.troisBoutons(_("Info : format des photos"),_("La version actuelle ne traite que les photos au format JPG,") + "\n\n" + _("or le format des photos est : ")+self.lesExtensions[0]+
-                             ".\n\n" + _("les photos vont être converties au format JPG."),
-                              b1=_('Convertir en JPG'),
-                              b2=_('Abandonner'))==1:
+            if self.troisBoutons(_("Info : format des photos"),
+                                 _("La version actuelle ne traite que les photos au format JPG,") +
+                                 "\n\n" + _("or le format des photos est : ")+
+                                 self.lesExtensions[0]+".\n\n" +
+                                 _("les photos vont être converties au format JPG."),
+                                 b1=_('Convertir en JPG'),
+                                 b2=_('Abandonner'))==1:
                 return
             if verifierSiExecutable(self.convertMagick)==False:
                 self.encadre(_("Désigner l'outil de conversation 'convert' d'ImageMagick") + "\n" + _("(Menu Paramétrage)"))
@@ -3534,9 +3542,8 @@ class Interface(ttk.Frame):
            
         if self.nombreDExtensionDifferentes(photos)==0:
             self.encadre(_("Aucune extension acceptable pour des images. Abandon."))
-            return            
-
-
+            return
+        
 ##        # si des points GCP placés sur d'anciennes photos : vont-ils être supprimés ?
 ##        
 ##        NbPointsSupprimes = int()
@@ -3553,7 +3560,6 @@ class Interface(ttk.Frame):
 ##                              b2=_('Abandonner'))==1:
 ##                    return
                 
-
         # Nouvelle sélection valide
         
         self.extensionChoisie = self.lesExtensions[0]       # l'extension est OK
@@ -6056,7 +6062,8 @@ class Interface(ttk.Frame):
                     self.orientation(),
                     "NbVI=2",
                     "ZoomF="+self.zoomF.get()]                          # zoom 8,4,2,1 qui correspondent au nuage étape 5, 6, 7, 8
-        
+        lesPhotos = glob.glob(os.path.join(self.repTravail,"*.JPG"))
+        self.ajoutLigne("\n"+_("lesPhotos pour Malt : "),",".join(lesPhotos)+"\n")
         self.lanceCommande(malt,
                            filtre=self.filtreMalt,
                            info=_("ATTENTION : cette procédure est longue : patience !"))
@@ -6070,7 +6077,7 @@ class Interface(ttk.Frame):
             return ligne
         if 'BEGIN BLOC' in ligne:
             return ligne        
-
+    
     def reinitialiseMaitreEtMasque(self):                                                       # on conserve si la photo appartient au nouveau lot
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
         self.maitre                     =   str()        
@@ -6528,12 +6535,14 @@ class Interface(ttk.Frame):
         if os.path.exists(repertoireHomol)==False:
             return
         oschdir(repertoireHomol)        
-        for e in os.listdir():                                  # balaie tous les fichiers contenant les points homologues
+        for e in os.listdir():                                  # balaie tous les fichiers contenant les points homologues e = Pastis+ nom fichier
             oschdir(os.path.join(repertoireHomol,e))            
-            for f in os.listdir():
-                listeTaille.append((e.replace("Pastis",""), os.path.splitext(f)[0], os.path.getsize(f))) # répertoire (pastis+nomphoto), nom du fichier(nomphoto+.dat ou .txt) et taille
+            for f in os.listdir():      # f = nom du fichier + ".dat"
+                # répertoire (pastis+nomphoto), nom du fichier(nomphoto+.dat ou .txt) et taille
+                if os.path.splitext(f)[0] not in self.photosCalibrationSansChemin:
+                    listeTaille.append((e.replace("Pastis",""), os.path.splitext(f)[0], os.path.getsize(f)))            
         oschdir(self.repTravail)        
-        listeTaille.sort(key= lambda e: e[2],reverse=True)     # trie la liste des fichiers par taille
+        listeTaille.sort(key= lambda e: e[2],reverse=True)     # trie la liste des couples de fichiers par taille
         listeFixe = list(listeTaille)
         # première maitresse = e de la paire la plus importante, associée à f
         while listeTaille.__len__():
@@ -6545,7 +6554,6 @@ class Interface(ttk.Frame):
             [listeTaille.remove((g,h,i)) for (g,h,i) in listeFixe if (e==g or e==h or f==g or f==h) and (g,h,i) in listeTaille]
         self.listeDesMaitressesApero = [e for e,f in self.maitressesEtPhotoApero] #  MaltApero renvoit la liste des maîtresses sous forme (maitresse, photo)
 
-        
     ###################### Appareil photo : affiche le nom de l'appareil de la première photo, la focale, la taille du capteur dans dicocamera
 
     def outilAppareilPhoto(self,silence=None):
@@ -8401,7 +8409,7 @@ class Interface(ttk.Frame):
         except Exception as e:
             print (_('erreur ecritureTraceMicMac : '),str(e),"\ntraces : ",self.TraceMicMacSynthese," et ",self.TraceMicMacComplete)
             
-        # self.effaceBufferTrace()    
+        self.effaceBufferTrace()    
             
     ############################### Choix d'une image dans la liste des images retenues avec scrollbar : charge self.selectionPhotosAvecChemin, gadgets
         
