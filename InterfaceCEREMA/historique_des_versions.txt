@@ -157,12 +157,14 @@
 			version 5.40 mars 2019 :
 				modification ergonomie saisies des points GPC, photo suivante/précédente dans fenêtre de saisie
 				corrections de bugs
-				ajout du drapage pour les option quickmac micmac et bigmap de c3dc
+				ajout du drapage pour les options quickmac micmac et bigmap de c3dc
 				modification de l'option par défaut de c3dc : bigmac
 			Version 5.43 18 avril 2019
 			voir script
-
-			
+			Version 5.44 9 mai 2019
+				Ajout de la fonction "recherche" dans les textes affichés par texte201 (trace, aide) ; Ctrl F et  F3
+				Possibilité de garder les points homologues si échec dans Tapas.
+				plus de détails : voir script
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
    

@@ -1,7 +1,16 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
-version V 5.43 18 avril 2019 :
+version V 5.44  9 mai 2019 :
+
+Principales modifications :
+ - ajout de la fonction "recherche" dans les textes affichés par texte201 (trace, aide) ; Ctrl F puis  F3
+ - le ménage dans un chantier ne supprime plus les éventuels chantiers présents dessous
+ - affiche le résultat des commandes systèmes dans une fenêtre texte (menu expert/commande système)
+ - aprés un échec dans Tapas le choix "option" propose de conserver les points homologues (= item 'lancer micmac')
+Voir liste complète dans le script
+ 
+version V 5.44  :
 	Possibilité de lancer plusieurs instances de l'interface sous windows
 	L'aide 'quelques conseils' répartie sur 3 items
 	Quelques corrections de bugs et modifications mineures : voir le script
