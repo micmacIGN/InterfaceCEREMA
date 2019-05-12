@@ -197,23 +197,26 @@
 # - le ménage dans un chantier ne supprime plus les événtuels chantiers présents dessous
 # - affiche le résultat des commandes systèmes dans une fenêtre texte (menu expert/commande système)
 # - aprés un échec dans Tapas le choix "option" propose de conserver les points homologues (= item 'lancer micmac')
-#   ce qui peremt de relancer Tapas sans tapioca !
+#   ce qui permet de relancer Tapas sans tapioca !
+
+# Version 5.45
+# - modif ajoutChantier depuis un répertoire : controle présence du répertoire parmi les chantiers (refus) puis du nom du chantier parmi les noms de chantier (pose la question)
+#   avant : confusion et possibilité d'enregistrer deux fois le même chantier sous le même chemin
+# - enregistrer sous : plus robuste, le répertoire ne doit pas pré-exister, le chantier non plus.
+#   changement d'unité disque possible : désormais on recopie le dossier en gardant l'ancien dans ce cas
+# - tapas, calibration : sécurisation du changement d'extension des photos. Message et abandon si erreur.
+#   Avant cette modification un trop grand nombre de photos sous windows pouvait faire planter le traitement sans laisser de trace.
+# - Ajout de l'item "renommer le chantier" (beaucoup plus simple à utiliser que "enregistrer sous", plus rapide, mais limité à la même unité disque)
+#   Cet item avait été supprimé dans la version 5.41
+# - sécurisation des import de points GCP depuis un autre chantier ou un fichier.
+#   notamment l'import devient impossible s'il y a déjà des points GCP définis
 
 # bug en cours :
 # parfois rodolphe lance des traitements interminables (qui ont planté sans commentaire ni fin : a examiner de près)
 # version 5.40 : aprés plantage tapas, puis rechargement des photos, le bouton "plan horizontal" devient inactif (cf rodolphe)
 
-#bug annulé ou corrigé :
-# version 5.43 : aprés saisie de points gps l'affiche etat ne trouve pas de points gps (contrairement à la version 5.1 sur le même chantier bascule à 5.2 ?)
-#               en fait : les points GCP sans coordonnées sont ignorés depuis la version 5.21 (?)
-# - Corrigé : la liste des modèles d'appareils photos (dans l'item focales et modéles) n'est pas mise à jour avec modif des tag par le menu expert/plusierus appareils.
-# ajouté la recherche dans la trace (ctrl F)
-#encore décomposé l'aide en cas de plantage : orientation <> densification
-
 # reste a faire :
 # vérifier pourquoi la ligne 9217 (remove) plante parfois ! (mise en try)
-# vérifier si l'ajout d'un chantier à partir d'un répertoire récupére bien les options
-# ne pas relancer tapioca s'il y a déjà des points homologues !
 # gérer les ajouts de chantier si plusieurs instance (et les suppressions) et les modifs de paramètres...
 # choix abandon = valider pour la saisie des lignes horizontale et verticale, a corriger
 # présenter à l'utilisateur les écarts sur les points gcp (bascule et campari) mieux que dans la trace
@@ -228,9 +231,15 @@
 ############# Risque : on redéfinit photosAvecChemin et photosSansChemin en gardant le nom !!!! A modifier ligne 5615
 # avec geomimage il y a un affichage du modéle 3 D par maitresse !
 # faire en sorte que le filtre tapas renvoie une solution si message Not Enouh Equation in ElSeg3D::L2InterFaisceaux
-# généraliser le truc ci dessu à d'autre messages
+# généraliser le truc ci dessus à d'autre messages
+#bug annulé ou corrigé :
+# version 5.43 : aprés saisie de points gps l'affiche etat ne trouve pas de points gps (contrairement à la version 5.1 sur le même chantier bascule à 5.2 ?)
+#               en fait : les points GCP sans coordonnées sont ignorés depuis la version 5.21 (?)
+# encore décomposé l'aide en cas de plantage : orientation <> densification
+# vérifier si l'ajout d'un chantier à partir d'un répertoire récupére bien les options : oui
 
-# parfois tapas plante et rien ne se passe : on attend toujours !
+# parfois tapas plante et rien ne se passe : on attend toujours ! Sans doute à cause du renommage foireux si beaucoup de photos.
+# améliorer en version 5.45
 # regrouper tout les affichages des texte201 (pour nettoyer le code aprés l'ajout de la recherche ctrl F et ctrl shift F
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
@@ -335,7 +344,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.44"
+numeroVersion = "5.45"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -730,7 +739,7 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
             
         self.root = tkinter.Toplevel()
         self.root.title( _("Calibration GCP ")+image)
-        self.root.title(_("Position des points sur la photo  : ")+image)       # titre
+        self.root.title(_("Position des points sur la photo  : ")+os.path.basename(image))       # titre
         fenetreIcone(self.root)
         self.root.geometry( position )    
         self.dimMaxiCanvas = 600            # dimension max du canvas accueillant l'image
@@ -1096,7 +1105,7 @@ class Interface(ttk.Frame):
         self.style.theme_use('clam')
         fenetreIcone(fenetre)
         fenetre.title(self.titreFenetre)                                                        # Nom de la fenêtre
-        fenetre.geometry("800x700+100+200")                                                     # fenentre.geometry("%dx%d%+d%+d" % (L,H,X,Y))
+        fenetre.geometry("800x700+100+200")                                                     # fenetre.geometry("%dx%d%+d%+d" % (L,H,X,Y))
 
         # construction des item du menu
 
@@ -1109,7 +1118,9 @@ class Interface(ttk.Frame):
         menuFichier.add_command(label=_("Ouvrir un chantier"), command=self.ouvreChantier)
         menuFichier.add_separator()        
         menuFichier.add_command(label=_("Enregistrer"), command=self.enregistreChantierAvecMessage)
-        menuFichier.add_command(label=_("Enregistrer sous..."), command=self.enregistrerChantierSous)         
+        menuFichier.add_separator()        
+        menuFichier.add_command(label=_("Renommer le chantier"), command=self.renommeChantier)
+        menuFichier.add_command(label=_("Enregistrer sous..."), command=self.enregistreChantierSous)         
         menuFichier.add_separator()
         menuFichier.add_command(label=_("Exporter le chantier en cours"), command=self.exporteChantier)
         menuFichier.add_command(label=_("Importer un chantier"), command=self.importeChantier)         
@@ -1190,9 +1201,9 @@ class Interface(ttk.Frame):
         menuExpert = tkinter.Menu(mainMenu,tearoff = 0,postcommand=updateExpert)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
         menuExpert.add_command(label=_("Exécuter une ligne de commande système"), command=self.lignesExpert)
         menuExpert.add_command(label=_("Exécuter une commande python"), command=self.lignesPython)        
-        menuExpert.add_separator()  
+        menuExpert.add_separator()
+        menuExpert.add_command(label=_("Ajouter les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)                
         menuExpert.add_command(label=_("Ajouter les points GCP à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)        
-        menuExpert.add_command(label=_("Ajouter les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)        
         menuExpert.add_separator()
         menuExpert.add_command(label=_("Définir plusieurs appareils photos"), command=self.plusieursAppareils)
         menuExpert.add_command(label=_("Définir la longueur du préfixe des photos ; %s") % (self.nbCaracteresDuPrefixe), command=self.longueurPrefixe)        
@@ -1496,7 +1507,8 @@ class Interface(ttk.Frame):
         self.item530 = ttk.Checkbutton(self.item510, variable=self.lancerTarama, text=_("lancer Tarama après TAPAS : mosaique pouvant définir un masque pour Malt/ortho)"))
         self.item530.pack(ipady=5)
         self.item540 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour le check button, fera un encadrement
-        self.item550 = ttk.Checkbutton(self.item540, variable=self.arretApresTapas, text=_("Ne pas lancer la densification - permet de consulter le nuage non dense"))
+        self.item550 = ttk.Checkbutton(self.item540, variable=self.arretApresTapas,
+                                       text=_("Ne pas lancer la densification - permet de définir un masque"))
         self.item550.pack(ipady=5)
 
         self.item505.pack()
@@ -2393,9 +2405,9 @@ class Interface(ttk.Frame):
             _("       - Modifier les options par défauts : les valeurs par défaut de certains paramètres sont modifiables.") + "\n"+\
             _("         Les paramètres concernés sont ceux des onglets du menu MicMac/options : 'Points homologues',... : .") + "\n\n"+\
             _("menu Expert :") + "\n\n"+\
-            _("       - Ouvrir une console permettant de passer des commandes système et MicMac (mm3d).") + "\n\n"+\
-            _("       - Ouvrir une console permettant de passer des commandes Python (ex. : afficher une variable.") + "\n\n"+\
-            _("       - Insérer de points GCP à partir d'un fichier texte, séparateur espace, format : X Y Z dx dy dz ") + "\n"+\
+            _("       - Ouvrir une console permettant de passer des commandes système et MicMac (par exemple : mm3d).") + "\n\n"+\
+            _("       - Ouvrir une console permettant de passer des commandes Python (ex. : afficher une variable.)") + "\n\n"+\
+            _("       - Insérer de points GCP à partir d'un fichier texte, séparateur espace, format : NomDuPoint X Y Z dx dy dz ") + "\n"+\
             _("         Le caractère # en début de ligne signale un commentaire.") + "\n\n"+\
             _("       - Recopier des points GCP à partir d'un autre chantier.") + "\n\n"+\
             _("       - Définir plusieurs appareils photos.") + "\n"+\
@@ -2590,6 +2602,12 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("- Propose à l'utilisateur (sous Windows) de lancer plusieurs instance d'AperoDeDenis).") + "\n"+\
               chr(9)+chr(9)+_("- l'aide 'quelques conseils' est répartie sur 3 items") + "\n"+\
               chr(9)+chr(9)+_("- quelques corrections de bugs, voir en tête du script") + "\n"+\
+              "\n" + _("Version 5.44 et 5.45 :")+chr(9)+_("mai 2019") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout de la fonction recherche (F3) dans les traces et l'aide.") + "\n"+\
+              chr(9)+chr(9)+_("- Possibilité de relancer Tapas sans relancer Tapioca") + "\n"+\
+              chr(9)+chr(9)+_("- Sécurisation de l'import d'un chantier à partir d'un répertoire") + "\n"+\
+              chr(9)+chr(9)+_("- Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)") + "\n"+\
               "----------------------------------------------------------"
 
     # choix des options
@@ -2842,21 +2860,22 @@ class Interface(ttk.Frame):
                    
     def ouvreChantier(self):
         self.menageEcran()
-        texte=""
-        if self.etatDuChantier == 1 and self.etatSauvegarde =="*":
-            if self.troisBoutons(_("Enregistrer le chantier ?"),
-                                _("Chantier non encore enregistré. Voulez-vous l'enregistrer ?"),
-                                _("Enregistrer"),
-                                _("Ne pas enregistrer.")) == 0:
-                self.enregistreChantier()
-                texte=_("Chantier précédent enregistré : %s") % (self.chantier) + "\n"
-        if self.etatDuChantier >= 2 and self.etatSauvegarde =="*":
-            if self.troisBoutons(_("Enregistrer le chantier %s ?") % (self.chantier),
-                                _("Chantier modifié depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?"),
-                                _("Enregistrer"),
-                                _("Ne pas enregistrer.")) == 0:
-                self.copierParamVersChantier()
-                texte=_("Chantier précédent enregistré : %s") % (self.chantier) + "\n"       
+        self.enregistreChantier()   # enregistrement systématique du chantier précédent (la variable self.etatSauvegarde est peu fiable)
+##        texte=""
+##        if self.etatDuChantier == 1 and self.etatSauvegarde =="*":
+##            if self.troisBoutons(_("Enregistrer le chantier ?"),
+##                                _("Chantier non encore enregistré. Voulez-vous l'enregistrer ?"),
+##                                _("Enregistrer"),
+##                                _("Ne pas enregistrer.")) == 0:
+##                self.enregistreChantier()
+##                texte=_("Chantier précédent enregistré : %s") % (self.chantier) + "\n"
+##        if self.etatDuChantier >= 2 and self.etatSauvegarde =="*":
+##            if self.troisBoutons(_("Enregistrer le chantier %s ?") % (self.chantier),
+##                                _("Chantier modifié depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?"),
+##                                _("Enregistrer"),
+##                                _("Ne pas enregistrer.")) == 0:
+##                self.copierParamVersChantier()
+##                texte=_("Chantier précédent enregistré : %s") % (self.chantier) + "\n"       
         bilan = self.choisirUnChantier(_("Choisir un chantier."))        # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
             self.encadre(bilan)
@@ -2865,7 +2884,7 @@ class Interface(ttk.Frame):
         if os.path.exists(self.fichierParamChantier):        
             self.restaureParamChantier(self.fichierParamChantier)           
             self.sauveParam()                                                   # pour assurer la cohérence entre le chantier en cours et le chantier ouvert (écrase le chantier en cours)
-            self.afficheEtat(texte)
+            self.afficheEtat()
         else:
             self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin))
 
@@ -2883,32 +2902,6 @@ class Interface(ttk.Frame):
         self.copierParamVersChantier()          # on enregistre, ou on réenregistre 
         return True
 
-    def enregistrerChantierSous(self):
-        nouveauRepChantier  = tkinter.filedialog.asksaveasfilename(
-                                                                    initialdir = "/",
-                                                                    title = "Enregistrer chantier sous",
-                                                                    defaultextension="",
-                                                                    initialfile=self.chantier,
-                                                                    parent=fenetre,
-                                                                    filetypes = (("*.","*."),("all files","*.*")))
-        if os.path.splitdrive(nouveauRepChantier)[0].upper()!=os.path.splitdrive(self.repTravail)[0].upper():
-            self.encadre(_("Le nouveau chemin ") + "\n\n" +
-                         nouveauRepChantier + "\n\n" +
-                         _("implique un changement de disque. \nCette version ne permet pas encore ce changement automatiquement.") + "\n" +
-                         _("La prochaine version intégrera cette fonctionalité.\n\n"+
-                         _("Utiliser les item\nFichier/Export puis Fichier/Import\npour exporter puis importer le chantier sur un autre support.")))
-            return
-
-        if os.path.isdir(nouveauRepChantier):       # c'est bien un répertoire
-            self.encadre("répertoire existe, supprimé"+nouveauRepChantier)
-            supprimeRepertoire(nouveauRepChantier)
-        elif os.path.isfile(nouveauRepChantier):       # c'est un fichier
-            self.encadre("fichier existe, supprimé")
-            supprimeFichier(nouveauRepChantier)
-        else: self.encadre("ni fichier ni repertoire existant")
-        self.deplaceChantier(nouveauRepChantier)
-
-            
     def renommeChantier(self):
         self.menageEcran()        
         if self.etatDuChantier==0:
@@ -2924,57 +2917,117 @@ class Interface(ttk.Frame):
                 self.repTravail)
         repertoirePere = os.path.dirname(self.repTravail)
         new = MyDialog(fenetre,texte,basDePage=bas).saisie
-        if new=="": return
+        if new=="":
+            self.encadre(_("Renommer le chantier : Abandon utilisateur"))
+            return
         nouveauRepertoire = os.path.normcase(os.path.normpath(os.path.join(repertoirePere,new)))                                                  # sinon on renomme sous ou sur le répertoire des photos
         if nouveauRepertoire==self.repTravail :
             self.encadre(_("Nouveau nom = ancien nom ; Abandon"))
-            return # destination == origine : retour        
-        nouveauChantier = os.path.basename(nouveauRepertoire)
-        if nouveauChantier.upper() in [os.path.basename(e).upper() for e in self.tousLesChantiers] and self.chantier.upper()!=nouveauChantier.upper():
-            self.encadre(_("Le nom du nouveau chantier %s est déjà un chantier. Abandon.") % (nouveauChantier))
-            return
+            return # destination == origine : retour
+        
+        if self.nomDuChantierExisteDeja(nouveauRepertoire):
+            self.encadre(_("Le nom du nouveau chantier :\n %s \n est déjà un chantier. Abandon.") % (os.path.basename(nouveauRepertoire)))
+            return  
+        
         if os.path.splitdrive(nouveauRepertoire)[0].upper()!=os.path.splitdrive(self.repTravail)[0].upper():
             self.encadre(_("Le nouveau répertoire ") + "\n\n" +
                          nouveauRepertoire + "\n\n" +
                          _("implique un changement de disque.") + "\n" +
-                         _("Utiliser l'Export-Import."))
-            return 
+                         _("Utiliser l'item 'Enregistrer sous...' ou l'Export-Import."))
+            return
+        
         if os.path.exists(nouveauRepertoire):
             self.encadre(_("Le répertoire") + "\n" + nouveauRepertoire + "\n" +
-                         _("pour le chantier est déjà utilisé.") + "\n" +
+                         _("est déjà utilisé.") + "\n" +
                          _("Choisissez un autre nom."))
             return
+        
         try: 
             if os.path.commonpath([self.repTravail,nouveauRepertoire]) == self.repTravail: # Attention : commande nouvelle en version python 3.5
-                self.encadre(_("Le répertoire") + "\n" + nouveauRepertoire + "\n" +
+                self.encadre(_("Le répertoire choisi :") + "\n" + nouveauRepertoire + "\n" +
                              _("désigne un sous-répertoire du chantier en cours.") + "\n" +
                              _("Choisissez un autre nom."))
                 return
         except: pass
+
+        # tout est bon :
         self.deplaceChantier(nouveauRepertoire)
 
-    def deplaceChantier(self,nouveauRepertoire):
-        nouveauChantier = os.path.basename(nouveauRepertoire)
+    def nomDuChantierExisteDeja(self,nouveauRepertoire):
+        nouveauChantier = os.path.basename(nouveauRepertoire).upper()
+        if [e for e in self.tousLesChantiers if os.path.basename(e).upper()==nouveauChantier]:
+            return True      
+
+    def enregistreChantierSous(self):
+        message = _("Cette fonction permet de changer l'unité disque du chantier.")
+        message += "\n"+"\n"+_("Le nom du répertoire choisi deviendra le nom du chantier.")                    
+        message += "\n"+_("Le répertoire choisi doit être vide.")
+        message += "\n"+_("Les fichiers seront copiés, le répertoire initial ne sera pas modifié.")                                      
+        
+        if MyDialog_OK_KO(fenetre,titre=_("Enregistre sous..."),texte=message,b1="OK",b2="KO").retour!=1:
+            return
+        nouveauRepChantier  = tkinter.filedialog.askdirectory(
+                                                                    initialdir = "/",
+                                                                    title = _("Choisir ou créer le répertoire ou sera enregistré le chantier"),
+                                                                    parent=fenetre,
+                                                                    )
+        if not nouveauRepChantier:
+            self.encadre(_("Abandon utilisateur"))
+            return
+
+        if not os.path.isdir(nouveauRepChantier):      # c'est pas un répertoire : abandon
+            self.encadre(_("Le chenim choisi doit être un répertoire : abandon !"))
+            return
+
+        if os.listdir(nouveauRepChantier):
+            self.encadre(_("Le répertoire choisi n'est pas VIDE : abandon !"))
+            return            
+
+        if self.nomDuChantierExisteDeja(nouveauRepChantier):
+            self.encadre(_("Le nom du nouveau chantier :\n %s \n est déjà un chantier. Abandon.") % (os.path.basename(nouveauRepertoire)))
+            return        
+
+        # le répertoire cible existe, le chantier est nouveau : il faut copier ou renommer
+        self.deplaceChantier(nouveauRepChantier)
+           
+    def deplaceChantier(self,nouveauRepertoire):    # le paramètre est le chemin complet du chantier = nouveau self.repTravail 
+        # on essaie de fermer les fichiers ouverts
         self.fermerVisuPhoto()                                                    # fermer tous les fichiers potentiellement ouvert.
         oschdir(self.repertoireData)                                              # quitter le répertoire courant
-        try: self.meshlabExe1.kill()
-        except: pass                                                              # fermer meshlab si possible
-        try: self.meshlabExe2.kill()
-        except: pass        
-        try:
-            time.sleep(0.1)
-            os.renames (self.repTravail,nouveauRepertoire)                               # RENOMMER
-        except Exception as e:
-            self.encadre(_("Le renommage du chantier ne peut se faire actuellement,") + "\n" +
-                         _("soit le nom fourni est incorrect,") + "\n"+
-                         _("soit un fichier du chantier est ouvert par une autre application.") + "\n"+
-                         _("soit l'explorateur explore l'arborescence.") + "\n" + _("erreur : ") + "\n\n"+str(e))
-            return
-        # Chantier renommé correctement
-        ancienChantier = self.chantier
-        self.chantier = nouveauChantier
+        # Avant la copie ou le renommage, il faut d'abord supprimer le répertoire destination :
+        if os.path.isdir(nouveauRepertoire):      # c'est pas un répertoire : abandon
+            try: os.rmdir(nouveauRepertoire)
+            except Exception as e:
+                self.encadre(_("Le répertoire\n %s \ndestination est probablement non vide :\nErreur :  %s.\n Abandon.") % (nouveauRepertoire,str(e)))
+                return   
+        # si l'unité disque ne change pas : on renomme (rapide et fiable, sauf si un fichier est ouvert, par exemple un ply par cloudcompare)
+        if os.path.splitdrive(nouveauRepertoire)[0].upper()==os.path.splitdrive(self.repTravail)[0].upper():
+            try:
+                os
+                time.sleep(0.1)
+                os.renames (self.repTravail,nouveauRepertoire)                               # RENOMMER
+            except Exception as e:
+                self.encadre(_("Le renommage du chantier ne peut se faire actuellement,") + "\n" +
+                             _("soit le nom fourni est incorrect,") + "\n"+
+                             _("soit un fichier du chantier est ouvert par une autre application.") + "\n"+
+                             _("soit l'explorateur explore l'arborescence.") + "\n" + _("erreur : ") + "\n\n"+str(e))
+                return
+        #il faut changer de support disque : recopie des fichiers, peut-être long !
+        else:                
+            # répertoire destination supprimé pour autoriser la commande shutil.copytree : copie :       
+            try :
+                self.encadre(_("La copie de l'arborescence du chantier est en cours.\n %s \nPatience....")
+                             % ( _("\n Taille du chantier : ")+str(sizeDirectoryMO(self.repTravail))+" MO" ))
+                shutil.copytree(self.repTravail,nouveauRepertoire)
+            except Exception as e:
+                self.encadre(_("La copie du chantier ne peut se faire actuellement,") + "\n" +
+                              _("erreur : ") + "\n\n"+str(e))
+                return
+        # Chantier renommé correctement       
         try: self.tousLesChantiers.remove(self.repTravail)                          # retirer l'ancien nom de la liste des répertoires de travail
-        except: pass        
+        except: pass
+        ancienChantier = self.chantier
+        self.chantier = os.path.basename(nouveauRepertoire)        
         self.repTravail = nouveauRepertoire                                         # positionner le nouveau nom        
         self.redefinirLesChemins()                                                  # mettre à jour le nom de tous les chemins realtifs
         self.ajoutChantier()                        # ajouter le nouveau nom parmi les noms de chantiers
@@ -3161,6 +3214,9 @@ class Interface(ttk.Frame):
         self.menageEcran()
         nouveauRepChantier  = tkinter.filedialog.askdirectory(title='Désigner le répertoire contenant un chantier ',
                                                         initialdir=self.repTravail)
+        if nouveauRepChantier in self.tousLesChantiers:
+            self.encadre("Ce répertoire est déjà un chantier. Abandon")
+            return
         if os.path.isdir(nouveauRepChantier):       # c'est bien un répertoire
             param = os.path.join(nouveauRepChantier,self.paramChantierSav)
             if os.path.isfile(param): # il existe un fichier paramètre
@@ -4389,10 +4445,13 @@ class Interface(ttk.Frame):
                                             # finCalibrationGPSOK doit avoir été éxécuté avant
         self.etatPointsGPS = str()
         retour = True
-     
+       
         if self.repTravail==self.repertoireData:    # si pas de chantier, pas de problème mais retour False :  pas de calibration
             return False
 
+        if self.nbPointsGCPActifs()==0:
+            return False
+        
         # listePointsGPS : liste de (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant, incertitude)
         listePointsOK = list()
         listePointsKO = list()
@@ -4403,23 +4462,22 @@ class Interface(ttk.Frame):
                 listePointsOK.append(Nom)
             else:
                 listePointsKO.append(Nom)
-        if len(listePointsOK)==0:
-            self.etatPointsGPS += _("Nombre de points GCP : %s , aucun n'est valide.") % (str(len(self.listePointsGPS))) + "\n"
-            return False
-        
-        if listePointsOK:
 
+        
+        if not listePointsOK:
+            self.etatPointsGPS += ("\n" + _("%s points GCP. Aucun n'est correctement défini.")) % (self.nbPointsGCPActifs())
+            return False
+        else:
             listeDico =list(self.dicoPointsGPSEnPlace.items())       # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
             listeDico = [e for e in listeDico if e[0][0] in listePointsOK] # seuls les points actifs et complets
 
             
             # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y            
-            self.etatPointsGPS = ("\n" + _("%s points GCP placés OK") % (str(len(listeDico))) + "\n"  +       
+            self.etatPointsGPS += ("\n" + _("%s points GCP placés OK") % (str(len(listeDico))) + "\n"  +       
                                   _("pour %s points GCP définis") % (str(len(listePointsOK)))) + "\n" 
             if len(listePointsOK)<3:
                  self.etatPointsGPS += _("Attention : il faut au moins 3 points pour qu'ils soient pris en compte.") + "\n"
                  retour = False
-
             # sur le modèle pythonique l'élément le plus représenté dans une liste l : x=sorted(set(l),key=l.count)[-1]
             # ou pour avoir toute l'info [(valeur,nombre),...] : [(e,a.count(e)) for e in a]
             # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
@@ -4451,7 +4509,8 @@ class Interface(ttk.Frame):
 
         if retour==False:
             self.etatPointsGPS += _("Saisie incomplète : les points GCP ne seront pas pris en compte") + "\n" +_("Consulter la trace") + "\n"
-            self.ajoutLigne(_("Les points GCP doivent avoir un nom, des valeurs X Y et Z numériques, une incertitude de la forme '10 10 10'"))
+            self.ajoutLigne(self.etatPointsGPS)
+            self.ajoutLigne(_("Les points GCP doivent avoir un nom, des valeurs X Y et Z numériques, une incertitude de la forme '10 10 10'")+ "\n")
             self.ajoutLigne(_("liste des points incorrects : %s \n") % "\n".join(listePointsKO))
             self.ecritureTraceMicMac()
         return retour
@@ -5233,11 +5292,10 @@ class Interface(ttk.Frame):
         
     def supprPointsGPS(self):       # Suppression des points GCP
         try: self.bulle.destroy()
-        except: pass        
-        if self.listePointsGPS.__len__()==0:                # pas de points : on sort
+        except: pass
+        if self.nbPointsGCPActifs()==0:                # pas de points actif : on sort
             self.infoBulle(_("Aucun point à supprimer !"))
-            return
-						
+            return						
         self.actualiseListePointsGPS()                      # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
         listeIdentifiants = [ (e[0],e[5]) for e in self.listePointsGPS if e[4] ] # liste des noms,identifiants si point non supprimé
 
@@ -5256,17 +5314,15 @@ class Interface(ttk.Frame):
             return
 
         listeIdentifiantsASupprimer = [g[1] for g in listeIdentifiants if g[0] in self.selectionPhotosAvecChemin]
-        listeIni = list(self.listePointsGPS)
+        listeIni = list(self.listePointsGPS)     # duplique la liste
         for i in listeIni:                       # on met le flag i[4] à zéro : pour conserver le lien avec les points placés ??
             if i[5] in listeIdentifiantsASupprimer:
                 self.listePointsGPS.remove(i)                
                 i[4] = False
                 self.listePointsGPS.append(i)
-        dico = dict(self.dicoPointsGPSEnPlace)              # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y        
-        for keys in dico:		#supprime les points déjà placés
-            if keys[2] in listeIdentifiantsASupprimer:
-                del self.dicoPointsGPSEnPlace[keys]
-                        
+        dico = dict(self.dicoPointsGPSEnPlace)  # dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
+        # supprime les points déjà placés sur les photos              
+        [self.dicoPointsGPSEnPlace.pop(i,None) for i in dico if i[2] in listeIdentifiantsASupprimer]                        
         self.optionsReperes()
         self.onglets.select(self.item650)                   # active l'onglet (il a été supprimé puis recréé par optionsReperes) 
         
@@ -6226,7 +6282,19 @@ class Interface(ttk.Frame):
            
             # limitation aux seules images pour la calibration par suppression de l'extension des photos ne servant pas à calibrer :
             # mais rename peut planter si un fichier est ouvert par ailleurs
-            [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin] 
+            [[os.rename(e,os.path.splitext(e)[0]),time.sleep(0.3)] for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]
+            # controle du résultat : il doit rester exactement le nombre de photos pour calibration avec l'extension .JPG
+            lesJpgCalibration = glob.glob(os.path.join(self.repTravail,"*.JPG"))
+            if lesJpgCalibration.__len__() != self.photosCalibrationSansChemin.__len__():
+                self.encadre(   _("Problème concernant le renommage des photos avant calibration par Tapas ForCalib.")+"\n"+
+                                _("Vérifier qu'aucune photo n'est ouverte.")+"\n"+
+                                _("Controler les noms et extensions des photos sous le répertoire du chantier : ")+"\n"+
+                                self.repChantier+"\n"+
+                                _("Seules les photos de calibration doivent avoir l'extension .JPG")+"\n"+
+                                _("Les autres photos du chantier doivent être sans extension.")+"\n"+
+                                _("Arrêt du taitement.")                                
+                                )
+                return      # etatDuChantier = 3 en principe
             tapas = [self.mm3d,
                      "Tapas",
                      self.modeCheckedTapas.get(),
@@ -6244,7 +6312,19 @@ class Interface(ttk.Frame):
 
             #  Remise en état initial des photos pour calibration (mais rename peut planter...)
             
-            [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]  
+            [[os.rename(os.path.splitext(e)[0],e),time.sleep(0.3)] for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]  
+
+            # controle du résultat : il doit rester y avoir exactement le nombre de photos total du chantier en .JPG
+            TousLesJpg = glob.glob(os.path.join(self.repTravail,"*.JPG"))
+            if TousLesJpg.__len__() != self.photosSansChemin.__len__():
+                self.encadre(   _("Problème concernant le renommage des photos après calibration.")+"\n"+
+                                _("Vérifier qu'aucune photo n'est ouverte.")+"\n"+
+                                _("Controler les noms et extensions des photos sous le répertoire du chantier : ")+"\n"+
+                                self.repChantier+"\n"+
+                                _("Toutes les photos doivent avoir l'extension .JPG")+"\n"+
+                                _("Arrêt du taitement.")                                  
+                                )
+                return            
                                                    
             if os.path.isdir("Ori-Calib")==False:
                 self.messageRetourTapas = _("La calibration intrinsèque n'a pas permis de trouver une orientation.") + "\n"
@@ -6266,7 +6346,7 @@ class Interface(ttk.Frame):
             if self.calibSeule.get():
                 try : os.mkdir(self.repCalibSeule)
                 except: pass
-                [os.rename(e,os.path.join(self.repCalibSeule,e)) for e in self.photosCalibrationSansChemin]  # déplacer photocalibration pour les traitements suivant 
+                [[os.rename(e,os.path.join(self.repCalibSeule,e)),time.sleep(0.3)] for e in self.photosCalibrationSansChemin]  # déplacer photocalibration pour les traitements suivant 
 
             ############# Risque : on redéfinit photosAvecChemin et photosSansChemin en gardant le nom !!!! A modifier
 
@@ -6403,7 +6483,7 @@ class Interface(ttk.Frame):
                         "bascul",                           # Orientation calibrée par les points GCP, utilisé par Malt ou C3DC
                         os.path.basename(self.dicoAppuis),                             
                         os.path.basename(self.mesureAppuis),
-                        "ShowD=True"]
+                        "ShowD=1"]
         self.lanceCommande(GCPBascule,
                            filtre=self.filtreGCPBascule)
         
@@ -7363,38 +7443,59 @@ class Interface(ttk.Frame):
                     
         self.ecritureTraceMicMac()                
         oschdir(self.repTravail)   # on ne sait pas ce qu'a fait l'utilisateur
+        
+    def nbPointsGCPActifs(self):
+        # suppression des points supprimés # listePointsGPS : 6-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant, incertitude)
+        liste = list(self.listePointsGPS)
+        [self.listePointsGPS.remove(e) for e in liste if not e[4]]
+        listePoints = [e[0] for e in self.listePointsGPS]
+        # suppression des points placés sur les phtos (dicoPointsGPSEnPlace key = nom point, photo, identifiant, value = x,y
+        dico = dict(self.dicoPointsGPSEnPlace)
+        [self.dicoPointsGPSEnPlace.pop(key,None) for key in dico if key[0] not in listePoints]      
+        return listePoints.__len__()
 
     def ajoutPointsGPSAutreChantier(self):
-        
         self.menageEcran()
+        rapport = str()
+        nbAjoutPlace = int()
+        nbAjout = int()       
+        if self.nbPointsGCPActifs()!=0:   # il y a des points actifs : pas d'import !
+            self.encadre(_("L'ajout de points GCP à partir d'un autre chantier ne peut se faire :%sIl y a déjà %s points GCP définis.")
+                          %("\n",self.nbPointsGCPActifs()))
+            return
         bilan = self.choisirUnChantier(_("Choisir le chantier pour ajouter les points GCP."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
             self.afficheEtat(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
             return   
         fichierParamChantierAutre  =   os.path.join(self.selectionRepertoireAvecChemin,self.paramChantierSav)
-        if os.path.exists(fichierParamChantierAutre):        
-            try:                                                                        # s'il y a une sauvegarde alors on la restaure
-                sauvegarde1=open(fichierParamChantierAutre,mode='rb')
-                r=pickle.load(sauvegarde1)
-                sauvegarde1.close()
-                listePointsGPS             =   r[12]
-                dicoPointsGPSEnPlace       =   r[20]         
-                idPointGPS                 =   r[23]
-
-                # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
-                # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
-    
-                if listePointsGPS.__len__()>0:
-                    if listePointsGPS[0].__len__()==6:
-                        listePointsGPS = [[a,nom,x,y,z,ident,"10 10 10"] for a,nom,x,y,z,ident in listePointsGPS]                
-            except Exception as e:
-                self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin))                
-                print(_("Erreur restauration points GCP : "),str(e))
-                return
-        else:
+        if not os.path.exists(fichierParamChantierAutre):
             self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin))            
             return
         
+        try:            # Restauration des points GCP de l'autre chantier :
+            sauvegarde1=open(fichierParamChantierAutre,mode='rb')
+            r=pickle.load(sauvegarde1)
+            sauvegarde1.close()
+            listePointsGPS             =   r[12]
+            dicoPointsGPSEnPlace       =   r[20]         
+            idPointGPS                 =   r[23]
+
+            if listePointsGPS.__len__()==0:
+                self.encadre(_("Pas de points GCP dans le chantier %s.") % (os.path.basename(self.selectionRepertoireAvecChemin)))
+                return                    
+
+            # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
+            # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
+
+            if listePointsGPS[0].__len__()==6:  # pour compatibilité avec les version ne comportant pas l'incertitude
+                    listePointsGPS = [[a,nom,x,y,z,ident,"1 1 1"] for a,nom,x,y,z,ident in listePointsGPS]
+
+        except Exception as e:
+            self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin))                
+            print(_("Erreur restauration points GCP : "),str(e))
+            return
+
+        self.ajoutLigne (_('Ajout des points GCP du chantier : %s') % (self.selectionRepertoireAvecChemin)+"\n")         
         # 3 variables : self.dicoPointsGPSEnPlace, self.listePointsGPS et self.idPointGPS pour le chantier en cours et idem (sans self.) pour le chantier a ajouter
         # dicoPointsGPSEnPlace key = nom du point, photo, identifiant, value = x,y
         # listePointsGPS : 7-tuples (  nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant,incertitude)
@@ -7402,68 +7503,76 @@ class Interface(ttk.Frame):
         
         # 1) Modifier la clé du dico lu : chemin de la photo et identifiant par ajout de la valeur de self.idPointGPS
         # si la photo existe alors ajout dans le dico du chantier en cours       
-
-        for  nom,photo,identifiant in dicoPointsGPSEnPlace.keys():
+        for nom,photo,identifiant in dicoPointsGPSEnPlace.keys():
             nouvelId        = identifiant + self.idPointGPS
-            nouveauNom      = nom + "_" + str(nouvelId)
-            nouvellePhoto   = os.path.join(self.repTravail,os.path.basename(afficheChemin(photo)))
-            
+            nouveauNom      = nom
+            nouvellePhoto   = os.path.join(self.repTravail,os.path.basename(afficheChemin(photo)))            
             if os.path.exists(nouvellePhoto):            
                 self.dicoPointsGPSEnPlace[nouveauNom,nouvellePhoto,nouvelId] = dicoPointsGPSEnPlace[nom,photo,identifiant]  # la photo existe, on ajoute au dico des points en place l'identifiant change
-                
-
+                nbAjoutPlace += 1
         # 2) Modifier la liste des points GCP : identifiant pat ajout de la valeur de self.idPointGPS, éviter les noms en double
-        nbAjout = 0
         for nom,x,y,z,actif,identifiant,incertitude in listePointsGPS:
             if actif:
                 nouvelId = identifiant + self.idPointGPS
-                nouveauNom = nom + "_"+ str(nouvelId)
+                nouveauNom = nom
                 self.listePointsGPS.append([nouveauNom,x,y,z,actif,identifiant,incertitude])
                 nbAjout += 1
+                rapport += nom+" "+x+" "+y+" "+z+"\n"
         
         self.idPointGPS = 1 + max ([f for a,b,c,d,e,f,g in self.listePointsGPS])    # 3) Trouver la nouvelle valeur de self.idPointGPS
         self.optionsReperes()       # mise à jour de la liste des widgets pour saisie :
         self.finCalibrationGPSOK()  # création des fichiers xml dico-appuis et mesures-appuis
         self.enregistreChantier()   # enregistre le chantier :
-        self.ajoutLigne(heure()+_(" : Ajout des %s points GCP du chantier %s.") % (nbAjout,fichierParamChantierAutre) +"\n\n")
-        self.ecritureTraceMicMac()
-        self.encadre (str(nbAjout)+_(" points GCP ajoutés."))   # Affichage de l'état du chantier avec les nouveaux points GCP            
+        rapport = str(nbAjout)+_(" points GCP ajoutés : ")+"\n"+rapport+"\n\n"+str(nbAjoutPlace)+_(" points placés sur les photos")
 
-    # Ajout de points GCP à partir d'un fichier de points : format =
-        # #F=N X Y Z Ix Iy Iz
-        # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01 
+        self.encadre (rapport)   # Affichage de l'état du chantier avec les nouveaux points GCP            
+        self.ajoutLigne(heure()+_(" : Ajout des %s points GCP du chantier %s.") % (nbAjout,fichierParamChantierAutre) +"\n\n")
+        self.ajoutLigne(rapport)
+        self.ecritureTraceMicMac()
+    
     
     def ajoutPointsGPSDepuisFichier(self):
-
+        # Ajout de points GCP à partir d'un fichier de points : format =
+        # #F=N X Y Z Ix Iy Iz
+        # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01         
         self.menageEcran()
-
+        if self.nbPointsGCPActifs()!=0:   # il y a des points actifs : pas d'import !
+            self.encadre(_("L'ajout de points GCP à partir d'un fichier ne peut se faire :%sIl y a déjà %s points GCP définis.")
+                          %("\n",self.nbPointsGCPActifs()))
+            return
         fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GCP : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
                                                   filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
                                                   multiple=False)
         
         if len(fichierPointsGPS)==0:
             return 
-        nbAjout = 0
+        nbAjout = int()
+        rapport = _("Format attendu : Nom X Y Z dx dy dz ")+"\n"
+        rapport += _("le caractère '#' en début de ligne signale un commentaire")+"\n"
         with open(fichierPointsGPS, "r") as fichier:              
             for ligne in fichier:
                 if ligne[0]!="#":
                     self.idPointGPS += 1
                     try:
-                         nom,x,y,z,dx,dy,dz=ligne.split()
-                    except: break
-                    self.listePointsGPS.append([nom,x,y,z,True,self.idPointGPS,(" ").join([dx,dy,dz])])
-                    nbAjout += 1
+                        nom,x,y,z,dx,dy,dz=ligne.split()
+                        self.listePointsGPS.append([nom,x,y,z,True,self.idPointGPS,(" ").join([dx,dy,dz])])
+                        rapport += _("Point ajouté : ")+ligne
+                        nbAjout += 1                         
+                    except Exception as e:
+                        rapport += _("Ligne lue incorrecte : ")+ligne
                     
         self.idPointGPS += 1        # Déterminer la nouvelle valeur de self.idPointGPS
         self.optionsReperes()       # mise à jour de la liste des widgets pour saisie :
         self.finCalibrationGPSOK()  # création des fichiers xml dico-appuis et mesures-appuis       
         self.enregistreChantier()   # enregistre le chantier :        
-        self.ajoutLigne(heure()+_(" : Ajout des %s points GCP du fichier %s.") % (nbAjout,fichierPointsGPS) +"\n\n")
-        self.ecritureTraceMicMac()
-        self.encadre (str(nbAjout)+_(" points GCP ajoutés."))            
+        self.ecritureTraceMicMac()           
         if nbAjout>15:
-           self.encadre (str(nbAjout)+_(" points GCP ajoutés : c'est beaucoup, sans doute trop (pb affichage options GCP)")) 
+            rapport = str(nbAjout)+_(" points GCP ajoutés : c'est beaucoup, sans doute trop.")
+        rapport = str(nbAjout)+_(" points GCP ajoutés.")+"\n\n"+rapport
+        self.encadre (rapport)
+        self.ajoutLigne(heure()+_(" : Ajout des %s points GCP du fichier %s.") % (nbAjout,fichierPointsGPS) +"\n\n"+rapport)
 
+        
     def longueurPrefixe(self):
         new = MyDialog(fenetre,_("Longueur du préfixe actuelle %s")%(self.nbCaracteresDuPrefixe),
                        _("le préfixe est utilisé pour discriminer les appareils photos")+"\n").saisie
@@ -9652,14 +9761,16 @@ class Interface(ttk.Frame):
     # quitter
             
     def quitter(self):
-        texte=""
-        if self.etatDuChantier > 2 and self.etatSauvegarde =="*":
-            if self.troisBoutons(_("Enregistrer le chantier %s ?") % (self.chantier),
-                                 _("Chantier modifié depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?"),
-                                 _("Enregistrer"),_("Ne pas enregistrer.")) == 0:
-                self.copierParamVersChantier()
-                texte=_("Chantier précédent enregistré : %s")% (self.chantier)  + "\n"        
-        print(heure()+" "+texte+_("fin normale d'aperodedenis."))
+        self.enregistreChantier()
+        # enregistrement systématique du chantier précédent, self.etatSauvegarde peu fiable
+##        texte=""
+##        if self.etatDuChantier > 2 and self.etatSauvegarde =="*":
+##            if self.troisBoutons(_("Enregistrer le chantier %s ?") % (self.chantier),
+##                                 _("Chantier modifié depuis la dernière sauvegarde. Voulez-vous l'enregistrer ?"),
+##                                 _("Enregistrer"),_("Ne pas enregistrer.")) == 0:
+##                self.copierParamVersChantier()
+##                texte=_("Chantier précédent enregistré : %s")% (self.chantier)  + "\n"        
+        print(heure()+_("fin normale d'aperodedenis."))
         self.sauveParam()
         global continuer                                # pour éviter de boucler sur un nouveau départ
         continuer = False                               # termine la boucle mainloop
@@ -9686,31 +9797,23 @@ class Interface(ttk.Frame):
                             "\n".join(liste)+"\n\n"+\
                             _("'Lancer' pour lancer une nouvelle instance d'AperoDeDenis.")+"\n\n"+\
                             _("Eviter de traiter le même dossier dans plusieurs instances.")
-                retour = MyDialog_OK_KO(fenetre,titre=titre,texte=texte,b1="Lancer",b2="Abandon").retour
-                if retour!=1:
-                    fin()
+                if MyDialog_OK_KO(fenetre,titre=titre,texte=texte,b1="Lancer",b2="Abandon").retour:
+                    self.nouveauChantier()    
                 else:
-                    self.nouveauChantier()                    
+                    fin()                    
 
     # Ajoute le chantier en cours directement dans le fichier des paramètres généraux (ceci pour gérer de multiples  instances de AperoDeDenis)
 
     def ajoutChantier(self):
-        try:
-            sauvegarde2 = open(self.fichierParamMicmac,mode='rb')
-            r2=pickle.load(sauvegarde2)
-            sauvegarde2.close()
-            self.tousLesChantiers           =   r2[3]
-            # controle que le nom n'existe pas déjà :
-            rep = [e for e in self.tousLesChantiers if os.path.basename(e)==self.chantier]
-            if rep:
-                message = _("Attention le chantier\n %s \nexiste déjà sous le répertoire\n %s. \nRisque de confusion.") % (self.chantier,"\n".join(rep))              
-                MyDialog_OK_KO(fenetre,_("Chantier existe"),message,b1="Vu",b2="")
-            # Ajout du chantier :
-            ajout(self.tousLesChantiers,self.repTravail)
-            # sauve les param en cours du chantier dans les param généraux (peux mieux faire ?)
-            self.sauveParamMicMac()         
-        except Exception as e:
-            print(_("Erreur modification param généraux : "),str(e))
+        sauvegarde2 = open(self.fichierParamMicmac,mode='rb')
+        r2 = pickle.load(sauvegarde2)
+        sauvegarde2.close()
+        self.tousLesChantiers           =   r2[3]            
+        if self.repTravail in self.tousLesChantiers:    # controle que le chemin n'existe pas déjà, sinon : rien
+            self.encadre(_("Ajout de chantier : le chantier existe déjà."))
+            return
+        ajout(self.tousLesChantiers,self.repTravail)    # Ajout du chantier :
+        self.sauveParamMicMac()                         # sauve les param en cours du chantier dans les param généraux (peux mieux faire ?)       
 
 ####### recherche dans la zone texte 201
 
@@ -10138,7 +10241,7 @@ class MyDialog_OK_KO:
             parent = tkinter.Tk()
         self.top = tkinter.Toplevel(parent,width=200,relief='sunken')
         self.top.transient(parent)
-        self.top.geometry("400x250+100+100")
+        self.top.geometry("600x250+100+100")
         try: fenetreIcone(self.top)
         except Exception as e: print("erreur fenetre icone : ",str(e))
         self.top.title(titre)

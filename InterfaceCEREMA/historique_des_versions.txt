@@ -163,8 +163,12 @@
 			voir script
 			Version 5.44 9 mai 2019
 				Ajout de la fonction "recherche" dans les textes affichés par texte201 (trace, aide) ; Ctrl F et  F3
-				Possibilité de garder les points homologues si échec dans Tapas.
-				plus de détails : voir script
+				Possibilité de relancer Tapas sans relancer Tapioca.
+			Version 5.45 13 mai 2019
+                - Sécurisation de l'import d'un chantier à partir d'un répertoire") + "\n"+\
+                - Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier") + "\n"+\
+                - Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)") + "\n"+\
+				- Sécurisation de la calibration des appareils par Tapas (option ForCalib) pour les chantiers comportant beaucoup de photos
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
    
