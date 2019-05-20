@@ -169,6 +169,9 @@
                 - Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier") + "\n"+\
                 - Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)") + "\n"+\
 				- Sécurisation de la calibration des appareils par Tapas (option ForCalib) pour les chantiers comportant beaucoup de photos
+			Version 5.46 20 mai 2019
+				- Ajout de l'item Outils/Qualité des points GCP
+				- Ajout de l'item Expert/Personnaliser les paramètres optionnels des modules de MicMac
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
    
@@ -285,4 +288,47 @@ History of the main versions of the CEREMA AperoDeDenis interface
               Correction de 2 bugs : renommer et message parfois non pertinent sur l'absence de focales.
               
             Version 4.11 Noël 2017
-      
+
+		     Version 5.0 : janvier 2018 
+			        - Suppression de l'item "Indices surfaciques" de la version 4.0
+			Version 5.1 : 4 décembre 2018 : 
+					- Options/Tapas : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appareil photo
+					- ajout d'un item dans le menu expert : copier les coordonnées des points gps à partir d'un fichier texte
+					- modification des onglets Malt et C3DC, réunis dans un même onglet "Densification"
+					- renommage de l'onglet "calibration" en "mise à l'échelle"
+			Version 5.2 janvier 2019 : 
+					- ajout des paramètres pour Campari dans la fenêtre options/points GPS
+					- ajout dans le menu expert de la consultation du log mm3d
+					- possibilité de renommer dans l'exif des appareils photos différents 
+					- mise à jour de dico camera pour "tous" les appareils photos du lot de données
+					- ajout de l'item " ajout d'un chantier à partir d'un répertoire" dans le menu fichier
+			version 5.21 février 2019 :
+					- ajout possibilité de passer une commande "python" dans le menu expert
+					- Modification de l'option "Autocal" de Tapas : Figee (au lieu de Autocal) : permet de 'figer' la calibration initiale					
+			version 5.30 21 février 2019 :
+              				- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
+              				  Ces photos font 'planter' la recherche de l'orientation.
+              				- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
+              				  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
+              				  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
+              				- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
+              				- prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
+              				- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
+			version 5.40 mars 2019 :
+				modification ergonomie saisies des points GPC, photo suivante/précédente dans fenêtre de saisie
+				corrections de bugs
+				ajout du drapage pour les options quickmac micmac et bigmap de c3dc
+				modification de l'option par défaut de c3dc : bigmac
+			Version 5.43 18 avril 2019
+			voir script
+			Version 5.44 9 mai 2019
+				Ajout de la fonction "recherche" dans les textes affichés par texte201 (trace, aide) ; Ctrl F et  F3
+				Possibilité de relancer Tapas sans relancer Tapioca.
+			Version 5.45 13 mai 2019
+                - Sécurisation de l'import d'un chantier à partir d'un répertoire") + "\n"+\
+                - Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier") + "\n"+\
+                - Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)") + "\n"+\
+				- Sécurisation de la calibration des appareils par Tapas (option ForCalib) pour les chantiers comportant beaucoup de photos
+			Version 5.46 20 mai 2019
+				- Ajout de l'item Outils/Qualité des points GCP
+				- Ajout de l'item Expert/Personnaliser les paramètres optionnels des modules de MicMac      

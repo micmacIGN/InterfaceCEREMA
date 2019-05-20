@@ -1,6 +1,10 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+version V 5.46  20 mai 2019 :
+- Ajout de l'item Outils/Qualité des points GCP
+- Ajout de l'item Expert/Personnaliser les paramètres optionnels de MicMac
+
 version V 5.45  13 mai 2019 :
 - Sécurisation de l'import d'un chantier à partir d'un répertoire") + "\n"+\
 - Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier") + "\n"+\
