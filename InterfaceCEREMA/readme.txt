@@ -1,6 +1,9 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+version V 5.47  21 mai 2019 :
+- diverses améliorations de l arobustesse du programme, voir le source.
+
 version V 5.46  20 mai 2019 :
 - Ajout de l'item Outils/Qualité des points GCP
 - Ajout de l'item Expert/Personnaliser les paramètres optionnels de MicMac

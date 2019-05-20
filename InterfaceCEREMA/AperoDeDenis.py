@@ -219,6 +219,13 @@
 # - suppression de la référence à la valeur 6 de self.etatDuChantier (valeur jamais instanciée)
 # - Ajout de l'item Expert\Personnaliser les paramètres des modules MicMac
 # - AJout d'un item : Outils/Qualité des points GCP
+# version 5.47
+# - correction bug initialisation dicoperso
+# - copie point GCP : on efface systématiquement les anciens points GCP (suppression de la boite de dialogue posant la question)
+# - on enregistre systématiquement les options si l'onglet est ouvert et qu'il faut le fermer au lieu de poser la question
+# - ajout d'une tempo dans la fonction "plusieurs appareils" (pour laisser le temps à exiftool)
+# - vérification des ajout/suppression de photos avant de lancer micmac. Blocage si c'est le cas.
+# - un nouveau choix de photos ne crée plus un nouveau chantier
 
 # bug en cours :
 # parfois rodolphe lance des traitements interminables (qui ont planté sans commentaire ni fin : a examiner de près)
@@ -358,7 +365,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.46"
+numeroVersion = "5.47"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -1063,7 +1070,7 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
              if cle[1]==self.file and cle[0] in aSupprimer:
                del self.dicoPointsJPG[cle]
          self.afficheImage()                 
-
+         
 ################# Classe Principale : la fenêtre maître de l'application, le menu, l'IHM
 
 class Interface(ttk.Frame):
@@ -2771,6 +2778,9 @@ class Interface(ttk.Frame):
               "\n" + _("Version 5.46 :")+chr(9)+_("20 mai 2019") + "\n"+\
               chr(9)+chr(9)+_("- Ajout de l'item Outils/Qualité des points GCP.") + "\n"+\
               chr(9)+chr(9)+_("- Ajout de l'item Expert/Personnaliser les paramètres optionnels de MicMac") + "\n"+\
+              "\n" + _("Version 5.47 :")+chr(9)+_("21 mai 2019") + "\n"+\
+              chr(9)+chr(9)+_("- amélioration robustesse") + "\n"+\
+              chr(9)+chr(9)+_("- voir détails en tête e source") + "\n"+\
               "----------------------------------------------------------"
 
     # choix des options
@@ -2911,7 +2921,7 @@ class Interface(ttk.Frame):
         self.arretApresTapas.set(0)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.lancerTarama.set(0)                                # 0 : on ne lance pas Tarama (mosaique des photos après Tapas)       
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
-        self.photosCalibrationSansChemin = list()
+        self.photosCalibrationSansChemin      = list()
         self.calibSeule.set(True)                               # par défaut : uniquement pour la calibration
         self.mosaiqueTaramaTIF = str() 
         self.mosaiqueTaramaJPG = str()
@@ -4176,10 +4186,10 @@ class Interface(ttk.Frame):
                 self.encadre(_("Abandon, le chantier n'est pas modifié."))
                 return
             else:
-                self.initialiseValeursParDefaut()       # valeurs par défaut pour un nouveau chantier (utile si pas encore de chantier)
-            
-        self.lesTagsExif = dict()                       # réinitialise la mémo des exifs
-  
+                # self.initialiseValeursParDefaut()       # valeurs par défaut pour un nouveau chantier (utile si pas encore de chantier)
+                self.ajoutLigne(heure()+_("Nouvelles photos choisies."))
+                
+        self.lesTagsExif = dict()                       # réinitialise la mémo des exifs  
         photos=tkinter.filedialog.askopenfilename(title=_('Choisir des photos'),
                                                   initialdir=repIni,
                                                   filetypes=[(_("Photos"),("*.JPG","*.jpg","*.BMP","*.bmp","*.TIF","*.tif")),(_("Tous"),"*")],
@@ -4250,7 +4260,7 @@ class Interface(ttk.Frame):
         # Controle des photos :
 
         message = str()
-        self.lesTagsExif = dict()                       # supprime les ancienne mémorisation des tags des exifs           
+        self.lesTagsExif = dict()                       # supprime les ancienne mémorisation des tags des exifs (doublon avec ci-dessus ?)          
         self.controlePhotos()                           # Compte le nombre de focales et les dimensions des photos        
         if self.nbFocales==0:
             message+=_('Les focales sont absentes des exif.') + "\n" + _('Mettez à jour les exifs avant de lancer MicMac.') + '\n'+\
@@ -4267,7 +4277,6 @@ class Interface(ttk.Frame):
 
         self.reinitialiseMaitreEtMasqueDisparus()           # fait un grand ménage
         self.photosPourCalibrationIntrinseque = [e for e in self.photosPourCalibrationIntrinseque if e in photos]
-            
 
         # Adaption des options au lot de photos choisi :
         # l'échelle de Tapioca est dimensionnée par défaut à 60% de la dimension maxi des photos :
@@ -4354,11 +4363,20 @@ class Interface(ttk.Frame):
         # les dimensions :
         self.dimensionsDesPhotos = [(x,Image.open(x).size) for x in self.photosSansChemin]  # si OK : x = self.dimensionsDesPhotos[0][0] et y=self.densionsDesPhotos[0][1]
         self.dimensionsOK = set([y for (x,y) in self.dimensionsDesPhotos]).__len__()==1     # vrai si une seule taille        
-
         # le nombre de focales :
         touteLesFocales = [(x,self.tagExif(tag="FocalLength",photo=x)) for x in self.photosSansChemin]
         lesFocales = set([y for (x,y) in touteLesFocales if y!='']) # les focales parmi les couples (photo, focale)        
         self.nbFocales = lesFocales.__len__()
+
+    def controleCoherenceFichiers(self):    # retourne false si incohérent et self.jpgAjout et jpgRetrait
+        # Controle que toutes les photos présentes sous le répertoires sont bien enregistrées dans le chantier et réciproquement
+        tousLesJpg = glob.glob(os.path.join(self.repTravail,"*.JPG"))
+        self.jpgAjout = [e for e in tousLesJpg if e not in self.photosAvecChemin]
+        self.jpgAjoutVrai = [os.path.basename(e) for e in self.jpgAjout if os.path.basename(e) not in self.photosCalibrationSansChemin]
+        self.jpgRetrait = [os.path.basename(e) for e in self.photosAvecChemin if e not in tousLesJpg]  #et les photos de calibration ??
+        if self.jpgAjout.__len__()+self.jpgRetrait.__len__():
+            return False
+        return True
      
     ################# définir le répertoire de travail, le créer :
     
@@ -5815,7 +5833,7 @@ class Interface(ttk.Frame):
             
     # réinitialisation des variables "locales" définies dans le module
 
-        self.zoomI = ""     # pour Malt
+        self.zoomI = ""     # pour Malt, inutilisé pour l'instant (voir ZoomIPerso)
    
     # Vérification de l'état du chantier :
 
@@ -5825,6 +5843,18 @@ class Interface(ttk.Frame):
         if self.pasDeMm3d():return
         if self.pasDeExiftool():return
 
+    # Photos ajoutées ou retirées
+        if not self.controleCoherenceFichiers():
+            message = str()
+            if self.jpgAjoutVrai:
+                message += _("Des photos ont été ajoutées dans le répertoire du chantier :")+"\n\n"+"\n".join(self.jpgAjoutVrai)+"\n\n"
+            if self.jpgRetrait:
+                message += _("Des photos ont été retirées dans le répertoire du chantier :")+"\n\n"+"\n".join(self.jpgRetrait)
+            message=_("Le répertoire du chantier a été modifié par ajout/retrait de photos.")+"\n\n"+message
+            message+="\n\n"+_("solution : Définir un nouveau chantier")
+            self.encadre(message)
+            return
+                               
     # controle que les options sont correctes (toutes, même si elles ne doivent pas servir)
     
         retour = self.controleOptions()
@@ -6452,8 +6482,8 @@ class Interface(ttk.Frame):
             if self.calibSeule.get():
                 [[os.replace(os.path.splitext(e)[0],e),time.sleep(0.3)] for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]  
                 # controle du résultat : il doit rester y avoir exactement le nombre de photos total du chantier en .JPG
-                TousLesJpg = glob.glob(os.path.join(self.repTravail,"*.JPG"))
-                if TousLesJpg.__len__() != self.photosSansChemin.__len__():
+                tousLesJpg = glob.glob(os.path.join(self.repTravail,"*.JPG"))
+                if tousLesJpg.__len__() != self.photosSansChemin.__len__():
                     self.messageRetourTapas = (   _("Problème concernant le renommage des photos après calibration.")+"\n"+
                                     _("Vérifier qu'aucune photo n'est ouverte.")+"\n"+
                                     _("Controler les noms et extensions des photos sous le répertoire du chantier : ")+"\n"+
@@ -7785,10 +7815,7 @@ class Interface(ttk.Frame):
         rapport = str()
         nbAjoutPlace = int()
         nbAjout = int()       
-        if self.nbPointsGCPActifs()!=0:   # il y a des points actifs : pas d'import !
-            self.encadre(_("L'ajout de points GCP à partir d'un autre chantier ne peut se faire :%sIl y a déjà %s points GCP définis.")
-                          %("\n",self.nbPointsGCPActifs()))
-            return
+      
         bilan = self.choisirUnChantier(_("Choisir le chantier pour ajouter les points GCP."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
             self.afficheEtat(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
@@ -7797,7 +7824,7 @@ class Interface(ttk.Frame):
         if not os.path.exists(fichierParamChantierAutre):
             self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin))            
             return
-        
+                
         try:            # Restauration des points GCP de l'autre chantier :
             sauvegarde1=open(fichierParamChantierAutre,mode='rb')
             r=pickle.load(sauvegarde1)
@@ -7808,7 +7835,7 @@ class Interface(ttk.Frame):
 
             if listePointsGPS.__len__()==0:
                 self.encadre(_("Pas de points GCP dans le chantier %s.") % (os.path.basename(self.selectionRepertoireAvecChemin)))
-                return                    
+                return
 
             # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
             # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
@@ -7826,6 +7853,10 @@ class Interface(ttk.Frame):
         # dicoPointsGPSEnPlace key = nom du point, photo, identifiant, value = x,y
         # listePointsGPS : 7-tuples (  nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant,incertitude)
         # idPointGPS : entier, identifiant du dernier point GCP 
+            
+        if self.nbPointsGCPActifs()!=0:   # il y a des points actifs : on les supprime
+            self.supprimerTousLesPointsGCP()
+            self.ajoutLigne(_("Suppression des points GCP précédents."))
         
         # 1) Modifier la clé du dico lu : chemin de la photo et identifiant par ajout de la valeur de self.idPointGPS
         # si la photo existe alors ajout dans le dico du chantier en cours       
@@ -7855,23 +7886,29 @@ class Interface(ttk.Frame):
         self.ajoutLigne(heure()+_(" : Ajout des %s points GCP du chantier %s.") % (nbAjout,fichierParamChantierAutre) +"\n\n")
         self.ajoutLigne(rapport)
         self.ecritureTraceMicMac()
-    
+
+    def supprimerTousLesPointsGCP(self):
+        self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
+        self.idPointGPS                 =   0				# identifiant des points, incrémenté de 1 a chaque insertion
+        self.dicoPointsGPSEnPlace       =   dict()                      # dictionnaire des points GCP placés dans les photos (créé par la classe CalibrationGPS)    
     
     def ajoutPointsGPSDepuisFichier(self):
         # Ajout de points GCP à partir d'un fichier de points : format =
         # #F=N X Y Z Ix Iy Iz
         # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01         
         self.menageEcran()
-        if self.nbPointsGCPActifs()!=0:   # il y a des points actifs : pas d'import !
-            self.encadre(_("L'ajout de points GCP à partir d'un fichier ne peut se faire :%sIl y a déjà %s points GCP définis.")
-                          %("\n",self.nbPointsGCPActifs()))
-            return
+
         fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GCP : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
                                                   filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
                                                   multiple=False)
         
         if len(fichierPointsGPS)==0:
-            return 
+            return
+        
+        if self.nbPointsGCPActifs()!=0:   # il y a des points actifs : on les supprime
+            self.supprimerTousLesPointsGCP()
+            self.ajoutLigne(_("Suppression des points GCP précédents."))
+        
         nbAjout = int()
         rapport = _("Format attendu : Nom X Y Z dx dy dz ")+"\n"
         rapport += _("le caractère '#' en début de ligne signale un commentaire")+"\n"
@@ -7949,6 +7986,7 @@ class Interface(ttk.Frame):
                 self.lanceCommande([self.exiftool,"-Model="+model+" "+prefix,photo])
                 supprimeFichier(photo+"_original")           # exiftool crée des copies "_original" des fichiers initiaux, on les supprime ;
                 self.lesTagsExif["Model",photo] = self.tagExif("model",photo)
+                time.sleep(0.1)
             else: nbConserve += 1       
         message = "\n"+_("Modéle de l'appareil photo modifié : ajout du préfixe du nom de fichier sur %s caractères.") % (self.nbCaracteresDuPrefixe) +"\n\n"
         message += _("Nombre de fichiers modifiés : %s") % str(nbModif) + "\n"
@@ -8265,7 +8303,7 @@ class Interface(ttk.Frame):
             self.choixDensification.set     (r[41])
             self.modeC3DC.set               (r[42])
             self.tawny.set                  (r[43])
-            self.dicoPerso                  = r[44]
+            self.dicoPerso                  = (r[44])
             # r[45] est la version : inutile pour l'instant (v2.61]
             # r[46] devenu inutile v5.2   
             self.lancerTarama.set           (r[47])
@@ -8305,10 +8343,8 @@ class Interface(ttk.Frame):
         self.miseAJourItem701_703()
         self.photosCalibrationSansChemin = [os.path.basename(f) for f in self.photosPourCalibrationIntrinseque]
 
-        # Restauration des paramètres nommés personnalisés (test pour compatibilité ascendante)
-        try: self.restauPerso()
-        except Exception as e:
-            print("erreur resto perso : "+str(e))
+        # Restauration des paramètres nommés personnalisés : si pas alors initialisation
+        if type(self.dicoPerso)!=dict(): self.initDicoPerso()
         
     ########################### affiche les messages à l'écran : cadre, état, boites de dialogues standards, ménage                
 
@@ -8467,12 +8503,17 @@ class Interface(ttk.Frame):
                 return
             if self.onglets.winfo_manager()=="":
                 return
-            self.fermetureOngletsEnCours = True        
-            if self.troisBoutons(_("Fermer les options."),_("La boîte de dialogue 'options' est ouverte et va être fermée.\nVoulez-vous enregistrer les options saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
-                self.finOptionsOK()
-            else:
-                self.finOptionsKO()
+        # modif version 5.47 : on enregistre systématiquement            
+            self.finOptionsOK()
             self.fermetureOngletsEnCours = False
+            return
+
+##            self.fermetureOngletsEnCours = True        
+##            if self.troisBoutons(_("Fermer les options."),_("La boîte de dialogue 'options' est ouverte et va être fermée.\nVoulez-vous enregistrer les options saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
+##                self.finOptionsOK()
+##            else:
+##                self.finOptionsKO()
+##            self.fermetureOngletsEnCours = False
         except: pass
         
     def fermerOptionsGoPro(self):
@@ -9923,21 +9964,21 @@ class Interface(ttk.Frame):
         if self.photosAvecChemin.__len__()==0:
             self.encadre(_("Choisir des photos au préalable."))
             return True
-        repertoireInitial = os.path.dirname(self.photosAvecChemin[0])
-        if not os.path.isdir(repertoireInitial):
-            self.encadre(_("Répertoire du chantier non accessible"))
-            return
-        liste = [e for e in self.photosAvecChemin if os.path.exists(e)==False]
-        if liste.__len__()>0:
-            self.photosAvecChemin = [e for e in self.photosAvecChemin if os.path.exists(e)]
-            self.photosSansChemin = [os.path.basename(x) for x in  self.photosAvecChemin]
-            if self.photosAvecChemin:
-                repertoireInitial = os.path.dirname(self.photosAvecChemin[0])
-                texte=_("Attention les photos suivantes sont absentes sur disque : ") + "\n"+"\n".join(liste)+"\n" + _("Elles sont supprimées du chantier.")
-                self.troisBoutons(titre=_("Problème de fichiers"),question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
-            else:           
-                texte=_("Attention toutes les photos  sont absentes sur disque et retirées du chantier: ")
-                self.troisBoutons(titre=_("Problème de fichiers"),question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
+##        repertoireInitial = os.path.dirname(self.photosAvecChemin[0])
+##        if not os.path.isdir(repertoireInitial):
+##            self.encadre(_("Répertoire du chantier non accessible"))
+##            return
+##        liste = [e for e in self.photosAvecChemin if os.path.exists(e)==False]
+##        if liste.__len__()>0:
+##            self.photosAvecChemin = [e for e in self.photosAvecChemin if os.path.exists(e)]
+##            self.photosSansChemin = [os.path.basename(x) for x in  self.photosAvecChemin]
+##            if self.photosAvecChemin:
+##                repertoireInitial = os.path.dirname(self.photosAvecChemin[0])
+##                texte=_("Attention les photos suivantes sont absentes sur disque : ") + "\n"+"\n".join(liste)+"\n" + _("Elles sont supprimées du chantier.")
+##                self.troisBoutons(titre=_("Problème de fichiers"),question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
+##            else:           
+##                texte=_("Attention toutes les photos  sont absentes sur disque et retirées du chantier: ")
+##                self.troisBoutons(titre=_("Problème de fichiers"),question=texte,b1='OK',b2='')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1            
              
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
@@ -10096,8 +10137,9 @@ class Interface(ttk.Frame):
             self.choixDensification.set(r[20])
         except Exception as e:
             print(_("erreur restauration options : ")+str(e))
-        if type(self.dicoPerso)==dict():
-            self.restauPerso()
+        # Restauration des paramètres nommés personnalisés : si pas alors initialisation
+        if type(self.dicoPerso)!=dict(): self.initPerso() 
+        else: self.restauPerso()
 
     ########################################################   nouvelle fenêtre (relance utile pour vider les traces d'exécution de mm3d et autres)
 
