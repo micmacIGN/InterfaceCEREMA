@@ -172,8 +172,11 @@
 			Version 5.46 20 mai 2019
 				- Ajout de l'item Outils/Qualité des points GCP
 				- Ajout de l'item Expert/Personnaliser les paramètres optionnels des modules de MicMac
-			Version 5.47 21 mai
+			Version 5.47 21 mai 2019
 			    - Robustesse accrue sur plusieurs points : voir le source
+			Version 5.48 25 mai 2019
+				- Possibilité de copier les fichiers de calibration des appareils photos à partir d'un autre chantier
+				- correction d'un bug empêchant le lancement de Tarama
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
    

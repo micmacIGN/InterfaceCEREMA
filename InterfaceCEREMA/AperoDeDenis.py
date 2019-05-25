@@ -227,11 +227,16 @@
 # - vérification des ajout/suppression de photos avant de lancer micmac. Blocage si c'est le cas.
 # - un nouveau choix de photos ne crée plus un nouveau chantier
 
+# version 5.48
+# - tentative de charger la calibration d'un autre chantier
+# - ouvrir un chantier avec filtre (ne proposer que les chantier avec présence de gcp ou de calib)
+
 # bug en cours :
 # parfois rodolphe lance des traitements interminables (qui ont planté sans commentaire ni fin : a examiner de près)
 # version 5.40 : aprés plantage tapas, puis rechargement des photos, le bouton "plan horizontal" devient inactif (cf rodolphe)
 # reprise de Tapioca aprés avoir généré un nuage dense : les photos de calibrations ne sont pas restaurées.
 # bug bizarre le 16 mai 2019 matin version 2.46 : le fichier des paramètres du chantier micmac_30 vient écraser celui du chantier micmac 26 ????
+# l'enregistrement des options par défaut à partir du chantier en cours  n'est pas complet
 
 # points gcp multiples aprés import d'un autre chantier
 # attribut actif des points gcp devient inutile
@@ -365,7 +370,7 @@ def chargerLangue():
 
 # Variables globales
 
-numeroVersion = "5.47"
+numeroVersion = "5.48"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -1421,7 +1426,10 @@ class Interface(ttk.Frame):
         self.lancerTarama       = tkinter.IntVar()                      # booléen : Tarama crée une mosaique des images, utilisable pour faire un masque sur Malt/ortho
         self.calibSeule         = tkinter.BooleanVar()
         self.repCalibSeule      = "PhotosCalibrationIntrinseque"        # nom du répertoire pour cantonner les photos servant uniquement à la calibration
-        
+        self.choixCalibration   = tkinter.StringVar()                   # calibration par autre chantier ou par photos 
+        self.choixCalibration.set("sans")
+        self.chantierOrigineCalibration =str()                          # si calibration copiée depuis un autre chantier
+
         # pour la calibration
 
         self.distance           = tkinter.StringVar()
@@ -1541,26 +1549,51 @@ class Interface(ttk.Frame):
         for t,m,s in modesTapas:
             b=ttk.Radiobutton(self.item500, text=t, variable=self.modeCheckedTapas, value=m)
             b.pack(anchor='w')
-            b.state([s])       
-        self.item520 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour la calibration, fera un encadrement
+            b.state([s])
 
-        # photosPourCalibrationIntrinseque
+        # choix pour calibration autre chantier ou photos
+
+        self.item560 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.2cm")      # pour le check button, fera un encadrement
+        self.item561 = ttk.Frame(self.item560,height=50,relief='sunken',padding="0.2cm")
+        self.item562 = ttk.Frame(self.item560)
+        self.item564 = ttk.Radiobutton(self.item561, text=_("Pas de calibration"),
+                                       variable=self.choixCalibration, value='sans', command=self.visuOptionsCalibration)
+        self.item565 = ttk.Radiobutton(self.item561, text=_("Choisir la calibration d'un autre chantier"),
+                                       variable=self.choixCalibration, value='chantier', command=self.visuOptionsCalibration)
+        self.item566 = ttk.Radiobutton(self.item561, text=_("Choisir des photos de calibration"),
+                                       variable=self.choixCalibration, value='photos', command=self.visuOptionsCalibration)
+        self.item560.pack()
+        self.item561.pack()
+        self.item564.pack(side='left')
+        self.item565.pack(side='left')
+        self.item566.pack(side='left')
         
-        self.item525 = ttk.Button(self.item520,text=_("Choisir quelques photos pour la calibration intrinsèques"),command=self.imagesCalibrationIntrinseques)  
+        # frame Autre chantier : 570
+        self.item570 = ttk.Frame(self.item562)
+        self.item571 = ttk.Button(self.item570,text=_("Charger la calibration intrinsèque d'un autre chantier"),command=self.chargerCalibrationIntrinseques)  
+        self.item572 = ttk.Label(self.item570, text="")
+        self.item571.pack()
+        self.item572.pack()
+        
+        # ou frame 520 photosPourCalibrationIntrinseque
+        self.item520 = ttk.Frame(self.item562)      # pour la calibration, fera un encadrement        
+        self.item525 = ttk.Button(self.item520,text=_("Photos pour la calibration intrinsèque"),command=self.imagesCalibrationIntrinseques)  
         self.item526 = ttk.Label(self.item520, text="")
         self.item527 = ttk.Checkbutton(self.item520, variable=self.calibSeule,
                                        text=_(" N'utiliser ces photos que pour la calibration")) # inutile ?
         self.item528 = ttk.Label(self.item520, text=_("Toutes ces photos doivent avoir la même focale."))
+        # lancer tarama ? item510
         self.item510 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour le check button, fera un encadrement
         self.item530 = ttk.Checkbutton(self.item510, variable=self.lancerTarama, text=_("lancer Tarama après TAPAS : mosaique pouvant définir un masque pour Malt/ortho)"))
         self.item530.pack(ipady=5)
+        # lancer la densification ? item 540
         self.item540 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour le check button, fera un encadrement
         self.item550 = ttk.Checkbutton(self.item540, variable=self.arretApresTapas,
                                        text=_("Ne pas lancer la densification - permet de définir un masque"))
         self.item550.pack(ipady=5)
 
         self.item505.pack()
-        self.item506.pack()
+        self.item506.pack()            
         self.item525.pack()
         self.item526.pack()
         self.item527.pack() # je ne comprends plus l'intérêt de cet item : la suite s'accomode très bien de 2 focales différentes... mais si : camille utilise des photos d'un autre site
@@ -3473,10 +3506,12 @@ class Interface(ttk.Frame):
             
             if self.modeCheckedTapas.get()!='':
                 texte = texte+'\n' + 'Orientation des appareils photos :\n' + _('Mode : ')+self.modeCheckedTapas.get()+'\n'              
-            if self.photosPourCalibrationIntrinseque.__len__()>0:
+            if self.photosPourCalibrationIntrinseque.__len__()>0 and self.choixCalibration.get()=="photos":
                 texte = texte+_("Nombre de photos pour calibration intrinsèque : ")+str(self.photosPourCalibrationIntrinseque.__len__())+"\n"
                 if self.calibSeule.get():
                      texte = texte+_('Ces photos servent uniquement à la calibration.') + '\n'
+            if self.chantierOrigineCalibration and self.choixCalibration.get()=="chantier":
+                texte = texte+_('Calibration du chantier "%s".') % (self.chantierOrigineCalibration) + '\n'
             if self.lancerTarama.get()==1:
                 texte = texte+_('Tarama demandé après orientation') + '\n'                     
             if self.arretApresTapas.get()==1:
@@ -4371,7 +4406,7 @@ class Interface(ttk.Frame):
     def controleCoherenceFichiers(self):    # retourne false si incohérent et self.jpgAjout et jpgRetrait
         # Controle que toutes les photos présentes sous le répertoires sont bien enregistrées dans le chantier et réciproquement
         tousLesJpg = glob.glob(os.path.join(self.repTravail,"*.JPG"))
-        self.jpgAjout = [e for e in tousLesJpg if e not in self.photosAvecChemin]
+        self.jpgAjout = [e for e in tousLesJpg if e not in self.photosAvecChemin and not os.path.isdir(e)]
         self.jpgAjoutVrai = [os.path.basename(e) for e in self.jpgAjout if os.path.basename(e) not in self.photosCalibrationSansChemin]
         self.jpgRetrait = [os.path.basename(e) for e in self.photosAvecChemin if e not in tousLesJpg]  #et les photos de calibration ??
         if self.jpgAjout.__len__()+self.jpgRetrait.__len__():
@@ -4481,9 +4516,7 @@ class Interface(ttk.Frame):
             self.onglets.add(self.item500)                          # tapas
             self.onglets.add(self.item950)                          # Calibration            
             self.optionsTapioca()                                   # les frames à afficher ne sont pas "fixes"
-            self.item520.pack(pady=10)                              # la frame fixe de tapas pour calibration
-            self.item510.pack(pady=10)                              # la frame fixe de tapas pour arrêt ou poursuite
-            self.item540.pack(pady=10)                              # la frame fixe de tapas pour arrêt ou poursuite            
+            self.item570.pack(pady=10)                              # la frame fixe de tapas pour choix de calibration
             self.item526.config(text=_("Nombre de photos choisies : ")+str(self.photosPourCalibrationIntrinseque.__len__()))
             self.item720.pack(pady=10)                              # Malt
             self.optionsMalt()                                      # La frame Image Maitre à afficher n'est pas "fixe"           
@@ -4494,6 +4527,8 @@ class Interface(ttk.Frame):
             self.item980.pack(padx=5,pady=10,ipady=2,ipadx=15)      # calibration suite
             self.item990.pack()                                     # calibration suite            
             selection = self.item400                                # onglet sélectionné par défaut
+            self.visuOptionsCalibration()                               # les frame de calibration chantier ou photo
+
         else:
             
             self.onglets.hide(self.item400)                         # tapioca
@@ -4512,7 +4547,8 @@ class Interface(ttk.Frame):
         else:                                                       # Si l'onglet existe on met à jour les messages :
             oschdir(self.repTravail)        
             if os.path.exists("AperiCloud.ply")==False:
-                self.item804.configure(text= _("Pas de nuage Apericloud : pour construire un masque") + "\n" + _("lancer Tapioca/tapas."),foreground='red',style="C.TButton")
+                self.item804.configure(text= _("Pas de nuage Apericloud : pour construire un masque") + "\n" +
+                                       _("lancer Tapioca/tapas."),foreground='red',style="C.TButton")
                 self.item801.configure(state = "disable")
             else:
                 self.item801.configure(state = "normal")
@@ -4987,7 +5023,7 @@ class Interface(ttk.Frame):
         self.restaureParamChantier(self.fichierParamChantierEnCours)
         self.afficheEtat()
         
-    #"""""""""""""""""""""""   Options de TAPIOCA
+    #"""""""""""""""""""""""   Options de TAPIOCA, Tapas, densification
         
     def optionsTapioca(self):                     # utilisé dans la syntaxe : Tapioca Line Files Size delta ArgOpt=  (ce qui exclut implicitement la syntaxe multiscale)
         self.item460.pack_forget()
@@ -5003,6 +5039,21 @@ class Interface(ttk.Frame):
         if self.modeTapioca.get()=='Line':
             self.item470.pack(pady=15)
 
+    def visuOptionsCalibration(self):
+        self.item520.pack_forget() # photos
+        self.item570.pack_forget() # chantier
+        self.item510.pack_forget() # tarama
+        self.item540.pack_forget() # densification
+        self.item562.pack_forget() # choix
+        if self.choixCalibration.get()=='photos':
+            self.item562.pack()
+            self.item520.pack()
+        if self.choixCalibration.get()=='chantier':
+            self.item562.pack()
+            self.item570.pack()
+        self.item510.pack()
+        self.item540.pack()
+        
     def optionsDensification(self):
         self.item700.pack_forget()
         self.item800.pack_forget()
@@ -5025,6 +5076,33 @@ class Interface(ttk.Frame):
         
 
     #""""""""""""""""""""""""   Options de Malt
+    def chargerCalibrationIntrinseques(self):
+        if self.pasDePhoto(False):
+            self.item572.configure(text=_("Commencer par choisir des photos."),foreground='red')
+            return
+        chantier = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration."),filtre="CALIB")                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
+        if chantier!=None:
+            self.item572.configure(text=_("Pas de chantier choisi."))
+            return   
+        repertoireCalib  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Calib")
+        if not os.path.exists(repertoireCalib):
+            self.item572.configure(text=_("le chantier choisi n'a pas de données de calibration."))
+            return
+        # copie du répertoire : tentative
+        calibChantier = os.path.join(self.repTravail,"Ori-Calib")
+        supprimeRepertoire(calibChantier)
+        print(calibChantier," = ",repertoireCalib)
+        try: shutil.copytree(repertoireCalib,calibChantier)
+        except Exception as e:
+            self.item572.configure(text=_("la copie a échouée : %s.") % (str(e)))
+            return
+        # copie du répertoire: réussite
+        if os.path.exists(calibChantier):
+            self.chantierOrigineCalibration = os.path.basename(self.selectionRepertoireAvecChemin)
+            self.item572.configure(text=_("Calibration du chantier '%s' recopiée.") % (self.chantierOrigineCalibration))
+            self.supprimeCalibrationParPhotos()
+        else:
+            self.item572.configure(text=_("la recopie a échouée : %s.") % (str(e)))
             
     def imagesCalibrationIntrinseques(self):
         if self.photosAvecChemin.__len__()==0:
@@ -5041,12 +5119,26 @@ class Interface(ttk.Frame):
             self.photosPourCalibrationIntrinseque = list()                                 
             return
         if self.selectionPhotosAvecChemin.__len__()==0:             #sortie par fermeture fenêtre
-            self.item526.config(text=_("Choix inchangé.") + "\n")
+            self.item526.config(text="")
             return
         self.photosPourCalibrationIntrinseque = self.selectionPhotosAvecChemin
         self.item526.config(text=_("Nombre de photos choisies : ")+str(self.photosPourCalibrationIntrinseque.__len__()))
         self.photosCalibrationSansChemin = [os.path.basename(f) for f in self.photosPourCalibrationIntrinseque]
+        self.supprimeCalibrationParCopie()
+        
+    def supprimeCalibrationParCopie(self):
+        #suppression de la calibration par photos
+        self.chantierOrigineCalibration = str()
+        self.item572.configure(text="")
+        calibChantier = os.path.join(self.repTravail,"Ori-Calib")
+        supprimeRepertoire(calibChantier)
+        
+    def supprimeCalibrationParPhotos(self):
+        #suppression de la calibration par copie de chantier
+        self.photosCalibrationSansChemin = list()
+        self.photosPourCalibrationIntrinseque = list()
 
+        
     #""""""""""""""""""""""""   Options de Malt        
 
     def optionsMalt(self):
@@ -6453,7 +6545,8 @@ class Interface(ttk.Frame):
         self.messageRetourTapas = str()
         def effacerTraceTapas():
             oschdir(self.repTravail)
-            supprimeRepertoire("Ori-Calib")
+            if not self.chantierOrigineCalibration: # si le répertoire de calibration est importé : on le garde !
+                supprimeRepertoire("Ori-Calib")
             supprimeRepertoire("Ori-Arbitrary")
             supprimeRepertoire("Ori-InterneScan")
             supprimeRepertoire("Tmp-MM-Dir")
@@ -6462,7 +6555,7 @@ class Interface(ttk.Frame):
             self.cadreVide()                                        # fenêtre texte pour affichage des résultats.           
 
         def retirerPhotosInutilesPourCalibration(): # par suppression de l'extension des photos ne servant pas à calibrer :
-            if self.calibSeule.get():
+            if self.calibSeule.get() and self.photosCalibrationSansChemin:    
                 [[os.rename(e,os.path.splitext(e)[0]),time.sleep(0.3)] for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]
                 # controle du résultat : il doit rester exactement le nombre de photos pour calibration avec l'extension .JPG                
                 self.messageTapas = str()
@@ -6479,7 +6572,7 @@ class Interface(ttk.Frame):
                     return True
 
         def remettrePhotosInutilesPourCalibration(): # par remise de l'extension des photos n'ayant pas servies à la calibration
-            if self.calibSeule.get():
+            if self.calibSeule.get() and self.photosCalibrationSansChemin:    
                 [[os.replace(os.path.splitext(e)[0],e),time.sleep(0.3)] for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]  
                 # controle du résultat : il doit rester y avoir exactement le nombre de photos total du chantier en .JPG
                 tousLesJpg = glob.glob(os.path.join(self.repTravail,"*.JPG"))
@@ -6539,7 +6632,8 @@ class Interface(ttk.Frame):
         if self.remettrePhotosCalibration(): return             # si les photos de calibration ont été retirées il faut les remettre
         if verifierNombrePhotosCalibration(): return            # au moins 2 photos pour la calib et 2 pour le traitement
         if retirerPhotosInutilesPourCalibration(): return       # limitation aux seules images pour la calibration si il y en a
-        effacerTraceTapas()                                     # tout est bon : supprimer les résultats d'un Tapas précédent :
+        effacerTraceTapas()                                     # tout est bon : supprimer les résultats d'un Tapas précédent sauf la calib importée
+
         if self.photosPourCalibrationIntrinseque:       # s'il y a des photos pour calibration intrinsèque : Lance Tapas pour calibration                                   
             tapas = [self.mm3d,
                      "Tapas",
@@ -6573,6 +6667,22 @@ class Interface(ttk.Frame):
                                filtre=self.filtreTapas,
                                info=(_("Calibration effectuée. Recherche de l'orientation sur %s photos.") % (self.photosSansChemin.__len__()))+ "\n" )    
 
+        elif self.chantierOrigineCalibration: # la calibration existe déjà, recopiée d'ailleurs
+
+            tapas = [self.mm3d,
+                     "Tapas",
+                     "Figee",        # fige la calibration fixée, sinon "AutoCal" la prend en compte mais la modifie
+                     '.*'+self.extensionChoisie,
+                     self.tapasPerso.get(),
+                     'InCal=Calib',
+                     'Out=Arbitrary',
+                     "SauvAutom=NONE",
+                     "ExpTxt="+self.exptxt]        
+            self.lanceCommande(tapas,
+                               filtre=self.filtreTapas,
+                               info=(_("Calibration importée depuis '%s'. Recherche de l'orientation sur %s photos.")
+                                     % (self.chantierOrigineCalibration,self.photosSansChemin.__len__()))+ "\n" )                
+
         else:   # lance Tapas sans calibration préalable :                         
             tapas = [self.mm3d,
                      "Tapas",
@@ -6587,7 +6697,7 @@ class Interface(ttk.Frame):
                                info=_("Calibration, pour trouver les réglages intrinsèques de l'appareil photo") + "\n" +
                                _("Recherche l'orientation des %s prises de vue.") % (self.photosSansChemin.__len__())+ "\n" )
         if orientationKO(): return
-        self.ajoutLigne(_("Calibration intrinsèque effectuée.")) # bilan : calibration OK, phtos de calibration mises à part, 
+        self.ajoutLigne(_("Calibration intrinsèque effectuée.")) # bilan : calibration OK, photos de calibration mises à part, 
                 
     def filtreTapas(self,ligne): 
         if ('RESIDU LIAISON MOYENS' in ligne) or ('Residual' in ligne) :   # Residual pour la version 5999
@@ -6686,7 +6796,7 @@ class Interface(ttk.Frame):
                     "Tarama",
                     '.*'+self.extensionChoisie,
                     "Arbitrary",
-                  self.taramPerso.get()
+                  self.taramaPerso.get()
                   ]                 
         self.lanceCommande(tarama)
         
@@ -7810,13 +7920,13 @@ class Interface(ttk.Frame):
         [self.dicoPointsGPSEnPlace.pop(key,None) for key in dico if key[0] not in listePoints]      
         return listePoints.__len__()
 
-    def ajoutPointsGPSAutreChantier(self):
+    def ajoutPointsGPSAutreChantier(self):  # à revoir : double ouverture du fichier param de l'autre chantier
         self.menageEcran()
         rapport = str()
         nbAjoutPlace = int()
         nbAjout = int()       
       
-        bilan = self.choisirUnChantier(_("Choisir le chantier pour ajouter les points GCP."))                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
+        bilan = self.choisirUnChantier(_("Choisir le chantier pour ajouter les points GCP."),filtre="GCP")                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
             self.afficheEtat(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
             return   
@@ -7824,7 +7934,7 @@ class Interface(ttk.Frame):
         if not os.path.exists(fichierParamChantierAutre):
             self.encadre (_('Chantier choisi %s corrompu. Abandon.') % (self.selectionRepertoireAvecChemin))            
             return
-                
+               
         try:            # Restauration des points GCP de l'autre chantier :
             sauvegarde1=open(fichierParamChantierAutre,mode='rb')
             r=pickle.load(sauvegarde1)
@@ -8140,6 +8250,8 @@ class Interface(ttk.Frame):
                          self.chantierNettoye,
                          self.lesTagsExif,
                          self.ecartPointsGCPByBascule,
+                         self.choixCalibration.get(),       # calibration par autre chantier ou par photos 
+                         self.chantierOrigineCalibration,   # si calibration copiée depuis un autre chantier                        
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -8312,6 +8424,9 @@ class Interface(ttk.Frame):
             self.chantierNettoye            = r[50]
             self.lesTagsExif                = r[51]
             self.ecartPointsGCPByBascule    = r[52]
+            self.choixCalibration.set       (r[53]) # calibration par autre chantier ou par photos 
+            self.chantierOrigineCalibration =r[54]  # si calibration copiée depuis un autre chantier
+            
         except Exception as e: print(_("Erreur restauration param chantier : "),str(e))    
         
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
@@ -9499,8 +9614,8 @@ class Interface(ttk.Frame):
         self.afficherTousLesPointsDuDico()
 
     ############################### Choix d'un répertoire dans la liste des répertoires de travail, avec scrollbar : charge self.selectionPhotosAvecChemin
-
-    def choisirUnChantier(self,titre,mode='single'):              # mode="single" ou 'extended'
+    # filtres possibles : "GCP" avec GCP, ou "CALIB" avec Ori_Calib
+    def choisirUnChantier(self,titre,mode='single',filtre=None):              # mode="single" ou 'extended'
         self.retourChoixRepertoire=_("Abandon")
         self.fichierProposes = list()
         chantierSansParametre = list()
@@ -9514,10 +9629,27 @@ class Interface(ttk.Frame):
                 else:
                     chantierSansParametre.append(e)
             else:
-                chantierSansRepertoire.append(e)
-                    
+                chantierSansRepertoire.append(e)            
         if len(self.fichierProposes)==0:
-            return _("Aucun chantier mémorisé.")        
+            return _("Aucun chantier mémorisé.")
+
+        # filtres GCP et Calib
+        
+        if filtre == "CALIB":
+            self.fichierProposes = [ e for e in self.fichierProposes if os.path.exists(os.path.join(e,"Ori-Calib"))]            
+            if len(self.fichierProposes)==0:  return _("Aucun chantier avac calibration.")
+        if filtre == "GCP":
+            try:            # Restauration des points GCP de l'autre chantier :
+                liste = list(self.fichierProposes)
+                for e in liste:
+                    sauvegarde1=open(os.path.join(e,self.paramChantierSav),mode='rb')
+                    r=pickle.load(sauvegarde1)
+                    sauvegarde1.close()
+                    listePointsGPS = r[12]
+                    if listePointsGPS.__len__()==0:
+                        self.fichierProposes.remove(e)
+            except Exception as e: pass
+            if len(self.fichierProposes)==0:  return _("Aucun chantier avac points GCP.")                        
         self.selectionRepertoireAvecChemin=str()
         # création fenêtre
         self.topRepertoire = tkinter.Toplevel(fenetre)
@@ -9960,9 +10092,9 @@ class Interface(ttk.Frame):
     #################### Utilitaires : tests de la présence de photos, de mm3d, d'exiftool, envoi retour chariot
     # et compte le nombre d'extensions différentes dans une liste, affiche un texte long et scroll
 
-    def pasDePhoto(self):
+    def pasDePhoto(self,avecMessage=True):
         if self.photosAvecChemin.__len__()==0:
-            self.encadre(_("Choisir des photos au préalable."))
+            if avecMessage: self.encadre(_("Choisir des photos au préalable."))
             return True
 ##        repertoireInitial = os.path.dirname(self.photosAvecChemin[0])
 ##        if not os.path.isdir(repertoireInitial):
