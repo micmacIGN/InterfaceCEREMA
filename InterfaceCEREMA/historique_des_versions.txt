@@ -178,7 +178,7 @@
 				- Possibilité de copier les fichiers de calibration des appareils photos à partir d'un autre chantier
 				- correction d'un bug empêchant le lancement de Tarama
 			Version 5.49 janvier 2020
-				- prise en compte des données GPS écrites par les caméra embarquées sur les drones
+				- prise en compte des données GPS écrites par les caméras embarquées sur les drones
 				  le calcul d'un référentiel local GWGS84 est automatique (utilise OriConvert et CenterBascule)
 				  Il n'est plus besoin de faire appel à un logiciel propriétaire comme AGISOFT
 				  Les coordonnées du repère local sont fournies en WGS84 et Lambert 93 (en France métropolitaine)
@@ -188,6 +188,7 @@
 				- Possibilité de copier les points homologues d'un chantier vers un autre
 				- Le controle des photos avant traitement a été considérablement accéléré
 				- amélioration des fonctions "du ménage" et "retirer des photos"
+				
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
    
