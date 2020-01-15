@@ -1,6 +1,13 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+version V 5.49  15 janvier 2020 :
+- les données GPS des caméras embarquées sur drone sont exploitées pour définir le référentiel des nuages de point.
+  4 nouveaux item dans le menu expert pour gérer ces données GPS.
+- si un lot de photos définit plusieurs scène : proposition de traiter le plus nombreux
+- copie des points homologues d'un chantier à un autre
+- diverses améliorations : voir l'historique et le source
+
 version V 5.48  25 mai 2019 :
 - récupération de la calibration des appareils à partir d'un autre chantier.
 - les chantiers proposés pour copier les points GCP et la calibration sont filtrés
@@ -103,9 +110,13 @@ Plusieurs nouveautés dans la version 5.11 :
   - liste des différents appareils photos présents dans le lot de photos
   
 Pour plus de détail voir l'item de menu "Aide/historique" ou le code source.
+Première diffusion sur internet : le 23 novembre 2015.
 
 
-Un installateur msi facilite l'installation de la version 5.33 sous Windows 64 bits.
+Un installateur msi facilite l'installation sous Windows 64 bits.
 Sous linux et mac/os : voir la documentation
  
-L'application MicMac de l'IGN doit être installée ( https://github.com/micmacIGN ou http://logiciels.ign.fr/?Micmac )
+L'application MicMac de l'IGN doit être installée :
+https://micmac.ensg.eu/index.php/Install
+Voir aussi :
+https://github.com/micmacIGN ou http://logiciels.ign.fr/?Micmac )
