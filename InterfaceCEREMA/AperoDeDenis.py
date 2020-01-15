@@ -3625,7 +3625,6 @@ class Interface(ttk.Frame):
         if self.pasDeMm3d():
             return
         self.sauveParam()
-        self.avertissementNouvelleVersion()
         nbPly = 0
         texte = str()        
         photosSansChemin = self.toutesLesPhotosSansChemin()
@@ -9341,8 +9340,7 @@ class Interface(ttk.Frame):
             return
         
         # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ? Le rea   dme.txt comporte " V N.nn " pour la version en cours
-
-        if version not in htmlLu:             # version utilisateur sous la forme : " V 5.43 " non trouvée dans version GitHub
+        if version not in htmlLu:             # version utilisateur sous la forme : " V 5.43 " non trouvée dans version GitHub (espace V majuscule espace numéro espace)
             self.avertissementNouvelleVersion()
 
     def avertissementNouvelleVersion(self): # n'apparait qu'une fois par session (role de avertirNouvelleVersion)
