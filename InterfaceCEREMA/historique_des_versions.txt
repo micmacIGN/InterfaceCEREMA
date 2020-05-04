@@ -1,5 +1,29 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
-   
+
+			Version confinée 5.50 du 4 mai 2020 :
+
+				- Ecriture sous forme de MNT aux formats IGN et GRASS des nuages de points .ply			
+				- Choix d'un référentiel EPSG pour les données GPS des drones		
+				- Choix entre nuage et maillage pour les modèles 3D obtenus par Malt.
+				- Le calcul du nuage non dense devient facultatif
+				- Copie possible de l'orientation depuis un autre chantier
+
+				Modifications diverses, corrections d'anomalies : voir en tête du script
+				
+			Version 5.49 janvier 2020
+				- prise en compte des données GPS écrites par les caméras embarquées sur les drones
+				  le calcul d'un référentiel local GWGS84 est automatique (utilise OriConvert et CenterBascule)
+				  Il n'est plus besoin de faire appel à un logiciel propriétaire comme AGISOFT
+				  Les coordonnées du repère local sont fournies en WGS84 et Lambert 93 (en France métropolitaine)
+				  L'utilisateur peut choisir un repère géocentrique ou désactiver la fonction (menu expert)
+				- Lorsque les points homologues ne permettent pas de définir une seule scène il est proposé
+				  à l'utilisateur d'effectuer le traitement sur la scène ayant le plus de photos
+				- Possibilité de copier les points homologues d'un chantier vers un autre
+				- Le controle des photos avant traitement a été considérablement accéléré
+				- amélioration des fonctions "du ménage" et "retirer des photos"
+
+Anciennes versions, dans l'ordre chronologique :
+				
              Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
              Version 1.55 : décembre 2015
@@ -177,17 +201,6 @@
 			Version 5.48 25 mai 2019
 				- Possibilité de copier les fichiers de calibration des appareils photos à partir d'un autre chantier
 				- correction d'un bug empêchant le lancement de Tarama
-			Version 5.49 janvier 2020
-				- prise en compte des données GPS écrites par les caméras embarquées sur les drones
-				  le calcul d'un référentiel local GWGS84 est automatique (utilise OriConvert et CenterBascule)
-				  Il n'est plus besoin de faire appel à un logiciel propriétaire comme AGISOFT
-				  Les coordonnées du repère local sont fournies en WGS84 et Lambert 93 (en France métropolitaine)
-				  L'utilisateur peut choisir un repère géocentrique ou désactiver la fonction (menu expert)
-				- Lorsque les points homologues ne permettent pas de définir une seule scène il est proposé
-				  à l'utilisateur d'effectuer le traitement sur la scène ayant le plus de photos
-				- Possibilité de copier les points homologues d'un chantier vers un autre
-				- Le controle des photos avant traitement a été considérablement accéléré
-				- amélioration des fonctions "du ménage" et "retirer des photos"
 				
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface

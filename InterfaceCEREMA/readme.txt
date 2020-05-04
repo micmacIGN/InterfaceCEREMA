@@ -1,6 +1,13 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+Version confinée 5.50 du 4 mai 2020 :
+- Ecritures des ply  au format MNT IGN et GRASS
+- Choix d'un référentiel EPSG pour les données GPS des drones
+- Choix entre maillage et nuage pour les ply densifiés issus de Malt
+- le nuage non dense devient facultatif
+- diverses améliorations et corrections : voir l'historique et le script
+
 version V 5.49  15 janvier 2020 :
 - les données GPS des caméras embarquées sur drone sont exploitées pour définir le référentiel des nuages de point.
   4 nouveaux item dans le menu expert pour gérer ces données GPS.
