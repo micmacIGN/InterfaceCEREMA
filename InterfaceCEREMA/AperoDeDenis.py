@@ -263,7 +263,7 @@
 #        -  navigation GPS (drones)
 #        -  plusieurs appareils photos
 # - menu expert/Navigation GPS : ajout des choix EPSG, wgs84 et lambert93 et "ne pas prendre en compte les données GPS"
-# - menu expert/"Importer ... exporter " : ajout d'un item pour exporter les fichiers ply au format MNT de l'IGN et de GRASS.
+# - menu expert : ajout d'un item pour exporter les fichiers ply et les fichiers ascii de type X,Y,Z au format MNT de l'IGN et de GRASS.
 # - Option/mise à l'échelle : l'onglet est désormais visible en modif de densification
 # - Option/orientation : possibilité de ne pas calculer le nuage non dense (si inutile et cela prend du temps)
 # - Option densification/Malt : le nuage de point généré par Malt est désormais au choix de l'utilisateur : nuage ou maillage
@@ -299,11 +299,16 @@
 # - exécution de sauveParamMicmac pour mémoriser le mercurial de MicMac
 # - affichage du mercurial de MicMac
 # ajout de self.mercurialMicMac dans les paramètres suvegardés par sauveParamMicmac
+# suppression du message d'avertissement (redondant) si le répertoire du chantier précéent n'est pas trouvé 
 
-# remarques :
-#  EPSG : Attention les projections de type longlat, sterea ne conviennent pas... faire message sur forum
-# ok pour tmerc, lcc, utm, aea, laea, poly,omerc,stere,somerc,krovak
-# la fonction écrire un MNT ne focntionne pas avec la version intallée sous windows avec le msi aperodedenis.
+
+# version 5.51
+# ajout d'un item dans le menu édition : info sur un ply : affiche le nombre de points, la surface, les valeurs maxi et mini de x,y, z
+# ajout d'un item de menu : outils_métiers, pour la comparaison de 2 MNT issu des nuages
+# ajout d'un item dans le menu outils_métiers : écriture du fichier XYZ contenant les coordonnées des points d'un PLY
+# 2 questions de Thierry mercier : 1) tarama est-il une ortho photo ?
+# 2) Ajouter dans la doc le mode d'emploi pour diviser en plusieurs lots un seul jeu de beaucoup de photos
+
 
 # idées a faire :
 
@@ -319,6 +324,8 @@
 
 # en prévision :
 #  renommer un chantier : donner accès à la boite de dialogue de choix d'un répertoire
+# nouveau modele3d : ne pas renommer l'ancien, incrémenter le n° (plus compliqué qu'il n'y parait)
+#prendre en compte les ply mesh binaire pour conversion en mnt
 # bug en cours :
 # parfois rodolphe lance des traitements interminables (qui ont planté sans commentaire ni fin : a examiner de près)
 # version 5.40 : aprés plantage tapas, puis rechargement des photos, le bouton "plan horizontal" devient inactif (cf rodolphe)
@@ -327,6 +334,8 @@
 # l'enregistrement des options par défaut à partir du chantier en cours  n'est pas complet
 # pb avec un mac 
 # reste a faire :
+# faire en sorte que les modèles 3D générés soient numérotés de façon fixeV1, V2, V3...
+#   contrairement à la situation actuelle où ils sont renommés à chaque nouvelle densification
 # vérifier pourquoi la ligne 9217 (remove) plante parfois ! (mise en try)
 # gérer les ajouts de chantier si plusieurs instances (et les suppressions) et les modifs de paramètres...
 # choix abandon = valider pour la saisie des lignes horizontale et verticale, a corriger
@@ -384,6 +393,7 @@ from textwrap import wrap
 import glob
 import math
 import struct
+from itertools import cycle
 
 ################################## Classe : Choix de la langue en cas d'absence dans les paramètres ###########################"
 
@@ -401,7 +411,24 @@ def heure():        #  time.struct_time(tm_year=2015, tm_mon=4, tm_mday=7, tm_ho
 def fin(codeRetour=0):
     print("fin")
     os._exit(codeRetour)
-    
+
+################################## Décorateur try
+
+def decorateTry(func):
+    def wrapper(*args, **kwargs):
+        try:
+            response = func(*args, **kwargs)
+        except Exception as e:
+            tkinter.messagebox.showerror("Erreur",_("erreur inattendue = "+str(e)+"\n\n"+
+                                                    _("Fichier incorrect. La fonction est abandonnée")))
+            interface.menageEcran()
+            return
+        # Post-traitement
+        return response
+    return wrapper
+
+################################ Multilangue
+
 class InitialiserLangue(tkinter.Frame):
     def __init__(self, frame, **kwargs):
         self.frame = tkinter.Frame
@@ -500,12 +527,13 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.50"
+numeroVersion = "5.51"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
 messageDepart = str()               # Message au lancement de l'interface
 compteur = 0                        # Compte le nombre de relance de l'interface
+listeDesFichiersTrace = list()      # pour modifier la trae en cours (par exemple pour les traces des MNT ou des volumes, variable modifiable globalement)
 
 # voir ci dessus la fonction gif2txt() pour obtenir les textes suivants à partir d'un GIF
 # voir ci-dessous la boucle principale pour transformer ces strings en images tkinter :
@@ -1322,7 +1350,10 @@ class Interface(ttk.Frame):
         menuEdition.add_separator()        
         menuEdition.add_command(label=_("Lister-Visualiser les images 3D"), command=self.lister3DPly)
         menuEdition.add_command(label=_("Fusionner des images 3D"), command=self.choisirPuisFusionnerPly)
-
+        menuEdition.add_separator()        
+        menuEdition.add_command(label=_("Informations sur un nuage de points du chantier"), command=self.demandePlyChantierPourInfo)
+        menuEdition.add_command(label=_("Informations sur un fichier ply"), command=self.demandePlyPourInfo)
+        
         # MicMac
                 
         menuMicMac = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
@@ -1382,11 +1413,8 @@ class Interface(ttk.Frame):
         menuExpertImport.add_separator()        
         menuExpertImport.add_command(label=_("Importer les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)                
         menuExpertImport.add_command(label=_("Importer les points GCP à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)
-        menuExpertImport.add_separator()
-        menuExpertImport.add_command(label=_("Ecrire un fichier MNT IGN à partir d'un Ply"),command=self.MNT)    
-
         
-        menuExpert.add_cascade(label = _("Importer points homologues, ...,  exporter au format MNT"),menu=menuExpertImport)
+        menuExpert.add_cascade(label = _("Importer points homologues, les points GCP/GPS"),menu=menuExpertImport)
     
         menuExpert.add_separator()        
         menuPlusieursAppareilsPhotos = tkinter.Menu(menuExpert,tearoff = 0,postcommand=updatePlusieursAppareilsPhotos)        
@@ -1413,7 +1441,28 @@ class Interface(ttk.Frame):
         # Mise à jour du libellé du menu expert/navigation GPS/ utiliser les données GPS
         
         self.miseAJourLibelleNavigationGPS()
-        
+                
+
+        # menu métiers
+
+        menuMetier = tkinter.Menu(mainMenu,tearoff = 0)         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
+        menuMetier.add_command(label=_("Ecrire un MNT à partir d'un PLY"), command=self.ply2Mnt)
+        menuMetier.add_command(label=_("Ecrire un MNT à partir d'un fichier XYZ"), command=self.xyz2Mnt)                       
+        menuMetier.add_separator()
+        menuMetier.add_command(label=_("Information sur le calcul des volumes"), command=infoVolume)
+        menuMetier.add_command(label=_("Calculer le volume d'un MNT"), command=calculVolumeMnt)        
+        menuMetier.add_command(label=_("Calculer le volume entre 2 MNT"), command=calculVolumeEntre2Mnt)           
+        menuMetier.add_command(label=_("Visualiser l'écart entre les 2 MNT"), command=self.afficheEcart)
+        menuMetier.add_separator()        
+        menuMetier.add_command(label=_("Modifier la tolérance utilisée pour calculer le volume"), command=self.paramTolerance)
+        menuMetier.add_command(label=_("Modifier l'arrondi des résultats du calcul des volumes"), command=self.paramArrondi)        
+        menuMetier.add_separator()
+        menuMetier.add_command(label=_("Ecrire un fichier XYZ à partir d'un PLY"), command=self.ecrireXYZ)
+        menuMetier.add_command(label=_("Visualiser un fichier XYZ"), command=self.afficheXYZ)        
+        menuMetier.add_separator()         
+        menuMetier.add_command(label=_("Aide sur les outils métiers"), command=self.aideMetiers)         
+     
+
         # Paramétrage       
 
         def updateParam():
@@ -1459,6 +1508,7 @@ class Interface(ttk.Frame):
         mainMenu.add_cascade(label = _("Vidéo"),menu=menuGoPro)                              
         mainMenu.add_cascade(label = _("Outils"),menu=menuOutils)
         mainMenu.add_cascade(label = _("Expert"),menu=menuExpert)
+        mainMenu.add_cascade(label = _("Outils métier"),menu=menuMetier)              
         mainMenu.add_cascade(label = _("Paramétrage"),menu=menuParametres)
         mainMenu.add_cascade(label = _("Aide"),menu=menuAide)
         
@@ -1470,11 +1520,15 @@ class Interface(ttk.Frame):
 
         fenetre.protocol("WM_DELETE_WINDOW", self.quitter)
 
+        # annonce du lancement :
+
+        self.ajoutTraceComplete(heure()+_(" lancement d'aperodedenis")+version+".")
+
         # zone de test éventuel :
         
     #initialise les valeurs par défaut au lancement de l'outil
         
-    def initialiseConstantes(self):
+    def initialiseConstantes(self):         #les constantes, mais pas que (ménage à faire)
 
         # Pour suivre les nouvelles versions
 
@@ -1959,7 +2013,7 @@ class Interface(ttk.Frame):
         self.item702 = ttk.Button(self.item710,text=_("Choisir les maîtresses"),command=self.imageMaitresse)
         self.item703 = ttk.Label(self.item710)                                              # nom ou nombre de masques
         self.item704 = ttk.Button(self.item710,text=_('Tracer les masques'),command=self.tracerLesMasques) 
-        self.item705 = ttk.Label(self.item710,text=_("Attention : Le masque 3D de C3DC a la priorité sur Malt") + "\n" + _("Pour supprimer un masque : supprimer la maitresse"))
+        self.item705 = ttk.Label(self.item710,text= _("Pour supprimer un masque : supprimer la maitresse"))
         self.item730 = ttk.Frame(self.item700,relief='sunken',padding="0.15cm")      # fera un encadrement pour nb photos à retenir
         self.item732 = ttk.Label(self.item730,text=_("Nombre de photos à retenir autour de l'image maitresse (-1 = toutes) :"))
         self.item733 = ttk.Entry(self.item730,width=5,textvariable=self.photosUtilesAutourDuMaitre)        
@@ -1986,17 +2040,6 @@ class Interface(ttk.Frame):
         # Bouton pour tracer un masque sur la mosaique créée par tarama
         
         self.item745 = ttk.Button(self.item700,text=_('Tracer un masque sur la mosaïque Tarama'),command=self.tracerUnMasqueSurMosaiqueTarama)  
-
-
-        # Boite item750 dans item700 pour l'option AperoDeDenis
-        
-        self.item750 = ttk.Frame(self.item700,height=50,relief='sunken',padding="0.2cm")    # pour le check button, fera un encadrement
-        self.item751 = ttk.Label(self.item750,text=_("La saisie des masques n'est active qu'après Tapas."))  # nom ou nombre d'images maitresses
-        self.item752 = ttk.Label(self.item750,text=_("Pas de masque."))                     # nom ou nombre de masque
-        self.item753 = ttk.Button(self.item750,text=_('Tracer les masques'),command=self.tracerLesMasquesApero)  
-        self.item754 = ttk.Label(self.item750,text= _("Pour supprimer un masque : supprimer la maitresse dans l'option GeomImage")+"\n"
-                                                     + _("Consulter la documentation."))
-
                                          
         self.item701.pack()
         self.item702.pack()         
@@ -2013,11 +2056,6 @@ class Interface(ttk.Frame):
         self.item733.pack(side='left')        
         self.item741.pack()
         self.item742.pack()
-        self.item751.pack()
-        self.item752.pack()        
-        self.item753.pack(ipady=2,pady=3)
-        self.item754.pack()
-
         
         # Boite item800 pour l'onglet C3DC
         
@@ -2040,13 +2078,13 @@ class Interface(ttk.Frame):
       
         self.item803 = ttk.Label(self.item800, text= \
                                                    _("Dans la boîte de dialogue pour tracer le masque : " ) +"\n"+\
+                                                   _("Agrandir/Diminuer la taille des points : +/-") + "\n"+\
                                                    _("Définir le masque : F9 ") + "\n"+\
                                                    _("Ajouter un point : clic gauche") + "\n"+\
                                                    _("Fermer le polygone : clic droit") + "\n"+\
                                                    _("Sélectionner : touche espace") +"\n"+\
                                                    _("Sauver le masque : Ctrl S.") + "\n"+
                                                    _("Quitter : Ctrl Q.") + "\n\n"+
-                                                   _("Agrandir les points : Maj +") + "\n\n"+\
                                                    _("Saisie simultanée de plusieurs masques disjoints possible"))
         self.item803.pack(ipady=2,pady=3)
         self.item802.pack(ipady=2,pady=3)  
@@ -2238,8 +2276,10 @@ class Interface(ttk.Frame):
                                   text= _("Personnaliser les options des modules MicMac.") + "\n\n"+
                                         _("Chaque module MicMac accepte des paramètres nommés, voir la documentation MicMac.")+ "\n"+
                                         _("Vous pouvez définir ici les valeurs de ces paramètres, séparés par des virgules.")+ "\n"+
-                                        _("Exemple pour le module Malt Ortho :")+ "\n"+
-                                        "          ZoomI=8,DefCor=0")
+                                        _("Exemple pour le module Tapioca MulScale : NbMinPt = 20")+ "\n"+
+                                        _("Pour le module Malt Ortho : NbProc=3")+ "\n"+
+                                        _("Ces paramètres sont enregistrés pour le chantier en cours,")+ "\n"+
+                                        _("Utiliser le menu 'Outils/modifier les paramètres par défaut' pour les sauvegarder."))
 
         self.item9110 = ttk.Frame(self.item9100)
         self.item9112 = ttk.Label(self.item9110, text=_("Paramètres nommés pour Tapioca All : "))
@@ -2710,11 +2750,14 @@ class Interface(ttk.Frame):
         self.messageSauvegardeOptions   =       (_("Quelles options par défaut utiliser pour les nouveaux chantiers ?") + "\n"+
                                                 _("Les options par défaut concernent :") + "\n"+
                                                 _("Points homologues : All, MulScale, line ,les échelles et delta") + "\n"+
-                                                _("Orientation : RadialExtended,RadialStandard, Radialbasic, arrêt après Tapas") + "\n"+
-                                                _("Points GCP : options de CAMPARI") + "\n"+                                                 
+                                                _("Orientation : toutes les options de la boite de dialogue") + "\n"+                                                 
                                                 _("Densification Malt : mode, zoom final, nombre de photos autour de la maîtresse") + "\n"+
                                                 _("Densification Malt Ortho : Tawny et ses options en saisie libre") + "\n"+
-                                                _("Densification C3DC : mode (Statue ou QuickMac)") + "\n\n")
+                                                _("Densification C3DC : mode") + "\n"+
+                                                _("Les paramètres presonnalisés des modules Micmac (menu Expert)") + "\n\n"+
+                                                _("Calcul du volume entre 2 MNT : tolerance") + "\n\n"
+                                                 )
+        
         self.tacky                      = True    # Suite au message de Luc Girod sur le forum le 21 juin 17h        
 
     # il faudrait mettre ici les textes de l'Aide, des conseils, de l'historique, de l'apropos
@@ -2779,7 +2822,9 @@ class Interface(ttk.Frame):
             _("            Afficher l'image 3D densifiée              : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Malt ou C3DC") + "\n"+\
             "\n"+\
             _("            Lister Visualiser les images 3D            : liste la pyramide des images 3D, créées à chaque étape de Malt") + "\n"+\
-            _("            Fusionner des images 3D                    : permet de fusionner plusieurs PLY en un seul") + "\n\n"+\
+            _("            Fusionner des images 3D                    : permet de fusionner plusieurs PLY en un seul") + "\n"+\
+            _("            Infos sur une image 3D                     : affiche le nombre de points, les dimensions de la 'box',") + "\n"+\
+            _("                                                         la surface et le volume, la densité de points sur la surface et le volume. ") + "\n\n"+\
             _("Menu MicMac :") + "\n\n"+\
             _("       - Choisir les photos : permet choisir les photos JPG, GIF, TIF ou BMP pour le traitement.") + "\n\n"+\
             _("         Les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert).") + "\n"+\
@@ -2879,11 +2924,12 @@ class Interface(ttk.Frame):
             _("menu Expert :") + "\n\n"+\
             _("       Le menu expert comporte des sous menus dédiés :).") + "\n\n"+\
             _("         - aux chantiers comportant plusieurs appareils photos différents.") + "\n"+\
-            _("         - aux importaions de données d'un autre chantier (points homologues, orientation) et exportation au format MNT IGN).") + "\n"+\
+            _("         - aux importaions de données d'un autre chantier (points homologues, orientation).") + "\n"+\
             _("         - aux photos de drones comportant des données GPS.") + "\n"+\
             _("       - Ouvrir une console permettant de passer des commandes système et MicMac (par exemple : mm3d).") + "\n\n"+\
             _("       - Ouvrir une console permettant de passer des commandes Python (ex. : afficher une variable.)") + "\n\n"+\
-            _("       - Insérer de points GCP à partir d'un fichier texte, séparateur espace, format : NomDuPoint X Y Z dx dy dz ") + "\n"+\
+            _("       - Insérer de points GCP à partir d'un fichier texte, séparateur espace, format : NomDuPoint X Y Z 'dx dy dz' ") + "\n"+\
+            _("         Les valeurs dx dy dz sont des écarts en nombre entier de pixels image, en une seule chaine : exemple : '2 2 2' ") + "\n"+\
             _("         Le caractère # en début de ligne signale un commentaire.") + "\n\n"+\
             _("       - Recopier des points GCP à partir d'un autre chantier.") + "\n\n"+\
             _("       - Recopier les points homologues à partir d'un autre chantier, seuls les chantiers compatibles sont proposés.") + "\n\n"+\
@@ -2899,14 +2945,19 @@ class Interface(ttk.Frame):
             _("         Permet l'ajout et la surcharge des paramètres nommés des modules MicMac.") + "\n\n"+\
             _("         Exemple : Malt est très consommateur de ressources CPU et utilise tous les coeurs du processeur.") + "\n"+\
             _("         Il admet un paramètre NbProc qui permet de limiter ce nombre, facilitant les autres activités de l'ordinateur.") + "\n\n"+\
+            _("         Autre exemple : Tapioca MulScale admet NbMinPt=XX indiquant le nombre minimum de points pour conserver les paires.") + "\n\n"+\
             _("       - Consulter le fichier de logging MicMac : mm3d-logFile.txt.") + "\n\n"+\
             _("       - Navigation GPS : utilisation des données GPS mémorisées par les caméras embarquées sur les drones.") + "\n"+\
             _("         Les données sont exploitées automatiquement et un repère local WGS84 est créé.") + "\n"+\
+            _("         Si des points GCP sont saisis alors ils sont prioritaires et les données GPS sont ignorées.") + "\n"+\
             _("         4 items de menus permettent de : .") + "\n"+\
             _("           - choisir le repère : local (WGS84, équivalent Lambert 93 en France métropolitaine) , ou géocentrique") + "\n"+\
             _("           - choisir un référentiel EPSG. Le référentiel doit avoir ses coordonnées en mètres. Le module pyproj est nécessaire.") + "\n"+\
             _("           - ignorer les données GPS des photos.") + "\n"+\
             _("           - afficher les ccoordonnées (WGS84 et Lambert 93) du point origine du repère local.") + "\n\n"+\
+            _("       - exporter un nuage de points au format MNT IGN et GRASS. Le ply doit être un nuage de points.")+ "\n\n"+\
+            _("menu Outils métiers :") + "\n\n"+\
+            _("       - Voir l'aide dans l'item Aide du menu Outils métiers") + "\n\n"+\
             _("menu Paramétrage :") + "\n\n"+\
             _("       - Afficher les paramètres : visualise les chemins de micmac\\bin, d'exiftool, du fichier pour visualiser les .ply (Meshlab ou Cloud Compare),") + "\n"+\
             _("         ainsi que le répertoire où se trouve les fichiers paramètres de l'interface.") + "\n"+\
@@ -2992,6 +3043,14 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version confinée bis 5.51 :")+chr(9)+_("juin 2020") + "\n"+\
+              chr(9)+chr(9)+_("Nouveautés :") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un item de menu principal : Outils métier") + "\n"+\
+              chr(9)+chr(9)+_("- écriture d'un MNT à partir d'un Ply (déjà en 5.50)") + "\n"+\
+              chr(9)+chr(9)+_("- écriture d'un MNT à partir d'un fichier texte XYZ") + "\n"+\
+              chr(9)+chr(9)+_("- Calcul du volume d'un MNT") + "\n"+\
+              chr(9)+chr(9)+_("- Calcul du volume entre 2 MNT et génération d'un nuage 3D des écarts") + "\n"+\
+              chr(9)+chr(9)+_("- Visualisation des écarts entre 2 MNT") + "\n\n"+\
               "\n" + _("Version confinée 5.50 :")+chr(9)+_("4 mai 2020") + "\n"+\
               chr(9)+chr(9)+_("Nouveautés :") + "\n"+\
               chr(9)+chr(9)+_("- Choix du référentiel EPSG pour les données GPS des drones : expert/navigation GPS/référentiel : utiliser EPSG.") + "\n"+\
@@ -3208,6 +3267,12 @@ class Interface(ttk.Frame):
             _("                        12) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)") + "\n\n"+\
             "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
 
+    # A propos
+    
+        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2020") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
+                                _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr")
+
+
     # pas de nuage dense
         self.aide8 = _("Interface graphique AperoDeDenis : quelques conseils si MicMac ne trouve pas de nuage de points dense.") + "\n\n"+\
             _("               - Examiner la trace (Menu Edition/afficher la trace) et la qualité des photos (menu outils/Qualité des photos): .") + "\n"+\
@@ -3216,8 +3281,71 @@ class Interface(ttk.Frame):
             _("                           Le passage au paramètre 'BigMac' ou a 'Malt' a permis l'obtention d'un nuage dense.") + "\n"+\
             _("                        10) consulter le wiki micmac (https://micmac.ensg.eu/index.php)") + "\n"+\
             _("                        11) consulter le forum micmac (http://forum-micmac.forumprod.com)") + "\n"+\
-            _("                        12) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)") + "\n\n"+\
+            _("                        12) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)") + "\n\n"\
             "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
+
+    # aide métiers : MNT, XYZ, calcul volume
+        avertissement  = _("Avertissement sur les calculs de volume entre 2 MNT :")+"\n\n"
+        avertissement += _("Les MNT sont obtenus à partir des nuages de points PLY ou XYZ par 2 items du menu Outils_métier.")+"\n\n"
+        avertissement += _("Les fichiers PLY ou XYZ sont des semis de points 3D irréguliers.")+"\n"
+        avertissement += _("Le MNT enregistre les valeurs d'altitude suivant une grille carrée régulière, par exemple un point tous les 50 cm.")+"\n"
+        avertissement += _("La taille de la maille est un paramètre crucial pour un MNT : elle conditionne sa précision spatiale.")+"\n"
+        avertissement += _("La taille de la maille doit être évaluée suivant la densité de points du fichier origine (PLY ou XYZ).")+"\n"
+        avertissement += _("Une trop petite maille ne pourra améliorer la précision initiale du PLY ou du XYZ.")+"\n\n"
+        avertissement += _("Le calcul du volume entre 2 MNT ne s'effectuera (dans cette version) que si les tailles des mailles sont identiques.")+"\n"               
+        avertissement += _("Si les mailles sont identiques l'outil recherche la zone de recouvrement des 2 MNT.")+"\n"
+        avertissement += _("Les 2 grilles sont alors ajustées et le calcul se fait pour les mailles ayant une valeur dans chaque MNT.")+"\n"
+        avertissement += _("Un paramètre de 'tolerance' permet d'ignorer les écarts trop faibles, inférieurs à cette tolérance, dans l'épaisseur du trait.")+"\n\n"
+        avertissement += _("Un nuage de points 3D des écarts est produit, au format XYZ : un item du menu permet de le visualiser dans Cloud Compare.")+"\n\n"
+        avertissement += _("Remarques :")+"\n"    
+        avertissement += _(" - Ces fonctions 'métiers' sont indépendantes de l'utilisation de l'outil MicMac")+"\n"    
+        avertissement += _(" - le mètre est supposé être l'unité de mesure des PLY, des XYZ et des MNT : les résultats sont données en m, m2, m3.")+"\n"    
+        avertissement += _(" - lorsque AperoDeDenis est installé sous windows  par l'installateur AperoDeDenis.msi la création des MNT n'est pas opérationelle.")+"\n"    
+    
+        self.aide9 = _("Les outils 'métiers'") + "\n\n"+\
+            _("               Les outils métiers exploitent les nuages de points PLY ou XYZ et les MNT.") + "\n\n"+\
+            _("               Les outils métiers sont utilisables sans créer de chantier MicMac.") + "\n\n"+\
+            _("               Les résultats sont mémorisés dans des fichiers textes.") + "\n\n"+\
+            _("               1 - Création de MNT à partir d'un nuage de points, ou d'un maillage (mesh) fichier PLY") + "\n"+\
+            _("                   Lorsque les nuages PLY ou XYZ représentent le sol ou une surface il est possible de créer des MNT (Modèle Numérique de Terrain, DEM en anglais).") + "\n"+\
+            _("                   Les MNT sont ouverts par les SIG, comme QGIS ou ArcGIS.") + "\n"+\
+            _("                   Les MNT embarquent la localisation et la métrique mais pas le référentiel EPSG qui doit être précisé dans le SIG.") + "\n"+\
+            _("                   Les MNT créés sont au format 'IGN'.") + "\n"+\
+            _("                   Remarques : Les formats Ply acceptés sont : Binary pour les nuages et ASCII pour les Mesh.") + "\n"+\
+            _("                               Le format du nuage/mesh peut être modifié par CloudCompare en l'enregistrant sous le nouveau format. ") + "\n"+\
+            _("                               l'écriture d'un MNT ne fonctionne pas si AperoDeDenis est installé par aperodedenis.msi") + "\n\n"+\
+            _("               2 - Création de MNT à partir d'un nuage de points XYZ") + "\n"+\
+            _("                   Le format XYZ est très fréquent, lisible par tout éditeur de texte et visualisé par Cloud Compare,.") + "\n\n"+\
+            _("               3 - Calcul du volume d'un MNT, au dessus d'une cote de base fixée par l'utilisateur.") + "\n"+\
+            _("                   Les résultats sont présentés en supposant que l'unité de longueur est le mètre.") + "\n\n"+\
+            _("               4 - Calcul du volume entre 2 MNT") + "\n"+\
+            _("                   Un besoin fréquent consiste à comparer 2 MNT du même terrain à 2 dates différentes.") + "\n"+\
+            _("                   Il s'agit d'évaluer les transformations du terrain : apport de matériaux, éboulement de falaises.") + "\n"+\
+            _("                   Le calcul du volume entre 2 MNT est disponible : il nécessite quelques précautions d'usage.") + "\n\n"+\
+            _("                 * les photos doivent avoir été correctement géoréférencées par GPS en posant des cibles localisées en x,y,z.") + "\n"+\
+            _("                    La précision des résultats dépend largement de la précisions du géoréférencement des prises de vue.") + "\n"+\
+            _("                    Par exemple une erreur d'altitude très faible de 1 cm correspond à un volume de 100 m3 par hectare.") + "\n"+\
+            _("                 *  Le calcul de volume est paramétré : il est possible de ne tenir compte que des écarts signifiants") + "\n"+\
+            _("                    Ainsi les écarts 'dans l'épaisseur du trait', par exemple inférieur à 5 ou 10 cm, seront ignorés.") + "\n"+\
+            _("                    Cette tolérance est modifiable par menu") + "\n"+\
+            _("                 *  L'outil recherche la zone de recouvrement entre les 2 MNT et le calcul s'effectue sur les surfaces communes.") + "\n"+\
+            _("                    Un fichier XYZ des écarts est constitué, un item de menu permet de le visualiser en 3D.") + "\n"+\
+            _("                 *  Un compte rendu détaillé est affiché en fin de traitement et mémorisé dans un fichier trace.") + "\n\n"+\
+            _("                 *  Ce calcul peut servir à comparer la précision de 2 nuages MicMac ou d'autres provenances :") + "\n"+\
+            _("                     - obtenus par Malt avec différents niveaux de zoom : dans ce cas comparer les nuages intermédiaires Zoom_8, Zoom_4..") + "\n"+\
+            _("                     - Obtenus par Malt et C3DC") + "\n"+\
+            _("                     - Obtenus sans points GCP, ou GPS puis avec des points GCP ou GPS") + "\n"+\
+            _("                     - Obtenus par MicMac et Metashape ou Pix4D ou ...") + "\n\n"+\
+            _("               5 - Un item permet de visualiser le maillage des écarts entre 2 MNT.") + "\n"+\
+            _("                   Nota : Les écarts inférieurs à la tolérance sont considérés comme nuls. ") + "\n\n"+\
+            _("               6 - 2 items permettent de modifier : la tolérance et le nombre de décimales dans les résultats des calculs.") + "\n"+\
+            _("                   Nota : Les écarts inférieurs à la tolérance sont considérés comme nuls. ") + "\n\n"+\
+            _("               7 - Un item écrit les fichiers PLY sous forme de liste de points X,Y,Z.") + "\n"+\
+            _("                   Ce format texte, très répandu, permet de lire les valeurs x,y z dans tout éditeur de texte.") + "\n\n"+\
+            avertissement + "\n\n"+\
+            "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
+
+
         
     ####################### initialiseValeursParDefaut du défaut : nouveau chantier, On choisira de nouvelles photos : on oublie ce qui précéde,
                           # sauf les paramètres généraux de aperodedenis (param micmac)
@@ -3308,12 +3436,12 @@ class Interface(ttk.Frame):
         self.tawny.set(1)                                       # lancement par défaut de Tawny après Malt Ortho (1, sinon 0)
         self.zoomF.set('4')                                     # doit être "1","2","4" ou "8" (1 le plus détaillé, 8 le plus rapide)
         self.etapeNuage                 = "5"                   # par défaut (très mystérieux!)
-        self.modele3DEnCours            = "modele3D.ply"        # Nom du self.modele3DEnCours courant
+        self.modele3DEnCours            = "modele3D.ply"        # Nom du nuage en cours de traitement avec son niveau de zoom
+        self.modele3DFinal              = "modele3D.ply"        # nom du nuage final (renommé en _V1 pui _V2 pour garder tout les nuages successifs)
         self.dicoInfoBullesAAfficher    = None                  # pour passer l'info à afficherLesInfosBullesDuDico (dans choisirUnePhoto)
         self.listeDesMaitresses         = list()
         self.listeDesMasques            = list()
         self.zoomI                      = ""                    # le niveau de zoom initial en reprise de Malt
-        self.listeDesMaitressesApero    = list()                # les maitresses pour l'option AperoDeDenis (recalculées en fonction du répertoire Homol)
         self.reinitialiseMaitreEtMasque()                       # initialise toutes les variables lièes à l'image maitresse et au masque 
 
     # nuage2Ply
@@ -3366,6 +3494,13 @@ class Interface(ttk.Frame):
 
         self.orientationCourante        =   str()                       # réinitialise l'orientatio courante
         self.referentielOK              =   False                       # indique si le référentiel GCP, GPS ou "mise à l'échelle " est modifié
+
+    # Pour le calcul du volume entre 2 MNT (menu métier)
+
+        self.tolerance                  =   0.05                        # tout écart inféieur à 5 cm sera considéré comme nul
+        self.arrondi                    =   2                           # les résultat des calculs seront présentés arrondis (fixe)
+        self.limitesHistogrammeDesEcarts=   range(-5,5)                 # (fixe pour l'instant)
+        self.ecartXyz                   =   str()                       # le nom du fichier XYZ des écarts entre les 2 mnt
         
     # pour la trace :
     
@@ -3387,8 +3522,9 @@ class Interface(ttk.Frame):
         self.fermetureOngletsEnCours    =   False                       # pour éviter de boucler sur la fermeture de la boite à onglet
         self.fermetureOptionsGoProEnCours=  False
         self.fermetureModifExif         =   False
-        self.nbCaracteresDuPrefixe      =   "3"
+        self.nbCaracteresDuPrefixe      =   "3"                         # préfixe du nom des photso mis par un appareil (cas d'appareils multiples)
         self.ecartPointsGCPByBascule    =   str()
+        self.optionsMicMacActivees      =   False                       # mémorise l'ouverture des onglets options, pour les écrire dans la trace 
         
     # si les options par défaut sont personnalisées on les restaure :
 
@@ -3465,7 +3601,7 @@ class Interface(ttk.Frame):
                 self.repTravail)
         repertoirePere = os.path.dirname(self.repTravail)
         new = MyDialog(fenetre,texte,basDePage=bas).saisie
-        if new=="":
+        if new in (False,""):
             self.encadre(_("Renommer le chantier : Abandon utilisateur"))
             return
         nouveauRepertoire = os.path.normcase(os.path.normpath(os.path.join(repertoirePere,new)))                                                  # sinon on renomme sous ou sur le répertoire des photos
@@ -3580,7 +3716,7 @@ class Interface(ttk.Frame):
         self.redefinirLesChemins()                                                  # mettre à jour le nom de tous les chemins realtifs
         self.ajoutChantier()                        # ajouter le nouveau nom parmi les noms de chantiers
     # Type de chantier : self.typeDuChantier : c'est une liste de string (on pourrait aussi mettre un dictionnaire), avec :
-    # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' 
+    # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' ou du calcul d'un 'volume'
     # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
     # [2] = 'original' ou "importé"
         self.typeDuChantier[1] = 'renommé'
@@ -3792,7 +3928,9 @@ class Interface(ttk.Frame):
             self.etatSauvegarde = ""             
             self.sauveParam()                   # sauve les paramètres généraux et ceux du chantier
             try: shutil.copy(self.fichierParamChantierEnCours,self.repTravail)          # pour éviter de copier un fichier sur lui même
-            except Exception as e: print(_("erreur copie fichier param chantier : %(param)s vers %(rep)s erreur=") % {"param" : self.fichierParamChantierEnCours, "rep" : self.repTravail} ,str(e))           
+            except Exception as e:
+                print(heure(),_(" anomalie copie fichier param chantier : %(param)s vers %(rep)s ")
+                                  % {"param" : self.fichierParamChantierEnCours, "rep" : self.repTravail} ,str(e))
             fenetre.title(self.etatSauvegarde+self.titreFenetre)            
         except Exception as e:
             self.ajoutLigne(_("Erreur lors de la copie du fichier paramètre chantier") + "\n" + self.fichierParamChantierEnCours + "\n" + _("vers") + "\n" + self.repTravail + "\n" + _("erreur :") + "\n" +str(e))
@@ -3881,28 +4019,41 @@ class Interface(ttk.Frame):
             if self.calculNuageNonDense.get():
                  texte = texte+_('Calcul du nuage non dense demandé') + '\n'
             else:
-                texte = texte+_('Pas de calcul du nuage non dense') + '\n'                
+                texte = texte+_('Pas de calcul du nuage non dense') + '\n'
 
+            # Quel référentiel pour le nuage ? par ordre de priorité : - GCP terrain - GPS Drone - Mise à l'échelle
+
+            # Points GCP
+            pointsGCPOk = self.controlePointsGPS()
+            if self.listePointsGPS:
+                if pointsGCPOk:
+                    texte += "\n"+_("Points GCP : Saisie complète, les points seront pris en compte") + "\n"
+                else:
+                    texte += self.etatPointsGPS
+                    
             # données navigation drone gps dans les exif : self.repereChoisi = str() : pas de GPS, "
             
             self.miseAJourLibelleNavigationGPS()
                 
             if os.path.isdir("Ori-nav-Brut") and len(photosSansChemin)>2:
-                texte = texte+'\n' + _("Les données GPS dans les exif sont prises en compte") + '\n'
-                if self.repereChoisi==self.repereLocalXml:
-                    texte += _("Référentiel : projection plane locale (métrique)") + '\n'
-                if self.repereChoisi==self.repereLambert93:
-                    texte += _("Référentiel WGS84 projeté en Lambert 93")+"\n"
-                if self.repereChoisi==self.repereWGS84:
-                    texte += _("Référentiel WGS84")+"\n"                   
-                if self.repereChoisi==self.repereGeoc:
-                    texte += _("Référentiel WGS84 projeté dans un repère géocentrique cartésien X,Y,Z") + '\n'
-                if self.repereChoisi==self.repereEpsgXml:
-                    texte += _("Référentiel : "+self.nomEpsg) + '\n'                    
-                if self.controleMiseALEchelle():
-                    texte +=  _("Remarque : la mise à l'échelle ci-dessous sera ignorée") + '\n'
-            if self.repereChoisi==self.repereSupprime:
-                texte = texte+'\n' + _("Les données GPS, présentes dans les exif, ne sont pas prises en compte.") + '\n'
+                if pointsGCPOk:
+                    texte = texte+'\n' + _("Les données GPS dans les exif sont ignorées, supplantées par les points GCP") + '\n'
+                else:
+                    texte = texte+'\n' + _("Les données GPS dans les exif sont prises en compte") + '\n'
+                    if self.repereChoisi==self.repereLocalXml:
+                        texte += _("Référentiel : projection plane locale (métrique)") + '\n'
+                    if self.repereChoisi==self.repereLambert93:
+                        texte += _("Référentiel WGS84 projeté en Lambert 93")+"\n"
+                    if self.repereChoisi==self.repereWGS84:
+                        texte += _("Référentiel WGS84")+"\n"                   
+                    if self.repereChoisi==self.repereGeoc:
+                        texte += _("Référentiel WGS84 projeté dans un repère géocentrique cartésien X,Y,Z") + '\n'
+                    if self.repereChoisi==self.repereEpsgXml:
+                        texte += _("Référentiel : "+self.nomEpsg) + '\n'                    
+                    if self.controleMiseALEchelle():
+                        texte +=  _("Remarque : la mise à l'échelle ci-dessous sera ignorée") + '\n'
+                    if self.repereChoisi==self.repereSupprime:
+                        texte = texte+'\n' + _("Les données GPS sont ignorées sur demande utilisateur.") + '\n'
             
             # Mise à l'échelle
 
@@ -3913,13 +4064,7 @@ class Interface(ttk.Frame):
                     texte = texte+'\n' + _("Mise à l'échelle invalide : distance=0") + '\n'
                 elif self.etatMiseALEchelle!=str():             # calibration incomplète
                     texte = texte+"\n" + _("Mise à l'échelle incomplète :") + "\n"+self.etatMiseALEchelle+"\n"   
-
-            # Points GCP
-            if self.listePointsGPS:
-                if self.controlePointsGPS():
-                    texte += "\n"+_("Points GCP : Saisie complète, les points seront pris en compte") + "\n"
-                else:
-                    texte += self.etatPointsGPS
+                    
             # C3DC est-il installé ?
 
             if not self.mm3dOK:         # La version de MicMac n'autorise pas les masques 3D : info
@@ -3990,7 +4135,6 @@ class Interface(ttk.Frame):
                 self.sauveParam()
                 self.ajoutLigne("\n"+heure()+_("****** ouverture du chantier."))
                 self.ajoutLigne("\n"+_("Le chantier a été nettoyé, les résultats et les traces sont conservées."))
-                self.ecritureTraceMicMac()
                 
             # chantier nettoyé mais relancé depuis donc etatDuChantier >= 3 :                
             if self.chantierNettoye and self.etatDuChantier>=3:
@@ -4062,7 +4206,13 @@ class Interface(ttk.Frame):
                     _("Désolé pour l'incident.") + "\n\n"+\
                     _("Erreur : ")+str(e) +"\n"+texte
             self.ajoutTraceSynthese(texte)
-            self.ecritureTraceMicMac()
+
+        # si les options ont été activées, même abandonnées, alors ont mémorise texte dans la trace complète pour garder une trace des modifs
+        # pour débug 
+        if self.optionsMicMacActivees:
+            self.ajoutTraceComplete("\n"+heure()+_(" Options modifiées, état du chantier :\n")+texte)
+            self.optionsMicMacActivees = False
+        self.ecritureTraceMicMac()            
         self.encadre(texte)            
 
     def toutesLesPhotosSansChemin(self):
@@ -4073,7 +4223,7 @@ class Interface(ttk.Frame):
         return toutesLesPhotos
         
 
-############### Existance des maitres 2D 3D : vrai, faux 
+############### Existence des maitres 2D 3D : vrai, faux 
        
     def existeMasque3D(self):
         if self.repTravail==self.repertoireData:
@@ -4124,10 +4274,9 @@ class Interface(ttk.Frame):
         
     def afficherLesMaitresses(self):
         
-        self.maltApero()    # pour abonder la liste des maitressesApero (un peu lourd)
-        if self.listeDesMaitresses.__len__()+self.listeDesMaitressesApero.__len__()>0:
-            self.choisirUnePhoto(self.listeDesMaitresses+self.listeDesMasques+self.listeDesMaitressesApero,
-                                 titre=_('Liste des images maîtresses et des masques ')+"\n"+_("communs à GeomImage et AperoDedenis"),
+        if self.listeDesMaitresses:            
+            self.choisirUnePhoto(self.listeDesMaitresses+self.listeDesMasques,
+                                 titre=_('Liste des images maîtresses et des masques '),
                                  mode='single',
                                  message=_("Images maîtresses et masques"),
                                  messageBouton=_("Fermer")
@@ -4137,7 +4286,7 @@ class Interface(ttk.Frame):
 
     def afficherMasqueTarama(self):
 
-        if os.path.exists(self.masqueTarama):
+        if os.path.exists(self.masqueTarama):            
             self.choisirUnePhoto([self.mosaiqueTaramaJPG,self.masqueTarama],
                                  titre=_('Mosaique Tarama et masque ')+"\n"+_("Option Ortho de Malt"),
                                  mode='single',
@@ -4151,7 +4300,7 @@ class Interface(ttk.Frame):
             self.encadre(_("Pas de masque 3D pour ce chantier."))
             return
         oschdir(self.repTravail)
-        
+        self.menageEcran()
         self.topMasque3D = tkinter.Toplevel(relief='sunken')
         fenetreIcone(self.topMasque3D)           
         self.item900 = ttk.Frame(self.topMasque3D,height=5,relief='sunken',padding="0.3cm")        
@@ -4161,9 +4310,8 @@ class Interface(ttk.Frame):
         self.item903.pack(ipady=2,pady=10)        
         self.item902 = ttk.Label(self.item900, text=_("Affichage du masque 3D :") + "\n\n"+
                                                     _("Les points blancs du nuage sont dans le masque") + "\n"+
-                                                    _("Ce masque C3DC a la priorité sur le masque 2D de Malt") + "\n\n"+
                                                     _("ATTENTION : pour continuer FERMER la fenêtre 3D")+ "\n"+
-                                                    _("puis cliquer si besoin sur le bouton FERMER ci-dessus."))
+                                                    _("puis cliquer sur le bouton FERMER ci-dessus."))
         self.item902.pack(ipady=2,pady=10)               
         self.item900.pack()                                   
         fenetre.wait_window(self.topMasque3D)
@@ -4325,7 +4473,74 @@ class Interface(ttk.Frame):
              self.encadre(_("Pas de nuage de points densifié."))                
         if retour == -2 :
             self.encadre(_("Programme pour ouvrir les .PLY non trouvé."))
-                         
+
+    def afficheEcart(self):
+        if self.ecartXyz==str():
+            self.encadre(_("Pas de fichier ecart entre 2 MNT. Abandon"))
+            return
+        
+        if os.path.exists(self.ecartXyz):
+                xyz = self.ecartXyz
+                self.afficheXYZ(xyz)
+        else:
+            self.encadre(_("Fichier ecart entre 2 MNT non trouvé. Abandon"))
+            return                
+                
+    def afficheXYZ(self,xyz=str()):
+        if xyz==str():
+            extensions = ("ecart*.asc","*.xyz")
+            message = _("Choisir le fichier x,y,z, à visualiser :")                              
+            xyz=tkinter.filedialog.askopenfilename(title=message,
+                                                              filetypes=[(_("fichier XYZ"),extensions),(_("Tous"),"*")],
+                                                              multiple=False,
+                                                            )
+            if xyz==str():
+                self.encadre(_("Visualisation d'un fichier XYZ abandonnée."))
+                return
+            
+        meshlab = [self.meshlab, xyz]        
+        self.lanceCommande(meshlab,
+                           info=_("Fichier XYZ %s a visualiser.") % (xyz),
+                           attendre=False)
+
+    def paramTolerance(self):
+        tolerance = MyDialog(fenetre,_("Tolérance pour le calcul des volumes entre 2 MNT"),
+                        basDePage=_("La tolérance est l'écart d'altitude minimum pris en compte dans le calcul du volume")+"\n"+
+                        _("Valeur actuelle : %s correspond à %s cm.") % (self.tolerance,str(round(self.tolerance*100,1)))+"\n"+
+                        _("Tout écart d'altitude inférieur à %s cm sera considéré comme nul, dans l'épaisseur du trait.")
+                             % (str(round(self.tolerance*100,1)))+"\n\n"+
+                        _("Cette valeur est enregistrée par le menu Outils/sauvegarder les paramètres par défaut")).saisie
+        if tolerance in (False,""):
+            self.encadre(_("Abandon utilisateur, tolérance inchangée : %s m")% (self.tolerance))
+            return
+        if isNumber(tolerance):
+            if float(tolerance)<0:
+                self.encadre(_("La tolérance doit être positive, Abandon : %s.\nTolérance inchangée : %s m") % (tolerance,self.tolerance))
+            else:
+                self.tolerance = float(tolerance)
+                self.encadre(_("Nouvelle valeur de la tolérance : %s m") % (tolerance))
+            return
+        self.encadre(_("Valeur de la tolérance non numérique : %s\n Tolérance inchangée : %s m") % (tolerance,self.tolerance))
+
+    def paramArrondi(self):
+        arrondi = MyDialog(fenetre,_("Nombre de décimales dans les résultats de calcul des volumes"),
+                        basDePage=_("Par défaut les résultat des calculs de volumes sont arrondis avec 2 décimales.")+"\n"+
+                        _("L'unité est supposée être le mètre. La précision est donc de 0.01 m soit 1 cm.")+"\n"+                           
+                        _("Cette précision est insuffisante pour les petits objets.")+"\n"+
+                        _("Un arrondi a 3 décimales, soit 0.001 m, ou 4, soit 0.0001 m, permet d'améliorer cette précision.")+"\n"+ 
+                        _("La valeur actuelle du nombre de décmales est : %s.") % (self.arrondi)                          
+                        ).saisie
+        if arrondi in (False,""):
+            self.encadre(_("Abandon utilisateur, valeur inchangée : %s décimales")% (self.arrondi))
+            return
+        if isNumber(arrondi):
+            if float(arrondi)<0:
+                self.encadre(_("Le nombre de décimale doit être positif ou nul, Abandon : %s.\nValeur inchangée : %s décimales") % (arrondi,self.arrondi))
+            else:
+                self.arrondi = int(float(arrondi))
+                self.encadre(_("Nouvelle valeur du nombre de décimales : %s ") % (self.arrondi))
+            return
+        self.encadre(_("Valeur non numérique : %s\n nombre de décimales inchangé : %s") % (arrondi,self.arrondi))
         
     ################################## Le menu PARAMETRAGE : répertoires MicMAc et Meshlab ###########################################################
 
@@ -4545,7 +4760,7 @@ class Interface(ttk.Frame):
                                                   multiple=False,
                                                   title = _("Recherche fichier Meshlab sous VCG, ou CloudCompare"))
         if len(source)==0:
-            texte=_("Abandon, pas de changement.") + "\n" + _("Fichier Meshlab ou cloud compare :") + "\n\n"+afficheChemin(self.meshlab)
+            texte=_("Abandon, pas de changement.") + "\n" + _("Fichier Meshlab ou Cloud Compare :") + "\n\n"+afficheChemin(self.meshlab)
             self.encadre(texte)
             return
         self.meshlab = source
@@ -4935,8 +5150,9 @@ class Interface(ttk.Frame):
 
             
     # Chantier terminé, l'utilisateur peur décider de le débloquer en conservant les résultats de tapas ou supprimer tous les résultats
-    
+        toutesOptions = True    
         if self.etatDuChantier==5:		                # Chantier terminé
+
             retour = self.troisBoutons(  titre=_('Le chantier %(x)s est terminé.') % {"x" : self.chantier},
                                          question=_("Le chantier est terminé après ")+self.choixDensification.get()+".\n"+
                                          _("Vous pouvez :") + "\n"+
@@ -4953,6 +5169,7 @@ class Interface(ttk.Frame):
                 self.nettoyerChantierApresTapioca()             # l'etatDuChantier passe à 35 ! points homologues conservés
             if retour==1:                                       # modifier les options de malt C3DC et points GCP      (b2))
                 self.etatDuChantier = 4
+                toutesOptions = False
 
         # L'état du chantier permet de choisir des options :
 
@@ -4961,7 +5178,8 @@ class Interface(ttk.Frame):
         self.sauveParamChantier()
         self.menageEcran()
   
-        if self.etatDuChantier in (0,1,2,7,35):                     # sinon self.etatDuChantier vaut 4 et on va direct à Malt ou C3DC
+        #if self.etatDuChantier in (0,1,2,7,35):                     # sinon self.etatDuChantier vaut 4 et on va direct à Malt ou C3DC
+        if toutesOptions:                                                    # modif du 5 juin 2020 : on affiche touj 
             self.onglets.add(self.item400)                          # tapioca
             self.onglets.add(self.item500)                          # tapas
             self.onglets.add(self.item950)                          # Calibration            
@@ -4978,7 +5196,7 @@ class Interface(ttk.Frame):
             selection = self.item400                                # onglet sélectionné par défaut
             self.visuOptionsCalibration()                           # les frame de calibration chantier ou photo
 
-        else:
+        else:                                                       # masque les options de Tapioca et Tapas
             
             self.onglets.hide(self.item400)                         # tapioca
             self.onglets.hide(self.item500)                         # tapas
@@ -5004,9 +5222,9 @@ class Interface(ttk.Frame):
             self.item804.configure(text= _("La version de Micmac installée ne propose pas le module C3DC. Choisir MALT."),foreground='red',style="C.TButton")            
         else:                                                       # Si l'onglet existe on met à jour les messages :
             oschdir(self.repTravail)        
-            if os.path.exists("AperiCloud.ply")==False:
-                self.item804.configure(text= _("Pas de nuage Apericloud : pour construire un masque") + "\n" +
-                                       _("lancer l'orientation avec option calculer un nuage non dense."),foreground='red',style="C.TButton")
+            if os.path.exists("AperiCloud.ply")==False and os.path.exists("modele3D.ply")==False:
+                self.item804.configure(text= _("Pas de nuage pour construire un masque") + "\n" +
+                                       _("Calculer un nuage de points, dense ou non dense, pour définir un masque 3D."),foreground='red',style="C.TButton")
                 self.item801.configure(state = "disable")
             else:
                 self.item801.configure(state = "normal")
@@ -5026,12 +5244,13 @@ class Interface(ttk.Frame):
         self.optionsReperes()                                       # points GCP, en nombre variable # points de repères calés dans la scène
 
         self.onglets.pack(fill='none', padx=2, pady=0)              # on active la boite à onglet
-        self.item450.pack()                                         # et les 2 boutons en bas
+        self.item450.pack()                                         # et les 2 boutons en bas : 451 valider et 452 annuler
         self.onglets.select(selection)                              # onglet sélectionné par défaut
-      
+        self.optionsMicMacActivees = True                           # flag : les onglets sont disponibles, on écrira dans la trace complete l'état du chantier      
         fenetre.wait_window(self.onglets)                           # boucle d'attente : la fenêtre pricncipale attend la fin de l'onglet
         
     def finOptionsOK(self,affiche=True):                                         # l'utilisateur a valider l'ensemble des options
+        self.ajoutTraceComplete("\n"+heure()+_(" Les options sont validées par l'utilisateur"))
         self.onglets.pack_forget()      # on ferme la boite à onglets             
         texte = str()
 
@@ -5128,8 +5347,9 @@ class Interface(ttk.Frame):
         listePointsKO = list()
         
         # ICI : controle que les x,y,z et incertitudes sont bien des valeurs numériques correctes, que le point n'est pas supprimé, qu'il a un nom
+
         for Nom,X,Y,Z,actif,ident,incertitude in self.listePointsGPS:   # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
-            if actif and isNumber(X) and isNumber(Y) and isNumber(Z) and Nom and re.match("\d+\s+\d+\s+\d+\s*$",incertitude):        # si actif et tous les éléments présent        
+            if actif and isNumber(X) and isNumber(Y) and isNumber(Z) and Nom and re.match("\d+\s+\d+\s+\d+\s*$",incertitude): # si actif et tous les éléments présent        
                 listePointsOK.append(Nom)
             else:
                 listePointsKO.append(Nom)
@@ -5483,6 +5703,12 @@ class Interface(ttk.Frame):
         if not self.calibSeule.get():
             self.remettrePhotosCalibration()
 
+        # controle que les incertitudes sur les pointss GPS répondent bien à une suite de 3 nombre entiers
+
+        for Nom,X,Y,Z,actif,ident,incertitude in self.listePointsGPS:   # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
+            if actif and not re.match("\d+\s+\d+\s+\d+\s*$",incertitude): # si actif et incertitude incorrecte :
+                texte += "\n"+_("Lncertitude du point GCP %s incorrecte : %s. Forme valable : 3 entiers séparés par des espaces, exemple : '2 2 2' ") % (Nom,incertitude) 
+        
         # retour True ou String
 
         if texte+erreur==str():
@@ -5491,7 +5717,7 @@ class Interface(ttk.Frame):
             return texte+erreur
 
     def finOptionsKO(self):
-
+        self.ajoutTraceComplete("\n"+heure()+_(" Les options sont abandonnées par l'utilisateur"))
         self.onglets.pack_forget()      # on ferme la boite à onglets          
         self.restaureParamChantier(self.fichierParamChantierEnCours)
         self.afficheEtat()
@@ -5569,14 +5795,17 @@ class Interface(ttk.Frame):
         try: shutil.copytree(repertoireCalib,calibChantier)
         except Exception as e:
             self.item572.configure(text=_("la copie a échouée : %s.") % (str(e)))
+            self.ajoutLigne(_("La copie de la calibration du chantier\n %s \na échoué.") % (repertoireCalib))
             return
         # copie du répertoire: réussite
         if os.path.exists(calibChantier):
             self.chantierOrigineCalibration = os.path.basename(self.selectionRepertoireAvecChemin)
             self.item572.configure(text=_("Calibration du chantier '%s' recopiée.") % (self.chantierOrigineCalibration))
             self.supprimeCalibrationParPhotos()
+            self.ajoutLigne(_("Copie de la calibration du chantier\n %s.") % (repertoireCalib))
         else:
             self.item572.configure(text=_("la recopie a échouée : %s.") % (str(e)))
+            self.ajoutLigne(_("La copie de la calibration du chantier\n %s \na échoué.") % (repertoireCalib))
             
     def imagesCalibrationIntrinseques(self):
         if self.photosAvecChemin.__len__()==0:
@@ -5601,16 +5830,20 @@ class Interface(ttk.Frame):
         self.supprimeCalibrationParCopie()
         
     def supprimeCalibrationParCopie(self):
-        #suppression de la calibration par photos
-        self.chantierOrigineCalibration = str()
-        self.item572.configure(text="")
-        calibChantier = os.path.join(self.repTravail,"Ori-Calib")
-        supprimeRepertoire(calibChantier)
+        # suppression de la calibration par copie de chantier
+        if self.chantierOrigineCalibration:
+            self.chantierOrigineCalibration = str()
+            self.item572.configure(text="")
+            calibChantier = os.path.join(self.repTravail,"Ori-Calib")
+            supprimeRepertoire(calibChantier)
+            self.ajoutLigne("\n"+_("Suppression de la calibration par copie depuis un autre chantier"))
         
     def supprimeCalibrationParPhotos(self):
-        #suppression de la calibration par copie de chantier
-        self.photosCalibrationSansChemin = list()
-        self.photosPourCalibrationIntrinseque = list()
+        #suppression de la calibration par photos
+        if self.photosCalibrationSansChemin:
+            self.photosCalibrationSansChemin = list()
+            self.photosPourCalibrationIntrinseque = list()
+            self.ajoutLigne("\n"+_("Suppression de la calibration par photos"))
 
         
     #""""""""""""""""""""""""   Options de Malt        
@@ -5619,17 +5852,13 @@ class Interface(ttk.Frame):
         self.item710.pack_forget()
         self.item730.pack_forget()
         self.item740.pack_forget()
-        self.item745.pack_forget()        
-        self.item750.pack_forget()                
+        self.item745.pack_forget()                       
         if self.modeCheckedMalt.get()=='GeomImage':
             self.item710.pack(pady=10)
             self.item730.pack(pady=10)            
         if self.modeCheckedMalt.get()=='Ortho':
             self.item745.pack(pady=5)
             self.item740.pack(pady=5)
-        if self.modeCheckedMalt.get()=='AperoDeDenis':
-            self.item750.pack(pady=5)
-            self.maltApero()            # met à jour la liste des maitresses Apero : self.listeDesMaitressesApero et la liste des tuples
         self.miseAJourItem701_703()
                                  
     def imageMaitresse(self):       # bouton "choisir les maitresses" de l'option GeomImage
@@ -5687,40 +5916,25 @@ class Interface(ttk.Frame):
         self.listeDesMasques = list(new)        # nouvelle liste des masques 
         self.miseAJourItem701_703()
 
-    def miseAJourItem701_703(self):             # et 745 Onglet Malt, Cadres geomImage et Ortho et AperodeDenis
+    def miseAJourItem701_703(self):             # et 745 Onglet Malt, Cadres geomImage et Ortho
         try:
             if self.listeDesMaitresses.__len__()==0:
                 self.item701.config(text=_("Image maitresse obligatoire pour GeomImage."))
-            if self.listeDesMaitressesApero.__len__()==0:
-                self.item751.config(text=_("Exécuter Tapioca/Tapas pour saisir des masques avec cette option."))
-                self.item753.config(state=DISABLED)
-            else:
-                self.item753.config(state=NORMAL)
   
             if self.listeDesMaitresses.__len__()==1:
                 self.item701.config(text=_("image maîtresse = ")+os.path.basename(self.listeDesMaitresses[0]))
-
-            if self.listeDesMaitressesApero.__len__()==1:                
-                self.item751.config(text=_("image maîtresse = ")+os.path.basename(self.listeDesMaitressesApero[0]))
-
             
             if self.listeDesMaitresses.__len__()>1:
                 self.item701.config(text=str(self.listeDesMaitresses.__len__())+_(" images maîtresses"))
-
-            if self.listeDesMaitressesApero.__len__()>1:                 
-                self.item751.config(text=str(self.listeDesMaitressesApero.__len__())+_(" images maîtresses"))
         
             if self.listeDesMasques.__len__()==0:
-                self.item703.config(text="\n" + _("Pas de masque."))
-                self.item752.config(text="\n" + _("Pas de masque."))                
+                self.item703.config(text="\n" + _("Pas de masque."))                
                 
             if self.listeDesMasques.__len__()==1:
                 self.item703.config(text="\n" + _("un seul masque : ")+os.path.basename(self.listeDesMasques[0]))  
-                self.item752.config(text="\n" + _("un seul masque : ")+os.path.basename(self.listeDesMasques[0]))  
 
             if self.listeDesMasques.__len__()>1:
                 self.item703.config(text="\n"+str(self.listeDesMasques.__len__())+_(" masques"))
-                self.item752.config(text="\n"+str(self.listeDesMasques.__len__())+_(" masques"))
                 
             if not os.path.exists(self.mosaiqueTaramaTIF):
                 self.item745.config(text="\n" + _("Pas de mosaique Tarama : pas de masque."))
@@ -5766,43 +5980,6 @@ class Interface(ttk.Frame):
         if self.masqueRetour.polygone == True:
             ajout(self.listeDesMasques,masqueEnAttente)
         self.miseAJourItem701_703()    
-
-    def tracerLesMasquesApero(self):                                            # bouton pour l'option de malt aperodedenis
-        if self.photosAvecChemin.__len__()==0:
-            self.infoBulle(_("Choisir d'abord les photos du chantier."))
-            return
-        if os.path.exists(os.path.join(self.repTravail,"Homol"))==False:
-            self.infoBulle(_("Exécuter d'abord Tapioca/Tapas."))
-            return        
-        self.fermerVisuPhoto()
-        if self.listeDesMaitressesApero.__len__()==0:
-            self.item751.config(text=_("Pas d'image maîtresse. Bizarre."),
-                                background="#ffffaa")
-            return
-
-        bulles=dict()     
-        for e in self.listeDesMasques:
-            for f in self.listeDesMaitressesApero:
-                if os.path.splitext(f)[0]+"_masque.tif"==e:
-                    bulles[f]=_("Un masque existe déjà")
-        self.choisirUnePhoto(self.listeDesMaitressesApero,
-                             _("Choisir l'image pour le masque"),
-                             _("Choisir une image maîtresse pour le masque\nen jaune = un masque existe"),
-                             mode="single",
-                             bulles=bulles)
-       
-        if self.selectionPhotosAvecChemin.__len__()==0:
-            return
-        maitre = self.selectionPhotosAvecChemin[0]
-        masqueEnAttente = os.path.splitext(maitre)[0]+"_masque.tif"
-
-        # l'utilisateur trace le masque
-        
-        self.masqueRetour = TracePolygone(fenetre,maitre,masqueEnAttente)        # L'utilisateur peut tracer le masque sur l'image maitre       
-        if self.masqueRetour.polygone == True:
-            ajout(self.listeDesMasques,masqueEnAttente)
-        self.miseAJourItem701_703()  
-
             
     def traceMasque(self):      # Choisir le masque Bouton de l'option GeomImage ou AperoDeDenis
         self.fermerVisuPhoto()
@@ -5881,16 +6058,29 @@ class Interface(ttk.Frame):
  
         self.masqueRetour = TracePolygone(fenetre,self.mosaiqueTaramaJPG,self.masqueTarama)        # L'utilisateur peut tracer le masque sur l'image maitre       
         if self.masqueRetour.polygone == True:
-            self.miseAJourItem701_703()        
+            self.miseAJourItem701_703()
+            self.ajoutLigne("\n"+_("Masque 2D sur Tarama"))            
         pass
 
     #""""""""""""""""""""""" Options masque 3D pour C3DC
 
-    def affiche3DApericloud(self):                              # lance SAisieMasqQT, sans le fermer.... attente de la fermeture (subprocess.call)
+    def affiche3DApericloud(self):          # lance SaisieMasqQT, sur apericloud ou modele3d, attente de saisie/fermeture (subprocess.call)
+        if os.path.exists("modele3D.ply"):
+            nuage = "modele3D.ply"
+            # le renommage ci-dessous est restrictif : il faudrait élargir au vrai fichier origine du masque (l'utilisateur peut le choisir)
+            self.masque3DSansChemin         =   "modele3D_selectionInfo.xml"            # nom du fichier XML du masque 3D, fabriqué par 
+            self.masque3DBisSansChemin      =   "modele3D_polyg3d.xml"                  # nom du second fichier XML pour le masque 3D
+        elif os.path.exists("AperiCloud.ply"):
+            nuage = "AperiCloud.ply"
+            self.masque3DSansChemin         =   "AperiCloud_selectionInfo.xml"          # nom du fichier XML du masque 3D, fabriqué par 
+            self.masque3DBisSansChemin      =   "AperiCloud_polyg3d.xml"                # nom du second fichier XML pour le masque 3D
             
-        masque3D = [self.mm3d,"SaisieMasqQT","AperiCloud.ply"]              # " SaisieAppuisInitQT AperiCloud.ply"
-        self.apericloudExe = subprocess.call(masque3D,shell=self.shell)     # Lancement du programme et attente du retour
-        
+        else: return  
+        masque3D = [self.mm3d,"SaisieMasqQT",nuage]              # " SaisieAppuisInitQT AperiCloud.ply"
+        self.lanceCommande (masque3D,
+                            info=(_("Saisie masque 3D pour C3DC sur le nuage dense ou non dense."))
+                           )
+
         try:                                                                # marche pas si on est en visu
             if self.existeMasque3D():
                 self.item804.configure(text= _("Masque 3D créé"),foreground='red')
@@ -5906,6 +6096,7 @@ class Interface(ttk.Frame):
         supprimeFichier(self.masque3DBisSansChemin)        
         self.item804.configure(text= _("Masque 3D supprimé."),foreground='red')
         self.item802.forget()
+        self.ajoutLigne("\n"+_("Suppression du masque 3D"))
         
             
     #""""""""""""""""""""""" Options de CalibrationGPS : faire correspondre des points (x,y,z) numérotés de 1 à N, avec des pixels des images.
@@ -5926,6 +6117,7 @@ class Interface(ttk.Frame):
         self.item670 = ttk.Frame(self.item650,relief='sunken')
         texte = _("3 points doivent être placés sur au moins 2 photos") + "\n"
         texte+= _("Les points GCP sont prioritaires sur la mise à l'échelle.\n")
+        texte+= _("Importation possible des points GCP depuis un fichier ou un chantier: voir menu Expert/Importation .\n")        
         self.item671=ttk.Label(self.item670,text=texte,justify='left')
         self.item671.pack(pady=1,padx=5,ipady=1,ipadx=1,fill="y")        
         self.item670.pack(side='top',pady=5,padx=5)
@@ -6123,7 +6315,7 @@ class Interface(ttk.Frame):
         
         self.actualiseListePointsGPS()
 
-        if self.erreurPointsGPS():
+        if self.erreurPointsGPS():           
             return
         
         liste = list ([(n,ident) for n,x,y,z,actif,ident,incertitude in self.listePointsGPS if actif])    # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant, incertitude)
@@ -6957,9 +7149,9 @@ class Interface(ttk.Frame):
             self.tousLesNuages()
             
              # création de modele3D.ply (self.modele3DEnCours= dernier ply généré par tousLesNuages)
-            try: shutil.copy(self.modele3DEnCours,"modele3D.ply")
+            try: shutil.copy(self.modele3DEnCours,self.modele3DFinal)
             except Exception as e: self.ajoutLigne(_("Erreur copie modele3D.ply")+"\n"+str(e)+"\n")
-            self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage           
+            self.modele3DEnCours = self.modele3DFinal           # nécessaire pour l'affichage           
             return             
 
         # si le mode est GeomImage il faut lancer Malt sur chaque Image Maitresse et préparer le résultat
@@ -6976,7 +7168,7 @@ class Interface(ttk.Frame):
                 ajout(self.nuagesDenses,self.modele3DEnCours)   # le dernier modele3dEncours est le plus dense
 
             # création de modele3D.ply
-                self.modele3DEnCours = "modele3D.ply"           # nécessaire pour l'affichage       
+                self.modele3DEnCours = self.modele3DFinal           # nécessaire pour l'affichage       
             if self.nuagesDenses.__len__()==1:
                 try: shutil.copy(self.nuagesDenses[0],self.modele3DEnCours)
                 except Exception as e: print(_("erreur malt GeomImage copy de nuage en modele3D : "),str(e),_(" pour : "),self.nuagesDenses[0])
@@ -7008,8 +7200,8 @@ class Interface(ttk.Frame):
         if retour!=True:
             return "\n" + _("Option incorrecte :") + "\n"+str(retour)
                  
-        self.lignePourTrace = ("-------------- " + _("TRACE DETAILLEE") + " **--------------\n") # première ligne de la trace détaillée        
-        self.ligneFiltre = ("-------------- " + _("TRACE SYNTHETIQUE") + " --------------\n")  # première ligne de la trace synthétique
+        self.lignePourTrace = ("-------------- " + _("TRACE DETAILLEE") + " --------------\n") # première ligne de la trace détaillée        
+        self.ligneFiltre = ("-------------- " + _("TRACE SYNTHETIQUE") +  " --------------\n")  # première ligne de la trace synthétique
         
         texte = "-------------- " + _("DEBUT DU TRAITEMENT MICMAC à ")+ heure()+" -------------- \n\n"
 
@@ -7033,7 +7225,8 @@ class Interface(ttk.Frame):
                        '.*'+self.extensionChoisie,
                        self.echelle1.get(),
                        self.tapiocaAllPerso.get(),                        
-                       "ExpTxt="+self.exptxt]
+                       "ExpTxt="+self.exptxt,
+                       ]
             
         if self.modeTapioca.get()=="MulScale":
             self.echelle1PourMessage = self.echelle2.get()
@@ -7045,7 +7238,9 @@ class Interface(ttk.Frame):
                        self.echelle2.get(),      
                        self.echelle3.get(),
                        self.tapiocaMulScalePerso.get(),                        
-                       "ExpTxt="+self.exptxt]
+                       "ExpTxt="+self.exptxt,
+                       "NbMinPt=5"
+                       ]
             
         if self.modeTapioca.get()=="Line":
             self.echelle1PourMessage = self.echelle4.get()            
@@ -7274,7 +7469,9 @@ class Interface(ttk.Frame):
 
     def verifiePresence2PhotosCalibParAppareil(self):
         return
-
+    # les chemins des photos de calibration sont retirées de la liste des photos du chantier aprés avoir été utilisées par tapas
+    # Parfois il faut les remettre en place
+    
     def remettrePhotosCalibration(self):        # utilisé dans 2 cas : 1) pour relancer Tapioca  aprés Tapas 2) si l'option "uniquement pour calibration" à changé
         if not os.path.exists(self.repCalibSeule):
             return
@@ -7504,7 +7701,7 @@ class Interface(ttk.Frame):
                     self.maltGeomImagePerso.get(),   # param perso en premier (les suivants  identiques sont supprimés)                   
                     "NbVI=2",
                     "ZoomF="+self.zoomF.get(),
-                    "Master="+self.maitreSansChemin,
+                    "Master="+self.maitreSansChemin,                   
                     ]                                    
 
         elif self.modeCheckedMalt.get()=="Ortho":
@@ -7521,7 +7718,7 @@ class Interface(ttk.Frame):
                     "NbVI=2",
                     "ZoomF="+self.zoomF.get(),
                     'DirTA=TA',
-                    "DefCor=0",                     
+                    "DefCor=0",
                     ]            
         elif self.modeCheckedMalt.get()=="UrbanMNE":
             malt = [self.mm3d,
@@ -7531,7 +7728,8 @@ class Interface(ttk.Frame):
                     self.orientationCourante,
                     self.maltUrbanMnePerso.get(),                       
                     "NbVI=2",
-                    "ZoomF="+self.zoomF.get()]                          # zoom 8,4,2,1 qui correspondent au nuage étape 5, 6, 7, 8
+                    "ZoomF="+self.zoomF.get(),
+                    ]                          # zoom 8,4,2,1 qui correspondent au nuage étape 5, 6, 7, 8
         lesPhotos = glob.glob(os.path.join(self.repTravail,"*.JPG"))
         self.ajoutLigne("\n"+_("lesPhotos pour Malt : ")+",".join(lesPhotos)+"\n")
         self.lanceCommande(malt,
@@ -7695,7 +7893,7 @@ class Interface(ttk.Frame):
                     self.orientationCourante,
                     self.C3DCPerso.get(),                    
                     "Masq3D="+self.masque3DSansChemin,
-                    "Out="+self.modele3DEnCours,
+                    "Out="+self.modele3DFinal,
                     "PlyCoul=1",
                     ]
         else:
@@ -7705,7 +7903,7 @@ class Interface(ttk.Frame):
                     ".*"+self.extensionChoisie,                  
                     self.orientationCourante,
                     self.C3DCPerso.get(),                      
-                    "Out="+self.modele3DEnCours,
+                    "Out="+self.modele3DFinal,
                     "PlyCoul=1",
                     ]
             
@@ -7824,34 +8022,31 @@ class Interface(ttk.Frame):
     
     def ouvreModele3D(self):
 
-        aOuvrir = os.path.join(self.repTravail,self.modele3DEnCours)
+        aOuvrir = os.path.join(self.repTravail,self.modele3DFinal)
         if not os.path.exists(aOuvrir):
-           texte=_("Pas de fichier %s généré.") % (self.modele3DEnCours)+ "\n\n" + _("Echec du traitement MICMAC") 
+           texte=_("Pas de fichier %s généré.") % (self.modele3DFinal)+ "\n\n" + _("Echec du traitement MICMAC") 
            self.ajoutLigne(texte)
            return -1
         if not os.path.exists(self.meshlab):
-            open_file(self.modele3DEnCours)
+            open_file(self.modele3DFinal)
             return        
         meshlab = [self.meshlab, aOuvrir]        
         self.lanceCommande(meshlab,
-                           info=_("Nuage de points %s généré.") % (self.modele3DEnCours),
+                           info=_("Nuage de points %s généré.") % (self.modele3DFinal),
                            attendre=False)
 
     def nettoyerChantier(self):     # Le chantier est nettoyé : les fichiers sous self.repTravail sont conservés, les arborescences de calcul effacés
         self.etatDuChantier = 2                
         self.enregistreChantier()
         self.remettrePhotosCalibration()
-##        if self.calibSeule.get():
-##            [os.rename(e,os.path.join(self.repTravail,os.path.basename(e))) for e in self.photosPourCalibrationIntrinseque]           
-##            self.photosPourCalibrationIntrinseque = [os.path.join(self.repTravail,os.path.basename(e)) for e in self.photosPourCalibrationIntrinseque]
-##            self.photosAvecChemin = [os.path.join(self.repTravail,os.path.basename(e)) for e in self.photosAvecChemin]+self.photosPourCalibrationIntrinseque
-##            self.photosSansChemin = [os.path.basename(g) for g in self.photosAvecChemin]
         listeAConserver  = os.listdir(self.repTravail)
         listeAConserver = [e for e in listeAConserver if not os.path.isdir(e)]
         listeAConserver.append("Ori-nav-Brut")
+        listeAConserver.append("Ori-Calib")        
         supprimeArborescenceSauf(self.repTravail,listeAConserver)
         self.sauveParam()
-        self.ajoutLigne("\n ****** " + _("Chantier réinitialisé, points homologues supprimés, sur demande utilisateur. Prochain départ : Tapioca.")+"\n")
+        self.ajoutLigne("\n ****** " + _("Chantier réinitialisé, points homologues supprimés,\n"+
+                                         "orientation supprimée, copie calibration et points GPS conservée. Prochain départ : Tapioca.")+"\n")
         self.ecritureTraceMicMac()
 
     def nettoyerChantierApresTapas(self):     # Le chantier est remis aprés Tapas, prêt pour une nouvelle densification
@@ -7882,22 +8077,15 @@ class Interface(ttk.Frame):
         # 1) orientation par données GPS issue des exifs des photos
         # 2) saisie de points GCP (ground control points)
         # 3) calibration par mise à l'échelle (plan, droite, distance) par Apero,         
-        # Si une orientation brute a été créée à partir des coordonnées GPS des photos prises par drone (par OriConvert) on mixe avec celle de Tapas
+        # Si une orientation brute a été créée à partir des coordonnées GPS des photos prises par drone (par OriConvert) on mixte avec celle de Tapas
         # la nouvelle orientation sera : Ori-nav
 
-        if self.referentielOK: # inutile de relancer
+        if self.referentielOK: # inutile de relancer le référentiel est déjà choisi et rien n'a été modifié
             return
         
-        self.referentielOK = True
-
-        # Points GPS embarqués sur Drone, le répertoire Ori-nav-Brut est supprimé s'ils ne sont pas utilisés)
-        if os.path.isdir("Ori-nav-Brut"):
-            self.orientationCourante = "Arbitrary"
-            self.lanceCenterBascule()
-            self.lanceCampari()                     # Campari sans points GCP            
-            return
-
-        # si il existe un fichier XML de points d'appuis GCP  : self.mesureAppuis
+        self.referentielOK = True # nouveau choix
+        
+        # PRIORITE 1 : si il existe un fichier XML de points d'appuis GCP  : self.mesureAppuis
         # calibrage de l'orientation suivant des points GCP, un axe ox, un plan déterminé par un masque
               
         if os.path.exists(self.mesureAppuis):
@@ -7906,8 +8094,17 @@ class Interface(ttk.Frame):
             # lancement de campari avec points GCP
             self.lanceCampariGCP()
             return     
+        
 
-        # Si un fichier de mise à l'échelle par axe plan et métrique est valide on lance apero, même s'il y a une mise à l'échelle par points GCP (sera bon si GCP échoue)
+        # PRIORITE 2 : Coordonnées GPS embarquées via Drone, le répertoire Ori-nav-Brut est présent, on l'utilise
+        if os.path.isdir("Ori-nav-Brut"):
+            self.orientationCourante = "Arbitrary"
+            self.lanceCenterBascule()
+            self.lanceCampari()                     # Campari sans points GCP            
+            return
+
+
+        # PRIORITE 3 : Si un fichier de mise à l'échelle par axe plan et métrique est valide on lance apero, même s'il y a une mise à l'échelle par points GCP (sera bon si GCP échoue)
 
         if self.controleMiseALEchelle():            # calibration OK = True   
             self.orientationCourante = "Arbitrary"
@@ -8111,22 +8308,25 @@ class Interface(ttk.Frame):
             "mergePlyPerso" : self.mergePlyPerso.get(),
             }
     def restauPerso(self):
-        self.tapiocaMulScalePerso.set(self.dicoPerso["tapiocaMulScalePerso"])
-        self.tapiocaLinePerso.set(self.dicoPerso["tapiocaLinePerso"])
-        self.tapiocaAllPerso.set(self.dicoPerso["tapiocaAllPerso"])
-        self.tapasPerso.set(self.dicoPerso["tapasPerso"])      
-        self.maltOrthoPerso.set(self.dicoPerso["maltOrthoPerso"])
-        self.maltGeomImagePerso.set(self.dicoPerso["maltGeomImagePerso"])
-        self.maltUrbanMnePerso.set(self.dicoPerso["maltUrbanMnePerso"])                
-        self.C3DCPerso.set(self.dicoPerso["C3DCPerso"])       
-        self.campariPerso.set(self.dicoPerso["campariPerso"])     
-        self.tawnyPerso.set(self.dicoPerso["tawnyPerso"])                        
-        self.gcpBasculPerso.set(self.dicoPerso["gcpBasculPerso"])
-        self.taramaPerso.set(self.dicoPerso["taramaPerso"])
-        self.aperiCloudPerso.set(self.dicoPerso["aperiCloudPerso"])
-        self.nuage2PlyPerso.set(self.dicoPerso["nuage2PlyPerso"])
-        self.divPerso.set(self.dicoPerso["divPerso"])
-        self.mergePlyPerso.set(self.dicoPerso["mergePlyPerso"])
+        try:
+            self.tapiocaMulScalePerso.set(self.dicoPerso["tapiocaMulScalePerso"])
+            self.tapiocaLinePerso.set(self.dicoPerso["tapiocaLinePerso"])
+            self.tapiocaAllPerso.set(self.dicoPerso["tapiocaAllPerso"])
+            self.tapasPerso.set(self.dicoPerso["tapasPerso"])      
+            self.maltOrthoPerso.set(self.dicoPerso["maltOrthoPerso"])
+            self.maltGeomImagePerso.set(self.dicoPerso["maltGeomImagePerso"])
+            self.maltUrbanMnePerso.set(self.dicoPerso["maltUrbanMnePerso"])                
+            self.C3DCPerso.set(self.dicoPerso["C3DCPerso"])       
+            self.campariPerso.set(self.dicoPerso["campariPerso"])     
+            self.tawnyPerso.set(self.dicoPerso["tawnyPerso"])                        
+            self.gcpBasculPerso.set(self.dicoPerso["gcpBasculPerso"])
+            self.taramaPerso.set(self.dicoPerso["taramaPerso"])
+            self.aperiCloudPerso.set(self.dicoPerso["aperiCloudPerso"])
+            self.nuage2PlyPerso.set(self.dicoPerso["nuage2PlyPerso"])
+            self.divPerso.set(self.dicoPerso["divPerso"])
+            self.mergePlyPerso.set(self.dicoPerso["mergePlyPerso"])
+        except Exception as e:
+            self.ajoutLigne(_("Erreur lors se la restauration des options personnalisées : ")+str(e))
 
     def initPerso(self):    # bouton : Effacer tout
         self.tapiocaMulScalePerso.set("")
@@ -8191,33 +8391,7 @@ class Interface(ttk.Frame):
 
     ###################### Stratégie APERODEDENIS pour trouver les maitresses et les images associées. (dépend des noms de répertoire et fichiers donnés par micmac)
     # renvoie une liste de tuple : maitresse, liste des photos associées
-
-    def maltApero(self):
-        # liste des paires de photos et taille
-        listeTaille = list()
-        self.maitressesEtPhotoApero   = list()
-        repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
-        if os.path.exists(repertoireHomol)==False:
-            return
-        oschdir(repertoireHomol)        
-        for e in os.listdir():                                  # balaie tous les fichiers contenant les points homologues e = Pastis+ nom fichier
-            oschdir(os.path.join(repertoireHomol,e))            
-            for f in os.listdir():      # f = nom du fichier + ".dat"
-                # répertoire (pastis+nomphoto), nom du fichier(nomphoto+.dat ou .txt) et taille
-                if os.path.splitext(f)[0] not in self.photosCalibrationSansChemin:
-                    listeTaille.append((e.replace("Pastis",""), os.path.splitext(f)[0], os.path.getsize(f)))            
-        oschdir(self.repTravail)        
-        listeTaille.sort(key= lambda e: e[2],reverse=True)     # trie la liste des couples de fichiers par taille
-        listeFixe = list(listeTaille)
-        # première maitresse = e de la paire la plus importante, associée à f
-        while listeTaille.__len__():
-            e = listeTaille[0][0]
-            f = listeTaille[0][1]
-            t = listeTaille[0][2]
-            self.maitressesEtPhotoApero.append([e,f])        # on ajoute la maitresse et la photo associée
-            # Suppression de la liste de toutes les paires comportant e ou f
-            [listeTaille.remove((g,h,i)) for (g,h,i) in listeFixe if (e==g or e==h or f==g or f==h) and (g,h,i) in listeTaille]
-        self.listeDesMaitressesApero = [e for e,f in self.maitressesEtPhotoApero] #  MaltApero renvoit la liste des maîtresses sous forme (maitresse, photo)
+    # supprime version 5.51 en juin 2020
 
     ###################### Appareil photo : affiche le nom de l'appareil de la première photo, la focale, la taille du capteur dans dicocamera
 
@@ -8308,7 +8482,7 @@ class Interface(ttk.Frame):
         self.lesTagsExif[tag,photo] = self.tag
         print("en principe ne devrait pas se produire, tag absent de l'exif : tagexif recalculé")
         return self.tag
-
+    
     def FiltreTag(self, ligne):                             # ne retourne rien (pour éviter la trace, mais positionne si possible self.tag
         if "can't open" in ligne:
             return _("Erreur dans exiftool : ")+ligne
@@ -8517,7 +8691,7 @@ class Interface(ttk.Frame):
         epsg = MyDialog(fenetre,_("Code EPSG du référentiel souhaité"),
                         basDePage=_("Les codes epsg se trouvent par exemple sur epsg.org ou epsg.io")+"\n"+
                         "Exemple pour la Réunion : 2975").saisie
-        if epsg=="":
+        if epsg in (False,""):
             self.encadre(_("Epsg : Abandon utilisateur"))
             return
         # si ok création du fichier XML décrivant le référentiel, sera utilisé par OriConvert
@@ -8557,17 +8731,22 @@ class Interface(ttk.Frame):
 
 # suppression/ajout des données de navigation par l'utilisaeur :
                    
-    def swapGPSEmbarque(self):        # suppression du fichier des coordonnées GPS des appareils, du repereLocal et du répertoire orientation issu de ces données
+    def swapGPSEmbarque(self):        # suppression ou ajout du fichier des coordonnées GPS des appareils, du repereLocal et du répertoire orientation issu de ces données
 
         if self.repereChoisi==self.repereAbsent:
              self.encadre(self.messageGPSDroneAbsent)
              return
-        if self.repereChoisi == self.repereSupprime:    # le repère a été supprim : on le remet !
+        if self.repereChoisi == self.repereSupprime:    # le repère a été supprimé : on le remet !
             self.GpsExif()
+            message = "\n"+_("Les données GPS embarquées dans les photos du drone sont de nouveau utilisées sur demande de l'utilisateur.")+"\n"
+            self.ajoutLigne(message)
+            self.encadre(message)            
         else:                                           # repére existe : on le supprime
-            self.supOriNavBrut()
+            self.supOriNavBrut()                        # supprime l'orientation (fichiers xml, répertoire Ori-nav-Brut, affecte repèreChoisi
             self.messageRepereLocal = str()
-            self.encadre(_("Orientation de navigation drone supprimée"))
+            message = "\n"+_("Les données GPS embarquées dans les photos du drone ne sont plus utilisées sur demande de l'utilisateur.")+"\n"
+            self.ajoutLigne(message)
+            self.encadre(message)
 
         self.miseAJourLibelleNavigationGPS()
         self.afficheEtat()
@@ -8849,6 +9028,7 @@ class Interface(ttk.Frame):
         self.ligneCmd += ligne
         return ligne
 
+    @decorateTry
     def lignesPython(self):
         self.ecritureTraceMicMac()        
         self.cadreVide()        # ménage écran, ouverture trace
@@ -9003,7 +9183,14 @@ class Interface(ttk.Frame):
         # #F=N X Y Z Ix Iy Iz
         # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01         
         self.menageEcran()
-
+        titre = _("Info sur les fichiers de points GCP")
+        rapport = _("Un fichier de points GCP a le format suivant: 7 informations par ligne")+"\n"
+        rapport += _("           Nom_du_point  X  Y  Z  dx  dy  dz ")+"\n"
+        rapport +=_("C'est un fichier texte, séparateur espace")+"\n"
+        rapport +=_("dx dy dz sont les précisions de placement en nombre de pixel, mettre 1 au minimum")+"\n"
+        rapport += _("le caractère '#' en début de ligne signale un commentaire")+"\n"
+        if not MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1="Lancer",b2="Abandon").retour:
+            return
         fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GCP : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
                                                   filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
                                                   multiple=False)
@@ -9294,7 +9481,7 @@ class Interface(ttk.Frame):
             self.encadre(texte)
 
         
-    ################################## Le menu AIDE ###########################################################
+    ################################## Les menus AIDE ###########################################################
             
     def commencer(self):
         self.encadre (self.aide3,50,aligne='left')
@@ -9319,9 +9506,6 @@ class Interface(ttk.Frame):
         
     def aPropos(self):
        
-        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2020") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
-                                _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr")
-
         self.encadre (self.aide7,aligne='center')
         
         # ajout du logo du cerema 
@@ -9337,6 +9521,9 @@ class Interface(ttk.Frame):
         self.canvasLogoIGN.pack(fill='both',expand = 1)
         self.logoIgn.pack(pady=5)                   
         self.imgTk_idIGN = self.canvasLogoIGN.create_image(0,0,image = dataLogoIGN,anchor="nw") # affichage effectif de la photo dans canvasPhoto
+
+    def aideMetiers(self):
+        self.afficheTexte(self.aide9)        
         
     ################################## Le menu FICHIER : nouveau, Ouverture, SAUVEGARDE ET RESTAURATION, PARAMETRES, outils divers ###########################################################       
 
@@ -9411,8 +9598,11 @@ class Interface(ttk.Frame):
                          self.repereChoisi,                 # si navigation GPS (drone) : local ou lambert 93
                          self.messageRepereLocal,
                          self.calculNuageNonDense.get(),    # booléen : faut-il cacluler le nuage non dense
-                         self.nuage2Mesh.get(),
-                         self.nomEpsg,
+                         self.nuage2Mesh.get(),             # texte : 0 pour obtnir un nuage de points dense, 1 pour obtenir un maillage
+                         self.nomEpsg,                      # EPSG choisi pour convertir les données GPS dans l'exif des photos
+                         self.modele3DFinal,                # lorsque plusieurs nuages denses sont générés les nom s'incrémentent de _VNN : nom du dernier créé
+                         self.masque3DSansChemin,           # nom du fichier XML du masque 3D, fabriqué par Saisie MasqQT (sur AperiCloud ou sur Modele3D)
+                         self.masque3DBisSansChemin,        # nom du second fichier XML pour le masque 3D                         
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -9594,6 +9784,10 @@ class Interface(ttk.Frame):
             self.calculNuageNonDense.set    (r[57])
             self.nuage2Mesh.set             (r[58])
             self.nomEpsg                    = r[59]
+            self.modele3DFinal              = r[60]
+            self.masque3DSansChemin         = r[61] # nom du fichier XML du masque 3D, fabriqué par Saisie MasqQT (sur AperiCloud ou sur Modele3D)
+            self.masque3DBisSansChemin      = r[62] # nom du second fichier XML pour le masque 3D                         
+            
         except Exception as e: print(_("Erreur restauration param chantier : "),str(e))
         
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
@@ -9793,13 +9987,6 @@ class Interface(ttk.Frame):
             self.finOptionsOK()
             self.fermetureOngletsEnCours = False
             return
-
-##            self.fermetureOngletsEnCours = True        
-##            if self.troisBoutons(_("Fermer les options."),_("La boîte de dialogue 'options' est ouverte et va être fermée.\nVoulez-vous enregistrer les options saisies ?"),b1=_("enregistrer"),b2=_("abandon"))==0:
-##                self.finOptionsOK()
-##            else:
-##                self.finOptionsKO()
-##            self.fermetureOngletsEnCours = False
         except: pass
         
     def fermerOptionsGoPro(self):
@@ -10095,7 +10282,7 @@ class Interface(ttk.Frame):
         elif args[0] == 'moveto':
             self.texte201.yview_moveto(args[1])
 
-    ################################## lance une procédure et éxécute une commande sur chaque ligne de l'output ################################################
+    ################################## lance une procédure, attends ou non le résultat, éxécute un filtre sur chaque ligne de l'output ################################################
 
     def lanceCommande(self,commande,filtre=lambda e: e,info="",attendre=True):
         def nettoyerLaCommande(commande):
@@ -10173,7 +10360,12 @@ class Interface(ttk.Frame):
     ########################## Opérations sur les Fichiers TRACE
 
     def definirFichiersTrace(self):     # affectation des noms des fichiers trace. pas de création : en effet le plus souvent ils existent déjà, il faut seulement les retrouver
-        if self.repTravail != "":
+        if  self.typeDuChantier[0]=='metier':       # 0 : metier, 1 : fichier pour répertoire 2 : nom du fichier trace
+            repertoire = os.path.dirname(self.typeDuChantier[1])  
+            self.TraceMicMacSynthese = os.path.join(repertoire,"Trace_AperoDeDenis_"+self.typeDuChantier[2]+".txt")
+            self.TraceMicMacComplete = ""
+            oschdir(repertoire)                                                       # on se met dans le répertoire de travail, indispensable
+        elif self.repTravail != "":
             self.TraceMicMacSynthese = os.path.join(self.repTravail,'Trace_MicMac_Synthese.txt')
             self.TraceMicMacComplete = os.path.join(self.repTravail,'Trace_MicMac_Complete.txt')
             oschdir(self.repTravail)                                                       # on se met dans le répertoire de travail, indispensable
@@ -10229,11 +10421,10 @@ class Interface(ttk.Frame):
         try:
             with open(self.TraceMicMacSynthese,'a', encoding='utf-8') as infile:
                 infile.write(self.ligneFiltre)
-
-            with open(self.TraceMicMacComplete,'a', encoding='utf-8') as infile:
-                infile.write(self.lignePourTrace)
-            
-        except Exception as e:
+            if self.TraceMicMacComplete:
+                with open(self.TraceMicMacComplete,'a', encoding='utf-8') as infile: # erreur si tracemicmaccomplete ="" (cas du volume)
+                    infile.write(self.lignePourTrace)
+        except Exception as e: 
             print (_('erreur ecritureTraceMicMac : '),str(e),"\ntraces : ",self.TraceMicMacSynthese," et ",self.TraceMicMacComplete)
             
         self.effaceBufferTrace()    
@@ -10260,7 +10451,7 @@ class Interface(ttk.Frame):
             return
         if testPresenceRepertoire and not os.path.exists(self.repTravail):
             self.encadre(_("Le répertoire du chantier n'est pas accessible. Relancer l'ouverture d'un chantier"))
-            return          
+            return
         self.cherche = str()                                                # recherche
         self.fermerVisu = False                                             # permet d'identifier la sortie par le second bouton si = True (!= sortie par fermeture fenêtre)
         l = [ e for e in listeAvecChemin if not (os.path.exists(e))]        # BIS : si des photos ou répertoires manquent encore : abandon !
@@ -10611,19 +10802,14 @@ class Interface(ttk.Frame):
         #if ligne[0:5]=="frame":
             return ligne
 
-########################################## renomme le modèle3D pour éviter de l'écraser
-        
+########################################## Quel nom pour le modéle qui va être créé ? on renomme le modèle3D pour éviter de l'écraser
+    @decorateTry
     def renommeModele3D(self):
-        if os.path.exists("modele3D.ply"):
-            for i in range(1,20):
+        if os.path.exists(self.modele3DFinal): 
+            for i in range(1,100):
                 new = "modele3D_V"+str(i)+".ply"
                 if not os.path.exists(new):
-                    try:
-                        os.replace(os.path.join(self.repTravail,"modele3D.ply"),os.path.join(self.repTravail,new))
-                        self.ajoutLigne("\n" + _("Le fichier modele3D.ply précédent est renommé en ")+new+".")
-                    except Exception as e:
-                        print(_("erreur renommage ancien modele_3d en "),new,str(e))
-                        self.ajoutLigne("\n" + _("Le fichier Modele3D.ply précédent n'a pu être renommé. Il sera remplacé."))
+                    self.modele3DFinal = new
                     break
         
 ########################################## Outils divers (raccourcis clavier, infobulle, afficher un dico de points....)
@@ -11099,7 +11285,7 @@ class Interface(ttk.Frame):
         if self.exptxt =="0" : typeFichier=".dat"
         if self.exptxt =="1" : typeFichier=".txt"        
         liste = [(e[1].split(typeFichier)[0],e[0].split("Pastis")[-1]) for e in listeTaille]    # liste des noms des plus gros fichiers des fichiers de l'arborescence Homol
-        listeSet=set()                                          # chaque nom peut apparaitre plusieurs fois : on va utilsier un ensemble (set)
+        listeSet=set()                                          # chaque nom peut apparaitre plusieurs fois : on va utiliser un ensemble (set)
         for e in liste :                                        # on ne conserve que les n premiers
              listeSet.add(e[0])                                 # ajout nom du répertoire = premiere photo(la lecture de la liste conserve l'ordre des tailles)
              listeSet.add(e[1])                                 # ajout seconde photo  
@@ -11179,6 +11365,62 @@ class Interface(ttk.Frame):
                         +"\n"+"\n".join(liste)+"\n")
         else:
             self.encadreEtTrace(_("La fusion n'a pu se réaliser.") + "\n" + _("Consulter la trace."))
+
+    def demandePlyChantierPourInfo(self):
+        listePly = [e for e in os.listdir() if os.path.splitext(e)[1]==".ply"]
+        if listePly==list():
+            self.encadre(_("Aucun nuage de points dans ce chantier."))
+            return
+        self.choisirUnePhoto(listePly,
+                             titre=_("Information sur un fichier PLY"),
+                             message=_("Choisir le fichier:"),
+                             messageBouton=_("Rechercher les infos"),                             
+                             boutonDeux=_("Fermer"),
+                             mode='extended')
+        if len(self.selectionPhotosAvecChemin)==0:
+            return
+        ply = self.selectionPhotosAvecChemin[0]        
+        self.infoSurPly(ply)
+
+    def demandePlyPourInfo(self):
+
+        ply = tkinter.filedialog.askopenfilename( initialdir="",                                                 
+                                                filetypes=[(_("ply"),"*.ply"),(_("Tous"),"*")],
+                                                multiple=False,
+                                                title = _("Info sur le fichier Ply"))
+    
+        self.infoSurPly(ply)
+
+
+    def infoSurPly(self, ply):
+               
+        self.encadre(_("Patience : lecture du fichier :\%s") % (ply))
+        info = typePly = typeDePly(ply)
+        if typePly in ("nuage de points ascii","mesh ascii","mesh binary"):
+            info = _("Type du fichier ply :\n%s\n %s") % (ply,typePly)
+        if typePly == None:
+            info = _("Le contenu de ce fichier n'est pas du type Ply")
+        if typePly in ("nuage de points binaire","mesh binary"):
+            mnt = extraireLesXyzDuPly(ply)
+            if type(mnt) != type(dict()):
+                self.encadre(_("Abandon : %s") % (ply))
+                return
+            info  = _("Nom du fichier : %s") %(ply)
+            info +=  "\n\n"+_("Nombre de points dans le nuage : %s") % (mnt["nb"])
+            info +=  "\n\n"+_("Surface couverte : %s") % (round(mnt["surface"],2))
+            info +=  "\n\n"+_("Nombre de points par unité de surface : %s") % (int(mnt["nb"]/mnt["surface"]))
+            info +=  "\n\n"+_("X minimum : %s") % (round(mnt["min_x"],2))
+            info +=  "\n"+_("X maximum : %s") % (round(mnt["max_x"],2))
+            info +=  "\n\n"+_("Y minimum : %s") % (round(mnt["min_y"],2))
+            info +=  "\n"+_("Y maximum : %s") % (round(mnt["max_y"],2))
+            info +=  "\n\n"+_("Z minimum : %s") % (round(mnt["min_z"],2))
+            info +=  "\n"+_("Z maximum : %s") % (round(mnt["max_z"],2))
+            info +=  "\n\n"+_("Volume : %s") % (round(mnt["volume"],2))
+            info +=  "\n\n"+_("Nombre de points par unité de volume : %s") % (int(mnt["nb"]/mnt["volume"]))
+                      
+        self.encadre(info)
+        self.ajoutLigne(info)
+
 
     ################### Conversion au format jpg, information de l'Exif
 
@@ -11434,6 +11676,8 @@ class Interface(ttk.Frame):
                             self.choixDensification.get(),
                             self.calculNuageNonDense.get(),
                             self.nuage2Mesh.get(),
+                            self.tolerance,
+                            self.arrondi,
                             ),
                         sauvegarde3)
             sauvegarde3.close()
@@ -11472,6 +11716,8 @@ class Interface(ttk.Frame):
             self.choixDensification.set(r[20])
             self.calculNuageNonDense.set(r[21])
             self.nuage2Mesh.set(r[22])
+            self.tolerance=r[23]
+            self.arrondi=r[24]
         except Exception as e:
             print(_("erreur restauration options : ")+str(e))
         # Restauration des paramètres nommés personnalisés : si pas alors initialisation
@@ -11554,49 +11800,115 @@ class Interface(ttk.Frame):
         ajout(self.tousLesChantiers,self.repTravail)    # Ajout du chantier :
         self.sauveParamMicMac()                         # sauve les param en cours du chantier dans les param généraux (peux mieux faire ?)       
 
+    ########################################### Conversion d'un PLY en fichier X Y Z (séparateur espace
+    #@decorateTry
+    def ecrireXYZ(self):
+        fichierPlyPourXyz =tkinter.filedialog.askopenfilename(title=_('Fichier .PLY à convertir en XYZ : '),
+                                                  filetypes=[(_("fichier ply"),("*.ply")),(_("Tous"),"*")],
+                                                  multiple=False)
+        self.encadre(_("Patience : lecture du fichier en cours."))
+        semisDePoints = extraireLesXyzDuPly(fichierPlyPourXyz)
+        if "semisDePoints" not in locals():
+            self.encadre(_("Erreur sur le fichier \n %s")) % (fichierPlyPourXyz)
+            return            
+        if type(semisDePoints)!=type(dict()):
+            self.encadre(_("Erreur sur le fichier \n %s \n  %s") % (fichierPlyPourXyz,str(semisDePoints)))
+            return
+        fichierXYZ   = os.path.splitext(fichierPlyPourXyz)[0]+".XYZ"    # fichier xyz
+        xyz = [ " ".join((str(x),str(y),str(z))) for x,y,z in semisDePoints["lesXyz"]]   # voir la commande zip peut être utile : https://stackoverflow.com/questions/12142133/how-to-get-first-element-in-a-list-of-tuples
+               
+        with open (fichierXYZ,"w") as f:
+            f.write ("\n".join(xyz))
+        message = _("Fichier XYZ, séparateur espace \n %s \n écrit.") % (fichierXYZ)            
+        self.encadre(message)
+        self.ajoutLigne(message)
+                                        
     ########################################### Conversion PLY en XYZ puis en MNT, MNT IGN et MNT Grass
 
-    def MNT(self):
+    def ply2Mnt(self):
+                
+        self.toMnt("ply")
+
+    def xyz2Mnt(self):
+        self.toMnt("xyz")
+
+    #@decorateTry   
+    def toMnt(self,typeFichier):
+##        
+##        # cette fonction n'est pas disponible aprés cx-freese : numpy ne peut pas être chargé par cx-freeze 
+##
+##        if ".exe" in sys.argv[0]:
+##            self.encadre(_("La construction des MNT doit être effectuée à partir du script python, impossible à partir de l'éxécutable."))
+##            return
+        def controleFichier():
+            if len(fichierPourMnt)==0:
+                return False
+            typePly=False
+
+            if not os.path.exists(fichierPourMnt):
+                self.encadre(_("Ce fichier n'est pas trouvé : ")+"\n"+fichierPourMnt)
+                return False
+            
+            if fichierPourMnt[-4:].upper() in (".ASC",".XYZ",".CSV",".TXT"):
+                with open(fichierPourMnt) as f:
+                    ligne = f.readline()
+                    if "cols" in ligne:
+                        self.encadre(_("\nLe fichier\n %s \nest déjà un mnt.\n\n") % (fichierPourMnt))
+                        return False
+                    typePly = "ASC"
+                    
+            elif fichierPourMnt[-4:].upper() in (".PLY"):
+                typePly = typeDePly(fichierPourMnt)
+                if typePly==None:                      
+                    erreur = _("erreur : le fichier\n %s \nn'a pas un contenu de type ply.") % (fichierPourMnt)
+                    self.encadre(erreur)
+                    return False                                               # Abandon si pas fichier ply
+                if typePly in ("nuage de points ascii"):
+                    erreur = _("Désolé : le fichier %s \nest de type %s. \nFormat non traité dans cette version d'AperoDeDenis.\n\n"+
+                               "Utiliser CloudCompare pour l'enregistrer au format mesh ascii ou nuage de point binary.") %(fichierPourMnt,typePly)
+                    self.encadre(erreur)
+                    return False                                               # Abandon si pas fichier ply
+            else:
+                erreur = _("Le fichier\n %s \nn'a pas une extension ASC, XYZ,CSV,TXT ou PLY. Abandon") % (fichierPourMnt)
+                self.encadre(erreur)
+                return False                                               # Abandon si pas fichier ply                
+            self.ajoutLigne(heure()+_("Fichier a écrire en MNT : %s") % (fichierPourMnt))
+            return typePly
         
-        # cette fonction n'est pas disponible aprés cx-freese : numpy ne peut pas être chargé par cx-freeze
-
-        if ".exe" in sys.argv[0]:
-            self.encadre(_("La construction des MNT doit être effectuée à partir du script python, impossible à partir de l'éxécutable."))
-            return
-
+        # Traitement
+                
         # OK, on essaie :
         # demande le fichier :
         self.menageEcran()
+        if typeFichier=="ply":
+            extensions = ("*.ply",)
+            message = _("Choisir le nuage PLY a écrire au format MNT :")
+
+        if typeFichier=="xyz":
+            extensions = ("*.asc","*.xyz","*.txt")
+            message = _("Choisir le nuage XYZ a écrire au format MNT : ")
+                          
+        fichierPourMnt=tkinter.filedialog.askopenfilename(title=message,
+                                                            initialdir=self.repTravail,
+                                                            filetypes=[(_("fichier ply ou asc"),extensions),(_("Tous"),"*")],
+                                                            multiple=False)
         
-        fichierPly=tkinter.filedialog.askopenfilename(title=_('Fichier ply provenant de malt Ortho à convertir en MNT : '),
-                                                  filetypes=[(_("fichier ply"),("*.ply")),(_("Tous"),"*")],
-                                                  multiple=False)
+        typePly = controleFichier()
+        if typePly==False: return
+        if typePly=="nuage de points binaire":
+            retour = self.ecrireMNTPlyNuage(fichierPourMnt)
+        if typePly=="mesh ascii":
+            retour = self.ecrireMNTPlyMesh(fichierPourMnt)
+##        if typePly=="mesh binary": # a écrire pour lire des mesh binaires
+##            retour = self.ecrireMNTPlyMeshBinaryMesh(fichierPourMnt)            
+        if typePly=="ASC":
+            retour = self.ecrireMNTPlyNuage(fichierPourMnt)
+            
+    ####### Ecrire un mnt
+    @decorateTry
+    def ecrireMNTPlyNuage(self,fichierPourMnt):
         
-        if len(fichierPly)==0:
-            return
-
-        # demande le pas :
-        texte = _("Indiquer le pas utilisé pour le MNT en mètres : par exemple 0.5 pour un pas de 50 cm : ")
-        bas = (_("Le pas doit être cohérent avec la taille de la zone. ")+"\n"+
-                _("Attention : si la métrique n'est pas précisée par une mise à l'échelle ou des points GPS alors l'unité n'est pas le mètre"))
-        new = MyDialog(fenetre,texte,basDePage=bas)
-        if new.saisie=="":
-            return
-        lePas = new.saisie
-        message = "\n"+heure()+_(" Lancement du calcul des MNT IGN et GRASS")
-        self.ajoutLigne(message)
-        retour = self.ecrireMNT(fichierPly,lePas)
-        if retour==None:
-            retour=""
-        else:
-            retour="\n\n****** Erreur ********\n"+retour
-        message = "\n"+heure()+"\n"+_(" Fin de l'écriture des fichiers MNT IGN et GRASS à partir de : ")+"\n"+fichierPly+"\npas="+lePas+str(retour)
-        self.encadre(message)
-        self.ajoutLigne(message)          
-
-    def ecrireMNT(self,fichierPly,lePas):
-
-        def mggrille(min_x,max_x,lePas, min_y,max_y): #pour remplacer mgrid de numpy, afin de se passer de numpy
+        def mggrille(min_x,max_x,lePas, min_y,max_y): # ne sert pas : pour remplacer mgrid de numpy, afin de se passer de numpy
             nb_x=int((max_x-min_x)/lePas)+1
             ix = range(nb_x)
             gx=[min_x+e*lePas for e in ix]
@@ -11606,177 +11918,299 @@ class Interface(ttk.Frame):
             grid_x = [ [e]*nb_y for e in gx]
             grid_y = [gy]*nb_x
             return grid_x,grid_y
-        
-        if not os.path.exists(fichierPly):
-            return _("Pas de fichier ply.")
-        
-    #''' Supprimer pour utilisatin sous cx-freeze uniquement (éviter d'embarquer numpy et scipy
-        # pour ne pas imposer scipy à tous...
-        
-        try:
 
-            from scipy.interpolate import griddata      # Pour l'interpolation
-            from numpy import mgrid
-            
-        except Exception as e :
-            message = (_("Cette fonction nécessite la présence du module scipy  : ")+"\nErreur : "+str(e)+"\n")
-            message += (_("Si AperoDeDenis a été installé à partir du fichier msi cette fonction 'MNT' n'est pas fonctionnelle."))
-            
-            return _("erreur module absent \n"+message)
-        
-        self.encadre(_("\nPatience : procédure longue, création d'un maillage à partir du fichier : ")+"\n"+fichierPly+"\n pas : "+lePas+"\n")
-        lePas = float(lePas)
-        # methode d'interpolation utilisée 
-        methode = 'linear'              # alternative : nearest ou linear mais linear ne fonctionne pas !!!!
-        #valeur de remplissage :
-        remplissage = "-9999"              
-        fichierMNT      = os.path.splitext(fichierPly)[0]+"_MNT.txt"    # nom du fichier mnt qui sera écrit   
-        fichierPAS      = os.path.splitext(fichierPly)[0]+"_PAS.txt"    # nom du fichier contenant la métadonnée "lePas" qui sera écrit   
-        fichierIgnASC   = os.path.splitext(fichierPly)[0]+"_IGN.ASC"    # MNT IGN ASC
-        fichierGrassASC = os.path.splitext(fichierPly)[0]+"_GRASS.ASC"  # MNT GRASS ASC
 
-        self.encadrePlus(_("Les fichiers en cours d'écriture sont : ")+"\n")
-        self.encadrePlus(fichierIgnASC+"\n")
-        self.encadrePlus(fichierGrassASC)
-        self.ajoutLigne("\n"+"\n"+_("Les fichiers en cours d'écriture sont : ")+"\n")
-        self.ajoutLigne(fichierIgnASC+"\n")
-        self.ajoutLigne(fichierGrassASC+"\n"+"\n")
-        
-        endian = "@"                                                    # valeur par défaut : endian du système
-        fmt = str()                                                     # format de codage des données dans le ply ce format est utilisé par struct
-        i = int()
-        with open(fichierPly, 'rb') as infile:                          # lecture du fichier en mode "binaire"
-            ligne = infile.read()
+        def messageFin():
 
-        lignes = ligne.splitlines()                                     # coupure du flux binaire en "lignes"
-        if lignes[0]!=b'ply':                                           # vérification que le tag "ply" est présent en entête de fichier
-            erreur = "erreur : le fichier\n"+fichierPly+"\nn'est pas un fichier de type ply."
-            return erreur                                               # Abandon si pas fichier ply
-
-        if b"ascii" in lignes[1]:                                        # pas prévu pour lire les fichiers ply "ASCII" choisir binary lors de l'écriture
-            erreur = "erreur : le fichier\n"+fichierPly+"\nest un fichier de type ply au format ASCII.\nUtiliser le format BINARY lors de l'enregistrement du fichier ply."
-            return erreur
-
-        for e in lignes:                                                # décodage des lignes d'entête qui indique la structure du fichier
-            i+=1
-            if e==b'end_header':
-                break                                                   # tag de fin d'entête on connait la structure, fin du décodage de la structure
-            s=str(e)             
-            if "little_endian" in s:                                    # boutisme
-                endian="<"
-            if "big_endian" in s:
-                endian=">"
-            if "element vertex" in s:                                   # nombre de points
-                nombre_points = int(s.split(" ")[-1][0:-1])
-            if "element face" in s:                                     # nombre de faces, cela termine la lecture : on ignore les faces
-                nombre_faces = int(s.split(" ")[-1][0:-1])
-                break
-            if "property" in s:                                         # property : liste les éléments de la structure des données pour chaque point
-                cType = s.split(" ")[1]
-                if cType=="float":                                      # Micmac n'utilise que les valeurs float et uchar
-                   fmt += "f"                                           # indique qu'il y a un float à lire
-                elif cType=="uchar":
-                   fmt += "B"                                           # indique qu'il y a un octet à lire
-                elif cType=="char":
-                   fmt += "c"                                           # indique qu'il y a un octet à lire
-                elif cType=="short":
-                   fmt += "h"                                           # indique qu'il y a deux octet à lire 
-                elif cType=="ushort":
-                   fmt += "H"                                           # indique qu'il y a deux octet à lire
-                elif cType=="int":
-                   fmt += "i"                                           # indique qu'il y a 4 octet à lire 
-                elif cType=="uint":
-                   fmt += "I"                                           # indique qu'il y a 4 octet à lire
-                elif cType=="double":
-                   fmt += "d"                                           # indique qu'il y a 8 octet à lire                              
-                elif cType!="list":                                     # la valeur list est aussi utilisée, s'il s'agit d'une autre valeur : abandon
-                    erreur=(_("format de donnée non prévu pour les ply issus de micmac, abandon : ")+cType)
-                    return erreur
-
-        fmt = endian+fmt                                                # le format est complété par le boutisme
-        debutData = ligne.find(b"end_header",0,1000)+11                 # on extrait la zone des données utiles dans la varible "ligne" : début = aprés l'entête
-        longueurData = nombre_points*struct.calcsize(fmt)               # on prend juste la longueur nécessaire (nombre de point * longueur des données du point)
-        finData = debutData + longueurData
-        plageData = ligne[debutData:finData]
-        
-        # extraction des X,Y,Z du ply :
-        valeur=tuple([e for e in fmt])
-        try:
-            # list comprehension extrayant les xyz de la structure décodée :
-            lesXYZ = [((valeur[0],valeur[1]),valeur[2]) for [*valeur] in struct.iter_unpack(fmt,plageData).__iter__() ]
-            
-        except Exception as e:
-            erreur = _("Erreur lors du décodage des données, le ply ne provient pas de micmac. Erreur = ")+e
-            return erreur
-
-        # liste des Z
-        
-        listeDesZ = list()
-        [listeDesZ.append(str(e[1])) for e in lesXYZ]
-        
-        # création de la grille régulière :
-        
-        nombreDePointsDansLePly = lesXYZ.__len__()
-        
-        points = [xy for xy,z in lesXYZ]        # voir la commande zip peut être utile : https://stackoverflow.com/questions/12142133/how-to-get-first-element-in-a-list-of-tuples
-        min_x  = min([x for x,y in points])     # bornes
-        max_x  = max([x for x,y in points])
-        min_y  = min([y for x,y in points])
-        max_y  = max([y for x,y in points])
-        
-        # générer un maillage avec un pas régulier, création de la grille régulière
-        
-        grid_x, grid_y = mgrid[min_x:max_x+lePas:lePas, min_y:max_y+lePas:lePas]
-        #grid_x, grid_y = mggrille(min_x,max_x+lePas,lePas, min_y,max_y+lePas) # alternative sans appel à numpy (seule utilisation directe)
-       
-        maillage = griddata( points,
-                          [z for xy,z in lesXYZ],
-                          (grid_x, grid_y),
-                          method=methode,
-                          fill_value=remplissage)
-        
-        # Ecriture fichier MNT
-
-        # Conversion en tableau de nombres arrondis, avec valeur de remplissage ok  :
-        
-        tableArrondie = list()
-        for decoupe in maillage:
-            # une ligne entière :
-            ligne = list()            
-            for f in decoupe:
-                val = round(float(f),2)
-                if float(remplissage)==val:
-                    val = remplissage
-                ligne.append(str(val))
-            tableArrondie.append(",".join(ligne))
+            message = "\n\n "+self.debutEcrireMnt
+            if self.fichierIgnASC:
+                message += "\n\n"+("Ecriture du fichier :")+"\n"+self.fichierIgnASC
+##            if self.fichierGrassASC:
+##                message += "\n\n"+("Ecriture du fichier :")+"\n"+self.fichierGrassASC
                 
-        table = "\n".join(tableArrondie)    
+            message += _("\n\n %s Fin de l'écriture du MNT.") % (heure())
+            if not self.fichierIgnASC+self.fichierGrassASC:
+                message += "\n\n"+_("Pas de fichier écrit")
+            self.encadre(message)
+            traceMetier(message,fichierPourMnt,"MNT")            
+        
+        def demandeLePas(surface,nb_points): # demande la taille de la maille
+            lePas = False
+            texte  = _("Fichier : %s") % (fichierPourMnt)
+            texte += "\n\n"+_("Indiquer la taille de la maille utilisée pour le MNT, en mètres :\n par exemple 0.5 pour une maille de 50 cm : ")
+            texte += "\n\n"+_("Le nombre de points est de %s, la surface couverte est de %s m2.") % (nb_points,int(surface))
+            texte += "\n\n"+_("Il y a %s points au m2.") % (round(nb_points/surface))
+            texte += "\n\n"+_("Une taille de %s m correspond à 1 point du nuage par maille.") % (round((surface/nb_points)**0.5,2))
 
-        # écriture du même fichier au format MNT ASC IGN :
+            bas = ( _("Remarque : l'unité de longueur supposée est le mètre"))
+            new = MyDialog(fenetre,texte,basDePage=bas)
+            if new.saisie in (False,""):
+                return
+            lePas = new.saisie        
+            if not isNumber(lePas):
+                self.encadre(_("Taille de la maille invalide : ")+str(new.saisie))
+                return
+            if float(lePas)<=0:
+                self.encadre(_("Taille de la maille négative ou nulle : ")+str(new.saisie))
+                return
+            self.ajoutLigne(_("Taille de la maille : %s.") % (lePas))
+            return lePas
+        
+        def ecrireMntGrass():
+            # Ecriture entête MNT GRASS ASC (suppose mnt et tableauTexte dans le contexte et self.fichierGrassASC)
+            return #abandon pour l'instant
+            with open(self.fichierGrassASC,"w") as grass:
+                grass.write("cols "+str(mnt["mnt"].shape[1])+"\n")
+                grass.write("rows "+str(mnt["mnt"].shape[0])+"\n")
+                grass.write("west "+str(round(float(mnt["min_x"]),3))+"\n")
+                grass.write("south "+str(round(float(mnt["min_y"]),3))+"\n")
+                grass.write("north "+str(round(float(mnt["max_x"]),3))+"\n")
+                grass.write("east "+str(round(float(mnt["max_y"]),3))+"\n")
+                grass.write(tableauTexte)
+            self.ajoutLigne(_("Mnt Grass écrit : %s.") % (self.fichierGrassASC))
+                
+        def ecrireMntIgn():
+            # Ecriture entête MNT GRASS ASC (suppose mnt et tableauTexte dans le contexte, self.lePas et self.fichierIgnASC)
+            with open(self.fichierIgnASC,"w") as ign:
+                ign.write("ncols "+str(mnt["mnt"].shape[1])+"\n")
+                ign.write("nrows "+str(mnt["mnt"].shape[0])+"\n")
+                ign.write("xllcorner "+str(round(float(mnt["min_y"]),3))+"\n")
+                ign.write("yllcorner "+str(round(float(mnt["min_x"]),3))+"\n")
+                ign.write("cellsize "+str(self.lePas)+"\n")
+                ign.write("NODATA_value "+str("-9999")+"\n")
+                ign.write(tableauTexte)
+            self.ajoutLigne(_("Mnt IGN écrit : %s.") % (self.fichierIgnASC))
 
-        with open(fichierIgnASC,"w") as ign:
-            ign.write("ncols "+str(maillage.shape[1])+"\n")
-            ign.write("nrows "+str(maillage.shape[0])+"\n")
-            ign.write("xllcorner "+str(round(float(min_x),2))+"\n")
-            ign.write("yllcorner "+str(round(float(min_y),2))+"\n")
-            ign.write("cellsize "+str(lePas)+"\n")
-            ign.write("NODATA_value "+str(remplissage)+"\n")
-            ign.write(table)
+        def prealableKO():
+            if not os.path.exists(fichierPourMnt):
+                message=_("Pas de fichier ply ou xyz.")
+                self.encadre(message)
+                return True
+            # Si utilisation sous cx-freeze l'importation plante 
+            # pour ne pas imposer scipy à tous...       
+            try:
+                from scipy.interpolate import griddata      # Pour l'interpolation
+                from numpy import mgrid           
+            except Exception as e :
+                message = (_("Cette fonction nécessite la présence du module scipy  : ")+"\nErreur : "+str(e)+"\n")
+                message += (_("Si AperoDeDenis a été installé à partir du fichier msi cette fonction 'MNT' n'est pas fonctionnelle."))
+                self.encadre(message)
+                return True
+            if not isNumber(lePas):
+                message=_("Taille de la maille incorrecte : %s.") % (lePas)
+                self.encadre(message)
+                return True
+            return False
+            
+        def initialisation():
+            self.debutEcrireMnt=heure()
+            message = "\n"+self.debutEcrireMnt+_(" Lancement du calcul des MNT IGN et GRASS")           
+            # OK, Initialisation des variables utiles, affichage message départ du traitement
+            self.lePas = float(lePas)                          
+            self.fichierIgnASC   = os.path.join(os.path.dirname(fichierPourMnt),"maillage_"+str(lePas)+"_IGN_"+
+                                   os.path.basename(fichierPourMnt)+".ASC")    # MNT IGN ASC
+            self.fichierGrassASC = os.path.join(os.path.dirname(fichierPourMnt),"maillage_"+str(lePas)+"_GRASS_"+
+                                   os.path.basename(fichierPourMnt)+".ASC")    # MNT GRASS ASC
+            message = "\n"+_("Patience : procédure longue, création d'un MNT à partir du fichier : ")+"\n"+fichierPourMnt+"\n taille de la maille : "+lePas+"\n"
+            message +=_(" Le MNT est en cours de création.")+"\n"
+            self.encadre(message) 
 
-        # Ecriture entête MNT GRASS ASC
+        def mntVersTableauTexte(mnt):   # Conversion de la grille en tableau de nombres arrondis, avec valeur de remplissage ok  :       
+            tableArrondie = list()
 
-        with open(fichierGrassASC,"w") as grass:
-            grass.write("cols "+str(maillage.shape[1])+"\n")
-            grass.write("rows "+str(maillage.shape[0])+"\n")
-            grass.write("west "+str(round(float(min_x),2))+"\n")
-            grass.write("south "+str(round(float(min_y),2))+"\n")
-            grass.write("north "+str(round(float(max_x),2))+"\n")
-            grass.write("east"+str(round(float(max_y),2))+"\n")
-            grass.write(table)
+            for uneLigne in mnt["mnt"]:    # le mailage est une liste de listes : découpe est une ligne du mnt
+                ligneTexte = list()            
+                for f in uneLigne:       # f est une valeur de z, on l'arrondit
+                    val = round(float(f),3)
+                    if val==-9999:
+                        val="-9999"
+                    ligneTexte.append(str(val))
+                tableArrondie.insert(0," ".join(ligneTexte))
+            return "\n".join(tableArrondie) # ajout des sauts de ligne
 
-    
+        def choixUtilisateur(taille):       # demande ce qu'il faut écrire les "gros fichiers" (plus de 50 MO)
+            tailleMO = int(taille / 1000000)
+            if tailleMO>=30:                #plus de 50 MO : que choisit l'utilisateur (sinon on écrit IGN et GRASS
+                texte = _("La taille du fichier MNT est de %s MO.\n Voulez poursuivre le traitement ?") % tailleMO
+                texte += "\n\n"+(_("Mnt au format IGN = 1,\n 0 ne rien écrire, autre réponse = formaIGN")+"\n")
+                new = MyDialog(fenetre,texte)
+                return new.saisie
+            return 1
+        
 
-    ####### recherche dans la zone texte 201
+        def extraireLesXyz(fichierPourMnt):
+            self.encadre(_("Lecture du fichier\n %s \nen cours.\nPatientez.") % (fichierPourMnt))
+            semisDePoints = dict()
+            if fichierPourMnt[-4:].upper()==".PLY":
+                semisDePoints = extraireLesXyzDuPly(fichierPourMnt)
+            elif fichierPourMnt[-4:].upper() in (".ASC",".XYZ",".TXT",".CSV") :
+                semisDePoints = extraireLesXyzDuAsc(fichierPourMnt)
+            else:
+                self.encadre(_("Fichier d'extension inattendue : ni ply, xyz, txt, asc, csv :\n %s \n extension : %s") % (fichierPourMnt,fichierPourMnt[-4:].upper()))
+                return
+            return semisDePoints
+                
+######################## le traitement :
+
+        semisDePoints = extraireLesXyz(fichierPourMnt) # récupére le semis de points x y z dans l'asc ou le ply
+        if "surface" not in semisDePoints: return      
+        lePas = demandeLePas(semisDePoints["surface"],semisDePoints["nb"])
+        if prealableKO(): return
+        initialisation()                            # variable utiles : nom des fichiers, message dé
+        mnt = creerMnt(semisDePoints,self.lePas)    # création mnt numérique ; LesXYZ : dictionnaire comportant les entrées :
+                                                    #  mnt : liste de tuples de la forme ((x,y),z)
+                                                    #  nb,min_x, max_x, min_y, max_yn : nombre de points,  min, max..
+        tableauTexte = mntVersTableauTexte(mnt)     # création tableau texte
+        if choixUtilisateur(len(tableauTexte))!=1:
+            return      # si gros fichier on demande à l'utilisateur ce qu'il veut en faire 
+        ecrireMntIgn()                              #
+        messageFin()
+
+####################### Passage d'un maillage ply au format MNT
+
+    def ecrireMNTPlyMesh(self,fichier):
+        import numpy
+        def demandeLePas(fichier): # demande la taille de la maille
+            lePas = False
+            texte  = _("Fichier : %s") % (fichier)
+            texte += "\n\n"+_("Indiquer la taille de la maille utilisée pour le MNT, en mètres :\n par exemple 0.5 pour une maille de 50 cm : ")
+            texte += "\n\n"+_("Le fichier est un maillage (mesh) qui définit une altitude en tout point du terrain.")
+
+            bas = ( _("Remarque : l'unité de longueur supposée est le mètre"))
+            new = MyDialog(fenetre,texte,basDePage=bas)
+            if new.saisie in (False,""):
+                return
+            lePas = new.saisie        
+            if not isNumber(lePas):
+                self.encadre(_("Taille de la maille invalide : ")+str(new.saisie))
+                return
+            if float(lePas)<=0:
+                self.encadre(_("Taille de la maille négative ou nulle : ")+str(new.saisie))
+                return
+            self.ajoutLigne(_("Taille de la maille : %s.") % (lePas))
+            return lePas
+        
+        def lireMesh(fichier,lePas):
+            mesh = dict()
+            with open (fichier,"r") as f:
+                lignes = f.readlines()
+            for i in range(30):
+                if "element vertex " in lignes[i]:
+                    nbSommets = int(float(lignes[i].split()[2]))
+                    mesh["nbSommets"] = nbSommets
+                if "element face " in lignes[i]:
+                    nbFaces = int(float(lignes[i].split()[2]))
+                    mesh["nbFaces"] = nbFaces
+                if "end_header" in lignes[i]:
+                    debut = i+1
+                    mesh["debut"] = i+1
+            lesSommets = [ [float(f) for f in e.split()] for e in lignes[debut:debut+int(nbSommets)]]
+            mesh["lesSommets"] = lesSommets
+            mesh["lesTriangles"] = [[ int(f) for f in e.split()]for e in lignes[debut+int(nbSommets):debut+int(nbSommets+nbFaces)]]
+            minX,maxX,minY,maxY = minMaxXY(lesSommets)
+            mesh["iMax"] = int(1 + (maxX-minX)/lePas)
+            mesh["jMax"] = int(1 + (maxY-minY)/lePas)
+            mesh["minX"] = minX
+            mesh["minY"] = minY
+            mesh["lePas"]=lePas
+            return mesh
+            
+        def minMaxXY(lesSommets):
+            minX = min([x for x,y,z in lesSommets])
+            maxX = max([x for x,y,z in lesSommets])
+            minY = min([y for x,y,z in lesSommets])
+            maxY = max([y for x,y,z in lesSommets])
+            return float(minX),float(maxX),float(minY),float(maxY)
+
+        def zNumpyVersTexte(z):
+            tableArrondie = list()
+            z = mesh["z"]
+            lignes,cols = z.shape
+            for i in range(lignes) :    # le mailage est une liste de listes : découpe est une ligne du mnt            
+                ligneTexte = list()            
+                for j in range(cols):       # f est une valeur de z, on l'arrondit
+                    val = round(z[i,j],3)
+                    if val==-9999:
+                        val="-9999"
+                    else:
+                        val = str(round(z[i,j],3))
+                    ligneTexte.append(val)
+                tableArrondie.insert(0," ".join(ligneTexte))
+            return "\n".join(tableArrondie) # ajout des sauts de ligne        
+
+        def calculDesZ(mesh):
+            # création tableau vide Numpy initialisé à -9999 :
+            z=  numpy.full((mesh["jMax"],mesh["iMax"]), -9999, dtype=float)
+            pool = cycle(mesh["lesTriangles"])
+            t = next(pool)
+            lesSommets = mesh["lesSommets"]
+            minX = mesh["minX"]
+            minY = mesh["minY"]
+            lePas = mesh["lePas"]
+            nbFaces = mesh["nbFaces"]
+            jMax=mesh["jMax"]
+            thermo = 40*"..........................................................................................................\n"
+            thermoCoupe = thermo[:jMax]
+            patience = _("procédure longue... patience...\n"+thermoCoupe)
+            self.encadre(patience)
+            for i in range (mesh["jMax"]):  # lignes
+                for j in range (mesh["iMax"]): # colonnes
+                    xij = minX+j*lePas
+                    yij = minY+i*lePas
+                    for e in range(nbFaces):
+                        A = tuple(lesSommets[t[1]])
+                        B = tuple(lesSommets[t[2]])
+                        C = tuple(lesSommets[t[3]])
+                        retour = pointDansTriangle(A,B,C,(xij,yij))                
+                        if retour:  # calcul de la valeur du Z : raison barycentrique sur A ! 
+                                    # retour = les 3 valeurs barycentriques
+                            z[i,j] = A[2]*retour[0]+B[2]*retour[1]+C[2]*retour[2]
+                            break
+                        t = next(pool)
+                thermoCoupe = thermoCoupe.replace(".","*",i)
+                patience = _("procédure longue... patience...\n"+thermoCoupe)                
+                self.encadre(_(patience))
+            mesh["z"] = z
+            
+        def ecrireMntIgnMesh(fichier,mesh):
+            # Ecriture entête MNT GRASS ASC (suppose mnt et tableauTexte dans le contexte, self.lePas et self.fichierIgnASC)      
+            z= mesh["z"]
+            ncols = str(z.shape[1])
+            nrows = str(z.shape[0])
+            xllcorner = str(round(mesh["minX"],3))
+            yllcorner = str(round(mesh["minY"],3))
+            lePas = str(mesh["lePas"])
+            with open(fichier,"w") as ign:
+                ign.write("ncols "+ncols+"\n")
+                ign.write("nrows "+nrows+"\n")
+                ign.write("xllcorner "+xllcorner+"\n")
+                ign.write("yllcorner "+yllcorner+"\n")
+                ign.write("cellsize "+lePas+"\n")
+                ign.write("NODATA_value "+str("-9999")+"\n")
+                tableau = zNumpyVersTexte(z)
+                ign.write(tableau)
+
+    ################### traitement
+        lePas = float(demandeLePas(fichier))
+        if not lePas:
+            self.encadre(_("Abandon"))
+            return
+        mesh = lireMesh(fichier,lePas)
+        calculDesZ(mesh)
+        zNumpyVersTexte(mesh)
+        fichierIgn   = os.path.join(os.path.dirname(fichier),"maillage_BaseMesh_"+str(lePas)+"_IGN_"+
+                        os.path.basename(fichier)+".ASC") # MNT IGN ASC  
+        ecrireMntIgnMesh(fichierIgn,mesh)
+        message = _("Mnt IGN écrit à partir d'un maillage :\n %s \n taille de la maille : %s m.") % (fichierIgn,str(lePas))
+        self.ajoutLigne(message)
+        self.encadre(message)
+        
+
+
+######################################## Fin du calcul des MNT        
+
+########################################
+####### recherche dans la zone texte 201
 
     def find201(self,event):
         self.find201 = "un"
@@ -11854,7 +12288,7 @@ class Interface(ttk.Frame):
         print("self.jeuSansCalibration=",self.jeuSansCalibration)
             
 ################################## FIN DE LA CLASSE INTERFACE ###########################################################
-      
+    
 ################################## Outils divers et outils POUR DEBUG ###########################################################
 
 def pv(variable):       # affiche le nom de la variable, sa classe et sa valeur (pour debug uniquement)
@@ -11881,7 +12315,7 @@ def copieRepertoire(source,cible): #copie d'une arborescence de répertoire apr�
     if retour: return retour                                             
     try: shutil.copytree(source,cible)
     except Exception as e:
-        self.encadre(_("la copie a échouée : %s.") % (str(e)))
+        interface.encadre(_("la copie a échouée : %s.") % (str(e)))
         return _("la copie a échouée : %s.") % (str(e))                                           
 
 def supprimeFichier(fichier):
@@ -12036,15 +12470,248 @@ def oschdir(rep):
         os.chdir(rep)
     else:
         texte = _("Répertoire non trouvé : %s .") % (rep)
-        tkinter.messagebox.showwarning("AperoDeDenis : Avertissement",texte)
+        #*tkinter.messagebox.showwarning("AperoDeDenis : Avertissement",texte)
 
 def isNumber(s):       # https://stackoverflow.com/questions/354038/how-do-i-check-if-a-string-is-a-number-float
     try:
         float(s)
         return True
-    except ValueError:
+    except:
         return False
 
+##### Quelques outils pour : manipuler les ply et les XYZ, créer un MNT :
+    # format d'échange commun : LesXYZ : liste de tuples de float de la forme (x,y,z)
+    # lesXYZ est ancapsulé dans un dictionnaire qui comporte aussi des métadonnées.
+    # 0) détermine le type de ply : mesh ou nuage, binary ou ascii
+    # 1) extraireLesXyzDuPly,  : décode les fichiers PLY en mode binaire
+    # 2) lireFichierXYZ 
+    # 3) creerMnt : appel de la fonction scipy mgrid qui construit le maillage
+
+@decorateTry
+def typeDePly(fichier):              # retour :
+    nbFaces = 0
+    with open (fichier,"r",encoding="latin-1") as f:
+        lignes = f.readlines(1000)
+    if lignes[0][:3]!="ply":
+        return _("%s \nn'est pas un fichier ply") % (fichier)
+    for i in range(min(20,lignes.__len__())):
+        if "ascii" in lignes[i]:
+            format = "ascii"
+        if "binary" in lignes[i]:
+            format = "binary"            
+        if "element vertex " in lignes[i]:
+            nbSommets = int(float(lignes[i].split()[2]))
+        if "element face " in lignes[i]:
+            nbFaces = int(float(lignes[i].split()[2]))
+        if "end_header" in lignes[i]:
+            debut = i+1
+
+    if format=="binary" and nbFaces==0:
+        return ("nuage de points binaire")  #_("nuage de points binaire") serait mieux mais pas traité plus loin
+    if format=="binary" and nbFaces==0:
+        return ("nuage de points ascii")
+    if format=="ascii" and nbFaces>0:
+        return ("mesh ascii")
+    if format=="binary" and nbFaces>0:
+        return ("mesh binary")
+@decorateTry  
+def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : liste de float de la forme (x,y,z)  
+    endian = "@"                                                    # valeur par défaut : endian du système
+    fmt = str()                                                     # format de codage des données dans le ply ce format est utilisé par struct
+    i = int()
+    taille = int(os.path.getsize(fichierPly)/1000000)
+    
+    if taille>=50:
+        if not tkinter.messagebox.askokcancel(
+                    _("Gros fichier, traitement long.Continuer ?"),
+                    _("Le fichier\n%s\nest gros, le traitement sera LONG... : %s MO.\nFaut-il continuer ?") % (fichierPly,int(taille))
+                    ):
+            erreur = _("Fichier trop gros : %s MO. Arrêt par l'utilisateur.") % (int(taille))
+            interface.encadre(erreur)
+            return erreur        
+                                                              
+    with open(fichierPly, 'rb') as infile:                          # lecture du fichier en mode "binaire"
+        ligne = infile.read()
+
+    lignes = ligne.splitlines()                                     # coupure du flux binaire en "lignes"
+    if lignes[0]!=b'ply':                                           # vérification que le tag "ply" est présent en entête de fichier
+        erreur = "erreur : le fichier\n"+fichierPly+"\nn'est pas un fichier de type ply."
+        return erreur                                               # Abandon si pas fichier ply
+
+    if b"ascii" in lignes[1]:                                        # pas prévu pour lire les fichiers ply "ASCII" choisir binary lors de l'écriture
+        erreur = _("erreur : le fichier\n%s\nest un fichier de type ply au format ASCII.\nUtiliser CloudCompare pour l'enregister au format Binary.") %(fichierPly)
+        return erreur
+
+    for e in lignes:                                                # décodage des lignes d'entête qui indique la structure du fichier
+        i+=1
+        if e==b'end_header':
+            break                                                   # tag de fin d'entête on connait la structure, fin du décodage de la structure
+        s=str(e)             
+        if "little_endian" in s:                                    # boutisme
+            endian="<"
+        if "big_endian" in s:
+            endian=">"
+        if "element vertex" in s:                                   # nombre de points
+            nombre_points = int(s.split(" ")[-1][0:-1])
+        if "element face" in s:                                     # nombre de faces, cela termine la lecture : on ignore les faces
+            nombre_faces = int(s.split(" ")[-1][0:-1])
+            break
+        if "property" in s:                                         # property : liste les éléments de la structure des données pour chaque point
+            cType = s.split(" ")[1]
+            if cType=="float":                                      # Micmac n'utilise que les valeurs float et uchar pour les nuages
+               fmt += "f"                                           # indique qu'il y a un float à lire
+            elif cType=="uchar":
+               fmt += "B"                                           # indique qu'il y a un octet à lire
+            elif cType=="char":
+               fmt += "c"                                           # indique qu'il y a un octet à lire
+            elif cType=="short":
+               fmt += "h"                                           # indique qu'il y a deux octet à lire 
+            elif cType=="ushort":
+               fmt += "H"                                           # indique qu'il y a deux octet à lire
+            elif cType=="int":
+               fmt += "i"                                           # indique qu'il y a 4 octet à lire 
+            elif cType=="uint":
+               fmt += "I"                                           # indique qu'il y a 4 octet à lire
+            elif cType=="double":
+               fmt += "d"                                           # indique qu'il y a 8 octet à lire                              
+            elif cType!="list":                                     # la valeur list est aussi utilisée, s'il s'agit d'une autre valeur : abandon
+                erreur=(_("format de donnée non prévu pour les ply issus de micmac, abandon : ")+cType)
+                return erreur
+
+    fmt = endian+fmt                                                # le format est complété par le boutisme
+    debutData = ligne.find(b"end_header",0,1000)+11                 # on extrait la zone des données utiles dans la varible "ligne" : début = aprés l'entête
+    longueurData = nombre_points*struct.calcsize(fmt)               # on prend juste la longueur nécessaire (nombre de point * longueur des données du point)
+    finData = debutData + longueurData
+    plageData = ligne[debutData:finData]
+    
+    # extraction des Y,X,Z du ply :
+    valeur=tuple([e for e in fmt])
+    try:
+        # list comprehension extrayant les xyz de la structure décodée :  (X,Y,Z
+        lesXyz = [(valeur[1],valeur[0],valeur[2]) for [*valeur] in struct.iter_unpack(fmt,plageData).__iter__() ]
+
+        mnt = dict()
+        mnt["min_x"]  = min([x for x,y,z in lesXyz])     # bornes
+        mnt["max_x"]  = max([x for x,y,z in lesXyz])
+        mnt["min_y"]  = min([y for x,y,z in lesXyz])
+        mnt["max_y"]  = max([y for x,y,z in lesXyz])
+        mnt["nb"]     = len(lesXyz)
+        mnt["lesXyz"] = lesXyz
+        mnt["surface"]= (mnt["max_x"]-mnt["min_x"])*(mnt["max_y"]-mnt["min_y"])
+
+# ajout pour infos :
+
+        lesZ = [z for x,y,z in lesXyz]
+        mnt["min_z"]  = min(lesZ)
+        mnt["max_z"]  = max(lesZ)
+        mnt["volume"] = mnt["surface"]*(mnt["max_z"]-mnt["min_z"])
+    except Exception as e:
+        print( _("Erreur lors du décodage des données du fichier Ply, le ply ne provient pas de micmac. Erreur = ")+str(e))
+        return False
+
+    # extraction des triangles
+    fmtTriangles = endian+"BIII" # un entier pour pour le nombre de points (=3 pour un triangle) et 2 long pour les numéros des sommets du triangle
+    finTriangles = finData + nombre_faces * struct.calcsize(fmtTriangles)
+    plageDataTriangles = ligne[finData:finTriangles]
+    valeur = tuple([e for e in fmtTriangles])
+       # pour extraire les triangles
+    try:       
+        lesTriangles = [(valeur[1],valeur[2],valeur[3]) for [*valeur] in struct.iter_unpack(fmtTriangles,plageDataTriangles).__iter__() ]
+    except Exception as e:
+        print( _("Erreur lors du décodage des triangles du fichier Ply, le ply ne provient pas de micmac. Erreur = ")+str(e))
+        return False
+    mnt["lesTriangles"] = lesTriangles    
+    return mnt
+
+def extraireLesXyzDuAsc(fichierASC):# fichier texte semis de points 3D comportant sur chaque ligne X Y Z
+                                    # séparateur de champ recherché : espace ou ; ou virgule
+                                    # séparateur décimal recherché : . ou ,
+                                    # si # en tête de ligne = commentaire, éventuellement rvb derrière (ignoré)
+                                    # retourne : LesXYZ : liste de tuples de float de la forme ((x,y),z)
+    def rechercheSeparateur(ligne):
+        separateurDecimal = ","
+        separateurDeChamp = str()
+        if ligne.count(".") and not ligne.count(","):
+            separateurDecimal = "."
+        elif ligne.count(","):
+            separateurDecimal = ","
+        if ligne.count(" "):
+            separateurDeChamp = " "
+        elif ligne.count(";"):
+            separateurDeChamp = ";"
+        elif ligne.count("\t"):
+            separateurDeChamp = "\t"
+        elif ligne.count(","):
+            separateurDeChamp = ","
+            separateurDecimal = "."
+        return separateurDecimal,separateurDeChamp
+
+    ##### Début traitement
+                          
+    lesXyz = list()
+    if not os.path.exists(fichierASC):
+        self.message=_("Pas de fichier XYZ.")
+        return False
+    with open (fichierASC) as asc:
+        xyz = asc.readlines()
+        separateurDecimal,separateurDeChamp = rechercheSeparateur(xyz[-3])   # -2 mieux que 1 qui peut être spéciale, si pas 3 ligne, dommage
+        if separateurDecimal==separateurDeChamp:
+            message = _("Format de fichier incorrect : le fichier doit comporter las valeur X,Y et Z sur chaque ligne : \n"+ligne)
+            self.encadre(message)
+            return False
+        if separateurDecimal==",":      # remise du point comme séparateur décimal
+            xyz = [ligne.replace(",",".") for ligne in xyz]
+        # OK
+        for ligne in xyz:
+            if ligne[0]=="#": continue      # commentaire possible
+            ligneXyz = ligne.split(separateurDeChamp)[:3]
+            if len(ligneXyz)<3: continue    # moins de 3 valeurs
+            try:
+                point = (float(ligneXyz[1]),float(ligneXyz[0]),float(ligneXyz[2])) # pour tromper l'ennemi : transposition y,x
+                lesXyz.append(point)
+            except Exception as e:
+                erreur = (" erreur ligne"+ligneXyz+" : "+str(e))
+                return erreur
+    if not lesXyz: return _("erreur dans la lecture du fichier")
+    mnt = dict()    
+    mnt["min_x"]  = min([x for x,y,z in lesXyz])     # bornes
+    mnt["max_x"]  = max([x for x,y,z in lesXyz])
+    mnt["min_y"]  = min([y for x,y,z in lesXyz])
+    mnt["max_y"]  = max([y for x,y,z in lesXyz])
+    mnt["nb"]     = len(lesXyz)
+    mnt["lesXyz"] = lesXyz
+    mnt["surface"]= (mnt["max_x"]-mnt["min_x"])*(mnt["max_y"]-mnt["min_y"])
+    return mnt
+
+    
+def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; LesXYZ : liste de tuples de la forme ((x,y),z)
+    from scipy.interpolate import griddata      # Pour l'interpolesXyzlation
+    from numpy import mgrid     
+    # création de la grille régulière : générer un maillage avec un pas régulier,
+    # au format grid de numpy les couples (x,y) sont éclatés en 2 listes [x] et [y]
+    
+    ################ ATTENTION : si les valeurs de x ou y sont trop grandes alors la précision du résultat est faible (voir pb mauchassat mnt TN1 471 687)
+    # il faut donc tranlater les valeurs pour améliorer la précision : on limite localement à 4 chiffres au dessus de la virgule, sans toucher au mnt initial
+    deltaX = round(semisDePoints["max_x"],-4)
+    deltaY = round(semisDePoints["max_y"],-4)
+    minX = round(semisDePoints["min_x"],4)-deltaX
+    maxX = round(semisDePoints["max_x"],4)-deltaX
+    minY = round(semisDePoints["min_y"],4)-deltaY
+    maxY = round(semisDePoints["max_y"],4)-deltaY
+    
+    #################
+    
+    grid_x, grid_y = mgrid[minX:maxX+lePas:lePas, #constitue la grille demandée de minx, miny à maxX,maxY, au pas de lePas
+                           minY:maxY+lePas:lePas]
+    
+    grid  = griddata( [(x-deltaX,y-deltaY) for x,y,z in semisDePoints["lesXyz"]],
+                      [z  for x,y,z in semisDePoints["lesXyz"]],
+                      (grid_x, grid_y),
+                      method='linear',          # alternative : nearest ou linear ou cubic mais nearest ne fonctionne pas !!!!
+                      fill_value="-9999")
+                      
+    semisDePoints["mnt"]=grid
+    return semisDePoints
 ##Pour insérer une image, ou un logo, dans un script, utilisable ensuite par Tkinter :
 ##1) Convertir l'image au format GIF (sinon il faudra utiliser PIL) voir (les images dans http://tkinter.fdex.eu/doc/sa.html#images)
 ##2) Convertir le binaire GIF en texte encodé en 64 bits par le bout de code suivant :
@@ -12061,7 +12728,803 @@ def gif2txt(fichier):
         encoded_string = base64.b64encode(image_file.read())
         with open(os.path.basename(fichier)+'.txt', 'w') as image_txt: 
              image_txt.write(str(encoded_string))
-		
+
+##################################### Calcul du volume entre 2 MNT
+
+def infoVolume():
+    avertissement  = _("Avertissement sur les calculs de volume entre 2 MNT :")+"\n\n"
+    avertissement += _("Les MNT sont obtenus à partir des nuages de points PLY ou XYZ par 2 items du menu Outils_métier.")+"\n\n"
+    avertissement += _("Les fichiers PLY ou XYZ sont des semis de points 3D irréguliers.")+"\n"
+    avertissement += _("Le MNT enregistre les valeurs d'altitude suivant une grille 2D carrée régulière, par exemple un point tous les 50 cm.")+"\n"
+    avertissement += _("La taille de la maille est un paramètre crucial pour un MNT : elle conditionne sa précision spatiale.")+"\n"
+    avertissement += _("La taille de la maille doit être évaluée suivant la densité de points du fichier origine (PLY ou XYZ).")+"\n"
+    avertissement += _("Une trop petite maille ne pourra améliorer la précision initiale du PLY ou du XYZ.")+"\n\n"
+    avertissement += _("Le calcul du volume entre 2 MNT ne s'effectuera (dans cette version) que si les tailles des mailles sont identiques.")+"\n"               
+    avertissement += _("Si les mailles sont identiques l'outil recherche la zone de recouvrement des 2 MNT.")+"\n"
+    avertissement += _("Les 2 grilles sont alors ajustées et le calcul se fait pour les mailles ayant une valeur dans chaque MNT.")+"\n"
+    avertissement += _("Un paramètre de 'tolerance' permet d'ignorer les écarts trop faibles, inférieurs à cette tolérance, dans l'épaisseur du trait.")+"\n\n"
+    avertissement += _("Un nuage de points 3D des écarts est produit, au format XYZ : un item du menu permet de le visualiser dans Cloud Compare.")+"\n\n"
+    avertissement += _("Remarques :")+"\n"    
+    avertissement += _(" - Ces fonctions 'métiers' sont indépendantes de l'utilisation de l'outil MicMac")+"\n"    
+    avertissement += _(" - lorsque AperoDeDenis est installé sous windows  par l'installateur AperoDeDenis.msi la création des MNT n'est pas opérationnelle.")+"\n"    
+    interface.encadre(avertissement)    
+
+@decorateTry
+def calculVolumeMnt():
+    interface.menageEcran()
+    fond = tkinter.filedialog.askopenfilename( initialdir="",                                                 
+                                                filetypes=[(_("asc"),"*maillage*.asc"),(_("Tous"),"*")],
+                                                multiple=False,
+                                                title = _("Calcul du volume d'un MNT"))
+    if fond==str():
+        interface.encadre(_("Calcul de volume abandonné."))
+        return
+
+    infoMnt = dict()
+    erreur = str()
+    infoMnt["fichierFond"]=fond
+    infoMnt["avertissement"]=list()
+    arrondi = interface.arrondi
+
+    with open (fond) as p:
+        try:
+            l6 = [next(p) for x in range(6)]
+        except Exception as e:
+            erreur = _("erreur : le fichier %s n'est pas un MNT") % (fond) +str(e)
+
+    if "cols" in l6[0]: 
+        infoMnt["colsFond"] = int(l6[0].split()[1])
+    else:
+        erreur += "cols fond incorrecte"
+        
+    if "nrows" in l6[1]: 
+        infoMnt["nrowsFond"] = int(l6[1].split()[1])
+    else:
+        erreur += "nrows fond incorrecte"            
+    
+    if "xllcorner" in l6[2]:    # ll = lower left
+        infoMnt["xllcornerFond"] = round(float(l6[2].split()[1]),arrondi)
+    else:
+        erreur += "xllcorner fond incorrecte"            
+
+    
+    # anomalie possible : valeur négative :
+
+    if infoMnt["xllcornerFond"]<0:
+        infoMnt["avertissement"].append(_("xllcornerFond est négatif"))
+    
+    if "yllcorner" in l6[3]: 
+        infoMnt["yllcornerFond"] = round(float(l6[3].split()[1]),arrondi)
+    else:
+        erreur += "yllcorner fond incorrecte"
+        
+    # anomalie possible : valeur négative :
+
+    if infoMnt["yllcornerFond"]<0:
+        infoMnt["avertissement"].append(_("yllcornerFond est négatif"))
+              
+    if "cellsize" in l6[4]:
+        sizF = float(l6[4].split()[1])
+        infoMnt["cellsizeFond"] = sizF
+    else:
+        erreur += "cellsize fond incorrecte"
+        
+    if "NODATA_value" in l6[5]: 
+        infoMnt["remplissage"] = l6[5].split()[1]
+    else:
+        erreur += "NODATA_value fond incorrecte"
+
+    if erreur:
+        interface.encadre(erreur)
+        return 
+                                                          
+    with open (fond) as p:
+        lignes=p.readlines()
+        
+    tableFond = list()
+    for ligne in lignes[6:]:
+        tableFond.append(ligne.split())
+
+    # reherche mini et maxi du Mnt :
+    mini  = 99999999
+    maxi = -mini
+    for i in range(infoMnt["colsFond"]):       
+        for j in range(infoMnt["nrowsFond"]):        
+            val = tableFond[j][i]          
+            if val!=infoMnt["remplissage"]:
+                mini = min(mini,float(val))
+                maxi = max(maxi,float(val))
+
+    ######### demande la cote de base
+
+    coteDeBase = MyDialog(fenetre,_("Altitude Z de base"),
+                    basDePage=_("Le calcul du volume de fera par rapport à une altitude Z 'de base'.")+"\n"+
+                    _("Le Z mini du MNT est %s m. Le Z maxi du Mnt est %s m.") % (round(mini,arrondi),round(maxi,arrondi))+"\n\n"+
+                    _("Indiquer la valeur de l'altitude servant de plancher au calcul du volume, zéro par défaut :")+"\n"                             
+                    ).saisie
+    print("coteDeBase=",coteDeBase)
+    if coteDeBase == False:
+        interface.encadre(_("Abandon."))        
+        return
+    if coteDeBase == "":
+        coteDeBase = 0
+    if not isNumber(coteDeBase):
+        interface.encadre(_("Valeur non numérique : %s. abandon.") % (coteDeBase))
+        return        
+    coteDeBase = float(coteDeBase)           
+    ######### somme des valeurs du fond sur l'emprise :
+    
+    nbRemplissageFond = 0
+    nbValFond = 0
+    sommeFond = 0
+
+    infoMnt["xurcornerFond"]   = round(infoMnt["xllcornerFond"] + (infoMnt["cellsizeFond"]*(infoMnt["colsFond"]-1)),arrondi)
+    infoMnt["yurcornerFond"]   = round(infoMnt["yllcornerFond"] + (infoMnt["cellsizeFond"]*(infoMnt["nrowsFond"]-1)),arrondi)
+    infoMnt["Emprise fond"] = (( infoMnt["xllcornerFond"], infoMnt["xurcornerFond"]) ,( infoMnt["yllcornerFond"], infoMnt["yurcornerFond"]) )           
+
+    for i in range(infoMnt["colsFond"]):       
+        for j in range(infoMnt["nrowsFond"]):
+            val = tableFond[j][i]          
+            if val==infoMnt["remplissage"]:
+                nbRemplissageFond += 1
+            else:
+                val = float(val) - coteDeBase
+                sommeFond += val
+                nbValFond += 1
+
+    infoMnt["nbRemplissageFond"]=nbRemplissageFond
+    infoMnt["sommeFond"]=round(sommeFond,arrondi)
+    infoMnt["nbValFond"]=nbValFond
+    infoMnt["moyenneFond"] = -9999
+    if nbValFond: infoMnt["moyenneFond"]=round(sommeFond/nbValFond,arrondi)
+    infoMnt["surfaceCouverteFond"]=round(nbValFond*infoMnt["cellsizeFond"]**2,arrondi)
+    infoMnt["volumeFond"] = round(infoMnt["sommeFond"]*infoMnt["cellsizeFond"]**2,arrondi)
+
+    rapport  = _("Calcul du volume d'un MNT : rapport final.")+"\n\n"
+    rapport += _("Mnt      :\n %s") % (infoMnt["fichierFond"])+"\n\n"
+    rapport += _("Emprise : %s %s") % (infoMnt["Emprise fond"])+"\n"
+    rapport += _("Surface utile : %s m2") % (infoMnt["surfaceCouverteFond"]  )  +"\n\n"                                       
+    rapport += _("Volume entre le MNT et la cote de base %s m : %s m2") % (coteDeBase,infoMnt["volumeFond"])  +"\n\n"
+    rapport += _("Remarque : l'unité de mesure du MNT est présumée être le mètre.")  +"\n"
+
+    
+    print("rapport=",rapport)
+    interface.encadre(rapport)
+    traceMetier(rapport,fond,'volume')
+
+def calculVolumeEntre2Mnt():
+    def lectureInfoFichiers(fond,dessus):
+        
+        def controleCompatibles(fond,dessus):
+            infoMnt = dict()
+            erreur = str()
+            infoMnt["fichierFond"]=fond
+            infoMnt["fichierDessus"]=dessus
+            infoMnt["avertissement"]=list()
+
+            with open (fond) as p:
+                try:
+                    l6 = [next(p) for x in range(6)]
+                except Exception as e:
+                    return "erreur : "+str(e)
+
+            if "cols" in l6[0]: 
+                infoMnt["colsFond"] = float(l6[0].split()[1])
+            else:
+                erreur += "cols fond incorrecte"
+                return erreur
+                
+            if "nrows" in l6[1]: 
+                infoMnt["nrowsFond"] = float(l6[1].split()[1])
+            else:
+                erreur += "nrows fond incorrecte"            
+                return erreur
+            
+            if "xllcorner" in l6[2]:    # ll = lower left
+                infoMnt["xllcornerFond"] = round(float(l6[2].split()[1]),arrondi)
+            else:
+                erreur += "xllcorner fond incorrecte"            
+                return erreur
+            
+            # anomalie possible : valeur négative :
+
+            if infoMnt["xllcornerFond"]<0:
+                infoMnt["avertissement"].append(_("xllcornerFond est négatif"))
+            
+            if "yllcorner" in l6[3]: 
+                infoMnt["yllcornerFond"] = round(float(l6[3].split()[1]),arrondi)
+            else:
+                erreur += "yllcorner fond incorrecte"
+                
+            # anomalie possible : valeur négative :
+
+            if infoMnt["yllcornerFond"]<0:
+                infoMnt["avertissement"].append(_("yllcornerFond est négatif"))
+                      
+            if "cellsize" in l6[4]:
+                sizF = float(l6[4].split()[1])
+                infoMnt["cellsizeFond"] = sizF
+            else:
+                erreur += "cellsize fond incorrecte" 
+
+            # Enfin on arrondit les valeurs des xll et yll à un multiple de la taille de la cellule :
+            # les 2 MNT seront "raccords" s'il ont la même taille de cellule
+            # petit pb : le résultat est un flottant, pas un décimal...
+
+            infoMnt["xllcornerFond"] = round(round(infoMnt["xllcornerFond"]/infoMnt["cellsizeFond"])*infoMnt["cellsizeFond"],arrondi)
+            infoMnt["yllcornerFond"] = round(round(infoMnt["yllcornerFond"]/infoMnt["cellsizeFond"])*infoMnt["cellsizeFond"],arrondi)
+                       
+            if "NODATA_value" in l6[5]: 
+                infoMnt["NODATA_valueFond"] = l6[5].split()[1]
+            else:
+                erreur += "NODATA_value fond incorrecte"             
+                
+
+            ############# dessus
+            
+            with open (dessus) as p:
+                try:
+                    l6 = [next(p) for x in range(6)]
+                except Exception as e:
+                    return "erreur : "+str(e)
+                
+            if "cols" in l6[0]: 
+                infoMnt["colsDessus"] = float(l6[0].split()[1])
+            else:
+                erreur += _("cols dessus incorrecte : %s") %(l6[0])                        
+                return erreur
+            
+            if "nrows" in l6[1]: 
+                infoMnt["nrowsDessus"] = float(l6[1].split()[1])
+            else:
+                infoMnt["nrowsDessus"] = -9999
+                erreur += _("nrows dessus incorrecte : %s") % (l6[1])                                
+                return erreur               
+            
+            if "xllcorner" in l6[2]: 
+                infoMnt["xllcornerDessus"] = round(float(l6[2].split()[1]),arrondi)
+            else:
+                infoMnt["xllcornerDessus"] = -9999
+                erreur += "xllcorner dessus incorrecte"                                     
+                return erreur
+            
+            # anomalie possible : valeur négative :
+
+            if infoMnt["xllcornerDessus"]<0:
+                infoMnt["avertissement"].append(_("xllcornerDessus est négatif"))
+                
+            if "yllcorner" in l6[3]: 
+                infoMnt["yllcornerDessus"] = round(float(l6[3].split()[1]),arrondi)
+            else:
+                infoMnt["yllcornerDessus"] = -9999
+                erreur += "yllcorner dessus incorrecte"
+                return erreur
+
+            # anomalie possible : valeur négative :
+
+            if infoMnt["yllcornerDessus"]<0:
+                infoMnt["avertissement"].append(_("yllcornerDessus est négatif"))
+
+                
+            if "cellsize" in l6[4]:
+                sizD = float(l6[4].split()[1])
+                infoMnt["cellsizeDessus"] = sizD
+            else:
+                erreur += "cellsize dessus incorrecte"
+                return erreur
+
+            # les tailles des 2 mailles doivent être égales :
+
+            if infoMnt["cellsizeDessus"]!= infoMnt["cellsizeFond"]:
+                erreur += _("Les tailles des mailles des MNT sont différentes : %s et %s. Abandon") % (infoMnt["cellsizeFond"],infoMnt["cellsizeDessus"])
+                return erreur                
+
+            # Enfin on arrondit les valeurs des xll et yll à un multiple de la taille de la cellule :
+            # les 2 MNT seront "raccords" s'il ont la même taille de cellule
+            # petit pb : le résultat est un flottant, pas un décimal...
+
+            infoMnt["xllcornerDessus"] = round(round(infoMnt["xllcornerDessus"]/infoMnt["cellsizeDessus"])*infoMnt["cellsizeDessus"],arrondi)
+            infoMnt["yllcornerDessus"] = round(round(infoMnt["yllcornerDessus"]/infoMnt["cellsizeDessus"])*infoMnt["cellsizeDessus"],arrondi)
+
+            if "NODATA_value" in l6[5]: 
+                infoMnt["NODATA_valueDessus"] = l6[5].split()[1]
+            else:
+                erreur += "NODATA_value dessus incorrecte"
+                   
+            if erreur: return erreur        
+            
+            ####### Controle cohérence :
+
+            if infoMnt["NODATA_valueDessus"]!=infoMnt["NODATA_valueFond"]:
+                erreur += "nodata_value incohérentes"
+
+            if infoMnt["cellsizeDessus"]-infoMnt["cellsizeFond"]!=0:        # ce n'est pas un vrai problème mais un avertissement
+                infoMnt["avertissement"].append(["cellsize incohérentes",]) # dans ce cas pas de calcul de volume entre les couches
+            
+            ####### Controle intersection xy
+
+            # examen des valeurs : il se peut qu'une des valeurs soit conforme au référentiel (en millions de mètres)
+            # et que l'autre soit tronquée des chiffres les plus significatifs ; auquel cas il faut réagir
+
+            # différence sur les X : la différence doit être < 10000 (on est en mètres)
+            # le delta appliqué est la valeur arrondie à 10000 de deltaX dessus - fond : ajouter  au Fond pour rétablir les valeurs homogène
+
+            # Contrainte : il faut que les valeurs des ooordonnées restent positives
+            # effectuer la translation pour avoir des référentiels cohérents : ajout de delta aux coordonnées du desssus ou du fond
+
+            # sur les X :
+
+            deltaX = round(infoMnt["xllcornerFond"] - infoMnt["xllcornerDessus"],-4)
+            if deltaX>=0:
+                infoMnt["xllcornerDessus"] += deltaX
+            else:
+                infoMnt["xllcornerFond"] -= deltaX
+
+            # sur les Y :
+            deltaY = round(infoMnt["yllcornerFond"] - infoMnt["yllcornerDessus"],-4)
+            if deltaY>=0:
+                infoMnt["yllcornerDessus"] += deltaY
+            else:
+                infoMnt["yllcornerFond"] -= deltaY
+
+            # le delta de fond vers dessus est bien celui ci, mais la transforamtion est une addition pour remettre le référentiel correct
+
+            infoMnt["deltaXYFondVersDessus"] = (deltaX,deltaY)
+
+            # coin haut droit fond : upper right
+
+            infoMnt["xurcornerFond"]   = round(infoMnt["xllcornerFond"] + (infoMnt["cellsizeFond"]*(infoMnt["colsFond"]-1)),arrondi)
+            infoMnt["yurcornerFond"]   = round(infoMnt["yllcornerFond"] + (infoMnt["cellsizeFond"]*(infoMnt["nrowsFond"]-1)),arrondi)
+
+            infoMnt["xurcornerDessus"] = round(infoMnt["xllcornerDessus"] + (infoMnt["cellsizeDessus"]*(infoMnt["colsDessus"]-1)),arrondi)
+            infoMnt["yurcornerDessus"] = round(infoMnt["yllcornerDessus"] + (infoMnt["cellsizeDessus"]*(infoMnt["nrowsDessus"]-1)),arrondi)
+
+            # Zone de recouvrement : max des min, min des max
+
+            xrecouvreInf = round(max(infoMnt["xllcornerFond"],infoMnt["xllcornerDessus"]),arrondi)
+            xrecouvreSup = round(min(infoMnt["xurcornerFond"],infoMnt["xurcornerDessus"]),arrondi)
+            yrecouvreInf = round(max(infoMnt["yllcornerFond"],infoMnt["yllcornerDessus"]),arrondi)
+            yrecouvreSup = round(min(infoMnt["yurcornerFond"],infoMnt["yurcornerDessus"]),arrondi)
+            
+            infoMnt["xrecouvreInf"] = xrecouvreInf
+            infoMnt["xrecouvreSup"] = xrecouvreSup
+            infoMnt["yrecouvreInf"] = yrecouvreInf
+            infoMnt["yrecouvreSup"] = yrecouvreSup        
+
+    
+            infoMnt["Emprise fond"] = (( infoMnt["xllcornerFond"], infoMnt["xurcornerFond"]) ,( infoMnt["yllcornerFond"], infoMnt["yurcornerFond"]) )           
+            infoMnt["Emprise dessus"] = (( infoMnt["xllcornerDessus"], infoMnt["xurcornerDessus"]) ,( infoMnt["yllcornerDessus"], infoMnt["yurcornerDessus"]) )           
+            infoMnt["Emprise recouvrement"] = ((xrecouvreInf,xrecouvreSup ),(yrecouvreInf,yrecouvreSup))
+            if (xrecouvreSup-xrecouvreInf )<= 0 or (yrecouvreSup-yrecouvreInf) <=0 :
+                erreur = _("Les 2 MNT ne se recouvrent pas !")
+                return erreur
+            infoMnt["Surface recouvrement"] = round((xrecouvreSup-xrecouvreInf )*(yrecouvreSup-yrecouvreInf),arrondi)
+            # indices i,j du fond pour la zone de recouvrement :
+
+            infoMnt["iminFond"] = int((xrecouvreInf-infoMnt["xllcornerFond"])/sizF)
+            infoMnt["imaxFond"] = int((xrecouvreSup-infoMnt["xllcornerFond"])/sizF)
+            infoMnt["jminFond"] = (infoMnt["nrowsFond"]-1)-int((yrecouvreSup-infoMnt["yllcornerFond"])/sizF)   # -1 : les tableaux commencent à zéro/ nb de colonne qui commence à 1        
+            infoMnt["jmaxFond"] = (infoMnt["nrowsFond"]-1)-int((yrecouvreInf-infoMnt["yllcornerFond"])/sizF)          
+
+            # limité à l'emprise
+            
+            infoMnt["iminFond"] = int(max(0,infoMnt["iminFond"]))
+            infoMnt["imaxFond"] = int(min((infoMnt["colsFond"]-1),infoMnt["imaxFond"]))
+            infoMnt["jminFond"] = int(max(0,infoMnt["jminFond"]))
+            infoMnt["jmaxFond"] = int(min((infoMnt["nrowsFond"]-1),infoMnt["jmaxFond"]))
+
+            # indices i,j du dessus pour la zone de recouvrement :
+            
+            infoMnt["iminDessus"] = int((xrecouvreInf-infoMnt["xllcornerDessus"])/sizD)
+            infoMnt["imaxDessus"] = int((xrecouvreSup-infoMnt["xllcornerDessus"])/sizD)
+            infoMnt["jminDessus"] = (infoMnt["nrowsDessus"]-1)-int((yrecouvreSup-infoMnt["yllcornerDessus"])/sizD)  # -1 : les tableaux commencent à zéro/ nb de colonne qui commence à 1                  
+            infoMnt["jmaxDessus"] = (infoMnt["nrowsDessus"]-1)-int((yrecouvreInf-infoMnt["yllcornerDessus"])/sizD)
+            
+            # limité à l'emprise
+            
+            infoMnt["iminDessus"] = int(max(0,infoMnt["iminDessus"]))
+            infoMnt["imaxDessus"] = int(min((infoMnt["colsDessus"])-1,infoMnt["imaxDessus"]))
+            infoMnt["jminDessus"] = int(max(0,infoMnt["jminDessus"]))        
+            infoMnt["jmaxDessus"] = int(min((infoMnt["nrowsDessus"])-1,infoMnt["jmaxDessus"]))
+           
+            # comment faire correspondre le fond et le dessus :
+            # si la maille est identique et le référentiel aussi : vecteur de passage "fond vers dessus" : (I,J)
+
+            if infoMnt["cellsizeFond"]==infoMnt["cellsizeDessus"]:
+                infoMnt["vecteurPassageFondVersDessus"]=((infoMnt["iminFond"]-infoMnt["iminDessus"]),(infoMnt["jminFond"]-infoMnt["jminDessus"]))
+            else:
+                infoMnt["vecteurPassageFondVersDessus"]=tuple()                
+            return infoMnt
+        # traitement
+            
+        return controleCompatibles(fond,dessus)
+
+    #@decorateTry
+    def calculDesVolumesFondEtDessus (fond,dessus):
+
+        # lire le mnt du fond :
+        
+        with open (fond) as p:
+            lignes=p.readlines()
+            
+        tableFond = list()
+        for ligne in lignes[6:]:
+            tableFond.append(ligne.split())
+                    
+        ######### somme des valeurs du fond sur l'emprise commune fond/dessus:
+        
+        nbRemplissageFond = 0
+        nbValFond = 0
+        sommeFond = 0
+        for i in range(infoMnt["iminFond"],infoMnt["imaxFond"]):       
+            for j in range(infoMnt["jminFond"],infoMnt["jmaxFond"]):
+                val = tableFond[j][i]          
+                if val==remplissage:
+                    nbRemplissageFond += 1
+                else:
+                    sommeFond += float(val)
+                    nbValFond += 1
+
+        infoMnt["nbRemplissageFond"]=nbRemplissageFond
+        infoMnt["sommeFond"]=round(sommeFond,arrondi)
+        infoMnt["nbValFond"]=nbValFond
+        infoMnt["moyenneFond"] = -9999
+        if nbValFond: infoMnt["moyenneFond"]=round(sommeFond/nbValFond,arrondi)
+        infoMnt["surfaceCouverteFond"]=round(nbValFond*infoMnt["cellsizeFond"]**2,arrondi)
+        infoMnt["volumeFond"] = round(infoMnt["sommeFond"]*infoMnt["cellsizeFond"]**2,arrondi)
+        
+        # lire le mnt du dessus :
+
+        with open (dessus,"r") as q:
+                lignes=q.readlines()
+                
+        tableDessus = list()
+        for ligne in lignes[6:]:
+            tableDessus.append(ligne.split())
+                    
+        ######### somme des valeurs du dessus sur l'emprise commune fond/dessus:
+             
+        nbRemplissageDessus = 0
+        nbValDessus = 0
+        sommeDessus = 0
+        for i in range(infoMnt["iminDessus"],infoMnt["imaxDessus"]):      # imindessus et imaxdessus sont pour la zone de recouvrement
+            for j in range(infoMnt["jminDessus"],infoMnt["jmaxDessus"]):
+                val = tableDessus[j][i]             
+                if val==remplissage:
+                    nbRemplissageDessus += 1
+                else:
+                    sommeDessus += float(val)
+                    nbValDessus += 1
+        
+        infoMnt["nbRemplissageDessus"]=nbRemplissageDessus
+        infoMnt["sommeDessus"]=round(sommeDessus,arrondi)
+        infoMnt["nbValDessus"]=nbValDessus
+        infoMnt["moyenneDessus"] = -9999 # valeur par défaut
+        if nbValDessus: infoMnt["moyenneDessus"]=round(sommeDessus/nbValDessus,arrondi)
+        infoMnt["surfaceCouverteDessus"]=round(nbValDessus*infoMnt["cellsizeDessus"]**2,arrondi)
+        infoMnt["volumeDessus"] = round(infoMnt["sommeDessus"]*infoMnt["cellsizeDessus"]**2,arrondi)
+
+        #volume entre les 2 Mnt :
+        infoMnt["volumeEntreFondEtDessus"] = round(infoMnt["volumeDessus"] - infoMnt["volumeFond"],arrondi)
+
+    def calculEcart(fond,dessus):
+
+        if infoMnt["cellsizeFond"]!=infoMnt["cellsizeDessus"]:
+            return False
+        nbRemplissageFond = 0
+        nbValFond = 0
+        sommeFond = 0
+        maxFond = -999999
+        minFond =  999999
+        maxDessus = -999999
+        minDessus =  999999    
+        nbRemplissageDessus = 0
+        nbValDessus = 0
+        sommeDessus = 0
+        sommeEcarts = 0
+        nbEcartsTotal = 0
+        nbEcartSupPositifs = 0
+        sommeDesEcartsSignificatifsPositifs = 0
+        nbEcartSupNegatifs = 0    
+        sommeDesEcartsSignificatifsNegatifs = 0
+        histogrammeDesEcarts = [0 for e in range(len(limitesHistogrammeDesEcarts)+1)]
+        ecartMax = -99999
+        ecartMin = +99999
+        positionXEcartMax = None
+        positionXEcartMin = None
+        positionYEcartMax = None
+        positionYEcartMin = None
+        tableFond = list()
+        tableDessus = list()
+        cols = infoMnt["imaxDessus"]-infoMnt["iminDessus"]
+        rows = infoMnt["jmaxDessus"]-infoMnt["jminDessus"]    
+        infoMnt["dimensionRecouvrement"] = (cols,rows)
+        xllDessus = infoMnt["xllcornerDessus"]
+        yllDessus = infoMnt["yllcornerDessus"]
+        cellsize = infoMnt["cellsizeFond"]
+        surfaceCellule = cellsize**2
+        yurDessus = infoMnt["yurcornerDessus"] # le haut des y upper left
+
+        ####### tableEcart = [[-9999]*(cols+1)]*(rows+1) # piège !!! on duplique le même élément, qui sera modifié..... pour toutes les lignes
+        tableEcart = [[-9999 for i in range (cols+1)] for j in range(rows+1)]
+        with open (fond) as p:
+            lignesFond=p.readlines()
+
+        for ligneFond in lignesFond[6:]:
+            tableFond.append(ligneFond.split())
+            
+        with open (dessus) as q:
+            lignesDessus=q.readlines()
+
+        for ligneDessus in lignesDessus[6:]:
+            tableDessus.append(ligneDessus.split())
+
+        di,dj = infoMnt["vecteurPassageFondVersDessus"]
+      
+        for i in range(infoMnt["iminDessus"],infoMnt["imaxDessus"]):     # d'abord les x  
+            for j in range(infoMnt["jminDessus"],infoMnt["jmaxDessus"]): # les y vont en décroissants dans le tableau
+                try:
+                    valDessus = tableDessus[j][i]
+                except: continue
+                try:                
+                    valFond   = tableFond[j+dj][i+di]
+                except:
+                    print("erreur j+dj : i,j,dj =",i,j,dj)
+                    continue
+                if valFond==remplissage:
+                    nbRemplissageFond += 1
+                else:
+                    nbValFond += 1
+                    if float(valFond)>maxFond:
+                        maxFond = float(valFond)
+                        xMaxFond = round(xllDessus+i*cellsize,arrondi)
+                        yMaxFond = round(yllDessus+j*cellsize,arrondi)
+                    if float(valFond)<minFond:
+                        minFond = float(valFond)
+                        xMinFond = round(xllDessus+i*cellsize,arrondi)
+                        yMinFond = round(yllDessus+j*cellsize,arrondi)
+                    
+                if valDessus==remplissage:
+                    nbRemplissageDessus += 1
+                else:
+                    nbValDessus += 1
+                    if float(valDessus)>maxDessus:
+                        maxDessus = float(valDessus)
+                        xMaxDessus = round(xllDessus+i*cellsize,arrondi)
+                        yMaxDessus = round(yurDessus-j*cellsize,arrondi)
+                    if float(valDessus)<minDessus:
+                        minDessus = float(valDessus)
+                        xMinDessus = round(xllDessus+i*cellsize,arrondi)
+                        yMinDessus = round(yurDessus-j*cellsize,arrondi)
+                        
+                    
+                if valFond!=remplissage and valDessus!=remplissage:
+                    ecart = float(valDessus) - float(valFond)
+                    iTableEcart = i-infoMnt["iminDessus"]
+                    jTableEcart = j-infoMnt["jminDessus"]
+                    tableEcart[jTableEcart][iTableEcart] = round(ecart,arrondi)
+                    sommeEcarts += ecart
+                    nbEcartsTotal += 1
+                    
+                    if ecart>tolerance:
+                        nbEcartSupPositifs += 1
+                        sommeDesEcartsSignificatifsPositifs += ecart
+                    if ecart<-tolerance:
+                        nbEcartSupNegatifs += 1
+                        sommeDesEcartsSignificatifsNegatifs += ecart
+                    # histogramme : les écarts sont égaux, les valeurs hors de l'intervamme min,max sont ignorées                    
+                    histogrammeDesEcarts[len([a for a in limitesHistogrammeDesEcarts
+                                              if a<ecart
+                                              and limitesHistogrammeDesEcarts[0]<ecart<=limitesHistogrammeDesEcarts[-1]])]+=1
+                    
+                    if ecart>ecartMax:
+                        ecartMax = ecart
+                        positionXEcartMax = xllDessus+i*cellsize
+                        positionYEcartMax = yurDessus-j*cellsize
+                    if ecart<ecartMin:
+                        ecartMin = ecart
+                        positionXEcartMin = xllDessus+i*cellsize
+                        positionYEcartMin = yurDessus-j*cellsize
+                        
+        if nbEcartsTotal==0:    # aucune valeur d'altitude commune : abandon !!!
+            erreur=_("Aucun recouvrement avec altitude entre les 2 MNT\n %s\n%s\n Abandon.") % (fond,dessus)
+            for a in infoMnt:
+                if a!="tableEcart":
+                    print(a,infoMnt[a])            
+            return erreur
+            
+        infoMnt["tableEcart"] = tableEcart
+        infoMnt["nbRemplissagesFond"] = nbRemplissageFond
+        infoMnt["nbRemplissageDessus"] = nbRemplissageDessus
+        infoMnt["nbValeursComparées"] = nbEcartsTotal
+        infoMnt["nbEcartReelSupérieursATolerance"] = ("tolerance",tolerance,
+                                                     "surface > tolerance",round(nbEcartSupPositifs*surfaceCellule,arrondi),
+                                                     " volume concerné : ",round(sommeDesEcartsSignificatifsPositifs*surfaceCellule,arrondi))
+        infoMnt["nbEcartReelInférieursATolerance"] = ("tolerance",tolerance,
+                                                     "surface < -tolérance ",round(nbEcartSupNegatifs*surfaceCellule,arrondi),
+                                                     " volume concerné : ",round(sommeDesEcartsSignificatifsNegatifs*surfaceCellule,arrondi))
+        infoMnt["surfaceHorsTolerance"] = infoMnt["nbEcartReelSupérieursATolerance"][3]+infoMnt["nbEcartReelInférieursATolerance"][3]
+        infoMnt["surfaceComparée"] = round(nbEcartsTotal*surfaceCellule,arrondi)
+        infoMnt["surfaceEgalité"] = round(infoMnt["surfaceComparée"] - infoMnt["surfaceHorsTolerance"],arrondi)      
+        infoMnt["volumeEcart"] = round(sommeEcarts*surfaceCellule,arrondi)
+        if infoMnt["surfaceComparée"]: infoMnt["ecartMoyen"] = round(infoMnt["volumeEcart"]/infoMnt["surfaceComparée"],arrondi)
+        infoMnt["ecartMax"] = (round(ecartMax,arrondi),(round(positionXEcartMax,arrondi),round(positionYEcartMax,arrondi)))
+        infoMnt["ecartMin"] = (round(ecartMin,arrondi),(round(positionXEcartMin,arrondi),round(positionYEcartMin,arrondi))) 
+        infoMnt["limitesHistogrammeDesEcarts"]=limitesHistogrammeDesEcarts
+        infoMnt["histogrammeDesEcarts"]=histogrammeDesEcarts    
+        infoMnt["(X,Y)_MinFond recouvrement"] = ((xMinFond,yMinFond),minFond)
+        infoMnt["(X,Y)_MinDessus recouvrement"] = ((xMinDessus,yMinDessus),minDessus)    
+        infoMnt["(X,Y)_MaxFond recouvrement"] = ((xMaxFond,yMaxFond),maxFond)
+        infoMnt["(X,Y)_MaxDessus recouvrement"] = ((xMaxDessus,yMaxDessus),maxDessus)
+
+      
+
+    ########################## écrire les écarts
+        
+    def ecrireTableDesEcarts(infoMnt):
+        sizF = infoMnt["cellsizeFond"]
+        sizD = infoMnt["cellsizeDessus"]
+        if sizF!=sizD:
+            return
+        fichierFond = infoMnt["fichierFond"]
+        fichierDessus = infoMnt["fichierDessus"]
+        base = ("ecart_tolerance_"+str(tolerance)+"_"+
+                os.path.splitext(os.path.basename(fichierFond))[0]+"__"+
+                os.path.splitext(os.path.basename(fichierDessus))[0]+".XYZ")
+        fichierEcart = os.path.join(os.path.dirname(fichierFond),base)
+        infoMnt["fichierEcart"] = fichierEcart
+        # point de départ : xrecouvreinf
+        xinf = infoMnt["xrecouvreInf"]
+        yinf = infoMnt["yrecouvreInf"]
+        xsup = infoMnt["xrecouvreSup"]
+        ysup = infoMnt["yrecouvreSup"]
+        cols,rows = infoMnt["dimensionRecouvrement"]
+        table = infoMnt["tableEcart"]
+        with open(fichierEcart,"w") as f:
+            for i in range(cols+1):
+                for j in range(rows+1):
+                    x = xinf + i * sizF
+                    y = ysup - j * sizF
+                    v = table[j][i]
+                    if v!=float(remplissage):
+
+                        if -tolerance<v<tolerance:
+                            v=0         # on annule les "petits écarts", dans l'épaisseur du trait.
+                        t = (str(round(x,arrondi)),str(round(y,arrondi)),str(round(v,arrondi)))
+                        f.write(" ".join(t)+"\n")
+                
+    ##################################################################################################### Début    
+
+    interface.menageEcran()
+    fond = tkinter.filedialog.askopenfilename( initialdir="",                                                 
+                                                filetypes=[(_("asc"),"*maillage*.asc"),(_("Tous"),"*")],
+                                                multiple=False,
+                                                title = _("MNT constituant le territoire initial, le socle, le fond"))
+    if fond==str():
+        interface.encadre(_("Calcul de volume abandonné."))
+        return
+
+    dessus = tkinter.filedialog.askopenfilename( initialdir="",                                                 
+                                                filetypes=[(_("asc"),"*maillage*.asc"),(_("Tous"),"*")],
+                                                multiple=False,
+                                                title = _("MNT constituant le territoire final, le dessus"))
+    if dessus==str():
+        interface.encadre(_("Calcul de volume abandonné."))
+        return
+                                
+    #initiatisations  
+    remplissage = "-9999"
+    arrondi = interface.arrondi         # les valeurs de volume seront arrondies (nb chiffres)
+    tolerance = interface.tolerance     # on compte les écarts supérieurs à cette valeur
+    limitesHistogrammeDesEcarts = interface.limitesHistogrammeDesEcarts
+
+    interface.encadre(_("\nPatience, le calcul du volume peut sembler long....\n"))
+
+    # recherche des infos,  calcul du volume
+    infoMnt = lectureInfoFichiers( fond, dessus)  # exploite les 6 premières lignes du MNT, calcule la zone de recouvrement
+    if type(infoMnt) != type(dict()):
+        interface.encadre("Erreur : "+str(infoMnt))
+        return
+    calculDesVolumesFondEtDessus( fond, dessus) # calcul du volume de chaque couche, indépendamment de l'autre 
+    retourCalcul =calculEcart (fond, dessus)   # calcul de l'écart, uniquement sur les valeurs communes
+    if retourCalcul!=None:
+        interface.encadre("Erreur : "+str(retourCalcul))
+        return        
+    ecrireTableDesEcarts(infoMnt)    # retour :
+
+    rapport  = _("Calcul du volume entre 2 MNT : rapport final.")+"\n\n"
+    rapport += _("Mnt socle     : %s") % (infoMnt["fichierFond"])+"\n"
+    rapport += _("Mnt supérieur : %s") % (infoMnt["fichierDessus"])+"\n\n"
+    rapport += _("Emprise commune : %s %s") % (infoMnt["Emprise recouvrement"])+"\n"
+    rapport += _("Surface commune : %s m2") % (infoMnt["Surface recouvrement"]  )  +"\n"                                       
+    rapport += _("Le volume est calculé lorsque l'altitude est connue pour les 2 MNT.")+"\n"
+    rapport += _("En tenant compte de ce principe la surface comparable est de %s m2") % (infoMnt["surfaceComparée"])+"\n"                                            
+    rapport += _("Le  calcul du volume dépend d'un paramètre : la tolérance qui vaut %s m. (modifiable par menu)")% (tolerance)+"\n"
+    rapport += _("Un écart d'altitude inférieur à la tolérance est ignoré, considéré comme nul, dans l'épaisseur du trait.")+"\n\n"
+    surfaceInchangee = infoMnt["surfaceEgalité"]
+    pourCentInchange = round(100*surfaceInchangee/infoMnt["surfaceComparée"],arrondi)
+    rapport += (_("Ainsi les 2 MNT sont égaux sur %s m2, soit %s %% de la surface comparable") % (surfaceInchangee,pourCentInchange)) +"\n\n"
+    rapport += _("Le volume calculé est composé d'un volume positif (Mnt supérieur > Mnt Socle) : %s m3") % (str(infoMnt["nbEcartReelSupérieursATolerance"][5]))  +"\n"                
+    rapport += _("et d'un volume négatif (Mnt supérieur < Mnt Socle) : %s m3") % (str(infoMnt["nbEcartReelInférieursATolerance"][5]))  +"\n\n"
+    rapport += _("Informations complémentaires")+"\n"   
+    rapport += _(" - l'écart maximum est de %s m, au point %s.") % (infoMnt["ecartMax"][0],infoMnt["ecartMax"][1])  +"\n"    
+    rapport += _(" - l'écart minimum est de %s m, au point %s.") % (infoMnt["ecartMin"][0],infoMnt["ecartMin"][1])  +"\n"
+    rapport += _(" - globalement l'écart moyen entre les 2 MNT est de %s m.") % (infoMnt["ecartMoyen"])  +"\n"     
+    rapport += _(" - sans prendre en compte la tolérance le volume total de l'écart est de %s m3") % (infoMnt["volumeEcart"])+"\n\n"    
+    rapport += _(" - le fichier 'Trace_AperoDeDenis_volume.txt' mémorise ces résultats.")+"\n"
+    rapport += (_(" - le nuage de points XYZ des écarts est consultable par le menu Outil_Metier\Visualiser l écart entre les 2 MNT',\n fichier :\n\n %s \n\n sous le répertoire :\n %s")
+                % (os.path.basename(infoMnt["fichierEcart"]),os.path.dirname(infoMnt["fichierEcart"])))              
+    interface.ecartXyz = infoMnt["fichierEcart"]
+    message = "\n********************** CALCUL VOLUME \n\n"+heure()+"\n"+rapport+"\n\n********************** FIN DU CALCUL VOLUME\n"
+    traceMetier(message,fond,'volume')
+    interface.ecritureTraceMicMac() 
+    interface.encadre(rapport)
+##    for a in infoMnt:
+##        if a!="tableEcart":
+##            print(a,infoMnt[a])
+
+def traceMetier(message,fichier,nom_trace):     # écrire le message dans la trace nom sous le répertoire de fichier
+    interface.ecritureTraceMicMac()             # vider la liste d'attente
+    precedente = interface.typeDuChantier       #mémoriser l'état initial
+    interface.typeDuChantier = ['metier',fichier,nom_trace] # pour définir le fichier trace    
+    interface.ajoutLigne(message)               # ajouter dans la file d'attente 
+    interface.ecritureTraceMicMac()             # écrire effectivement
+    interface.typeDuChantier = precedente       # remettre en l'état initial
+
+##################################### Fonctions de géométrie euclidienne: équation d'une droite (A,B),
+##################################### distance point droite, point dans triangle, produit scalaire
+
+def pointDansTriangle(A,B,C,M): # chaque point est un tuple X,Y, qui peut être complété par Z, inutilisé)
+    # position de M entre C et la droite AB :
+    dAB = droite(A,B)
+    pC = distanceALaDroite(C,*dAB)
+    pMC = distanceALaDroite(M,*dAB)
+    if pC!=math.copysign(pC,pMC) : return False     # pas du même côté de la droite : pas dans le triangle
+    if abs(pMC)>abs(pC):         return False       # M plus éloigné que C : pas dans le triangle
+
+    # position de M entre B et la droite AC :
+    dAC = droite(A,C)
+    pB = distanceALaDroite(B,*dAC)
+    pMB = distanceALaDroite(M,*dAC)
+    if pB!=math.copysign(pB,pMB) : return False     # pas du même côté de la droite : pas dans le triangle
+    if abs(pMB)>abs(pB):           return False     # M plus éloigné que C : pas dans le triangle
+   
+    # position de M entre A et la droite BC :
+    dBC = droite(B,C)
+    pA = distanceALaDroite(A,*dBC)
+    pMA = distanceALaDroite(M,*dBC)
+    if pA!=math.copysign(pA,pMA) : return False     # pas du même côté de la droite : pas dans le triangle
+    if abs(pMA)>abs(pA):           return False     # M plus éloigné que C : pas dans le triangle
+
+    # cas particulier : A=B=C et M différent
+    if A==B==C and M!=A:
+        print("a=b=c point M en dehors du triangle nul ABC")        
+        return False
+    return pMA/pA,pMB/pB,pMC/pC # renvoie les coeficient barycentriques du point dans le triangle
+
+    
+def produitScalaire(O,U,V):        
+    return (U[0]-O[0])*(V[0]-O[0])+(U[1]-O[1])*(V[1]-O[1])
+
+def droite(A,B): # renvoi a,b,c les coef de la droite ax+by+c=0 : choix de -1 pour le coef de y afin que a = pente et c = abscisse à l'origine
+    if A[0]!=B[0]:
+        a =(A[1]-B[1])/(A[0]-B[0])
+        b =-1
+        c = A[1]-a*A[0]
+    elif A[1]!=B[1]:
+        a = -1
+        b = 0
+        c = A[1]
+    else:
+        a=0
+        b=0
+        c=0
+    return a,b,c
+    
+def distanceALaDroite(M,a,b,c): # retourne la valeur axm+bym+c : position du point par rapport à la droite
+    return a*M[0]+b*M[1]+c
+
+    
 '''################################## Crée un fichier contenant l'icone de l'application et en renvoie le nom conserver pour exemple de ficheir temporaire
 
 def iconeGrainSel():
@@ -12080,7 +13543,7 @@ class MyDialog:
         self.saisie=str()
         top = self.top = tkinter.Toplevel(parent,width=500,relief='sunken')
         top.transient(parent)
-        top.geometry("500x200+100+100")
+        top.geometry("500x320+100+100")
         fenetreIcone(self.top)                
         l=ttk.Label(top, text=titre)
         l.pack(pady=10,padx=10)
@@ -12105,6 +13568,7 @@ class MyDialog:
 
     def ko(self):
         self.top.destroy()
+        self.saisie=False
         return
 
 ################################## Classe : Dialogue modale : demande un texte sur plusieurs lignes #########################"
@@ -12247,6 +13711,7 @@ class MyDialog_OK_KO:
     def ko(self,event=None):
         self.retour = 0
         self.top.destroy()
+        
 
 ################################## Style pur TTK  ###########################"
 

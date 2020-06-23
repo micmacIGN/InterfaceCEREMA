@@ -1,5 +1,26 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version déconfinée 5.51 du 23 juin 2020 :
+
+				- Essentiellemnt : ajout d'un item "Outils métier" dans le menu principal		
+				  Ce nouveau menu permet le calcul de volume entre 2 nuages, donc la comparaison des nuages.
+				  La comparaison s'effectue sur les MNT construits à partir des nuages.
+				  Le nuage de points de l'écart est construit et visualisable.
+				  Les principaux nouveaux item :
+					- Ecrire un MNT à partir d'un fichier XYZ
+					- Calculer le volume d'un MNT
+					- Calculer le volume entre 2 MNT
+					- Visualiser l'écart entre les 2 MNT
+					- Ecrire un fichier XYZ à partir d'un PLY
+				- Ajout dans le menu Edition de 2 item pour obtenir des informations sur un fichier PLY.
+					
+				- l'item" Ecrire un MNT à partir d'un PLY", présent dans la version 5.50 sous le menu expert, 
+				  est déplacé sous le menu 'Outils métiers', le format GRASS n'est plus écrit
+				
+				- Modifications diverses, corrections d'anomalies : voir en tête du script
+				
+				- l'installateur msi pour Windows est trop gros pour GitHub, le demander à interface-micmac@cerema.fr
+
 			Version confinée 5.50 du 4 mai 2020 :
 
 				- Ecriture sous forme de MNT aux formats IGN et GRASS des nuages de points .ply			
