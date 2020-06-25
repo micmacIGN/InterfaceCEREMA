@@ -309,7 +309,7 @@
 # 2 questions de Thierry mercier : 1) tarama est-il une ortho photo ?
 # 2) Ajouter dans la doc le mode d'emploi pour diviser en plusieurs lots un seul jeu de beaucoup de photos
 
-# version 5.511
+# version 5.511 puis 5.512
 # corection cas particulier fichier PLY sans nombre de face (nombre_faces non initialisé)
 
 # idées a faire :
@@ -529,7 +529,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.511"
+numeroVersion = "5.512"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -12544,7 +12544,7 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
         erreur = _("erreur : le fichier\n%s\nest un fichier de type ply au format ASCII.\nUtiliser CloudCompare pour l'enregister au format Binary.") %(fichierPly)
         return erreur
     nombre_faces = 0    # si absent ! correction version 5.111
-    nombre_points = 0    si absent ! correction version 5.111
+    nombre_points = 0   # si absent ! correction version 5.111
     for e in lignes:                                                # décodage des lignes d'entête qui indique la structure du fichier
         i+=1
         if e==b'end_header':
