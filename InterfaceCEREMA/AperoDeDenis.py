@@ -467,7 +467,7 @@ class InitialiserLangue(tkinter.Frame):
     def __init__(self, frame, **kwargs):
         self.frame = tkinter.Frame
         self.frame.__init__(self, frame, **kwargs)
-        frame.geometry("400x200")
+        frame.geometry("400x300")
         dataIcone = tkinter.PhotoImage(data=iconeTexte)
         frame.tk.call('wm', 'iconphoto', frame._w, dataIcone)
         self.pack(fill=tkinter.BOTH)
@@ -483,13 +483,14 @@ class InitialiserLangue(tkinter.Frame):
         self.bouton_espagnol = tkinter.Button(self, text = "Espagnol/Español", command = self.langueEspagnole)
         self.bouton_italien = tkinter.Button(self, text = "Italien/Italiano", command = self.langueItalienne)
         self.bouton_chinois = tkinter.Button(self, text = "Chinois/中文", command = self.langueChinoise)
-        self.bouton_chinois = tkinter.Button(self, text = "Arabe/عربى", command = self.langueArabe)         
+        self.bouton_arabe = tkinter.Button(self, text = "Arabe/عربى", command = self.langueArabe)         
         self.bouton_francais.pack()
         self.bouton_anglais.pack()
         self.bouton_allemand.pack()
         self.bouton_espagnol.pack()
         self.bouton_italien.pack()        
         self.bouton_chinois.pack()
+        self.bouton_arabe.pack()        
         print("langue=",langue)
         frame.protocol("WM_DELETE_WINDOW", self.arret)
         
@@ -7272,7 +7273,7 @@ class Interface(ttk.Frame):
             message = ( _("Pourquoi MicMac est arrêté :")+
                         "\n" + _("Pas d'image maîtresse.")+
                         "\n" + _("Celle-ci est nécessaire pour l'option choisie geomImage de Malt.")+
-                        "\n" + _("Pour corriger modifier les options de Malt ou choississez un masque 3D avec C3DC.")+
+                        "\n" + _("Pour corriger modifier les options de Malt ou choisissez un masque 3D avec C3DC.")+
                         "\n" + _("Corriger."))
             self.ajoutLigne(message)                
             self.ecritureTraceMicMac()
