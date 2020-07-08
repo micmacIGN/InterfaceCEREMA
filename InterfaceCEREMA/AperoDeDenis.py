@@ -84,7 +84,7 @@
 # Affichage du gain de place en MO après le ménage
 # affichage de la taille du dossier en MO dans l'affichage de l'état du chantier
 # test de la présence de sous répertoire dans afficheetat :
-# si etatChantier>2 et pas de sous-répertoire alors etatChantier remis à 2 et
+# si etatDuChantier>2 et pas de sous-répertoire alors etatDuChantier remis à 2 et
 # message "chantier nettoyé" affiché
 # la version 3.34 est rebaptisée 5.0 (suppression de l'item "indice surfacique")
 # Version 5.1 : 4 décembre 2018 : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appareil photo
@@ -306,28 +306,40 @@
 # ajout d'un item dans le menu édition : info sur un ply : affiche le nombre de points, la surface, les valeurs maxi et mini de x,y, z
 # ajout d'un item de menu : outils_métiers, pour la comparaison de 2 MNT issu des nuages
 # ajout d'un item dans le menu outils_métiers : écriture du fichier XYZ contenant les coordonnées des points d'un PLY
-# 2 questions de Thierry mercier : 1) tarama est-il une ortho photo ?
-# 2) Ajouter dans la doc le mode d'emploi pour diviser en plusieurs lots un seul jeu de beaucoup de photos
-
-# version 5.511 puis 5.512
+# nouveau modele3d : ne pas renommer l'ancien, incrémenter le n°
+# version 5.511
 # corection cas particulier fichier PLY sans nombre de face (nombre_faces non initialisé)
 
-# idées a faire :
+# 2 questions de Thierry mercier : 
+# 1) tarama est-il une ortho photo ? Non, c'est atwny qui fait l'ortho photo
+# 2) Ajouter dans la doc le mode d'emploi pour diviser en plusieurs lots un seul jeu de beaucoup de photos
+
+# version 5.52
+# ajout de la taille du chantier dans les param sauvés du chantier
+# affichage de la taille du chantier dans la liste des chantiers à ouvrir (faudrait aussi dans la liste du ménage à faire)
+# Du ménage : Ajout d'un mécanisme pour conserver les fichiers résultats qui se trouvent dans l'arborescence, liste : resultatAConserver (Orthomasaique Tawny)
+# construction masque 3D : sur aperiCloud seulement, pas prévu sur modele3D, possible manuellement (correction de la V 5.51)
+# remarque : l'option tawny de malt n'est jamais utilisée
+# modification du paramètre "centrer la scène sur " de SaisieMasqQT pour y mettre le baricentre si c'est l'origine (dans la base de registre)
+# Ajout "copier la calibration d'un autre chantier dans le menu expert
+# ajouté de la calibration dans le menu expert copier homol, orient, tarama, calibration !
+# correction de la vérification de la version sur GitHub, paramètre pour supprimer la vérif automatique au lancement
+# les fichiers ply dense portent les noms V1, V2...
+# traduction de l'ensemble en anglais, allemand, italien(à revoir), espagnol(à revoir) et chinois, et arabe
+# amélioration message pour renommer un chantier et enregistrer sous
 
 # proposer de laisser un coeur libre (NbProc pour Malt) et le gpu pour C3DC (UseGpu) Possible avec les options personnalisées
 # vérifier : sélection des meilleures photos : ne cherche pas s'il y a des coordonnées gps
 # meilleures photos : tester puis utiliser oriconvert
-# ouvrir le choix du référentiel epsg
 # si choix des N meilleures photos essayer de garder les points homologues
-# ajouter un système de projection personnalisé (pyproj permet de télécharger les infos utiles)
 # si l'utilisateur ferme l'appi par la croix au milieu de Malt alors le subprocess continue : les mm3d s'enchaînent...
 # proposer un item "du ménage pour la suppression de tous les chantiers "vides" ou sans fichier param.
 # si l'utilisateur modifie le référentiel gps du drone considérer que les options ont été modifiées (ne pas le redemander)
 
 # en prévision :
-#  renommer un chantier : donner accès à la boite de dialogue de choix d'un répertoire
-# nouveau modele3d : ne pas renommer l'ancien, incrémenter le n° (plus compliqué qu'il n'y parait)
-#prendre en compte les ply mesh binaire pour conversion en mnt
+# renommer un chantier : donner accès à la boite de dialogue de choix d'un répertoire
+
+# prendre en compte les ply mesh binaire pour conversion en mnt
 # bug en cours :
 # parfois rodolphe lance des traitements interminables (qui ont planté sans commentaire ni fin : a examiner de près)
 # version 5.40 : aprés plantage tapas, puis rechargement des photos, le bouton "plan horizontal" devient inactif (cf rodolphe)
@@ -336,7 +348,6 @@
 # l'enregistrement des options par défaut à partir du chantier en cours  n'est pas complet
 # pb avec un mac 
 # reste a faire :
-# faire en sorte que les modèles 3D générés soient numérotés de façon fixeV1, V2, V3...
 #   contrairement à la situation actuelle où ils sont renommés à chaque nouvelle densification
 # vérifier pourquoi la ligne 9217 (remove) plante parfois ! (mise en try)
 # gérer les ajouts de chantier si plusieurs instances (et les suppressions) et les modifs de paramètres...
@@ -349,7 +360,7 @@
 # il faudrait écrire dans la trace au fur et à mesure (on l'aurait si plantage...) voir :
     # def effaceBufferTrace(self):
         # commentaire le 1/4/2019 : à vérifier
-# la création d'un nuage dense reste même si des essais ultérieurs foirent : risque de confusion
+
 ############# Risque : on redéfinit photosAvecChemin et photosSansChemin en gardant le nom !!!! A modifier ligne 5615
 # avec geomimage il y a deux affichage du modéle 3 D s'il y a plusieurs maitresses ! (pas encore compris pourquoi !)
 # faire en sorte que le filtre tapas renvoie une solution si message Not Enouh Equation in ElSeg3D::L2InterFaisceaux
@@ -364,6 +375,17 @@
 # améliorer en version 5.45
 # regrouper tout les affichages des texte201 (pour nettoyer le code aprés l'ajout de la recherche ctrl F et ctrl shift F
 # lorsqu'il y a un nouveau choix de photos il ne faut pas supprimer tous les répertoires sous le répertoire de travail (idem suppression de photos)
+
+# soucis avec cx_freese :
+# des modules, des fichiers, des répertoires peuvent manquer : il faut les ajouter par include_file ou include
+# il peut y avoir des problèmes de "CASSE" ie tkinter est importé come Tkinter : cela plante
+# on peut alors l'exclure par exclude pour qu'il ne soit pas importé automatiquement puis l'inclure explicitement
+# dans scipy, numpy il peut arriver aussi des pb de casse dans des dll
+# utiliser l'outil "compare repertoires.py" pour comparer un répertoire qui marche et un qui ne marche pas...
+# pour scipy il y avait des pb, voir pymeri, et ici on trouve un écart de casse sur 2 dll de scipy extradll,
+# la correction corrige le plantage qui arrive lors de l'écriture d'un ply en MNT.
+# ecartmajusc2moins1= 2 {'LIBWRAP_DUM.37XXVKIHM5ANYBLPIHFVIOO3H5TQVGWB.GFORTRAN-WIN_AMD64.DLL', 'LIBDCSRCH.I2AOPDCXAPDRFNPWY55H5UE7XZSU5CVN.GFORTRAN-WIN_AMD64.DLL'}
+
 
 from tkinter import *                       # gestion des fenêtre, des boutons ,des menus
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -397,8 +419,7 @@ import math
 import struct
 from itertools import cycle
 
-################################## Classe : Choix de la langue en cas d'absence dans les paramètres ###########################"
-
+#
 def foreach_window(hwnd, lParam):
     if IsWindowVisible(hwnd):
         length = GetWindowTextLength(hwnd)
@@ -429,6 +450,17 @@ def decorateTry(func):
         return response
     return wrapper
 
+def decorateTrySilencieux(func):
+    def wrapper(*args, **kwargs):
+        try:
+            response = func(*args, **kwargs)
+        except:
+            return
+        # Post-traitement
+        return response
+    return wrapper
+
+################################# Classe : Choix de la langue en cas d'absence dans les paramètres ###########################"
 ################################ Multilangue
 
 class InitialiserLangue(tkinter.Frame):
@@ -440,18 +472,25 @@ class InitialiserLangue(tkinter.Frame):
         frame.tk.call('wm', 'iconphoto', frame._w, dataIcone)
         self.pack(fill=tkinter.BOTH)
         frame.title("")
-        global langue
         langue = "NA"
         
         self.message = tkinter.Label(self, text="Choisissez une langue\nSelect your language")
         self.message.pack()
 
         self.bouton_francais = tkinter.Button(self, text = "Français/French", command = self.langueFrancaise)
-
         self.bouton_anglais = tkinter.Button(self, text = "Anglais/English", command = self.langueAnglaise)
-        self.bouton_francais.pack(side = tkinter.LEFT)
-        self.bouton_anglais.pack(side = tkinter.RIGHT)
-
+        self.bouton_allemand = tkinter.Button(self, text = "Allemand/Deutsche", command = self.langueAllemande)
+        self.bouton_espagnol = tkinter.Button(self, text = "Espagnol/Español", command = self.langueEspagnole)
+        self.bouton_italien = tkinter.Button(self, text = "Italien/Italiano", command = self.langueItalienne)
+        self.bouton_chinois = tkinter.Button(self, text = "Chinois/中文", command = self.langueChinoise)
+        self.bouton_chinois = tkinter.Button(self, text = "Arabe/عربى", command = self.langueArabe)         
+        self.bouton_francais.pack()
+        self.bouton_anglais.pack()
+        self.bouton_allemand.pack()
+        self.bouton_espagnol.pack()
+        self.bouton_italien.pack()        
+        self.bouton_chinois.pack()
+        print("langue=",langue)
         frame.protocol("WM_DELETE_WINDOW", self.arret)
         
     def arret(self):
@@ -469,8 +508,34 @@ class InitialiserLangue(tkinter.Frame):
     def langueAnglaise(self):
         global langue
         langue = "en"
+        print("anglais, langue = ",langue)
+        frame.destroy()
+        
+    def langueAllemande(self):
+        global langue
+        langue = "de"
         frame.destroy()
 
+    def langueEspagnole(self):
+        global langue
+        langue = "es"
+        frame.destroy()
+
+    def langueItalienne(self):
+        global langue
+        langue = "it"
+        frame.destroy()
+
+    def langueChinoise(self):
+        global langue
+        langue = "zh"
+        frame.destroy()
+
+    def langueArabe(self):
+        global langue
+        langue = "ar"
+        frame.destroy()
+        
 ################################# Outils de traduction ######################################################
 def chargerLangue():
     try:
@@ -529,7 +594,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.512"
+numeroVersion = "5.52"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -546,9 +611,6 @@ logoCerema = 'R0lGODlhyABHAIIAMfstBC/TifepcLXxE6nt127nqvxnCfz9+ywAAAAAyABHAAID/n
 flecheGauche = 'R0lGODlhJAAkAIcAMSRSlJyuxEx+tDxqpNTa5HSGrFRypGSOvER2rLzGzOzu7GSCrExupHSezDxytFSGvMzS3DRenLS+1DxqrOTm5Pz6/IyevDRmpFx+tFR6rGyWxEx2rKyyxOTi5HSStGyOvMzO3PT29NTS1FR+tERqnNzi7MTO3GSKvFyGtDxinERurJSmxFx6pEx6rISWtKSyxNza3GSSxMTK1PTy9ExypISatERyrDRinLzCzDxurOzq7IyivDxmnNTW5FSCvERupFyKvJyuzFR2pGSOxER2tOzu9GyGtMzW5LTC1OTm7Pz+/FyCtFR6tEx2tKy2vHySvGySxPT2/NTW1FR+vERqpGSKxFyGvFx6rEx6tISWvNze3MTK3ExyrISavERytDRipDxutIyixDxmpAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAJAAkAAcI/gCVCFQyQ4GCgiEGCix48KBCgg0dPhQYcUZChRUVPAxRkOHEhREvDuxocMZDhg0/QmxY4WRJiSM76jD5kaPNEBVy5rQ4wyJOnRVC3JwBVKWSChE1KgwDwaDBlgpRGkXakKbAFRG2KChSEOrAqlMZdlUS5cmHETJIegUJcyLSGToczjCyoIEQGQriEnVZcGrJuEkWQLFiBcsWtS7b9mx4sSUBIYMdAOECQufKkmu/khRpQogGH02IWMGQggGJ06gZiNlxdKJYiRIyQJlCBIvtA7iHDDlRBQiQKkOyqJTZU0mQDVAE2MZSGwERIs6fE2kiwEqX1ifjGgyxQjaWJsxb/tgGT148FgRTfFz/2LN9lhFQmn8n0oK+febnqfuwgP1jEg9LxADecgQWSKAPPoSRF1cfWcAFFBfkIGEOA0hY4QQUZljhADYQEQZcBn0URRhUMHHDFzdcgOIXK57I4otfXODFDnm19VAAPwhwwY489ugjjw58GFcRUwVAAhYDxLijkj/uKCGNJSlkU084IUFCEzkwqaKWPGJoQQVR5BRVVTQdQcMGOaQYow0O2OCFAyo4MCEYNQwX0kAlsGBDDirmwAMJQghhgKAM0GAAAwH0N9JLaxXBggoqfJFmD2NK9VFVMx1VAVEdLCCGhDeYUMFMM1Cgg6khsudUV4spoIUWigVEgMANOCjQgakdaHGrDjoYNdCmFFCQKwwd3FpDBDdwAAMEUsBAwUEWjZrScDoUqwUMp3agwwsAcKCFCDBI8SyVIYCl0qi4PpsXBRW8kEAHMOh60E9KvOSXQbwGJRRRp/aL05g2KvSWUw9R1VFmMgkc1MI4/eQwwzhFy/Cm//pq8cUYZ6zxxhsHBAA7'
 flecheDroite = 'R0lGODlhJAAkAIcAMSxWjKS2zFSCtDxurNze3FR2pHyStER6tCxipMTGzExunGSSxPTy9MzS3DxinGyGrFyKvER2rOTq9GR+pERupFR+tHyizMTO3Nza3CxelDRqpEx2pNTa5DxqpGSCrOTm5Fx6pPT6/NTS1ERytLTC1FR6tEx6rDRmpMTK3ExyrGSOvOzq7ERypIyivDRelERqnKy6zFSGvOTi5FR6rHyavMTK1ExypHSezMzOzPz6/NTW5Ex+tOzu7JSqxDRalKS61FSCvDxyrNze5FR2rCxmpMTG1ExupGySxPT29MzW3DxmnHSOtFyOvER2tERurFx+rCxenDRqrEx2rDxqrGSCtOTm7NTW1Ex6tDRmrGSOxERyrIymvDRenERqpISexMzO3Pz+/Ozu9AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAJAAkAAcI/gDBCBTIgAePgkgGEjRYkIFCMA0ZPhx4kGFChRUrPkQSkcfEhQV5XBzY0aHCkBo/hiyY4+HKgy4brjA5sSKDmQ9t4jyZkeZGBhyR5BhKNChQoURzIAnKkejHgTkMSlXYIoxUgy15enwKJmpDnz6oCAnTMCvFgly79lQo5UaBCzd5mAWZNmpGhTZuqLBB4ubEkHUPzlyhsECWCkdswJCbE+3JiA5btkTZZUGTHVlS/PgK86PNBlxs2DAymoIRCi8oqGhyZYcKClviOv7LYwWPIhUsZDmygHeW3yqAXDkwPIsTAzys+uRZsEgJCEEONIkwXUoT1sOvDIdw5YHtrbRn/hYxAYF49vPmzTeBAASEEAZzSTasIQUCa+L4h0s5kH84ECAzcJCWQDpIkQV22iWooII7XBFDBTOgMNtEOmhxRRQDZIjhABtqyGEQA0yhwRVaFNDZRzp0MQICLCJABIsvwujiCS4iIOIQSRjElQ4DaIHACUAGKWSQRAA5gAYTSNAQVxxMEcGPRUZ5QpEz/njCACcsEQIYUynEEQMMfEFBED9CGeSMQWIxBRQ0gAnfUC4lx0ARAwCx3xXXNTFCE1pMUSYWHWTQgmxPRZREF0NIUYCiohlhRAZYIhBFFFwEwJCOKkkVxkgLGaREECdMMYAScH03IUaQFcWADDIQ8IEDlByeQCoYH6xQxQo70Sbbl7VhYAUGGDgA6gsNMFBFqzLU+sGAXTHwQasEYPAsATI4gIUCCWCAg7S2AZVDt2k5O620z34AwAQ4cCDCrx8cdFRKT337wbwyGIRrD61iQAC1By01mW2B3YSrUv4iMe8KtQqFKngf2QWYQg5jFedyQwllMcEVK6VxwRpvrDCzIIcs8shgBAQAOw=='
 
-# Faut-il avertir l'utilisateur qu'il y a une nouvelle version disponible sur GitHub
-
-avertirNouvelleVersion     =   True
 
 # recherche du répertoire d'installation de "aperodedenis" (différent suivant les systèmes et les versions de système)
 
@@ -575,7 +637,7 @@ if os.name=="nt":
     if not os.path.isdir(repertoire_data):
         repertoire_data = repertoire_script
     langue = chargerLangue()
-    if (langue != "en" and langue != "fr"):
+    if (langue != "en" and langue != "fr" and langue != "de" and langue != "es" and langue != "it" and langue != "zh"):
         frame = tkinter.Tk()
         initialiserLangue = InitialiserLangue(frame)
         initialiserLangue.mainloop()
@@ -588,7 +650,7 @@ else:           # sous Linux
     if not os.path.isdir(repertoire_data):
         repertoire_data = repertoire_script
     langue = chargerLangue()
-    if(langue != "en" and langue != "fr"):
+    if(langue != "en" and langue != "fr" and langue != "de" and langue != "es" and langue != "it" and langue != "zh"):
         frame = tkinter.Tk()
         initialiserLangue = InitialiserLangue(frame)
         initialiserLangue.mainloop()
@@ -1280,8 +1342,8 @@ class Interface(ttk.Frame):
                     fenetreIcone(fenetre)
 
                     try:
-                        for i in range(len(self.titreFenetre+_(" : une interface graphique pour MicMac..."))+8):
-                            fenetre.title((self.titreFenetre+_(" : une interface graphique pour MicMac..."))[0:i])        
+                        for i in range(len(self.titreFenetre+" "+_(": une interface graphique pour MicMac..."))+8):
+                            fenetre.title((self.titreFenetre+" "+_(": une interface graphique pour MicMac..."))[0:i])        
                             fenetre.update()
                             time.sleep(0.03)
                     except:
@@ -1407,13 +1469,14 @@ class Interface(ttk.Frame):
         menuExpert.add_separator()
 
         menuExpertImport = tkinter.Menu(menuExpert,tearoff = 0)
-        menuExpertImport.add_command(label=_("Importer points homologues, Orientation, Tarama"), command=self.copierHomolOriTarama)
+        menuExpertImport.add_command(label=_("Importer points homologues, calibration, orientation, Tarama"), command=self.copierHomolOriTarama)
         menuExpertImport.add_separator()         
         menuExpertImport.add_command(label=_("Importer les points homologues d'un autre chantier"), command=self.copierPointsHomologues)             
+        menuExpertImport.add_command(label=_("Importer la calibration d'un autre chantier"), command=self.chargerCalibrationIntrinsequeDepuisMenu)
         menuExpertImport.add_command(label=_("Importer l'orientation d'un autre chantier"), command=self.copierOrientation)
-        menuExpertImport.add_command(label=_("Importer la mosaique Tarama d'un autre chantier"), command=self.copierMosaiqueTarama)        
+        menuExpertImport.add_command(label=_("Importer la mosaique Tarama d'un autre chantier"), command=self.copierMosaiqueTarama)                
+        menuExpertImport.add_command(label=_("Importer les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)
         menuExpertImport.add_separator()        
-        menuExpertImport.add_command(label=_("Importer les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)                
         menuExpertImport.add_command(label=_("Importer les points GCP à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)
         
         menuExpert.add_cascade(label = _("Importer points homologues, les points GCP/GPS"),menu=menuExpertImport)
@@ -1421,7 +1484,7 @@ class Interface(ttk.Frame):
         menuExpert.add_separator()        
         menuPlusieursAppareilsPhotos = tkinter.Menu(menuExpert,tearoff = 0,postcommand=updatePlusieursAppareilsPhotos)        
         menuPlusieursAppareilsPhotos.add_command(label=_("Définir plusieurs appareils photos"), command=self.plusieursAppareils)
-        menuPlusieursAppareilsPhotos.add_command(label=_("Définir la longueur du préfixe des photos ; %s") % (self.nbCaracteresDuPrefixe), command=self.longueurPrefixe)        
+        menuPlusieursAppareilsPhotos.add_command(label=(_("Définir la longueur du préfixe des photos ; %s") % (self.nbCaracteresDuPrefixe)), command=self.longueurPrefixe)        
         menuPlusieursAppareilsPhotos.add_command(label=_("Lister les appareils photos"), command=self.listeAppareils)
 
         menuExpert.add_cascade(label = _("Plusieurs appareils photos"),menu=menuPlusieursAppareilsPhotos)
@@ -1472,6 +1535,11 @@ class Interface(ttk.Frame):
                 menuParametres.entryconfig(10, label=_("Désactiver le 'tacky' message de lancement"))
             else:
                 menuParametres.entryconfig(10, label=_("Activer le 'tacky' message de lancement"))
+            if self.avertirNouvelleVersion:
+                menuParametres.entryconfig(11, label=_("Désactiver la recherche de nouvelle version au lancement"))
+            else:
+                menuParametres.entryconfig(11, label=_("Activer la recherche de nouvelle version au lancement"))
+                
                 
         menuParametres = tkinter.Menu(mainMenu,tearoff = 0,postcommand=updateParam)
         menuParametres.add_command(label=_("Afficher les paramètres"), command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
@@ -1482,9 +1550,11 @@ class Interface(ttk.Frame):
         menuParametres.add_command(label=_("Associer 'ffmpeg (décompacte les vidéos)"), command=self.repFfmpeg)                        ## ffmpeg : sous MicMac\binaire-aux si Windows, mais sinon ???
         menuParametres.add_command(label=_("Associer 'Meshlab' ou 'CloudCompare'"), command=self.repMeslab)    ## Meslab
         menuParametres.add_separator()
-        menuParametres.add_command(label=_("Changer la langue"), command = self.modifierLangue)
+        menuParametres.add_command(label=_("Changer la langue")+" change the language", command = self.modifierLangue)
         menuParametres.add_separator() 
-        menuParametres.add_command(label=_("Désactive/Active le tacky message de lancement..."),command=self.modifierTacky)    ## Meslab
+        menuParametres.add_command(label=_("Désactive/Active le tacky message de lancement..."),command=self.modifierTacky)    # supprime le logo cerema au lancement
+        # supprime le controle de la présence d'une nouvelle veersion au lancement
+        menuParametres.add_command(label=_("Désactive/Active le  controle nouvelle version de lancement..."),command=self.modifierGitHub)
         menuParametres.add_separator() 
      
         # Aide
@@ -1524,7 +1594,7 @@ class Interface(ttk.Frame):
 
         # annonce du lancement :
 
-        self.ajoutTraceComplete(heure()+_(" lancement d'aperodedenis")+version+".")
+        self.ajoutTraceComplete(heure()+" "+_("lancement d'aperodedenis")+version+".")
 
         # zone de test éventuel :
         
@@ -1535,7 +1605,6 @@ class Interface(ttk.Frame):
         # Pour suivre les nouvelles versions
 
         self.versionInternetAncienne    =   str()       # Dernière version lue sur GitHub (ne sert plus)
-        self.messageVersion             =   bool(True)  # l'utilisateur peut désactiver l'affichage du message d'avertissement (False)
        
         # initialisation variables globales et propre au contexte local :
 
@@ -1741,7 +1810,12 @@ class Interface(ttk.Frame):
         self.initDicoPerso()
 
         self.memoPerso()            # crée le dico des paramètres perso
-        
+
+        # paramètres langues
+        self.langues = list()
+        self.langues = ("Français/French","Anglais/English","Allemand/Deutsch","Espagnol/Español",
+                        "Italien/Italiano","Chinois/中文","Arabe/عربى")
+       
         # L'onglet :
         
         self.onglets = ttk.Notebook(fenetre)                           # create Notebook in "master" : boite à onglet, supprimé par menageEcran() comme les frames
@@ -1835,7 +1909,7 @@ class Interface(ttk.Frame):
         
         # frame Autre chantier : 570
         self.item570 = ttk.Frame(self.item562)
-        self.item571 = ttk.Button(self.item570,text=_("Charger la calibration intrinsèque d'un autre chantier"),command=self.chargerCalibrationIntrinseques)  
+        self.item571 = ttk.Button(self.item570,text=_("Charger la calibration intrinsèque d'un autre chantier"),command=self.chargerCalibrationIntrinseque)  
         self.item572 = ttk.Label(self.item570, text="")
         self.item571.pack()
         self.item572.pack()
@@ -1845,7 +1919,7 @@ class Interface(ttk.Frame):
         self.item525 = ttk.Button(self.item520,text=_("Photos pour la calibration intrinsèque"),command=self.imagesCalibrationIntrinseques)  
         self.item526 = ttk.Label(self.item520, text="")
         self.item527 = ttk.Checkbutton(self.item520, variable=self.calibSeule,
-                                       text=_(" N'utiliser ces photos que pour la calibration")) 
+                                       text=" "+_("N'utiliser ces photos que pour la calibration")) 
         self.item528 = ttk.Label(self.item520, text=_("Toutes ces photos doivent avoir la même focale."))
         
         # lancer tarama ? item510
@@ -1856,7 +1930,7 @@ class Interface(ttk.Frame):
         # Calculer le nuage non dense
         self.item535 =  ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")
         self.item536 = ttk.Checkbutton(self.item535, variable=self.calculNuageNonDense,
-                                       text=_("Générer et afficher le nuage non dense"))
+                                       text=_("Générer et afficher le nuage non dense, pour construire un masque 3D"))
         self.item536.pack(ipady=5)
         
         # lancer la densification ? item 540
@@ -2096,10 +2170,10 @@ class Interface(ttk.Frame):
         
         # Ajout des onglets dans la boite à onglet :
         
-        self.onglets.add(self.item400,text="Points homologues")    # add onglet to Notebook        
-        self.onglets.add(self.item500,text="Orientation")                 # add onglet to Notebook
-        self.onglets.add(self.item950,text="Mise à l'échelle")      # add onglet to Notebook
-        self.onglets.add(self.item600,text="Densification")
+        self.onglets.add(self.item400,text=_("Points homologues"))   # add onglet to Notebook        
+        self.onglets.add(self.item500,text=_("Orientation"))          # add onglet to Notebook
+        self.onglets.add(self.item950,text=_("Mise à l'échelle"))      # add onglet to Notebook
+        self.onglets.add(self.item600,text=_("Densification"))
 
 
         # boutons  généraux à la boite à onglet :
@@ -2761,7 +2835,8 @@ class Interface(ttk.Frame):
                                                  )
         
         self.tacky                      = True    # Suite au message de Luc Girod sur le forum le 21 juin 17h        
-
+        self.avertirNouvelleVersion     = True    # vérifie au lancement la présence d'une version sur GitHub
+        
     # il faudrait mettre ici les textes de l'Aide, des conseils, de l'historique, de l'apropos
     # les menus
         self.aide1 = _("Interface graphique du CEREMA pour lancer les modules de MICMAC.") + "\n\n"+\
@@ -3019,9 +3094,9 @@ class Interface(ttk.Frame):
                 _("   - sous Windows 64 bits utiliser l'installateur AperoDeDenis.msi") + "\n"+\
                 _("   - sous Linux, Ubuntu, Mac-Os, Windows 32 bits : installer Python et le module suivant :") + "\n"+\
                 _("     - PIL, indispensable (commande : pip install pillow)"+ "\n"+\
-                _("     et éventuellement :)"+ "\n")+\
+                _("     et éventuellement :"+ "\n")+\
                 _("     - pyproj, facultatif, est utile pour les données GPS embarquée pour choisir un epsg autre que Lambert 93 ") + "\n"+\
-                _("     - scipy, facultatif, est utile pour écrire un MNT au format IGN ou GRASS à partir d'un ply)") + "\n\n"+\
+                _("     - scipy, est utile pour écrire un MNT au format IGN ou GRASS à partir d'un ply)") + "\n\n"+\
                 _("   Ensuite, dans cette interface graphique :") + "\n\n"+\
                 _("1) Paramètrer l'interface : indiquer ou se trouvent le répertoire bin de MicMac et l'éxécutable CloudCompare (ou Meshlab).") + "\n"+\
                 _("   Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick (en principe sous MicMac\\binaire-aux).") + "\n"+\
@@ -3045,6 +3120,14 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version 5.52 :")+chr(9)+_("juillet 2020") + "\n"+\
+              chr(9)+chr(9)+_("Nouveautés :") + "\n"+\
+              chr(9)+chr(9)+_("- Multilingue : choix de la langues : Anglais, Allemand, Espagnol, Italien et même CHINOIS !") + "\n"+\
+              chr(9)+chr(9)+_("- affichage de la taille du chantier dans la liste des chantiers à ouvrir") + "\n"+\
+              chr(9)+chr(9)+_("- ajout d'un item de menu expert : copier la calibration d'un autre chantier") + "\n"+\
+              chr(9)+chr(9)+_("- ajout d'un item de menu paramètres : vérification automatique de la présence d'une nouvelle version sur GitHub") + "\n"+\
+              chr(9)+chr(9)+_("- les fichiers ply dense sont désormais nommés dans l'ordre de leur création : modele3D_V1, V2, V3...") + "\n"+\
+              chr(9)+chr(9)+_("- modifications mineures, voir le script") + "\n"+\
               "\n" + _("Version confinée bis 5.51 :")+chr(9)+_("juin 2020") + "\n"+\
               chr(9)+chr(9)+_("Nouveautés :") + "\n"+\
               chr(9)+chr(9)+_("- Ajout d'un item de menu principal : Outils métier") + "\n"+\
@@ -3175,7 +3258,7 @@ class Interface(ttk.Frame):
               "\n" + _("Version 5.40 :")+chr(9)+_("30 mars 2019, suivant les conseils de Xavier Rolland") + "\n"+\
               chr(9)+chr(9)+_("- amélioration ergonomie saisie des points gcp (flèches : photo suivante/précédente).") + "\n"+\
               chr(9)+chr(9)+_("- corrections de quelques bugs sur la prise en compte des points gcp (voir entête du code source).") + "\n"+\
-              chr(9)+chr(9)+_("- correction du changeement de langue si appel depuis un raccourci.") + "\n"+\
+              chr(9)+chr(9)+_("- correction du changement de langue si appel depuis un raccourci.") + "\n"+\
               "\n" + _("Version 5.41 :")+chr(9)+_("avril 2019") + "\n"+\
               chr(9)+chr(9)+_("- amélioration ergonomie de la fonction 'du ménage', correction du bug : ménage uniquement fait sur le chantier en cours).") + "\n"+\
               chr(9)+chr(9)+_("- Fichier/renommer le chantier devient fichier/enregistrer sous....") + "\n"+\
@@ -3278,12 +3361,14 @@ class Interface(ttk.Frame):
     # pas de nuage dense
         self.aide8 = _("Interface graphique AperoDeDenis : quelques conseils si MicMac ne trouve pas de nuage de points dense.") + "\n\n"+\
             _("               - Examiner la trace (Menu Edition/afficher la trace) et la qualité des photos (menu outils/Qualité des photos): .") + "\n"+\
-            _("                        0) Prenez un pastis, contemplez le nuage de points homologues") + "\n"+\
+            _("                        0) Prenez un pastis, contemplez le nuage de points non dense") + "\n"+\
             _("                        1) Avec C3DC nous avons constaté des échecs avec le message 'cAppliMICMAC::SauvMemPart File for _compl.xml'.") + "\n"       +\
             _("                           Le passage au paramètre 'BigMac' ou a 'Malt' a permis l'obtention d'un nuage dense.") + "\n"+\
-            _("                        10) consulter le wiki micmac (https://micmac.ensg.eu/index.php)") + "\n"+\
-            _("                        11) consulter le forum micmac (http://forum-micmac.forumprod.com)") + "\n"+\
-            _("                        12) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)") + "\n\n"\
+            _("                        2) assurez vous que le sujet est immobile (pas de végétation mouvante, de pluie") + "\n"+\
+            _("                        3) assurez vous que le recouvrement des photos est suffisant : chaque point du sujet doit être sur 3 photos au moins") + "\n"+\
+            _("                        4) assurez vous qu'il n'y a pas une photos très maivaise : une seule photo suffit à faire échouer un chantier,") + "\n"+\
+            _("                        5) consulter le forum micmac (http://forum-micmac.forumprod.com)") + "\n"+\
+            _("                        6) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)") + "\n\n"\
             "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
 
     # aide métiers : MNT, XYZ, calcul volume
@@ -3347,6 +3432,15 @@ class Interface(ttk.Frame):
             avertissement + "\n\n"+\
             "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
 
+    # fichier pour modifier la clé de registre de saisiemasqQT : par défaut l'origine est le centre, ce qui rend invisible les nuages en EPSG.
+    # ce fichier remet le centre au barycentre, il permettrait de modifier l'épaisseur des traits, la taille des points par défaut
+
+        self.cleMasqQT    =  "HKEY_USERS\S-1-5-21-1400669940-2874269118-2294255063-1600\Software\Culture3D\SaisieMasqQT\Drawing settings"
+        self.sousCleMasqQT=  "SceneCenterType"
+        self.majCleMasqQT =  (
+                                self.cleMasqQT+"\n"+                                      
+                                '"SceneCenterType"=REG_DWORD 0\n'
+                             )
 
         
     ####################### initialiseValeursParDefaut du défaut : nouveau chantier, On choisira de nouvelles photos : on oublie ce qui précéde,
@@ -3367,7 +3461,8 @@ class Interface(ttk.Frame):
     # - 1 : en cours de suppression
         
         self.etatDuChantier             =   0
-
+        self.tailleDuChantierEnMO       =   -1
+        
     # Type de chantier : c'est une liste de string (on pourrait aussi mettre un dictionnaire), avec :
     # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' 
     # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
@@ -3439,7 +3534,7 @@ class Interface(ttk.Frame):
         self.zoomF.set('4')                                     # doit être "1","2","4" ou "8" (1 le plus détaillé, 8 le plus rapide)
         self.etapeNuage                 = "5"                   # par défaut (très mystérieux!)
         self.modele3DEnCours            = "modele3D.ply"        # Nom du nuage en cours de traitement avec son niveau de zoom
-        self.modele3DFinal              = "modele3D.ply"        # nom du nuage final (renommé en _V1 pui _V2 pour garder tout les nuages successifs)
+        self.modele3DFinal              = "modele3D_V1.ply"     # nom du premier nuage final (puis _V2, _V3...)
         self.dicoInfoBullesAAfficher    = None                  # pour passer l'info à afficherLesInfosBullesDuDico (dans choisirUnePhoto)
         self.listeDesMaitresses         = list()
         self.listeDesMasques            = list()
@@ -3461,6 +3556,7 @@ class Interface(ttk.Frame):
     # Tawny : drapage pour nuage dense généré par MALT option Ortho  : nom du fichier généré
 
         self.orthoMosaiqueTawny         = "OrthoMosaique.tif"
+        self.resultatAConserver         = [os.path.join("Ortho-MEC-MALT",self.orthoMosaiqueTawny),] # à conserver si ménage
 
     # Calibration par points GCP 
 
@@ -3589,7 +3685,7 @@ class Interface(ttk.Frame):
         return True
 
     def renommeChantier(self):
-        self.menageEcran()        
+        self.menageEcran()
         if self.etatDuChantier==0:
             self.encadre(_("Le chantier est en cours de définition.") + "\n" +
                          _("Il n'a pas encore de nom, il ne peut être renommé.") + "\n\n" +
@@ -3612,7 +3708,8 @@ class Interface(ttk.Frame):
             return # destination == origine : retour
         
         if self.nomDuChantierExisteDeja(nouveauRepertoire):
-            self.encadre(_("Le nom du nouveau chantier :\n %s \n est déjà un chantier. Abandon.") % (os.path.basename(nouveauRepertoire)))
+            self.encadre(_("Le nom du nouveau chantier :\n %s \n est déjà un chantier:\n %s\n Abandon.") % (os.path.basename(nouveauRepertoire),
+                                                                                                            self.nomDuChantierExisteDeja(nouveauRepertoire)[0]))
             return  
         
         if os.path.splitdrive(nouveauRepertoire)[0].upper()!=os.path.splitdrive(self.repTravail)[0].upper():
@@ -3641,8 +3738,9 @@ class Interface(ttk.Frame):
 
     def nomDuChantierExisteDeja(self,nouveauRepertoire):
         nouveauChantier = os.path.basename(nouveauRepertoire).upper()
-        if [e for e in self.tousLesChantiers if os.path.basename(e).upper()==nouveauChantier]:
-            return True      
+        chantierExistant = [e for e in self.tousLesChantiers if os.path.basename(e).upper()==nouveauChantier]
+        if chantierExistant:
+            return chantierExistant      
 
     def enregistreChantierSous(self):
         message = _("Cette fonction permet de changer l'unité disque du chantier.")
@@ -3670,8 +3768,10 @@ class Interface(ttk.Frame):
             return            
 
         if self.nomDuChantierExisteDeja(nouveauRepChantier):
-            self.encadre(_("Le nom du nouveau chantier :\n %s \n est déjà un chantier. Abandon.") % (os.path.basename(nouveauRepertoire)))
-            return        
+            self.encadre(_("Le nom du nouveau chantier :\n %s \n est déjà un chantier:\n %s\n Abandon.") % (os.path.basename(nouveauRepertoire),
+                                                                                                            self.nomDuChantierExisteDeja(nouveauRepertoire)[0]))
+            return  
+        
 
         # le répertoire cible existe, le chantier est nouveau : il faut copier ou renommer
         self.deplaceChantier(nouveauRepChantier)
@@ -3684,12 +3784,11 @@ class Interface(ttk.Frame):
         if os.path.isdir(nouveauRepertoire):      # c'est pas un répertoire : abandon
             try: os.rmdir(nouveauRepertoire)
             except Exception as e:
-                self.encadre(_("Le répertoire\n %s \ndestination est probablement non vide :\nErreur :  %s.\n Abandon.") % (nouveauRepertoire,str(e)))
+                self.encadre(_("Le répertoire\n %s \ndestination est probablement non vide :\nErreur :  %s.\n Abandon.") %   (nouveauRepertoire,str(e)))
                 return   
         # si l'unité disque ne change pas : on renomme (rapide et fiable, sauf si un fichier est ouvert, par exemple un ply par cloudcompare)
         if os.path.splitdrive(nouveauRepertoire)[0].upper()==os.path.splitdrive(self.repTravail)[0].upper():
             try:
-                os
                 time.sleep(0.1)
                 os.renames (self.repTravail,nouveauRepertoire)                               # RENOMMER
             except Exception as e:
@@ -3703,7 +3802,7 @@ class Interface(ttk.Frame):
             # répertoire destination supprimé pour autoriser la commande shutil.copytree : copie :       
             try :
                 self.encadre(_("La copie de l'arborescence du chantier est en cours.\n %s \nPatience....")
-                             % ( _("\n Taille du chantier : ")+str(sizeDirectoryMO(self.repTravail))+" MO" ))
+                             % ( "\n"+" "+_("Taille du chantier : ")+str(sizeDirectoryMO(self.repTravail))+" MO" ))
                 shutil.copytree(self.repTravail,nouveauRepertoire)
             except Exception as e:
                 self.encadre(_("La copie du chantier ne peut se faire actuellement,") + "\n" +
@@ -3815,15 +3914,15 @@ class Interface(ttk.Frame):
                 self.encadre(_("Importation abandonnée."))
                 return
             if not zipfile.is_zipfile(archive):
-                self.encadre(archive+_(" n'est pas un fichier d'export valide") + "\n"+
+                self.encadre(archive+" "+_("n'est pas un fichier d'export valide") + "\n"+
                              _("ou alors, sous ubuntu,il lui manque le droit d'exécution."))
                 return                                                               
             
             self.encadre(_("Choisir le répertoire dans lequel recopier le chantier."))          
-            destination = tkinter.filedialog.askdirectory(title='Désigner le répertoire où importer le chantier ',
+            destination = tkinter.filedialog.askdirectory(title=_('Désigner le répertoire où importer le chantier '),
                                                         initialdir=self.repTravail)
             if not os.path.isdir(destination):
-                self.encadre(destination+_(" n'est pas un répertoire valide."))
+                self.encadre(destination+" "+_("n'est pas un répertoire valide."))
                 return
             oschdir(destination)                   # relativise les chemins
             self.encadre(_("Recopie en cours dans") + "\n" + destination + "\n" + _("Patience !"))
@@ -3866,7 +3965,7 @@ class Interface(ttk.Frame):
             if os.path.isfile(fichierParam):
                 self.restaureParamChantier(fichierParam)        # la restauration positionne self.reptravail et self.chantier sur l'ancien répertoire de travail
             else:
-                self.encadre(fichierParam+_(" absent"))
+                self.encadre(fichierParam+" "+_("absent"))
                 return
             self.repTravail = nouveauChemin                     # le répertoire des photos devient le répertoire de travail
             self.chantier = nouveauChantier
@@ -3898,10 +3997,10 @@ class Interface(ttk.Frame):
         
     def ajoutRepertoireCommechantier(self): # ajoute un répertoire dans le liste des chantiers : le répertoire doit contenir  le fichier paramChantier.sav
         self.menageEcran()
-        nouveauRepChantier  = tkinter.filedialog.askdirectory(title='Désigner le répertoire contenant un chantier ',
+        nouveauRepChantier  = tkinter.filedialog.askdirectory(title=_('Désigner le répertoire contenant un chantier '),
                                                         initialdir=self.repTravail)
         if nouveauRepChantier in self.tousLesChantiers:
-            self.encadre("Ce répertoire est déjà un chantier. Abandon")
+            self.encadre(_("Ce répertoire est déjà un chantier. Abandon"))
             return
         if os.path.isdir(nouveauRepChantier):       # c'est bien un répertoire
             param = os.path.join(nouveauRepChantier,self.paramChantierSav)
@@ -3931,7 +4030,7 @@ class Interface(ttk.Frame):
             self.sauveParam()                   # sauve les paramètres généraux et ceux du chantier
             try: shutil.copy(self.fichierParamChantierEnCours,self.repTravail)          # pour éviter de copier un fichier sur lui même
             except Exception as e:
-                print(heure(),_(" anomalie copie fichier param chantier : %(param)s vers %(rep)s ")
+                print(heure()," "+_("anomalie copie fichier param chantier : %(param)s vers %(rep)s ")
                                   % {"param" : self.fichierParamChantierEnCours, "rep" : self.repTravail} ,str(e))
             fenetre.title(self.etatSauvegarde+self.titreFenetre)            
         except Exception as e:
@@ -3943,12 +4042,11 @@ class Interface(ttk.Frame):
     def afficheEtat(self,entete="",finale=""):
 
         if not os.path.isdir(self.repTravail):
-            self.encadre(_("Le répertoire ")+"\n"+self.repTravail+"\n"+_(" du chantier précédent n'est pas trouvé sur disque.")+
+            self.encadre(_("Le répertoire ")+"\n"+self.repTravail+"\n "+_("du chantier précédent n'est pas trouvé sur disque.")+
                          "\n"+_("Choisir un autre chantier."))
             return
         if self.pasDeMm3d():
             return
-        self.sauveParam()
         nbPly = 0
         texte = str()        
         photosSansChemin = self.toutesLesPhotosSansChemin()
@@ -3970,7 +4068,7 @@ class Interface(ttk.Frame):
                 # SI les options par défaut sont personnalisée on informe :
 
                 if os.path.exists(self.fichierSauvOptions):
-                    texte += _("\n Nouveau chantier : Les options par défaut sont personnalisées ")           
+                    texte += "\n "+_("Nouveau chantier : Les options par défaut sont personnalisées ")           
                
             if len(photosSansChemin)>=1:                                   # Il ne peut en principe pas y avoir une seule photo sélectionnée
                 # nombre de photos sélectionnées : 
@@ -3990,7 +4088,7 @@ class Interface(ttk.Frame):
             # Options pour Tapioca :
 
             if self.modeTapioca.get()!='':
-                texte = texte+'\n\n' + 'Recherche des points homologues :' + '\n' + _('Mode : ')+self.modeTapioca.get()+'\n'
+                texte = texte+'\n\n' + _('Recherche des points homologues :') + '\n' + _('Mode : ')+self.modeTapioca.get()+'\n'
             if self.modeTapioca.get()=="All":
                 texte = texte+_('Echelle 1 : ')+self.echelle1.get()+'\n'
             if self.modeTapioca.get()=="MulScale":
@@ -4004,7 +4102,7 @@ class Interface(ttk.Frame):
             # Options pour Tapas :
             
             if self.modeCheckedTapas.get()!='':
-                texte = texte+'\n' + 'Orientation des appareils photos :\n' + _('Mode : ')+self.modeCheckedTapas.get()+'\n'              
+                texte = texte+'\n' + _('Orientation des appareils photos : ')+'\n' + _('Mode : ')+self.modeCheckedTapas.get()+'\n'              
             if self.photosPourCalibrationIntrinseque.__len__()>0 and self.choixCalibration.get()=="photos":
                 texte = texte+_("Nombre de photos pour calibration intrinsèque : ")+str(self.photosPourCalibrationIntrinseque.__len__())+"\n"
                 if self.calibSeule.get():
@@ -4083,7 +4181,7 @@ class Interface(ttk.Frame):
             # Malt est choisi : 
 
             if self.choixDensification.get()=="Malt":
-                texte = texte+'\n' + 'Densification : Malt\n' + _('Mode : ')+self.modeCheckedMalt.get()
+                texte = texte+'\n' + _('Densification : ')+' Malt\n' + _('Mode : ')+self.modeCheckedMalt.get()
                 if self.modeCheckedMalt.get()=="GeomImage":
                     if self.listeDesMaitresses.__len__()==0:
                         texte = texte+"\n" + _("Pas d'image maîtresse\n")
@@ -4096,7 +4194,7 @@ class Interface(ttk.Frame):
                     if self.listeDesMasques.__len__()==0 and self.listeDesMaitresses.__len__()>0:
                         texte = texte+"\n" + _("Pas de masque.") + "\n"
                     if self.listeDesMasques.__len__()>1:
-                        texte = texte+"\n"+str(self.listeDesMasques.__len__())+_(" masques") + "\n"
+                        texte = texte+"\n"+str(self.listeDesMasques.__len__())+" "+_("masques") + "\n"
                     if self.listeDesMaitresses.__len__()>0 and self.photosUtilesAutourDuMaitre.get()>0:                        
                         texte = texte+_("%s photos utiles autour de la maîtresse") %(str(self.photosUtilesAutourDuMaitre.get()))+"\n"
 
@@ -4134,7 +4232,6 @@ class Interface(ttk.Frame):
             if self.etatDuChantier >= 3 and lesRepertoires.__len__()==0:
                 self.chantierNettoye = True                
                 self.etatDuChantier = 2
-                self.sauveParam()
                 self.ajoutLigne("\n"+heure()+_("****** ouverture du chantier."))
                 self.ajoutLigne("\n"+_("Le chantier a été nettoyé, les résultats et les traces sont conservées."))
                 
@@ -4163,7 +4260,8 @@ class Interface(ttk.Frame):
                 # Type de chantier : c'est une liste de string (on pourrait aussi mettre un dictionnaire), avec :
                 # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' 
                 # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
-                # [2] = 'original' ou "importé"          
+                # [2] = 'original' ou "importé"
+
                 if self.typeDuChantier[1]=="renommé" or self.typeDuChantier[2]=="importé" or self.typeDuChantier[2]=="ajouté":
                     texte = texte + _("Chemin du chantier :") + "\n"+self.repTravail+"\n\n"
             else:
@@ -4188,16 +4286,15 @@ class Interface(ttk.Frame):
                 texte = texte+"\n" + _("Chantier interrompu lors de la recherche de l'orientation.") + "\n" + _("Modifier les options, relancer micmac.") + "\n"                
 
             if os.path.exists(self.modele3DEnCours):
-               texte = texte+_("Nuage de point densifié généré.")+"\n"
+               texte = texte+_("Nuage de points densifié généré.")+"\n"
                nbPly+=1
-               
-            if self.etatDuChantier == 7:		
-                texte = texte+"\n" + _("La densification a echoué : pas de nuage dense généré.") + "\n"
-                
-            if self.etatDuChantier in (4,5,7) and nbPly==0:
-               texte = texte+_("Aucun nuage de point généré.") + "\n"
-
-            texte += _("\n Taille du chantier : ")+str(sizeDirectoryMO(self.repTravail))+" MO"            
+            else:   
+                if self.etatDuChantier == 7:		
+                    texte = texte+"\n" + _("La densification a echoué : pas de nuage dense généré.") + "\n"
+                if self.etatDuChantier in (4,5,7) and nbPly==0:
+                   texte = texte+_("Aucun nuage de point généré.") + "\n"
+            self.tailleDuChantierEnMO = sizeDirectoryMO(self.repTravail)
+            texte += "\n"+_("Taille du chantier : ")+str(self.tailleDuChantierEnMO)+" MO"            
             oschdir(self.repTravail)
                 
             
@@ -4212,9 +4309,10 @@ class Interface(ttk.Frame):
         # si les options ont été activées, même abandonnées, alors ont mémorise texte dans la trace complète pour garder une trace des modifs
         # pour débug 
         if self.optionsMicMacActivees:
-            self.ajoutTraceComplete("\n"+heure()+_(" Options modifiées, état du chantier :\n")+texte)
+            self.ajoutTraceComplete("\n"+heure()+" "+_(" Options modifiées, état du chantier :\n")+texte)
             self.optionsMicMacActivees = False
-        self.ecritureTraceMicMac()            
+        self.ecritureTraceMicMac()
+        self.sauveParam()
         self.encadre(texte)            
 
     def toutesLesPhotosSansChemin(self):
@@ -4408,8 +4506,10 @@ class Interface(ttk.Frame):
     def afficheMosaiqueTawny(self):
         orthoMosaiqueTIF = os.path.join(self.repTravail,"Ortho-MEC-Malt",self.orthoMosaiqueTawny) # chemin complet  
         if not os.path.exists(orthoMosaiqueTIF):
-            self.encadre(_("Pas d' ortho mosaique par Tawny. Choisir l'option Tawny de Malt."))    
-            return
+            orthoMosaiqueTIF = os.path.join(self.repTravail,self.orthoMosaiqueTawny) # chemin après ménage
+            if not os.path.exists(orthoMosaiqueTIF):
+                self.encadre(_("Pas d'ortho mosaique par Tawny. Choisir Malt Ortho ou Malt UrbanMNE."))    # l'option tawny de malt n'est pas utilisée
+                return
         orthoMosaiqueJPG = os.path.splitext(orthoMosaiqueTIF)[0]+".JPG"
         if not os.path.exists(orthoMosaiqueJPG):
             self.conversionJPG(liste=[orthoMosaiqueTIF])
@@ -4800,6 +4900,13 @@ class Interface(ttk.Frame):
         else:
             self.encadre(_("Tacky message au lancement désactivé"))
 
+    def modifierGitHub(self):
+        self.avertirNouvelleVersion = not self.avertirNouvelleVersion
+        if self.avertirNouvelleVersion:
+            self.encadre(_("Controle de la présence d'une nouvelle version sur GitHub activé"))
+        else:
+            self.encadre(_("Controle de la présence d'une nouvelle version sur GitHub désactivé"))
+            
     def modifierLangue(self):
         self.menageEcran()
         if not os.path.isdir(repertoire_langue):
@@ -4816,16 +4923,33 @@ class Interface(ttk.Frame):
         valider = tkinter.Button(frameBoutton, text = _("Appliquer"), command = self.selectionLangue)
         self.choixLangue.pack(side = tkinter.LEFT, fill = tkinter.Y)
         valider.pack()
-        self.choixLangue.insert(1, _("Français"))
-        self.choixLangue.insert(2, _("Anglais"))
+        self.choixLangue.insert(1, ("Français/French"))
+        self.choixLangue.insert(2, ("Anglais/English"))
+        self.choixLangue.insert(3, ("Allemand/Deutsch"))
+        self.choixLangue.insert(4, ("Espagnol/Español"))
+        self.choixLangue.insert(5, ("Italien/Italiano"))
+        self.choixLangue.insert(6, ("Chinois/中文"))
+        self.choixLangue.insert(7, ("Arabe/عربى"))
         
     def selectionLangue(self):
-        nouvelleLangue = self.choixLangue.get(self.choixLangue.curselection())
-        global langue
-        if(nouvelleLangue == _("Français")):
-            langue = 'fr'
-        else:
-            langue = 'en'
+        try:
+            nouvelleLangue = self.choixLangue.get(self.choixLangue.curselection())            
+            global langue
+            if(nouvelleLangue == ("Français/French")):
+                langue = 'fr'
+            elif nouvelleLangue == ("Anglais/English"):
+                langue = 'en'
+            elif nouvelleLangue == ("Allemand/Deutsch"):
+                langue = 'de'
+            elif nouvelleLangue == ("Espagnol/Español"):
+                langue = 'es'
+            elif nouvelleLangue == ("Italien/Italiano"):
+                langue = 'it'
+            elif nouvelleLangue == ("Chinois/中文"):
+                langue = 'zh'
+            elif nouvelleLangue == ("Arabe/عربى"):
+                langue = 'ar'                
+        except: pass
         try:
             print("selection repertoire_langue=",repertoire_langue," langue=",langue)
             traduction = gettext.translation('AperoDeDenis', localedir = repertoire_langue, languages=[langue])
@@ -5055,9 +5179,9 @@ class Interface(ttk.Frame):
         return len(listeCopie)                                  # on retourne le nombre de photos
 
     ################# controler les photos dans leur ensemble : même focale, mêmes dimensions, présence d'un exif avec focale :
-
+    @decorateTry       
     def controlePhotos(self):   #[liste = self.photosSansChemin] Vérification globale des focales et des dimensions. en retour nbFocales et dimensionsOk
-        # les dimensions :
+        # les dimensions :        
         self.dimensionsDesPhotos = [(x,Image.open(x).size) for x in self.photosSansChemin]  # si OK : x = self.dimensionsDesPhotos[0][0] et y=self.densionsDesPhotos[0][1]
         self.dimensionsOK = set([y for (x,y) in self.dimensionsDesPhotos]).__len__()==1     # vrai si une seule taille        
         # le nombre de focales :
@@ -5155,12 +5279,12 @@ class Interface(ttk.Frame):
         toutesOptions = True    
         if self.etatDuChantier==5:		                # Chantier terminé
 
-            retour = self.troisBoutons(  titre=_('Le chantier %(x)s est terminé.') % {"x" : self.chantier},
+            retour = self.troisBoutons(  titre=_('Le chantier %s est terminé.') % {self.chantier},
                                          question=_("Le chantier est terminé après ")+self.choixDensification.get()+".\n"+
-                                         _("Vous pouvez :") + "\n"+
-                                         _(" - Modifier les options 'points homologues' et 'orientation' : supprime les traitements effectués") + "\n"+
-                                         _(" - Conserver les points homologues et l'orientation pour relancer la densification") + "\n"+
-                                         _(" - Ne rien faire.") + "\n",                                    
+                                         _("Vous pouvez :") + "\n "+
+                                         _("- Modifier les options 'points homologues' et 'orientation' : supprime les traitements effectués") + "\n "+
+                                         _("- Conserver les points homologues et l'orientation pour relancer la densification") + "\n "+
+                                         _("- Ne rien faire.") + "\n",                                    
                                          b1=_("Modifier les options des points homologues et d'orientation"),
                                          b2=_('Modifier les options de la densification'),
                                          b3=_('Ne rien faire'),)
@@ -5224,9 +5348,9 @@ class Interface(ttk.Frame):
             self.item804.configure(text= _("La version de Micmac installée ne propose pas le module C3DC. Choisir MALT."),foreground='red',style="C.TButton")            
         else:                                                       # Si l'onglet existe on met à jour les messages :
             oschdir(self.repTravail)        
-            if os.path.exists("AperiCloud.ply")==False and os.path.exists("modele3D.ply")==False:
+            if os.path.exists("AperiCloud.ply")==False:
                 self.item804.configure(text= _("Pas de nuage pour construire un masque") + "\n" +
-                                       _("Calculer un nuage de points, dense ou non dense, pour définir un masque 3D."),foreground='red',style="C.TButton")
+                                       _("Calculer un nuage de points, non dense, pour définir un masque 3D."),foreground='red',style="C.TButton")
                 self.item801.configure(state = "disable")
             else:
                 self.item801.configure(state = "normal")
@@ -5252,7 +5376,7 @@ class Interface(ttk.Frame):
         fenetre.wait_window(self.onglets)                           # boucle d'attente : la fenêtre pricncipale attend la fin de l'onglet
         
     def finOptionsOK(self,affiche=True):                                         # l'utilisateur a valider l'ensemble des options
-        self.ajoutTraceComplete("\n"+heure()+_(" Les options sont validées par l'utilisateur"))
+        self.ajoutTraceComplete("\n"+heure()+" "+_("Les options sont validées par l'utilisateur"))
         self.onglets.pack_forget()      # on ferme la boite à onglets             
         texte = str()
 
@@ -5431,11 +5555,11 @@ class Interface(ttk.Frame):
         try :
             d=float(self.distance.get().split(" ")[0])       # pour permettre la saisie d'une unité
             if d<0:
-                self.etatMiseALEchelle = _("%(x)s Distance %(y)s invalide.") % {"x": self.etatMiseALEchelle, "y": self.distance.get()} + "\n" 
+                self.etatMiseALEchelle = _("{x} Distance {y} invalide.".format(x=self.etatMiseALEchelle, y=self.distance.get())) + "\n" 
             if d==0:
-                self.etatMiseALEchelle = _("Calibration annulée.") + "\n"                
+                self.etatMiseALEchelle = _("Distance numlle. Calibration annulée.") + "\n"                
         except: 
-            self.etatMiseALEchelle = _("%s Pas de distance.") % (self.etatMiseALEchelle) + "\n" 
+            self.etatMiseALEchelle = _("%s Pas de distance pour la mise à l'échelle.") % (self.etatMiseALEchelle) + "\n" 
             return False
         # métrique :
         if self.dicoCalibre.__len__()>0:
@@ -5709,7 +5833,7 @@ class Interface(ttk.Frame):
 
         for Nom,X,Y,Z,actif,ident,incertitude in self.listePointsGPS:   # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
             if actif and not re.match("\d+\s+\d+\s+\d+\s*$",incertitude): # si actif et incertitude incorrecte :
-                texte += "\n"+_("Lncertitude du point GCP %s incorrecte : %s. Forme valable : 3 entiers séparés par des espaces, exemple : '2 2 2' ") % (Nom,incertitude) 
+                texte += "\n"+_("Incertitude\n %s \ndu point GCP \n%s\nincorrecte. Forme valable : 3 entiers séparés par des espaces, exemple : '2 2 2' ") % (Nom,incertitude) 
         
         # retour True ou String
 
@@ -5719,7 +5843,7 @@ class Interface(ttk.Frame):
             return texte+erreur
 
     def finOptionsKO(self):
-        self.ajoutTraceComplete("\n"+heure()+_(" Les options sont abandonnées par l'utilisateur"))
+        self.ajoutTraceComplete("\n"+heure()+" "+_("Les options sont abandonnées par l'utilisateur"))
         self.onglets.pack_forget()      # on ferme la boite à onglets          
         self.restaureParamChantier(self.fichierParamChantierEnCours)
         self.afficheEtat()
@@ -5779,26 +5903,42 @@ class Interface(ttk.Frame):
         
 
     #""""""""""""""""""""""""   Options de Malt
-    def chargerCalibrationIntrinseques(self):
+
+    def chargerCalibrationIntrinsequeDepuisMenu(self,repertoireInconnu=True):
+        bilan = self.chargerCalibrationIntrinseque(repertoireInconnu=repertoireInconnu)
+        if bilan:
+            self.encadre(bilan)
+            return bilan
+        self.choixCalibration.set("chantier")
+        bilanOK = _("Calibration du chantier\n '%s' \nrecopiée.") % (self.selectionRepertoireAvecChemin)
+        self.encadre(bilanOK)
+        return bilanOK
+    
+    def chargerCalibrationIntrinseque(self,repertoireInconnu=True):
         if self.pasDePhoto(False):
             self.item572.configure(text=_("Commencer par choisir des photos."),foreground='red')
             return
-        chantier = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration."),filtre="CALIB")       # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
-        if chantier!=None:
-            self.item572.configure(text=_("Pas de chantier choisi."))
-            return   
+        if repertoireInconnu:
+            bilan = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration."),filtre="CALIB")
+            if bilan!=None:
+                message = _("Aucun chantier choisi.") + "\n" + bilan + "\n"
+                self.item572.configure(text=_("Pas de chantier choisi."))
+                self.afficheEtat(message)
+                return message
         repertoireCalib  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Calib")
         if not os.path.exists(repertoireCalib):
-            self.item572.configure(text=_("le chantier choisi n'a pas de données de calibration."))
-            return
+            bilan = _("le chantier choisi %s n'a pas de données de calibration.") % (repertoireCalib)
+            self.item572.configure(text=bilan)
+            return bilan
         # copie du répertoire : tentative
         calibChantier = os.path.join(self.repTravail,"Ori-Calib")
-        supprimeRepertoire(calibChantier)
+        supprimeRepertoire(calibChantier)        
         try: shutil.copytree(repertoireCalib,calibChantier)
         except Exception as e:
             self.item572.configure(text=_("la copie a échouée : %s.") % (str(e)))
-            self.ajoutLigne(_("La copie de la calibration du chantier\n %s \na échoué.") % (repertoireCalib))
-            return
+            bilan = _("La copie de la calibration du chantier\n %s \na échoué : \n%s") % (repertoireCalib,str(e))
+            self.ajoutLigne(bilan)
+            return bilan
         # copie du répertoire: réussite
         if os.path.exists(calibChantier):
             self.chantierOrigineCalibration = os.path.basename(self.selectionRepertoireAvecChemin)
@@ -5807,7 +5947,9 @@ class Interface(ttk.Frame):
             self.ajoutLigne(_("Copie de la calibration du chantier\n %s.") % (repertoireCalib))
         else:
             self.item572.configure(text=_("la recopie a échouée : %s.") % (str(e)))
-            self.ajoutLigne(_("La copie de la calibration du chantier\n %s \na échoué.") % (repertoireCalib))
+            bilan = _("La copie de la calibration du chantier\n %s \na échoué.") % (repertoireCalib)
+            self.ajoutLigne(bilan)           
+            return bilan
             
     def imagesCalibrationIntrinseques(self):
         if self.photosAvecChemin.__len__()==0:
@@ -5936,7 +6078,7 @@ class Interface(ttk.Frame):
                 self.item703.config(text="\n" + _("un seul masque : ")+os.path.basename(self.listeDesMasques[0]))  
 
             if self.listeDesMasques.__len__()>1:
-                self.item703.config(text="\n"+str(self.listeDesMasques.__len__())+_(" masques"))
+                self.item703.config(text="\n"+str(self.listeDesMasques.__len__())+" "+_("masques"))
                 
             if not os.path.exists(self.mosaiqueTaramaTIF):
                 self.item745.config(text="\n" + _("Pas de mosaique Tarama : pas de masque."))
@@ -6067,18 +6209,15 @@ class Interface(ttk.Frame):
     #""""""""""""""""""""""" Options masque 3D pour C3DC
 
     def affiche3DApericloud(self):          # lance SaisieMasqQT, sur apericloud ou modele3d, attente de saisie/fermeture (subprocess.call)
-        if os.path.exists("modele3D.ply"):
-            nuage = "modele3D.ply"
-            # le renommage ci-dessous est restrictif : il faudrait élargir au vrai fichier origine du masque (l'utilisateur peut le choisir)
-            self.masque3DSansChemin         =   "modele3D_selectionInfo.xml"            # nom du fichier XML du masque 3D, fabriqué par 
-            self.masque3DBisSansChemin      =   "modele3D_polyg3d.xml"                  # nom du second fichier XML pour le masque 3D
-        elif os.path.exists("AperiCloud.ply"):
-            nuage = "AperiCloud.ply"
-            self.masque3DSansChemin         =   "AperiCloud_selectionInfo.xml"          # nom du fichier XML du masque 3D, fabriqué par 
-            self.masque3DBisSansChemin      =   "AperiCloud_polyg3d.xml"                # nom du second fichier XML pour le masque 3D
-            
-        else: return  
-        masque3D = [self.mm3d,"SaisieMasqQT",nuage]              # " SaisieAppuisInitQT AperiCloud.ply"
+        
+        if not os.path.exists("AperiCloud.ply"):
+            return
+        
+        nuage = "AperiCloud.ply"
+        self.masque3DSansChemin         =   "AperiCloud_selectionInfo.xml"          # nom du fichier XML du masque 3D, fabriqué par 
+        self.masque3DBisSansChemin      =   "AperiCloud_polyg3d.xml"                # nom du second fichier XML pour le masque 3D
+        verifParametresSaisieMasqQT()                           # modifie si besoin le paramètre de centrage du nuage : au barycentre
+        masque3D = [self.mm3d,"SaisieMasqQT",nuage]             # " SaisieAppuisInitQT AperiCloud.ply"
         self.lanceCommande (masque3D,
                             info=(_("Saisie masque 3D pour C3DC sur le nuage dense ou non dense."))
                            )
@@ -6176,7 +6315,7 @@ class Interface(ttk.Frame):
         # placer l'onglet devant l'onglet "Densification"
  
         placeDensification = self.onglets.index("end")-1        # Densification est le dernier onglet
-        self.onglets.add(self.item650, text="Points GCP")
+        self.onglets.add(self.item650, text=_("Points GCP"))
         self.onglets.insert(self.item650, placeDensification)   # affichage onglet Points GCP en avant dernière position
 		
     def affichePointCalibrationGPS(self,n,x,y,z,ident,incertitude):             # affiche un point
@@ -6195,7 +6334,7 @@ class Interface(ttk.Frame):
 				   )
         
         self.listeWidgetGPS[-1][0].pack(side='top')
-        if self.onglets.tab(self.onglets.select(), "text")=="Points GCP" and not self.listeWidgetGPS[-1][0].winfo_viewable():           
+        if self.onglets.tab(self.onglets.select(), "text")==_("Points GCP") and not self.listeWidgetGPS[-1][0].winfo_viewable():           
             self.item650.configure(height=int(self.item650.cget('height'))+2)
 
         self.listeWidgetGPS[-1][1].pack(side='left',padx=5)
@@ -6606,7 +6745,7 @@ class Interface(ttk.Frame):
         
     def lanceMicMac(self):          # controles puis Aiguillage en fonction de l'etatDuChanteir
         if self.etatDuChantier==5:  # Chantier terminé
-            self.encadre(_("Le chantier %(chant)s est terminé après %(densif)s") % {"chant" : self.chantier, "densif" : self.choixDensification.get()} + ".\n\n"+
+            self.encadre(_("Le chantier %s est terminé après %s") % (self.chantier,self.choixDensification.get()) + ".\n\n"+
                          _("Vous pouvez modifier les options puis relancer MicMac."))
             return
         self.encadre(_("Lance MicMac : controles en cours....")+"\n")   
@@ -6737,19 +6876,19 @@ class Interface(ttk.Frame):
                     nb[appareil] += 1
                 for a in nb:
                     if nb[a]==1:
-                        message += _("Une seule photo pour la calibration de l'appareil ")+a+_(" c'est insuffisant.\n")
+                        message += _("Une seule photo pour la calibration de l'appareil ")+a+" "+_("c'est insuffisant.\n")
                     if nb[a]==0:
-                        message += _("Aucune photo pour la calibration de l'appareil ")+a+_(" c'est insuffisant.\n")
+                        message += _("Aucune photo pour la calibration de l'appareil ")+a+" "+_("c'est insuffisant.\n")
                 if message:
-                    message += _("\n\n Modifier la liste des photos pour calibration.")
-                    message += _("\n\n Le menu 'expert/liste des appareils' fournit le nom de l'appareil pour chaque photo.")                    
+                    message += "\n\n "+_("Modifier la liste des photos pour calibration.")
+                    message += "\n\n "+_("Le menu 'expert/liste des appareils' fournit le nom de l'appareil pour chaque photo.")                    
                     self.encadre(message)
                     return                
             else:     # Plusieurs appareils et Aucune photo pour calibration intrinsèque
                  if len(self.photosPourCalibrationIntrinseque)==0:
-                    message = _("Aucune photo pour la calibration intrinsèque des ")+str(nbAppareils)+_(" appareils photos.")+\
-                              _("\nCela peut rendre difficile les traitements.")+\
-                              _("\n\nConseil : prendre 2 photos pour la calibration de chaque appareil.")
+                    message = _("Aucune photo pour la calibration intrinsèque des ")+str(nbAppareils)+" "+_("appareils photos.")+\
+                              "\n"+_("Cela peut rendre difficile les traitements.")+\
+                              "\n\n"+_("Conseil : prendre 2 photos pour la calibration de chaque appareil.")
                     self.ajoutLigne(message)
                     retour = self.troisBoutons(titre=_('Avertissement'),question=message,b1=_('Continuer'),b2=_('Abandon'),b3=None)
                     if retour != 0:
@@ -6867,10 +7006,11 @@ class Interface(ttk.Frame):
         if self.etatDuChantier==4:                              # Chantier arrêté après Tapas
             
             retour = self.troisBoutons(  titre=_('Continuer le chantier %s après tapas ?') % (self.chantier),
-                                         question =  _("Le nuage non dense de l'orientation est créé. Vous pouvez :") + "\n"+
-                                                     _(" - lancer la densification") + "\n"+
-                                                     _(" - débloquer le chantier pour modifier les options des points homologues") + "\n"+
-                                                     _(" - conserver les points homologues et modifier les paramètres de l'orientation") + "\n"+                                                     _(" - ne rien faire : cliquer sur la croix de fermeture de la fenêtre") + "\n",                                         
+                                         question =  _("Le nuage non dense de l'orientation est créé. Vous pouvez :") + "\n "+
+                                                     _("- lancer la densification") + "\n "+
+                                                     _("- débloquer le chantier pour modifier les options des points homologues") + "\n "+
+                                                     _("- conserver les points homologues et modifier les paramètres de l'orientation") + "\n"+
+                                         _("- ne rien faire : cliquer sur la croix de fermeture de la fenêtre") + "\n ",                                         
                                          b1=_('Lancer la densification '),
                                          b2=_('débloquer le chantier - effacer les points homologues'),
                                          b3=_('débloquer le chantier - garder les points homologues'))
@@ -6878,7 +7018,7 @@ class Interface(ttk.Frame):
                 self.afficheEtat()
                 return
             if retour == 0:                                     # b1 : Lancer la densification                  
-                self.ajoutLigne(heure()+_(" Reprise du chantier %s arrêté après TAPAS - La trace depuis l'origine sera disponible dans le menu édition.") % (self.chantier))
+                self.ajoutLigne(heure()+" "+_("Reprise du chantier %s arrêté après TAPAS - La trace depuis l'origine sera disponible dans le menu édition.") % (self.chantier))
                 self.cadreVide()                                # début de la trace : fenêtre texte pour affichage des résultats. 
                 self.suiteMicmac()                              # on poursuit par Malt ou C3DC
                 return
@@ -6895,10 +7035,10 @@ class Interface(ttk.Frame):
 
         if self.etatDuChantier==35:                              # Chantier arrété aprés tapioca, points homoloques conservés
             retour = self.troisBoutons(  titre=_('Continuer le chantier %s après recherche des points homologues ?') % (self.chantier),
-                                         question =  _("Le chantier est arrêté après la recherche des points homologues. Vous pouvez :") + "\n"+
-                                                     _(" - relancer la recherche des points homologues") + "\n"+
-                                                     _(" - rechercher l'orientation des appareils photos") + "\n"+
-                                                     _(" - ne rien faire : cliquer sur la croix de fermeture de la fenêtre") + "\n",                                         
+                                         question =  _("Le chantier est arrêté après la recherche des points homologues. Vous pouvez :") + "\n "+
+                                                     _("- relancer la recherche des points homologues") + "\n "+
+                                                     _("- rechercher l'orientation des appareils photos") + "\n "+
+                                                     _("- ne rien faire : cliquer sur la croix de fermeture de la fenêtre") + "\n",                                         
                                          b1=_('Recherche des points homologues'),
                                          b2=_("Recherche de l'orientation"),
                                          b3=_('Abandon'))        
@@ -6965,7 +7105,7 @@ class Interface(ttk.Frame):
             else:
                 message = _("Pourquoi MicMac s'arrête : ") + "\n"+_("Les photos définissent plusieurs scènes disjointes") + "\n\n"+\
                           _("MicMac ne peut travailler que sur une seule scène : toutes les photos doivent former une seule scéne.") + "\n"+\
-                          _("Les photos se répartissent en :") + str(self.lesGroupesDePhotos.__len__())+_(" groupes distincts (consulter la trace) : ")+"\n" +\
+                          _("Les photos se répartissent en :") + str(self.lesGroupesDePhotos.__len__())+" "+_("groupes distincts (consulter la trace) : ")+"\n" +\
                           "\n".join([str(e)[:100] for e in self.lesGroupesDePhotos])            
                 self.ajoutLigne(message)
                 self.messageNouveauDepart =  message
@@ -7040,8 +7180,8 @@ class Interface(ttk.Frame):
         self.lesGroupesDePhotos.sort(key = lambda e: e.__len__(), reverse=True)
         message =   _("Les photos se répartissent en plusieurs groupes distincts (consulter la trace) :\n\n")+\
                       "\n".join([str(e) for e in self.lesGroupesDePhotos])+\
-                    _("\n\nVoulez-vous poursuivre l'éxécution sur le groupe le plus nombreux ?")+\
-                    _("\nSi oui les photos inutilisées seront supprimées et le chantier se poursuivra.")
+                    "\n\n"+_("Voulez-vous poursuivre l'éxécution sur le groupe le plus nombreux ?")+\
+                    "\n"+_("Si oui les photos inutilisées seront supprimées et le chantier se poursuivra.")
         if MyDialog_OK_KO(fenetre,titre=_("Poursuivre sur moins de photos ou abandonner ?"),texte=message,b1="Continuer",b2="Abandon").retour==1:
             # 2) retirer les groupes sauf le plus long 
             [self.retirerPhotos(e) for e in self.lesGroupesDePhotos[1:]]
@@ -7080,9 +7220,9 @@ class Interface(ttk.Frame):
 ##            self.orientationCourante = "Arbitrary"
 ##            self.lanceGCPBascule()
 
-        # Si un modele3D existe déjà on le renomme pour le conserver
+        # recherche le nom du modele3D a créer
 
-        self.renommeModele3D()
+        self.modele3DSuivant()
         
         # malt ou D3CD 
         # la production sera self.modele3DEnCours
@@ -7170,13 +7310,13 @@ class Interface(ttk.Frame):
                 ajout(self.nuagesDenses,self.modele3DEnCours)   # le dernier modele3dEncours est le plus dense
 
             # création de modele3D.ply
-                self.modele3DEnCours = self.modele3DFinal           # nécessaire pour l'affichage       
+            self.modele3DEnCours = self.modele3DFinal           # nécessaire pour l'affichage       
             if self.nuagesDenses.__len__()==1:
                 try: shutil.copy(self.nuagesDenses[0],self.modele3DEnCours)
-                except Exception as e: print(_("erreur malt GeomImage copy de nuage en modele3D : "),str(e),_(" pour : "),self.nuagesDenses[0])
+                except Exception as e: print(_("erreur malt GeomImage copy de nuage en modele3D : "),str(e)," "+_("pour : "),self.nuagesDenses[0])
             else:            
                 try: self.fusionnerPly(self.nuagesDenses,self.modele3DEnCours)     
-                except Exception as e: print(_("erreur malt GeomImage fusion des nuages en modele3D : "),str(e),_(" pour : "),"\n".join(self.nuagesDenses[0]))
+                except Exception as e: print(_("erreur malt GeomImage fusion des nuages en modele3D : "),str(e)," "+_("pour : "),"\n".join(self.nuagesDenses[0]))
                 
     ################################## LES DIFFENTES PROCEDURES MICMAC ###########################################################       
 
@@ -7878,7 +8018,7 @@ class Interface(ttk.Frame):
         if "Don't understand" in ligne:
             return ligne
         if "FATAL ERROR" in ligne:
-            return ligne+_(" : voir la trace complète.")   
+            return ligne+" "+_(": voir la trace complète.")   
         if "KBOX" in ligne:
             return ligne
         
@@ -7896,7 +8036,7 @@ class Interface(ttk.Frame):
                     self.C3DCPerso.get(),                    
                     "Masq3D="+self.masque3DSansChemin,
                     "Out="+self.modele3DFinal,
-                    "PlyCoul=1",
+                    "PlyCoul=1",                  
                     ]
         else:
             C3DC = [self.mm3d,
@@ -8023,7 +8163,7 @@ class Interface(ttk.Frame):
     # ------------------ Meslab 2 --------------------------
     
     def ouvreModele3D(self):
-
+        self.chercheModele3D() 
         aOuvrir = os.path.join(self.repTravail,self.modele3DFinal)
         if not os.path.exists(aOuvrir):
            texte=_("Pas de fichier %s généré.") % (self.modele3DFinal)+ "\n\n" + _("Echec du traitement MICMAC") 
@@ -8062,7 +8202,7 @@ class Interface(ttk.Frame):
         self.etatDuChantier = 35            # 35 = Chantier arrété aprés tapioca, points homoloques conservés      
         self.enregistreChantier()
         self.sauveParam()
-        self.ajoutLigne("\n ****** " + _(" Chantier réinitialisé aprés points homologues sur demande utilisateur. Prochain départ : Orientation (Tapas)")+"\n")
+        self.ajoutLigne("\n ****** " + " "+_("Chantier réinitialisé aprés points homologues sur demande utilisateur. Prochain départ : Orientation (Tapas)")+"\n")
         self.ecritureTraceMicMac()
 
     ################################## définir un référentiel à partir d'une mise à l'échelle, de points GCP ou GPS embarqués sur drone
@@ -8328,7 +8468,7 @@ class Interface(ttk.Frame):
             self.divPerso.set(self.dicoPerso["divPerso"])
             self.mergePlyPerso.set(self.dicoPerso["mergePlyPerso"])
         except Exception as e:
-            self.ajoutLigne(_("Erreur lors se la restauration des options personnalisées : ")+str(e))
+            self.ajoutLigne(_("Erreur lors de la restauration des options personnalisées : ")+str(e))
 
     def initPerso(self):    # bouton : Effacer tout
         self.tapiocaMulScalePerso.set("")
@@ -8548,7 +8688,6 @@ class Interface(ttk.Frame):
         if not  self.ecritureOriTxtInFile():     # s'il n'y a pas d'infos GPS dans les exifs : retour False  =pas de gps"
             self.repereChoisi = self.repereAbsent
             self.messageRepereLocal = self.repereAbsent
-            print("pas d'infos GPS dans les photos")
             return False
         
         # si repére absent (valeur par défaut) ou supprimé que l'on veut réactiver, on choisit le repére local :
@@ -8589,8 +8728,8 @@ class Interface(ttk.Frame):
         self.messageRepereLocal =   ( "----------------------\n"+ 
                      _("Le point origine du repere local est la position du drone lors de la photo : ")+photo+".\n\n"+
                      _("Dans le référentiel WGS84 (EPSG 4326) les coordonnées de ce point sont :")+"\n"+
-                     _("latitude : ")+self.lesTagsExif[("GPSLatitude",photo)]+_(" soit en degrés décimaux : ")+str(latitude)+"\n"+
-                     _("longitude : ")+self.lesTagsExif[("GPSLongitude",photo)]+_(" soit en degrés décimaux : ")+str(longitude)+"\n")
+                     _("latitude : ")+self.lesTagsExif[("GPSLatitude",photo)]+" "+_("soit en degrés décimaux : ")+str(latitude)+"\n"+
+                     _("longitude : ")+self.lesTagsExif[("GPSLongitude",photo)]+" "+_("soit en degrés décimaux : ")+str(longitude)+"\n")
         if lambert93OK(latitude,longitude):
             self.messageRepereLocal +=  ( "----------------------\n"+      
                      _("Dans le reférentiel géographique LAMBERT93 (EPSG 2154) les coordonnées de ce point sont :")+"\n"+
@@ -8903,7 +9042,7 @@ class Interface(ttk.Frame):
             self.encadre(message)
         if nb == 1:
             if self.tailleCapteurAppareil()==1:
-                message =(   _("\nLe fichier DicoCamera.xml contient déjà la taille du capteur pour l'appareil :") + "\n\n"+
+                message =(   "\n"+_("Le fichier DicoCamera.xml contient déjà la taille du capteur pour l'appareil :") + "\n\n"+
                              self.nomCamera+"\n\n"+ _("taille  = ")+self.tailleCapteur+"\n\n"+_("Pas de modification possible."))
                 self.encadre(message)
             else:
@@ -8946,7 +9085,7 @@ class Interface(ttk.Frame):
         message = str()
         for nomCamera in self.lesAppareilsPourDicocamera:
             if self.tailleCapteurAppareil(nomCamera)==1 and self.tailleCapteur!=" mm":
-                message +=(_("\nLe fichier DicoCamera.xml contient déjà la taille du capteur pour l'appareil :") + "\n\n"+
+                message +=("\n"+_("Le fichier DicoCamera.xml contient déjà la taille du capteur pour l'appareil :") + "\n\n"+
                              nomCamera+"\n\n"+ _("taille  = ")+self.tailleCapteur+"\n\n"+_("Pas de modification possible."))
             else:
                 texte = self.dicoCameraXMLTaille.replace(_("NomCourt"),nomCamera)          
@@ -9030,7 +9169,7 @@ class Interface(ttk.Frame):
         self.ligneCmd += ligne
         return ligne
 
-    @decorateTry
+    @decorateTry                # si un fichier n'est pas "lisible"
     def lignesPython(self):
         self.ecritureTraceMicMac()        
         self.cadreVide()        # ménage écran, ouverture trace
@@ -9068,18 +9207,18 @@ class Interface(ttk.Frame):
                     e_eval=str(e)
                     print("erreur eval : ",str(e_eval))              
                 if resul1:
-                    r=_("\nL'exécution de la commande python retourne la valeur : ")+"\n"                     
+                    r="\n"+_("L'exécution de la commande python retourne la valeur : ")+"\n"                     
                     r+="\n".join(wrap(str(resul1),100))   # on coupe tout les 100 caractères                
                 else:
                     print("e exec = ",e_exec)
-                    r=_("\nL'éxécution de la commande python ne retourne pas de valeur")+"\n"+e_exec
+                    r="\n"+_("L'éxécution de la commande python ne retourne pas de valeur")+"\n"+e_exec
                     
                 self.encadrePlus("\n"+r)
                 if resul2:
-                    r=_("\nL'évaluation de la commande python retourne la valeur : ")+"\n"                     
+                    r="\n"+_("L'évaluation de la commande python retourne la valeur : ")+"\n"                     
                     r+="\n".join(wrap(str(resul2),100))   #on coupe tout les 100 caractères                
                 else:                   
-                    r=_("\nL'évaluation de la commande python ne retourne pas de valeur")+"\n"+e_eval
+                    r="\n"+_("L'évaluation de la commande python ne retourne pas de valeur")+"\n"+e_eval
                 self.encadrePlus("\n"+r)
                 self.ajoutLigne(r)
                     
@@ -9106,7 +9245,7 @@ class Interface(ttk.Frame):
       
         bilan = self.choisirUnChantier(_("Choisir le chantier pour ajouter les points GCP."),filtre="GCP")                # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
-            self.afficheEtat(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
+            self.encadre(_("Aucun chantier choisi.") + "\n" + bilan + "\n")
             return   
         fichierParamChantierAutre  =   os.path.join(self.selectionRepertoireAvecChemin,self.paramChantierSav)
         if not os.path.exists(fichierParamChantierAutre):
@@ -9168,10 +9307,10 @@ class Interface(ttk.Frame):
         self.optionsReperes()       # mise à jour de la liste des widgets pour saisie :
         self.finCalibrationGPSOK()  # création des fichiers xml dico-appuis et mesures-appuis
         self.enregistreChantier()   # enregistre le chantier :
-        rapport = str(nbAjout)+_(" points GCP ajoutés : ")+"\n"+rapport+"\n\n"+str(nbAjoutPlace)+_(" points placés sur les photos")
+        rapport = str(nbAjout)+" "+_("points GCP ajoutés : ")+"\n"+rapport+"\n\n"+str(nbAjoutPlace)+" "+_("points placés sur les photos")
 
         self.encadre (rapport)   # Affichage de l'état du chantier avec les nouveaux points GCP            
-        self.ajoutLigne(heure()+_(" : Ajout des %s points GCP du chantier %s.") % (nbAjout,fichierParamChantierAutre) +"\n\n")
+        self.ajoutLigne(heure()+" "+_(": Ajout des %s points GCP du chantier %s.") % (nbAjout,fichierParamChantierAutre) +"\n\n")
         self.ajoutLigne(rapport)
         self.ecritureTraceMicMac()
 
@@ -9225,10 +9364,10 @@ class Interface(ttk.Frame):
         self.enregistreChantier()   # enregistre le chantier :        
         self.ecritureTraceMicMac()           
         if nbAjout>15:
-            rapport = str(nbAjout)+_(" points GCP ajoutés : c'est beaucoup, sans doute trop.")
-        rapport = str(nbAjout)+_(" points GCP ajoutés.")+"\n\n"+rapport
+            rapport = str(nbAjout)+" "+_("points GCP ajoutés : c'est beaucoup, sans doute trop.")
+        rapport = str(nbAjout)+" "+_("points GCP ajoutés.")+"\n\n"+rapport
         self.encadre (rapport)
-        self.ajoutLigne(heure()+_(" : Ajout des %s points GCP du fichier %s.") % (nbAjout,fichierPointsGPS) +"\n\n"+rapport)
+        self.ajoutLigne(heure()+" "+_(": Ajout des %s points GCP du fichier %s.") % (nbAjout,fichierPointsGPS) +"\n\n"+rapport)
 
     def copierPointsHomologues(self):
         self.menageEcran()
@@ -9287,7 +9426,8 @@ class Interface(ttk.Frame):
         self.ecritureTraceMicMac()
         self.encadre(_("Points homologues copiés.\n Paramètres de Tapioca copiés."))            
         return str()
-                                                                     
+
+# l'orientation obtenue après Tapas est Ori-Arbitrary, durant tapas il peut y avoir Ori-Calib                                                                       
     def copierOrientation(self,repertoireInconnu=True):
         self.menageEcran()
         message = str()
@@ -9302,16 +9442,19 @@ class Interface(ttk.Frame):
             if bilan!=None:
                 message = _("Aucun chantier choisi.") + "\n" + bilan + "\n"
                 self.afficheEtat(message)
-            return message
+                return message
         orientationACopier  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Arbitrary")
         orientationCible = os.path.join(self.repTravail,"Ori-Arbitrary")
         bilan = copieRepertoire(orientationACopier,orientationCible)
         if bilan :
             self.encadre(bilan)
             return bilan
-        if self.etatDuChantier in[1,2,3,35]:
+        if not os.path.exists(orientationCible):
+            print(_("pas d'orientation copiée depuis %s") % (orientationACopier))
+            return (_("pas d'orientation copiée depuis %s") % (orientationACopier))
+        if self.etatDuChantier in [1,2,3,35]: # si étatDuChantier avant la fin de Tapas on indique que Tapas est fini
             self.etatDuChantier = 4
-        self.ajoutLigne ("\n"+_("Copie de l'orientation depuis : %s") % (self.selectionRepertoireAvecChemin)+"\n")                    
+        self.ajoutLigne ("\n"+_("Copie de l'orientation depuis : %s") % (self.selectionRepertoireAvecChemin)+"\n")
         self.ecritureTraceMicMac()
         message = _("Orientation copiée")
         self.encadre(message)
@@ -9329,7 +9472,7 @@ class Interface(ttk.Frame):
                                            filtre="Tarama")
             if bilan!=None:
                 message = _("Aucun chantier choisi.") + "\n" + bilan + "\n"
-                self.afficheEtat(message)
+                self.encadre(message)
             return message
         taACopier  =   os.path.join(self.selectionRepertoireAvecChemin,"TA")
         taCible = os.path.join(self.repTravail,"TA")
@@ -9346,16 +9489,20 @@ class Interface(ttk.Frame):
     def copierHomolOriTarama(self):
         self.encadre(_("Patience : copie des points homologues"))
         bilan  = self.copierPointsHomologues()
+        if bilan != str():
+            self.encadre(bilan)
+            return
         self.encadre(_("copie des points homologues effectuée : %s") % bilan +"\n"+_("Patience : copie de l'orientation en cours"))
         bilan += self.copierOrientation(repertoireInconnu=False)
         self.encadre(_("copie des points homologues effectuée,")+
                      "\n"+_("copie de l'orientation en cours")+"\n"+
                      _("bilan %s") % bilan)                    
         bilan += self.copierMosaiqueTarama(repertoireInconnu=False)
+        bilan += self.chargerCalibrationIntrinseque(repertoireInconnu=False)
         if bilan:
             self.encadre(_("Copie non totalement effectuée : ")+bilan)
         else:
-            self.encadre(_("Copie des points homologues, de l'orientation et de la mosaïque Tarama effectuées depuis :")+"\n"+
+            self.encadre(_("Copie des points homologues, de l'orientation, de la calibration, et de la mosaïque Tarama effectuées depuis :")+"\n"+
                          self.selectionRepertoireAvecChemin)
             
 #######################################
@@ -9371,13 +9518,13 @@ class Interface(ttk.Frame):
             self.encadre(message)
             
     def longueurPrefixe(self):
-        new = MyDialog(fenetre,_("Longueur du préfixe actuelle %s")%(self.nbCaracteresDuPrefixe),
+        new = MyDialog(fenetre,_("Longueur du préfixe actuelle %s") % (self.nbCaracteresDuPrefixe),
                        _("le préfixe est utilisé pour discriminer les appareils photos")+"\n").saisie
         if new.isdigit():
             self.nbCaracteresDuPrefixe = new
-            self.encadre(_("Nouvelle longueur du préfixe : %s") %(self.nbCaracteresDuPrefixe) )             
+            self.encadre(_("Nouvelle longueur du préfixe : %s") % (self.nbCaracteresDuPrefixe) )             
         else:
-            self.encadre(_("Valeur inchangée : %s") %(self.nbCaracteresDuPrefixe) )              
+            self.encadre(_("Valeur inchangée : %s") % (self.nbCaracteresDuPrefixe) )              
     
     def plusieursAppareils(self):
         # y-a-il dans l'exif un numéro de série ?
@@ -9456,7 +9603,7 @@ class Interface(ttk.Frame):
     def listeAppareils(self):
         self.encadre(_("Recherche des noms d'appareil photos. Patience !."))    
         nb = self.nombreDeExifTagDifferents("Model")
-        if nb>1:    message = _("Les photos proviennent de ")+str(nb)+_(" appareils photos différents : ")+"\n\n"+"\n".join(self.lesTags)
+        if nb>1:    message = _("Les photos proviennent de ")+str(nb)+" "+_("appareils photos différents : ")+"\n\n"+"\n".join(self.lesTags)
         elif nb==1: message = _("Les photos proviennent d'un seul appareil : ")+"\n\n"+"\n".join(self.lesTags)
         else:       message = _("L'exif des photos ne contient pas le nom de l'appareil photo.")
         self.encadre(message)
@@ -9604,7 +9751,8 @@ class Interface(ttk.Frame):
                          self.nomEpsg,                      # EPSG choisi pour convertir les données GPS dans l'exif des photos
                          self.modele3DFinal,                # lorsque plusieurs nuages denses sont générés les nom s'incrémentent de _VNN : nom du dernier créé
                          self.masque3DSansChemin,           # nom du fichier XML du masque 3D, fabriqué par Saisie MasqQT (sur AperiCloud ou sur Modele3D)
-                         self.masque3DBisSansChemin,        # nom du second fichier XML pour le masque 3D                         
+                         self.masque3DBisSansChemin,        # nom du second fichier XML pour le masque 3D
+                         self.tailleDuChantierEnMO,         # taille sous le répertoire racine du chantier, peut comprendre d'autres chantiers, etc
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -9633,7 +9781,7 @@ class Interface(ttk.Frame):
                          repertoire[5],
                          versionInternet,               # dernière version lue sur Internet
                                                         # permet de repérer les nouvelles versions et de réactiver le message
-                         self.messageVersion,           # bool : si vrai on prévient l'utilisateur qu'il y a une nouvelle version (si pas la même, sinon pas
+                         self.avertirNouvelleVersion,   # bool : si vrai on prévient l'utilisateur qu'il y a une nouvelle version (si pas la même, sinon pas
                          self.mercurialMicMac,          # version de micmac 
                          ),     
                         sauvegarde2)
@@ -9684,7 +9832,7 @@ class Interface(ttk.Frame):
             #r2[9] est la langue
             self.ffmpeg                     =   r3[5]
             self.versionInternetAncienne    =   r2[11]  # ne sert plus
-            self.messageVersion             =   r2[12]
+            self.avertirNouvelleVersion     =   r2[12]
             self.mercurialMicMac            =   r2[13]
         except Exception as e: print(_("Avertissement : restauration param généraux : "),str(e))
 
@@ -9789,7 +9937,7 @@ class Interface(ttk.Frame):
             self.modele3DFinal              = r[60]
             self.masque3DSansChemin         = r[61] # nom du fichier XML du masque 3D, fabriqué par Saisie MasqQT (sur AperiCloud ou sur Modele3D)
             self.masque3DBisSansChemin      = r[62] # nom du second fichier XML pour le masque 3D                         
-            
+            self.tailleDuChantierEnMO       = r[63] # taille sous la racine du chantier (juin 2020)
         except Exception as e: print(_("Erreur restauration param chantier : "),str(e))
         
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
@@ -10017,76 +10165,79 @@ class Interface(ttk.Frame):
 
 ######################### recherche de la dernière version d'aperodedenis sur le net
 
-    def verifieVersion(self):   # va lire la version dans la page GitHub : doit être au début du fichier readme.txt
+    def verifieVersion(self):   # Procédure éxécutée lors de la restauration des paramètres de Micmac
+                                # va lire la version dans la page GitHub : doit être au début du fichier readme.txt
                                 # Affiche un message si besoin.
                                 # lancé par un thread (pour éviter le retard éventuel de connexion à internet si pas de connexion
                                 # un seul lancement par session
         
-        if compteur>1 or self.messageVersion==False:    # inutile si relance de l'interface ou si l'utilisateur ne veut pas être averti
+        if compteur>1 or self.avertirNouvelleVersion==False:    # inutile si relance de l'interface ou si l'utilisateur ne veut pas être averti
             return
+        if self.versionOkInGitHub():
+            return
+        self.avertissementNouvelleVersion()
+
+
+    def verifVersion(self):     # procédure lancée sur demande utilisateur (menu outils)
+        self.encadre(_("Recherche sur internet en cours, patience..."))        
+        
+        # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
+        
+        if not self.versionOkInGitHub():             # version utilisateur trouvée dans version GitHub
+            self.avertissementNouvelleVersion()
+            self.encadre(_("Il existe une version plus récente sur GitHub"))            
+        else:
+            self.avertissementVersionAJour()
+            self.encadre(_("Version actuelle à jour"))            
+
+    def avertissementNouvelleVersion(self): # n'apparait qu'une fois par session (role de avertirNouvelleVersion)
+
+        retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
+                                   question=_("Nouvelle version disponible sur Internet : ")+"\n"+
+                                            _("Téléchargement à l'adresse : ")+"\n\n"+
+                                            "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
+                                   b1=_("OK"),
+                                   b2=_("Ouvrir la page web"),
+                                   b3=_("Lire le readme.txt"
+                                   ))            
+        if retour == 1:
+            ouvreInterfaceCeremaGItHub()
+        if retour == 2:
+            ouvreReadMeGitHub()
+
+    def avertissementVersionAJour(self): # n'apparait qu'une fois par session (role de avertirNouvelleVersion)
+        # version OK, on propose à l'utilisateur d'aller voir :
+        retour = self.troisBoutons(titre=_("Version de l'interface AperoDeDenis à jour"),
+                                   question=_("Version à jour : ")+version,                                    
+                                   b1=_("OK"),
+                                   b2=_("Ouvrir la page web"),
+                                   b3=_("Lire le readme.txt"),                                       
+                                   )
+        if retour == 1:
+            ouvreInterfaceCeremaGItHub()
+        if retour == 2:
+            ouvreReadMeGitHub()
+         
+    def versionOkInGitHub(self): # retour = true or False
         try:
-            sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
+            sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/blob/master/InterfaceCEREMA/readme.txt")
             htmlLu = str(sock.read(100000))
             sock.close
         except:
             return
-        
-        # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ? Le rea   dme.txt comporte " V N.nn " pour la version en cours
-        if version not in htmlLu:             # version utilisateur sous la forme : " V 5.43 " non trouvée dans version GitHub (espace V majuscule espace numéro espace)
-            self.avertissementNouvelleVersion()
-
-    def avertissementNouvelleVersion(self): # n'apparait qu'une fois par session (role de avertirNouvelleVersion)
-        global avertirNouvelleVersion        
-        if avertirNouvelleVersion:
-            avertirNouvelleVersion = False            
-            retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
-                                       question=_("Nouvelle version disponible sur Internet : ")+"\n"+
-                                                _("Téléchargement à l'adresse : ")+"\n\n"+
-                                                "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
-                                       b1=_("Vu"),
-                                       b2=_("Ouvrir la page web"),)        
-            if retour == 1: 
-                threading.Thread(target=ouvrirPageWEBAperoDeDenis).start() # ouverture de la page WEB dans un thread
-
-    def verifVersion(self):
-        self.encadre(_("Recherche sur internet en cours, patience..."))        
-        try:
-            sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA/readme.txt")
-            htmlLu = str(sock.read(100000))
-            sock.close
-        except Exception as e:
-            self.encadre(_("Erreur lors de la tentative de connexion à internet : ")+"\n"+str(e))
+        # Y-a-t-il une nouvelle version sur internet ?  Le readme.txt comporte " V N.nn " pour la version en cours
+        positionVersion = htmlLu.find(" V ")
+        premiereVersion = htmlLu[positionVersion:positionVersion+10]
+        if "." not in premiereVersion: # pour éviter les éventuelles confusions avec un autre " V "
             return
-        
-        # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
-        
-        if version not in htmlLu:             # version utilisateur non trouvée dans version GitHub
-            retour = self.troisBoutons(titre=_("Nouvelle version de l'interface AperoDeDenis"),
-                                       question=_("Nouvelle version disponible sur Internet : ")+"\n"+
-                                                _("Téléchargement à l'adresse : ")+"\n\n"+
-                                                "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA",                                       
-                                       b1=_("OK"),
-                                       b2=_("Ouvrir la page web"),
-                                       b3=_("Lire le readme.txt"
-                                       ))            
-            if retour == 1:
-                threading.Thread(target=ouvrirPageWEBAperoDeDenis).start()  # ouverture de la page WEB dans un thread
-            if retour == 2:
-                threading.Thread(target=lireReadMe).start()  # ouverture de la page WEB dans un thread
-            self.encadre(_("Nouvelle version disponible"))
+        print("premiereVersion=",premiereVersion)
+        versionGitHub = premiereVersion.split()[1]
+        print("versionGitHub = '",versionGitHub,"' numéro version = '",numeroVersion,"'")
+        if versionGitHub.strip() == numeroVersion.strip():             # version utilisateur sous la forme : " V 5.43 " non trouvée dans version GitHub (espace V majuscule espace numéro espace)
+            return True
         else:
-            retour = self.troisBoutons(titre=_("Version de l'interface AperoDeDenis à jour"),
-                                       question=_("Version à jour : ")+version,                                    
-                                       b1=_("Abandon"),
-                                       b2=_("Ouvrir la page web"),
-                                       b3=_("Lire le readme.txt"),                                       
-                                       )
-            if retour == 1:
-                threading.Thread(target=ouvrirPageWEBAperoDeDenis).start()  # ouverture de la page WEB dans un thread
-            if retour == 2:
-                threading.Thread(target=lireReadMe).start()  # ouverture de la page WEB dans un thread                                       
-            self.encadre(_("Version actuelle à jour"))
-                                
+            return False
+        
     #################################### Ménage : Supprime les répertoires de travail : appel par item de menu 
     
     def supprimeRepertoires(self): 
@@ -10188,13 +10339,20 @@ class Interface(ttk.Frame):
             self.encadre(_("Suppression des sous-répertoires en cours...."))          
             for chantier in self.selectionPhotosAvecChemin:
                 if os.path.exists(chantier):
-                    lesSousRepertoires = [f for f in os.listdir(chantier) if os.path.isdir(os.path.join(chantier, f))]   # les sous-répertoires du chantier, pas les fichiers
+                    # conserver les résultats qui se trouvent dans des sous-répertoires : recopie sous la racine du chantier
+                    conserverFichiers = [(os.path.join(chantier,e),os.path.join(chantier,os.path.basename(e))) for e in self.resultatAConserver]
+                    for e,f in conserverFichiers:
+                        if os.path.exists(e):
+                            shutil.copy(e,f)
+                    # les sous-répertoires du chantier, pas les fichiers
+                    lesSousRepertoires = [f for f in os.listdir(chantier) if os.path.isdir(os.path.join(chantier, f))]                   
                     lesRepertoiresASupprimer = list()
                     for r in lesSousRepertoires:
                         for s in self.listeRepertoiresASupprimer:
                             if r[:len(s)-1]==s[:len(s)-1]:
                                 lesRepertoiresASupprimer.append(r)
                     for nom in lesRepertoiresASupprimer:
+                        # le                     
                         cheminASupprimer = os.path.join(chantier,nom)
                         if cheminASupprimer not in self.tousLesChantiers:   # ne pas supprimer les chantiers qui seraient sous-répertoire de ce chantier 
                             taille = sizeDirectoryMO(cheminASupprimer)
@@ -10205,6 +10363,10 @@ class Interface(ttk.Frame):
                                 ajout(supprime,nom)
                             except Exception as erreur:
                                 ajout(conserve,nom+" : "+erreur)
+                    nouvelleTailleChantier = sizeDirectoryMO(chantier)
+                    fichierParam = os.path.join(chantier,self.paramChantierSav)
+                    sauveUnParametre(fichierParam,63,nouvelleTailleChantier) 
+                    
             texte = "Ménage effectué"
             texte += "\n\n"+_("Espace disque récupéré : ")+str(espaceGagne)+" MO"
             if listeDesRepertoiresSupprimes:
@@ -10326,7 +10488,7 @@ class Interface(ttk.Frame):
         ########################
         commande = nettoyerLaCommande(commande)
         commandeTexte = " ".join(commande)                        # Format concaténé des arguments
-        self.ajoutLigne("\n\n"+heure()+_(" : lancement de ")+commandeTexte+"\n\n"+info+"\n")
+        self.ajoutLigne("\n\n"+heure()+" "+_(": lancement de ")+commandeTexte+"\n\n"+info+"\n")
         self.ecritureTraceMicMac()                            
         # lance la commande                               
         try:
@@ -10337,7 +10499,7 @@ class Interface(ttk.Frame):
                                    universal_newlines=True)
         except Exception as e:
             self.ajoutLigne("\n"+_("erreur lors de l'éxécution de la commande :") + "\n"+str(e)+"\n")
-            self.ajoutLigne("\n"+heure()+_(" : fin de ")+commandeTexte+"\n")
+            self.ajoutLigne("\n"+heure()+" "+_(": fin de ")+commandeTexte+"\n")
             return
         
         if not attendre:                                # par exemple pour lancer meshlab on n'attend pas la fin du process
@@ -10356,7 +10518,7 @@ class Interface(ttk.Frame):
             except:
                 break                                   # si la lecture ne se fait pas c'est que le processus est "mort", on arrête
         
-        self.ajoutLigne("\n"+heure()+_(" : fin de ")+commandeTexte+"\n")
+        self.ajoutLigne("\n"+heure()+" "+_(": fin de ")+commandeTexte+"\n")
         self.ecritureTraceMicMac()
         
     ########################## Opérations sur les Fichiers TRACE
@@ -10593,13 +10755,14 @@ class Interface(ttk.Frame):
         if os.path.isdir(self.repertoireDesPhotos):
             repIni = self.repertoireDesPhotos
         
-        video = tkinter.filedialog.askopenfilename(title=_("Choisir la video issue d'un appareil %(GoProMaker)s %(GoProName)s (sinon modifier les options)") % {"GoProMaker" : self.goProMaker.get(), "GoProName" : self.goProNomCamera.get()},
+        video = tkinter.filedialog.askopenfilename(title=_("Choisir la video issue d'un appareil {GoProMaker} {GoProName} (sinon modifier les options)"
+                                                           ).format(GoProMaker=self.goProMaker.get(), GoProName= self.goProNomCamera.get()),
                                                   initialdir=repIni,
                                                   filetypes=[(_("Video"),("*.mp4","*.MP4","*.MOV","*.mov")),(_("Tous"),"*")],
                                                   multiple=False)
         
         if len(video)==0:
-            self.encadre(_("Abandon, aucune sélection,\n le chantier reste inchangé.") + "\n")
+            self.encadre(_("Abandon, aucune sélection,\n le chantier res(te inchangé.") + "\n")
             return 
 
         if os.path.splitext(video)[1].upper() not in ".MP4":
@@ -10728,7 +10891,7 @@ class Interface(ttk.Frame):
         ########################################################
         
         # on supprime les intrus (les noms des fichiers intrus ont été marqué d'un N1, les autres d'un _Ok
-        self.ajoutLigne("\n".join([(_(" a supprimer : ")+x) for x in os.listdir(self.repTravail) if "Nl" in str(x)]))
+        self.ajoutLigne("\n".join([(" "+_("a supprimer : ")+x) for x in os.listdir(self.repTravail) if "Nl" in str(x)]))
                 
         nbSuppressions = [supprimeFichier(x) for x in os.listdir(self.repTravail) if "Nl" in str(x)].__len__()            
         self.photosAvecChemin = [x for x in os.listdir(self.repTravail) if self.extensionChoisie in str(x) and os.path.isfile(x)]    # listes des photos conservées
@@ -10771,7 +10934,7 @@ class Interface(ttk.Frame):
         ########################################################
         
         # on supprime les intrus (les noms des fichiers intrus ont été marqué d'un N1, les autres d'un _Ok
-        self.ajoutLigne("\n".join([(_(" a supprimer : ")+x) for x in os.listdir(self.repTravail) if "Nl" in str(x)]))
+        self.ajoutLigne("\n".join([(" "+_("a supprimer : ")+x) for x in os.listdir(self.repTravail) if "Nl" in str(x)]))
                 
         nbSuppressions = [supprimeFichier(x) for x in os.listdir(self.repTravail) if "Nl" in str(x)].__len__()            
         self.photosAvecChemin = [x for x in os.listdir(self.repTravail) if self.extensionChoisie in str(x) and os.path.isfile(x)]    # listes des photos conservées
@@ -10806,14 +10969,22 @@ class Interface(ttk.Frame):
 
 ########################################## Quel nom pour le modéle qui va être créé ? on renomme le modèle3D pour éviter de l'écraser
     @decorateTry
-    def renommeModele3D(self):
-        if os.path.exists(self.modele3DFinal): 
-            for i in range(1,100):
-                new = "modele3D_V"+str(i)+".ply"
-                if not os.path.exists(new):
-                    self.modele3DFinal = new
-                    break
-        
+    def modele3DSuivant(self): # premier modèle libre
+        for i in range(1,100):
+            new = "modele3D_V"+str(i)+".ply"
+            if not os.path.exists(new):
+                self.modele3DFinal = new
+                return
+ 
+    def chercheModele3D(self):  # suppose le répertoire courant = self.repTravail; renvoi le plus récent des modeles 3D dans self.modele3DFinal
+        for i in range(50,0,-1):
+            self.modele3DFinal = "modele3D_V"+str(i)+".ply"
+            if os.path.exists(self.modele3DFinal):
+                return
+        test = "modele3D.ply"   # pour compatibilité avec les versions antérieures
+        if os.path.exists(test):
+            self.modele3DFinal = test  
+                
 ########################################## Outils divers (raccourcis clavier, infobulle, afficher un dico de points....)
 
     def lettre(self,event):
@@ -10851,7 +11022,7 @@ class Interface(ttk.Frame):
             try:
                 if self.retailleEtAffichePhoto(self.listeChoisir[selection[0]])=="KO":  # prend l'image, la retaille et l'affiche
                     if self.messageSiPasDeFichier==1:
-                        self.infoBulle(_(" Pas de fichier pour ")+os.path.basename(self.listeChoisir[selection[0]]))  # message si pas de photo
+                        self.infoBulle(_("Pas de fichier pour ")+os.path.basename(self.listeChoisir[selection[0]]))  # message si pas de photo
             except: pass
             self.selectionPhotos.see(self.current)
             
@@ -10920,7 +11091,7 @@ class Interface(ttk.Frame):
         if nbpts==1:
             self.infoBulle(_("Un point placé sur cette photo"))
         if nbpts>1:
-            self.infoBulle(nbpts.__str__()+_(" points placés sur cette photo"))
+            self.infoBulle(nbpts.__str__()+" "+_("points placés sur cette photo"))
 
     def afficherLesInfosBullesDuDico(self):
         if self.dicoInfoBullesAAfficher==None:
@@ -11055,19 +11226,27 @@ class Interface(ttk.Frame):
         frameSelectRep = ttk.Frame(self.topRepertoire)
         invite = ttk.Label(self.topRepertoire,text=_("Choisir le chantier :"))
         invite.pack(pady=10,padx=10,ipadx=5,ipady=5)
-        scrollbarV = ttk.Scrollbar(frameSelectRep, orient=_('vertical'))          
-        scrollbarH = ttk.Scrollbar(frameSelectRep, orient=_('horizontal'))
+        scrollbarV = ttk.Scrollbar(frameSelectRep, orient='vertical')       
+        scrollbarH = ttk.Scrollbar(frameSelectRep, orient='horizontal')
         self.selectionRepertoire = tkinter.Listbox(frameSelectRep,
                                                    selectmode=mode,
                                                    xscrollcommand=scrollbarH.set,
                                                    yscrollcommand=scrollbarV.set,
-                                                   height= min(10,len(self.fichierProposes)),
-                                                   width=  min(70,min(300,(5+max(len (r) for r in self.fichierProposes))))
+                                                   height= min(15,len(self.fichierProposes)),
+                                                   width=  min(150,min(500,(70+max(len (r) for r in self.fichierProposes))))
                                                    )       
         self.selectionRepertoire.select_set(0)
         self.fichierProposes.sort(key=os.path.basename)
-        for i in self.fichierProposes:
-            texte=format2Colonnes(os.path.basename(i),afficheChemin(os.path.dirname(i)),100)
+        for i in self.fichierProposes: # recherche de la taille dans le fichier paramètre
+            chemin = os.path.dirname(i)
+            chantier = os.path.basename(i)
+            fichierParam = os.path.join(i,self.paramChantierSav)
+            taille = restaureUnParametre(fichierParam,63) #renvoi la valeur du paramètre ou None si pas trouvé
+            if  taille==None:
+                taille = "???"
+                #taille = sizeDirectoryMO(afficheChemin(os.path.dirname(i)))
+                #sauveUnParametre(fichierParam, 63, taille)
+            texte=format3Colonnes(os.path.basename(i),str(taille)+" MO ",afficheChemin(os.path.dirname(i)),100)
             self.selectionRepertoire.insert('end',texte)  
         scrollbarV.config(command=self.yviewRepertoire)
         scrollbarV.pack(side='right', fill='y')            
@@ -11081,7 +11260,7 @@ class Interface(ttk.Frame):
         c = ttk.Button(f,text=_("Annuler"),command=self.cancelRepertoire)
         c.pack(pady=5)
         if len(chantierSansParametre)>0:
-            d = ttk.Label(f,text=_("Il y a des chantiers incomplets,") + "\n" + _(" le fichier %s est absent.") % (self.paramChantierSav)+ "\n" + 
+            d = ttk.Label(f,text=_("Il y a des chantiers incomplets,") + "\n " + _("le fichier %s est absent.") % (self.paramChantierSav)+ "\n" + 
                           _("Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :") + "\n\n"+"\n".join(chantierSansParametre))
             d.pack(pady=5)
         if len(chantierSansRepertoire)>0:
@@ -11153,7 +11332,7 @@ class Interface(ttk.Frame):
         if nbGroupes>1 :
             message = _("ATTENTION : Les photos définissent plusieurs scènes disjointes") + "\n"+\
                       _("MicMac ne peut travailler que sur une seule scène : toutes les photos doivent former une seule scéne.") + "\n"+\
-                      _("Les photos se répartissent en :") + str(nbGroupes)+_(" groupes distincts (consulter la trace) : ")+"\n" +\
+                      _("Les photos se répartissent en :") + str(nbGroupes)+" "+_("groupes distincts (consulter la trace) : ")+"\n" +\
                       "\n".join([str(e)[:100] for e in self.lesGroupesDePhotos])
             self.ajoutLigne(_("Les groupes de photos séparés : ")+"\n"+"\n".join([str(e) for e in self.lesGroupesDePhotos]))
             self.ecritureTraceMicMac()
@@ -11206,7 +11385,7 @@ class Interface(ttk.Frame):
             self.ajoutLigne(e[0]+chr(9)+str(int(e[1]))+chr(9)+chr(9)+chr(9)+str(nb[e[0]])+"\n")
         if len(listeHomol)==0:
             self.ajoutLigne(_("Aucune photo n'a de point analogue avec une autre.") + "\n")            
-        self.ajoutLigne("\n"+heure()+_(" : fin de la recherche sur la qualité des photos."))
+        self.ajoutLigne("\n"+heure()+" "+_(": fin de la recherche sur la qualité des photos."))
         self.ajoutLigne("\n\n ******")
         ligneFiltre = self.ligneFiltre  # l'écriture de la trace efface self.ligneFiltre et encadre doit être en fin de paragraphe
         self.ecritureTraceMicMac()
@@ -11241,7 +11420,7 @@ class Interface(ttk.Frame):
                 dico[photo].append(f[:-4])          # nom des photos (sans prefixe/suffixe) dans un dictionnaires de listes
         if rep=="Homol_SRes":                       # Tapioca MulScale lors du premier passage il est créé un répertoire pour chaque photo dans Homol_SRes
                                                     # ce qui n'est pas le cas pour Tapioca All : pas de répertoire si pas de photo en correspondance !
-            dico = {k: v for k, v in dico.items() if v} # retire les photos isoées
+            dico = {k: v for k, v in dico.items() if v} # retire les photos isolées
         for p in self.photosSansChemin:             # recherche pour chaque photo du groupe d'appartenance
             groupe[p] = list()                      # chaque photo n'appartient qu'à un seul groupe
             if p in dico :
@@ -11395,7 +11574,8 @@ class Interface(ttk.Frame):
 
 
     def infoSurPly(self, ply):
-               
+        if not os.path.exists(ply):
+            return
         self.encadre(_("Patience : lecture du fichier :\%s") % (ply))
         info = typePly = typeDePly(ply)
         if typePly in ("nuage de points ascii","mesh ascii","mesh binary"):
@@ -11559,13 +11739,13 @@ class Interface(ttk.Frame):
              
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
-             self.encadre("\n" + _("Bonjour !") + "\n\n" + _("Commencer par indiquer où se trouve MicMac :") + "\n\n"+
-                         _(" - menu Paramétrage/Associer le répertoire bin de MicMac") + "\n\n"+
+             self.encadre("\n" + _("Bonjour !") + "\n\n" + _("Commencer par indiquer où se trouve MicMac :") + "\n\n "+
+                         _("- menu Paramétrage/Associer le répertoire bin de MicMac") + "\n\n"+
                          _("Ensuite consulter l'aide, item 'pour commencer'.") + "\n\n"+
-                         _("Si besoin :") + "\n"+
-                        _( " - Associer convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux")+"\n"+
-                        _(" - Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D") + "\n\n"+
-                         _(" - Consulter la notice d'installation et de prise en main"),
+                         _("Si besoin :") + "\n "+
+                        _( "- Associer convert et exiftool s'ils ne sont pas trouvés automatiquement sous micmac/binaire-aux")+"\n "+
+                        _("- Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D") + "\n\n "+
+                         _("- Consulter la notice d'installation et de prise en main"),
                          aligne='left')
              return True
 
@@ -11648,7 +11828,7 @@ class Interface(ttk.Frame):
             else:
                 self.afficheEtat()                    
                 
-    def sauveOptions(self):
+    def sauveOptions(self):     # les options par défaut modifiées par l'utilisateur
         retour = self.controleOptions()
         if retour!=True:
             message = _("Options par défaut non sauvegardées car les options du chantier en cours sont invalides :") + "\n"+retour
@@ -11756,7 +11936,7 @@ class Interface(ttk.Frame):
     def quitter(self):
         self.ecritureTraceMicMac()                      # enegistre la trace
         self.enregistreChantier()                       # enregistre systématiquement (modifier ?)
-        print(heure()+_(" : fin normale d'aperodedenis."))
+        print(heure()+" "+_(": fin normale d'aperodedenis."))
         self.sauveParam()
         global continuer                                # pour éviter de boucler sur un nouveau départ
         continuer = False                               # termine la boucle mainloop
@@ -11855,7 +12035,7 @@ class Interface(ttk.Frame):
                 with open(fichierPourMnt) as f:
                     ligne = f.readline()
                     if "cols" in ligne:
-                        self.encadre(_("\nLe fichier\n %s \nest déjà un mnt.\n\n") % (fichierPourMnt))
+                        self.encadre("\n"+_("Le fichier\n %s \nest déjà un mnt.\n\n") % (fichierPourMnt))
                         return False
                     typePly = "ASC"
                     
@@ -11926,11 +12106,11 @@ class Interface(ttk.Frame):
 
             message = "\n\n "+self.debutEcrireMnt
             if self.fichierIgnASC:
-                message += "\n\n"+("Ecriture du fichier :")+"\n"+self.fichierIgnASC
+                message += "\n\n"+_("Ecriture du fichier :")+"\n"+self.fichierIgnASC
 ##            if self.fichierGrassASC:
 ##                message += "\n\n"+("Ecriture du fichier :")+"\n"+self.fichierGrassASC
                 
-            message += _("\n\n %s Fin de l'écriture du MNT.") % (heure())
+            message += "\n\n"+_("%s Fin de l'écriture du MNT.") % (heure())
             if not self.fichierIgnASC+self.fichierGrassASC:
                 message += "\n\n"+_("Pas de fichier écrit")
             self.encadre(message)
@@ -12006,15 +12186,15 @@ class Interface(ttk.Frame):
             
         def initialisation():
             self.debutEcrireMnt=heure()
-            message = "\n"+self.debutEcrireMnt+_(" Lancement du calcul des MNT IGN et GRASS")           
+            message = "\n"+self.debutEcrireMnt+" "+_("Lancement du calcul des MNT IGN et GRASS")           
             # OK, Initialisation des variables utiles, affichage message départ du traitement
             self.lePas = float(lePas)                          
             self.fichierIgnASC   = os.path.join(os.path.dirname(fichierPourMnt),"maillage_"+str(lePas)+"_IGN_"+
                                    os.path.basename(fichierPourMnt)+".ASC")    # MNT IGN ASC
             self.fichierGrassASC = os.path.join(os.path.dirname(fichierPourMnt),"maillage_"+str(lePas)+"_GRASS_"+
                                    os.path.basename(fichierPourMnt)+".ASC")    # MNT GRASS ASC
-            message = "\n"+_("Patience : procédure longue, création d'un MNT à partir du fichier : ")+"\n"+fichierPourMnt+"\n taille de la maille : "+lePas+"\n"
-            message +=_(" Le MNT est en cours de création.")+"\n"
+            message = "\n"+_("Patience : procédure longue, création d'un MNT à partir du fichier : ")+"\n"+fichierPourMnt+"\n" +_("taille de la maille : ")+lePas+"\n"
+            message +=" "+_("Le MNT est en cours de création.")+"\n"
             self.encadre(message) 
 
         def mntVersTableauTexte(mnt):   # Conversion de la grille en tableau de nombres arrondis, avec valeur de remplissage ok  :       
@@ -12236,16 +12416,18 @@ class Interface(ttk.Frame):
                 self.texte201.see(self.listePositions201[self.suite201][0])            
         
     def _search_(self,index="1.0"):
-        if self.cherche:
-            countvar = tkinter.StringVar()
-            f = self.texte201.search(self.cherche, index, count=countvar)
-            self.starting_index = f         
-            self.ending_index = "{}+{}c".format(self.starting_index, countvar.get())
-            self.texte201.tag_add("search", self.starting_index, self.ending_index)
-            self.texte201.tag_configure("search", background="skyblue", foreground="red")
-            self.texte201.see(self.starting_index)
-        else:
-            return None
+        try:
+            if self.cherche:
+                countvar = tkinter.StringVar()
+                f = self.texte201.search(self.cherche, index, count=countvar)
+                self.starting_index = f         
+                self.ending_index = "{}+{}c".format(self.starting_index, countvar.get())
+                self.texte201.tag_add("search", self.starting_index, self.ending_index)
+                self.texte201.tag_configure("search", background="skyblue", foreground="red")
+                self.texte201.see(self.starting_index)
+            else:
+                return None
+        except: pass
 
 ####### recherche TOUT dans la zone texte 201
         
@@ -12326,11 +12508,19 @@ def supprimeFichier(fichier):
         return _("Erreur suppression fichier :")+str(e)
 
 def supprimeRepertoire(repertoire):
-    if not os.path.exists(repertoire): return
-    try:    shutil.rmtree(repertoire)
+    if not os.path.exists(repertoire):     
+        return
+    try:
+        shutil.rmtree(repertoire)
     except Exception as e:
-        return _("Erreur suppression répertoire :")+str(e)
-
+        erreur = _("Erreur lors de la suppression du répertoire : %s\n%s") % (repertoire,str(e))
+        print(erreur)
+        return erreur
+    if os.path.exists(repertoire):
+        erreur=_("Erreur répertoire non supprimé : %s" % (repertoire))
+        print(erreur)        
+        return erreur
+    
 def supprimeMasque(repertoire,masque):
     for e in os.listdir(repertoire):
         if masque in e:
@@ -12396,7 +12586,7 @@ def afficheChemin(texte):                               # avant d'afficher un ch
     texte = os.path.normpath(texte)
     return texte.replace(interface.separateurAutre,interface.separateurChemin)
 
-def format2Colonnes(col1,col2,largeurCol1EnPixels):
+def format2Colonnes(col1,col2,largeurCol1EnPixels): # en principe : col1 = nom du chantier, col2 = chemin du chantier
     lab=tkinter.Label(text=col1)
     long=lab.winfo_reqwidth()
     while long<largeurCol1EnPixels:
@@ -12404,6 +12594,21 @@ def format2Colonnes(col1,col2,largeurCol1EnPixels):
         lab=tkinter.Label(text=col1)
         long=lab.winfo_reqwidth() 
     return col1+" "+col2
+
+def format3Colonnes(col1,col2,col3,largeurCol1EnPixels): # en principe : col1 = nom du chantier, col2 = taille du chantier en KO, col3 = chemin du chantier
+    col2=str(col2)
+    lab=tkinter.Label(text=col1)
+    long=lab.winfo_reqwidth()
+    while long<largeurCol1EnPixels:
+        col1=col1+" "
+        lab=tkinter.Label(text=col1)
+        long=lab.winfo_reqwidth()
+    while long<2*largeurCol1EnPixels:
+        col2=" "+col2
+        lab=tkinter.Label(text=col1+col2)
+        long=lab.winfo_reqwidth()
+    retour = str(col1)+" "+str(col2)+str(col3)
+    return retour
 
 def verifMm3d(mm3D):            # Il faudrait que la version de MicMac autorise la saisie de masque en 3D, sinon ancienne version, susceptible de donner des erreurs.
     if os.path.exists(mm3D)==False: return False
@@ -12464,6 +12669,13 @@ def ouvrirPageWEBAperoDeDenis():
 
 def lireReadMe():
     webbrowser.open("https://raw.githubusercontent.com/micmacIGN/InterfaceCEREMA/master/InterfaceCEREMA/readme.txt")  
+
+
+def ouvreInterfaceCeremaGItHub():
+    threading.Thread(target=ouvrirPageWEBAperoDeDenis).start()  # ouverture de la page WEB dans un thread (join=0 pour désynchroniser si besoin)
+
+def ouvreReadMeGitHub():
+    threading.Thread(target=lireReadMe).start()  # ouverture de la page WEB dans un thread                                       
 
 def oschdir(rep):
     if rep==os.getcwd():
@@ -12543,8 +12755,10 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
     if b"ascii" in lignes[1]:                                        # pas prévu pour lire les fichiers ply "ASCII" choisir binary lors de l'écriture
         erreur = _("erreur : le fichier\n%s\nest un fichier de type ply au format ASCII.\nUtiliser CloudCompare pour l'enregister au format Binary.") %(fichierPly)
         return erreur
+
     nombre_faces = 0    # si absent ! correction version 5.111
     nombre_points = 0   # si absent ! correction version 5.111
+
     for e in lignes:                                                # décodage des lignes d'entête qui indique la structure du fichier
         i+=1
         if e==b'end_header':
@@ -12748,8 +12962,8 @@ def infoVolume():
     avertissement += _("Un paramètre de 'tolerance' permet d'ignorer les écarts trop faibles, inférieurs à cette tolérance, dans l'épaisseur du trait.")+"\n\n"
     avertissement += _("Un nuage de points 3D des écarts est produit, au format XYZ : un item du menu permet de le visualiser dans Cloud Compare.")+"\n\n"
     avertissement += _("Remarques :")+"\n"    
-    avertissement += _(" - Ces fonctions 'métiers' sont indépendantes de l'utilisation de l'outil MicMac")+"\n"    
-    avertissement += _(" - lorsque AperoDeDenis est installé sous windows  par l'installateur AperoDeDenis.msi la création des MNT n'est pas opérationnelle.")+"\n"    
+    avertissement += " "+_("- Ces fonctions 'métiers' sont indépendantes de l'utilisation de l'outil MicMac")+"\n"    
+    avertissement += " "+_("- lorsque AperoDeDenis est installé sous windows  par l'installateur AperoDeDenis.msi la création des MNT n'est pas opérationnelle.")+"\n"    
     interface.encadre(avertissement)    
 
 @decorateTry
@@ -12885,7 +13099,8 @@ def calculVolumeMnt():
 
     rapport  = _("Calcul du volume d'un MNT : rapport final.")+"\n\n"
     rapport += _("Mnt      :\n %s") % (infoMnt["fichierFond"])+"\n\n"
-    rapport += _("Emprise : %s %s") % (infoMnt["Emprise fond"])+"\n"
+    empfond=str(infoMnt['Emprise fond'])
+    rapport += _("Emprise : %s m2" % empfond)+"\n"
     rapport += _("Surface utile : %s m2") % (infoMnt["surfaceCouverteFond"]  )  +"\n\n"                                       
     rapport += _("Volume entre le MNT et la cote de base %s m : %s m2") % (coteDeBase,infoMnt["volumeFond"])  +"\n\n"
     rapport += _("Remarque : l'unité de mesure du MNT est présumée être le mètre.")  +"\n"
@@ -13421,7 +13636,7 @@ def calculVolumeEntre2Mnt():
     tolerance = interface.tolerance     # on compte les écarts supérieurs à cette valeur
     limitesHistogrammeDesEcarts = interface.limitesHistogrammeDesEcarts
 
-    interface.encadre(_("\nPatience, le calcul du volume peut sembler long....\n"))
+    interface.encadre("\n"+_("Patience, le calcul du volume peut sembler long....\n"))
 
     # recherche des infos,  calcul du volume
     infoMnt = lectureInfoFichiers( fond, dessus)  # exploite les 6 premières lignes du MNT, calcule la zone de recouvrement
@@ -13436,9 +13651,9 @@ def calculVolumeEntre2Mnt():
     ecrireTableDesEcarts(infoMnt)    # retour :
 
     rapport  = _("Calcul du volume entre 2 MNT : rapport final.")+"\n\n"
-    rapport += _("Mnt socle     : %s") % (infoMnt["fichierFond"])+"\n"
+    rapport += _("Mnt socle     : %s") % (str(infoMnt["fichierFond"]))+"\n"   
     rapport += _("Mnt supérieur : %s") % (infoMnt["fichierDessus"])+"\n\n"
-    rapport += _("Emprise commune : %s %s") % (infoMnt["Emprise recouvrement"])+"\n"
+    rapport += _("Emprise commune : %s m2") % (str(infoMnt['Emprise recouvrement']))+"\n"
     rapport += _("Surface commune : %s m2") % (infoMnt["Surface recouvrement"]  )  +"\n"                                       
     rapport += _("Le volume est calculé lorsque l'altitude est connue pour les 2 MNT.")+"\n"
     rapport += _("En tenant compte de ce principe la surface comparable est de %s m2") % (infoMnt["surfaceComparée"])+"\n"                                            
@@ -13450,13 +13665,12 @@ def calculVolumeEntre2Mnt():
     rapport += _("Le volume calculé est composé d'un volume positif (Mnt supérieur > Mnt Socle) : %s m3") % (str(infoMnt["nbEcartReelSupérieursATolerance"][5]))  +"\n"                
     rapport += _("et d'un volume négatif (Mnt supérieur < Mnt Socle) : %s m3") % (str(infoMnt["nbEcartReelInférieursATolerance"][5]))  +"\n\n"
     rapport += _("Informations complémentaires")+"\n"   
-    rapport += _(" - l'écart maximum est de %s m, au point %s.") % (infoMnt["ecartMax"][0],infoMnt["ecartMax"][1])  +"\n"    
-    rapport += _(" - l'écart minimum est de %s m, au point %s.") % (infoMnt["ecartMin"][0],infoMnt["ecartMin"][1])  +"\n"
-    rapport += _(" - globalement l'écart moyen entre les 2 MNT est de %s m.") % (infoMnt["ecartMoyen"])  +"\n"     
-    rapport += _(" - sans prendre en compte la tolérance le volume total de l'écart est de %s m3") % (infoMnt["volumeEcart"])+"\n\n"    
-    rapport += _(" - le fichier 'Trace_AperoDeDenis_volume.txt' mémorise ces résultats.")+"\n"
-    rapport += (_(" - le nuage de points XYZ des écarts est consultable par le menu Outil_Metier\Visualiser l écart entre les 2 MNT',\n fichier :\n\n %s \n\n sous le répertoire :\n %s")
-                % (os.path.basename(infoMnt["fichierEcart"]),os.path.dirname(infoMnt["fichierEcart"])))              
+    rapport += " "+_("- l'écart maximum est de %s m, au point %s.") % (infoMnt["ecartMax"][0],infoMnt["ecartMax"][1])  +"\n"    
+    rapport += " "+_("- l'écart minimum est de %s m, au point %s.") % (infoMnt["ecartMin"][0],infoMnt["ecartMin"][1])  +"\n"
+    rapport += " "+_("- globalement l'écart moyen entre les 2 MNT est de %s m.") % (infoMnt["ecartMoyen"])  +"\n"     
+    rapport += " "+_("- sans prendre en compte la tolérance le volume total de l'écart est de %s m3") % (infoMnt["volumeEcart"])+"\n\n"    
+    rapport += " "+_("- le fichier 'Trace_AperoDeDenis_volume.txt' mémorise ces résultats.")+"\n"
+    rapport += (" "+_("- le nuage de points XYZ des écarts est consultable par le menu 'Outil_Metier\Visualiser l'écart'"))              
     interface.ecartXyz = infoMnt["fichierEcart"]
     message = "\n********************** CALCUL VOLUME \n\n"+heure()+"\n"+rapport+"\n\n********************** FIN DU CALCUL VOLUME\n"
     traceMetier(message,fond,'volume')
@@ -13527,6 +13741,85 @@ def droite(A,B): # renvoi a,b,c les coef de la droite ax+by+c=0 : choix de -1 po
 def distanceALaDroite(M,a,b,c): # retourne la valeur axm+bym+c : position du point par rapport à la droite
     return a*M[0]+b*M[1]+c
 
+################### Lecture ponctuele, Modification ponctuelle d'une sauvegarde pickle
+
+def restaureUnParametre(fichierPickle, numeroParam):         # permet de restaurer un seul paramètre d'un chantier si besoin ou d'un pickle
+    try:
+        with open(fichierPickle,mode='rb') as f:
+            r = pickle.load(f)
+        return r[numeroParam]
+    except Exception as e:
+        return None
+
+def sauveUnParametre(fichierPickle, numeroParam, valeur):  # permet de sauver un seul paramètre d'un pickle, si possible
+    try:
+        with open(fichierPickle,mode='rb') as f:
+            r = pickle.load(f)      #r est un tuple                
+    except Exception as e:
+        print("erreur lire sauveUnParametre : ",str(e))
+        return
+    if numeroParam<len(r):
+        l = list(r)            
+        l[numeroParam]=valeur
+        r = tuple(l)
+    elif len(r)==numeroParam:
+        l = list(r)             
+        l.append(valeur)
+        r = tuple(l)            
+    else:
+        print("pas assez de paramètres pour sauvegarder la valeur dans le numéro %s, longueur tuple = %s chantier %s" % (numeroParam,len(r),fichierPickle))
+        return
+    try:
+        with open(fichierPickle,mode='wb') as f:          
+            pickle.dump(r,f)               
+    except Exception as e:
+        print("erreur dump sauveUnParametre : ",str(e))
+        return
+
+# vérificatio ndu paramètre de centrage de saisieMasqQT
+
+@decorateTrySilencieux
+def verifParametresSaisieMasqQT():
+    valeurActuelle = queryRegistre(interface.cleMasqQT,interface.sousCleMasqQT)
+    if len(valeurActuelle):
+        print("valeur actuelle=",valeurActuelle)
+        if "0x2" in valeurActuelle[0]: # centre = origine
+            ecrireRegistre(interface.majCleMasqQT)
+    
+
+# Ecrire une clé de registre
+
+@decorateTrySilencieux
+def ecrireRegistre(script):
+    if os.name=="nt":
+        with open("reg.reg",mode="w") as r:
+            r.write(script)
+        time.sleep(0.01)
+        interface.lanceCommande(["regini.exe","reg.reg"],
+                          info=_("Modification clé registre %s" % (script)),
+                          attendre=True)        
+        supprimeFichier("reg.reg")
+
+# liste une clé de registre : renvoi une liste
+
+@decorateTrySilencieux
+def queryRegistre(cle,sousCle):
+    if os.name=="nt":    
+        retour=list()
+        def filtreQuery(ligne):
+            if sousCle in ligne:
+                retour.append(ligne)
+        query = ["reg",
+                    "query",
+                    cle,
+                    "/v",
+                    sousCle
+                    ]
+        interface.lanceCommande(query,
+                                info=_("Modification clé registre SaisieMasqQT"),
+                                filtre=filtreQuery,
+                                attendre=True)
+        return retour
     
 '''################################## Crée un fichier contenant l'icone de l'application et en renvoie le nom conserver pour exemple de ficheir temporaire
 
@@ -13723,7 +14016,7 @@ def monStyle():
 
 # Message indiquant le lancement de l'outil dans le shell
 
-print(heure()+_(" lancement d'aperodedenis")+version+".")
+print(heure()+" "+_("lancement d'aperodedenis")+version+".")
 
 ################################### boucle sur l'interface tant que continuer est vrai :
 

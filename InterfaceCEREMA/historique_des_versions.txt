@@ -1,5 +1,14 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 5.52 du 8 juillet 2020 :
+			
+				- Massivement Multilingue : Anglais, Allemand, Italien, Espagnol, Chinois, Arabe
+				- affichage de la taille du chantier dans la boite de dialogue "ouvrir un chantier"
+				- les nuages de points denses successifs sont numérotés dans l'ordre V1, V2, V3...
+				- diverses améliorations, modifications : voir le script
+				
+				- l'installateur msi pour Windows est trop gros pour GitHub, le demander à interface-micmac@cerema.fr
+				
 			Version déconfinée 5.51 du 23 juin 2020 :
 
 				- Essentiellemnt : ajout d'un item "Outils métier" dans le menu principal		
@@ -19,8 +28,6 @@
 				
 				- Modifications diverses, corrections d'anomalies : voir en tête du script
 				
-				- l'installateur msi pour Windows est trop gros pour GitHub, le demander à interface-micmac@cerema.fr
-
 			Version confinée 5.50 du 4 mai 2020 :
 
 				- Ecriture sous forme de MNT aux formats IGN et GRASS des nuages de points .ply			

@@ -1,6 +1,10 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+Version V 5.52 du 8 juillet 2020
+- Version massivement multilingue : Français, Anglais, Allemand, Italien, Espagnol, Chinois, Arabe
+- Ajout de la taille du fichier dans le menu "ouvrir chantier"
+
 Version confinée V 5.512 du 25 juin 2020 :
 - Ajout d'un Menu outils Métier : pour comparer 2 nuages de points
 - diverses améliorations et corrections : voir l'historique et le script
