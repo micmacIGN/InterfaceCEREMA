@@ -1,6 +1,10 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+Version V 5.53 du 14 août 2020
+- Suppression des 'bandes blanches' dans les nuages 3D des chantiers aux coordonnées GPS  
+- multiples améliorations de détails, voir l'historique des versions
+
 Version V 5.52 du 8 juillet 2020
 - Version massivement multilingue : Français, Anglais, Allemand, Italien, Espagnol, Chinois, Arabe
 - Ajout de la taille du fichier dans le menu "ouvrir chantier"

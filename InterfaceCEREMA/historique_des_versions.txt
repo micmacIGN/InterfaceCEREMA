@@ -1,5 +1,22 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+              Version 5.53 : 14 août 2020
+			  
+              Nouveautés : 
+              - Prise en compte de l'offset pour les chantiers GPS ou Drones : les bandes blanches des nuages denses sont supprimées. 
+                Cet effet bandes blanches, est dû aux grandes valeurs des coordonnées. L'offset utilisé est affiché dans l'état du chantier. 
+              - Possibilité de définir plusieurs paramètres personnalisés pour chaque module MicMac. 
+              - Ajout de l'option 'Circ=0' pour Tapioca Line, par défaut les photos du chantier ne 'boucle pas'. 
+              - Ajout de la fusion d'orthomosaïques par Gdal_merge, permet de générer des orthomosaïques personnalisées  
+              - Ajout d'un item dans le menu Aide : si plusieurs focales, plusieurs dimensions, plusieurs appareils
+			  - Refonte des menus Editions et Aide : répartition des items dans plusieurs sous-menus
+              - Ajouts et corrections de messages, dont : 
+                Ajout du chemin de l'orthomosaïque dans la boîte de dialogue de consultation 
+                Ajout dans l'état du chantier de 2 avertissements : si plusieurs focales ou plusieurs dimensions de photos 
+                Ajout de la taille du chantier dans la boîte de dialogue 'du ménage !'
+
+			  - Modifications diverses, corrections d'anomalies : voir en tête du script
+				
 			Version 5.52 du 8 juillet 2020 :
 			
 				- Massivement Multilingue : Anglais, Allemand, Italien, Espagnol, Chinois, Arabe
@@ -120,7 +137,7 @@ Anciennes versions, dans l'ordre chronologique :
 	           Version 3.00 : novembre 2016
 	             - version bilingue : ajout de la langue anglaise, par Alexandre Courallet
 		            La langue est demandée au premier lancement.
-		            Un item du menu "paramètrage" ("Settings") permet de changer la langue utilisée.
+		            Un item du menu "paramètrage" ("Settings permet de changer la langue utilisée.
 
 	           Version 3.10 : novembre 2016
               - Ajout d'un item permettant de sélectionner les meilleures photos suivant les points	homologues 
@@ -232,6 +249,63 @@ Anciennes versions, dans l'ordre chronologique :
 				
 -----------------------------------------------------------------------
 History of the main versions of the CEREMA AperoDeDenis interface
+
+              Version 5.53: August 14, 2020
+			  
+              What's New : 
+              - Taking into account the offset for GPS or UAV sites: white bands in dense clouds are removed. 
+                This white stripes effect is due to the large values of the coordinates. The offset used is displayed in the status of the construction site. 
+              - Possibility to define several customized parameters for each MicMac module. 
+              - Add option 'Circ=0' for Tapioca Line, by default the photos of the building site do not 'loop'. 
+              - Adding the fusion of orthomosaics by Gdal_merge, allows to generate custom orthomosaics.  
+              - Adding an item in the Help menu: if several focal lengths, several dimensions, several cameras
+			  - Redesign of the Edit and Help menus: distribution of items in several sub-menus
+              - Additions and corrections to messages, including : 
+                Adding the orthomosaic path in the consultation dialog box 
+                Addition of 2 warnings in the state of the building site: if several focal lengths or several dimensions of photos 
+                Adding the size of the building site in the 'household' dialog box!
+
+			  - Miscellaneous modifications, bug fixes: see at the top of the script
+				
+			Version 5.52 of July 8, 2020 :
+			
+				- Massively Multilingual: English, German, Italian, Spanish, Chinese, Arabic
+				- display of the size of the building site in the "open a building site" dialog box
+				- successive dense point clouds are numbered in order V1, V2, V3...
+				- various improvements, modifications : see the script
+				
+				- the msi installer for Windows is too big for GitHub, ask for it at interface-micmac@cerema.fr.
+				
+			Deconfined version 5.51 of June 23, 2020 :
+
+				- Essentially : add a "Business Tools" item in the main menu		
+				  This new menu allows the calculation of volume between 2 clouds, thus the comparison of clouds.
+				  The comparison is performed on the DTMs built from the clouds.
+				  The point cloud of the deviation is built and visualized.
+				  The main new items :
+					- Writing a DTM from an XYZ file
+					- Calculating the volume of a DTM
+					- Calculate the volume between 2 DTM
+					- View the difference between the 2 DTMs
+					- Writing an XYZ file from a PLY
+				- Added 2 items in the Edit menu to get information about a PLY file.
+					
+				- the item "Write a DTM from a PLY", present in version 5.50 under the expert menu, 
+				  is moved under the menu 'Business Tools', the GRASS format is no longer written
+				
+				- Miscellaneous modifications, bug fixes: see at the top of the script
+				
+			Contained Version 5.50 of May 4, 2020 :
+
+				- Writing as DTM in IGN and GRASS formats of .ply point clouds			
+				- Choice of an EPSG repository for UAV GPS data		
+				- Choice between cloud and mesh for the 3D models obtained by Malt.
+				- Calculation of the non dense cloud becomes optional
+				- Orientation can be copied from another site
+
+				Miscellaneous modifications, bug fixes: see at the top of the script
+
+Older versions in chronological order :
    
              Version 1.5: first version diffused on the site of the IGN the 23/11/2015.
 
