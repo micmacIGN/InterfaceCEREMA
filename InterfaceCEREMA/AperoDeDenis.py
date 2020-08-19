@@ -395,6 +395,10 @@
 # l'item "renommer le chantier" ne fait plus que renommer le chantier sur place (au moins dans sa présentation)
 # L'item "sélection des meilleures images vidéo ne marche pas toujours (suivant version micmac) : un message l'indique. 
 
+# Version 5.54, début le 12 août 2020.
+# - remplacement de 'maîtresses' par 'maître' pour cause de traduction ambiguë"
+# - Fraser devient l'option par défaut de Tapas"
+
 # a faire : 
 # Propager effectivement l'option ExpTxt vers tapas, campari, apericloud...
 
@@ -669,7 +673,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.53"
+numeroVersion = "5.54"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -1469,7 +1473,7 @@ class Interface(ttk.Frame):
         menuEditionVisu = tkinter.Menu(menuEdition,tearoff = 0)
         menuEditionVisu.add_command(label=_("Visualiser toutes les photos sélectionnées"), command=self.afficherToutesLesPhotos)
         menuEditionVisu.add_command(label=_("Visualiser les photos pour la calibration intrinsèque"), command=self.afficherCalibIntrinseque)               
-        menuEditionVisu.add_command(label=_("Visualiser les maîtresses et les masques"), command=self.afficherLesMaitresses)
+        menuEditionVisu.add_command(label=_("Visualiser les maîtres et les masques"), command=self.afficherLesMaitresses)
         menuEditionVisu.add_command(label=_("Visualiser le masque sur mosaique Tarama"), command=self.afficherMasqueTarama)        
         menuEditionVisu.add_command(label=_("Visualiser le masque 3D"), command=self.afficheMasqueC3DC)
         menuEditionVisu.add_command(label=_("Visualiser les points GCP"), command=self.afficherLesPointsGPS)
@@ -1991,13 +1995,14 @@ class Interface(ttk.Frame):
         self.item506=ttk.Label(self.item500, text=_("Quelques photos avec une grande profondeur d'image aident à calibrer l'optique des appareils photos."))        
         self.item505.pack()
         self.item506.pack()
-        modesTapas=[('RadialExtended (REFLEX)','RadialExtended','active'),
-                    ('RadialStd (Compact)','RadialStd','active'),
-                    ('RadialBasic (SmartPhone)','RadialBasic','active'),
+        modesTapas=[('Fraser (souvent le meilleur choix ; utiliser des photos de calibration)','Fraser','active'),
+                    ('FraserBasic','FraserBasic','active'),
+                    ('RadialExtended','RadialExtended','active'),
+                    ('RadialStd','RadialStd','active'),
+                    ('RadialBasic','RadialBasic','active'),
                     ('FishEyeBasic (GOPRO)','FishEyeBasic','active'),                      
                     ('FishEyeEqui','FishEyeEqui','active'),       # déconnexion texte affichée, valeur retournée
-                    ('Fraser','Fraser','active'),
-                    ('FraserBasic','FraserBasic','active'),]                    
+                    ]                    
 ##                    ('HemiEqui','HemiEqui','disabled'),
 ##                    ('AutoCal','AutoCal','disabled'),
 ##                    ('Figee','Figee','disabled')        
@@ -2203,7 +2208,7 @@ class Interface(ttk.Frame):
         
         self.item710 = ttk.Frame(self.item700,height=50,relief='sunken',padding="0.15cm")    # pour le check button, fera un encadrement
         self.item701 = ttk.Label(self.item710)                                              # nom ou nombre d'images maitresses
-        self.item702 = ttk.Button(self.item710,text=_("Choisir les maîtresses"),command=self.imageMaitresse)
+        self.item702 = ttk.Button(self.item710,text=_("Choisir les maîtres"),command=self.imageMaitresse)
         self.item703 = ttk.Label(self.item710)                                              # nom ou nombre de masques
         self.item704 = ttk.Button(self.item710,text=_('Tracer les masques'),command=self.tracerLesMasques) 
         self.item705 = ttk.Label(self.item710,text= _("Pour supprimer un masque : supprimer la maitresse"))
@@ -2944,7 +2949,7 @@ class Interface(ttk.Frame):
                                                 _("Les options par défaut concernent :") + "\n"+
                                                 _("Points homologues : All, MulScale, line ,les échelles et delta") + "\n"+
                                                 _("Orientation : toutes les options de la boite de dialogue") + "\n"+                                                 
-                                                _("Densification Malt : mode, zoom final, nombre de photos autour de la maîtresse") + "\n"+
+                                                _("Densification Malt : mode, zoom final, nombre de photos autour de la maître") + "\n"+
                                                 _("Densification Malt Ortho : Tawny et ses options en saisie libre") + "\n"+
                                                 _("Densification C3DC : mode") + "\n"+
                                                 _("Les paramètres presonnalisés des modules Micmac (menu Expert)") + "\n\n"+
@@ -3089,14 +3094,14 @@ class Interface(ttk.Frame):
             _("                            - seul C3DC permet de tracer un masque, complexe, sur le nuage non dense") + "\n\n"+\
             _("                      - Malt : ") + "\n"+\
             _("                            Si le mode est GeomImage : ") + "\n"+\
-            _("                                  désigner une ou plusieurs images maîtresses") + "\n"+\
+            _("                                  désigner une ou plusieurs images maîtres") + "\n"+\
             _("                                  dessiner sur les photos le ou les masques associés.") + "\n"+\
             _("                                  Seuls les points visibles sur les images maitresses seront sur l'image 3D finale.") + "\n"+\
             _("                                  Le masque limite la zone utile de l'image 3D finale.") + "\n"+\
             _("                                  La molette permet de zoomer et le clic droit maintenu de déplacer l'image.") + "\n"+\
-            _("                                  Supprimer une image maîtresse de la liste réinitialise le masque.") + "\n\n"+\
-            _("                                  Nombre de photos utiles autour de l'image maîtresse :") + "\n"+\
-            _("                                    Permet de limiter les recherches aux images entourant chaque image maîtresse.") + "\n\n"+\
+            _("                                  Supprimer une image maître de la liste réinitialise le masque.") + "\n\n"+\
+            _("                                  Nombre de photos utiles autour de l'image maître :") + "\n"+\
+            _("                                    Permet de limiter les recherches aux images entourant chaque image maître.") + "\n\n"+\
             _("                            Si le mode est Ortho : ") + "\n"+\
             _("                                 le mode Ortho permet la création d'une orthomosaïque de la scène (en plus du nuage dense)") + "\n"+\
             _("                                 Création possible d'un masque sur la mosaïque Tarama demandée aprés Tapas") + "\n\n"+\
@@ -3344,6 +3349,9 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version 5.54 :")+chr(9)+_("octobre 2020") + "\n\n"+\
+              chr(9)+chr(9)+_("- remplacement de 'maîtresses' par 'maître' pour cause de traduction ambiguë") + "\n"+\
+              chr(9)+chr(9)+_("- Fraser devient l'option par défaut de Tapas") + "\n"+\
               "\n" + _("Version 5.53 :")+chr(9)+_("fin juillet 2020") + "\n"+\
               chr(9)+chr(9)+_("Nouveautés :") + "\n"+\
               chr(9)+chr(9)+_("- Prise en compte de l'offset pour les chantiers GPS ou Drones : les bandes blanches des nuages denses sont supprimées.") + "\n"+\
@@ -3418,7 +3426,7 @@ class Interface(ttk.Frame):
               chr(9)+chr(9)+_("- Ajout de deux contrôles sur le lot des photos : mêmes dimensions, même focale.") + "\n"+\
               chr(9)+chr(9)+_("- Ajout d'un item 'historique' dans le menu Aide.") + "\n"+\
               "\n" + _("Version 2.10")+chr(9)+_("- Ajout d'un item du menu édition fusionnant les images 3D.") + "\n"+\
-              chr(9)+chr(9)+_("- Plusieurs images maîtresses, plusieurs masques.") + "\n"+\
+              chr(9)+chr(9)+_("- Plusieurs images maîtres, plusieurs masques.") + "\n"+\
               chr(9)+chr(9)+_("- Conversion automatique des fichiers PNG, BMP, GIF, TIF en JPG") + "\n"+\
               chr(9)+chr(9)+_("- Ajout d'un item du menu Outils permettant de modifier les exifs. Diffusion restreinte à la DTer NC le 16/02/2016") + "\n"+\
               "\n" + _("Version 2.20 :")+chr(9)+_("- Maintien des options compatibles lors du choix de nouvelles photos. Février 2016") + "\n"+\
@@ -3431,11 +3439,11 @@ class Interface(ttk.Frame):
               "\n" + _("Version 3.00 :")+chr(9)+_("- Version bilingue Français/Anglais. Octobre 2016") + "\n"+\
               "\n" + _("Version 3.10 :")+chr(9)+_("- Choix des N meilleures photos pour un nouveau dossier. Novembre 2016") + "\n"+\
               "\n" + _("Version 3.20 :")+chr(9)+_("janvier 2017") + "\n"+\
-              chr(9)+chr(9)+_("- Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche pour vous les maîtresses et les photos correspondantes") + "\n"+\
+              chr(9)+chr(9)+_("- Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche pour vous les maîtres et les photos correspondantes") + "\n"+\
               chr(9)+chr(9)+_("- Item de sélection des meilleures images pour créer un nouveau chantier. janvier 2017") + "\n"+\
               chr(9)+chr(9)+_("- Possibilité de saisir une unité avec la distance.") + "\n"+\
               chr(9)+chr(9)+_("- Lancement de Tapas accéléré : suppression du controle des photos") + "\n"+\
-              chr(9)+chr(9)+_("- Les photos autour de la maîtresse pour Malt sont choisies parmi les meilleures en correspondances") + "\n"+\
+              chr(9)+chr(9)+_("- Les photos autour de la maître pour Malt sont choisies parmi les meilleures en correspondances") + "\n"+\
               chr(9)+chr(9)+_("- Controle affiné des points GCP, message informatif détaillé") + "\n"+\
               chr(9)+chr(9)+_("- Possibilité de supprimer UN seul point GCP sur une photo") + "\n"+\
               "\n" + _("Version 3.30 :")+chr(9)+_("janvier 2017") + "\n"+\
@@ -3533,7 +3541,7 @@ class Interface(ttk.Frame):
                 _("                           Si les photos sont prises 'en ligne' choisir 'line' dans les options de Tapioca, ") + "\n"                    +\
                 _("                             MicMac ne recherchera que les paires de photos se succédant.") + "\n"             +\
                 _("                             Choisir delta en fonction du taux de recouvrement des photos (delta = 2 voire +, si le recouvrement est important.") + "\n\n" +\
-                _("               - Orientation : si l'appareil photo est un compact ou un smartphone choisir RadialBasic, ") + "\n"+\
+                _("               - Orientation : fraser est souvent le meilleur choix, ") + "\n"+\
                 _("                         si l'appareil photo est un reflex choisir RadialExtended ") + "\n"                    +\
                 _("                         si l'appareil photo est de moyenne gamme choisir RadialStd") + "\n"                               +\
                 _("                         Ces conseils ne sont pas toujours vérifiés : modifier votre choix s'il échoue. ") + "\n"+\
@@ -3549,11 +3557,11 @@ class Interface(ttk.Frame):
                 _("                       C3DC fournit des nuages peu denses mais plus précis") + "\n" +\
                 _("                            Masque 3D possible sur le nuage non dense'") + "\n" +\
                 _("                            L'option la plus fructueuse est 'BigMac'") + "\n" +\
-                _("               - Densification par Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtresses.") + "\n"          +\
+                _("               - Densification par Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtres.") + "\n"          +\
                 _("                        Seuls les points visibles sur ces images seront conservés dans le nuage de points.") + "\n"                +\
-                _("                        Sur ces images maîtresses tracer les masque délimitant la partie 'utile' de la photo.") + "\n"+\
+                _("                        Sur ces images maîtres tracer les masque délimitant la partie 'utile' de la photo.") + "\n"+\
                 _("                        Le résultat sera mis en couleur suivant les images maitresses.") + "\n"+\
-                _("                        (éviter trop de recouvrement entre les maîtresses !).") + "\n"+\
+                _("                        (éviter trop de recouvrement entre les maîtres !).") + "\n"+\
                 _("                        Le traitement avec masque sera accéléré et le résultat plus 'propre'.") + "\n\n"                                 +\
                 _("               - Densification par C3DC : propose de définir un masque en 3D qui conservera tout le volume concerné.") + "\n"                  +\
                 _("                        Alternative à Malt, le traitement est parfois plus rapide, plus précis, moins dense. Nécessite une version récente de MicMac.") + "\n\n"+\
@@ -3570,7 +3578,7 @@ class Interface(ttk.Frame):
             _("Si MicMac trouve des points homologues mais ne trouve pas l'orientation des appareils photos:") + "\n\n"+\
             _("               - Consulter la trace :") + "\n"+\
             _("                        1) si erreur dans la trace : 'Radiale distorsion abnormaly high' :") + "\n"+\
-            _("                           modifier le type d'appareil pour l'orientation (radialstd ou radialbasic ou RadialExtended ou...)") + "\n"+\
+            _("                           modifier le type d'appareil pour l'orientation (fraser, radialstd ou radialbasic ou RadialExtended ou...)") + "\n"+\
             _("                        2) Eliminer les photos ayant les plus mauvais scores : menu Outils/qualité des photos puis Outils/retirer des photos") + "\n"+\
             _("                        3) si ce n'est pas suffisant ne garder que les meilleures photos (typiquement : moins de 10)") + "\n"+\
             _("                           Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.")+ "\n"+\
@@ -3733,7 +3741,7 @@ class Interface(ttk.Frame):
 
     # TAPAS
 
-        self.modeCheckedTapas.set('RadialExtended')             # mode par défaut depuis la v 5.43 avril 2019 (RadialExtended, RadialStd,RadialBasic...
+        self.modeCheckedTapas.set('Fraser')                     # mode par défaut depuis la v 5.54 août 2020
         self.arretApresTapas.set(0)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.lancerTarama.set(0)                                # 0 : on ne lance pas Tarama (mosaique des photos après Tapas)       
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
@@ -3763,7 +3771,7 @@ class Interface(ttk.Frame):
     # mieux que Mic Mac qui prend par défaut le masque de l'image maitre avec le nom prédéfini masq
 
         self.modeCheckedMalt.set('Ortho')                       # par défaut (GeoImage,AperoDedenis,UrbanMNE,Ortho
-        self.photosUtilesAutourDuMaitre.set(5)                  # 5 autour de l'image maîtresse (les meilleures seront choisies en terme de points homologues)
+        self.photosUtilesAutourDuMaitre.set(5)                  # 5 autour de l'image maître (les meilleures seront choisies en terme de points homologues)
         self.tawny.set(1)                                       # lancement par défaut de Tawny après Malt Ortho (1, sinon 0)
         self.zoomF.set('4')                                     # doit être "1","2","4" ou "8" (1 le plus détaillé, 8 le plus rapide)
         self.etapeNuage                 = "5"                   # par défaut (très mystérieux!)
@@ -4443,11 +4451,11 @@ class Interface(ttk.Frame):
                 texte = texte+'\n' + _('Densification : ')+' Malt\n' + _('Mode : ')+self.modeCheckedMalt.get()
                 if self.modeCheckedMalt.get()=="GeomImage":
                     if self.listeDesMaitresses.__len__()==0:
-                        texte = texte+"\n" + _("Pas d'image maîtresse\n")
+                        texte = texte+"\n" + _("Pas d'image maître\n")
                     if self.listeDesMaitresses.__len__()==1:
-                        texte = texte+'\n' + _('Image maîtresse : ')+os.path.basename(self.listeDesMaitresses[0])
+                        texte = texte+'\n' + _('Image maître : ')+os.path.basename(self.listeDesMaitresses[0])
                     if self.listeDesMaitresses.__len__()>1:
-                        texte = texte+'\n'+str(self.listeDesMaitresses.__len__())+_(' images maîtresses')                        
+                        texte = texte+'\n'+str(self.listeDesMaitresses.__len__())+_(' images maîtres')                        
                     if self.listeDesMasques.__len__()==1:
                         texte = texte+'\n' + _('1 masque') + '\n'
                     if self.listeDesMasques.__len__()==0 and self.listeDesMaitresses.__len__()>0:
@@ -4455,7 +4463,7 @@ class Interface(ttk.Frame):
                     if self.listeDesMasques.__len__()>1:
                         texte = texte+"\n"+str(self.listeDesMasques.__len__())+" "+_("masques") + "\n"
                     if self.listeDesMaitresses.__len__()>0 and self.photosUtilesAutourDuMaitre.get()>0:                        
-                        texte = texte+_("%s photos utiles autour de la maîtresse") %(str(self.photosUtilesAutourDuMaitre.get()))+"\n"
+                        texte = texte+_("%s photos utiles autour de la maître") %(str(self.photosUtilesAutourDuMaitre.get()))+"\n"
 
                 if self.modeCheckedMalt.get()=="Ortho":
                     if self.tawny.get():
@@ -4598,7 +4606,7 @@ class Interface(ttk.Frame):
     def existeMaitre2D(self):
         if self.repTravail==self.repertoireData:    # pas enregistré
             return False     
-        if str(self.modeCheckedMalt.get())!="GeomImage":   # pas besoin d'image maîtresse !
+        if str(self.modeCheckedMalt.get())!="GeomImage":   # pas besoin d'image maître !
             return True
         if self.listeDesMaitresses.__len__()>0:     # GeoImage et maitresses : OK
             return True
@@ -4637,13 +4645,13 @@ class Interface(ttk.Frame):
         
         if self.listeDesMaitresses:            
             self.choisirUnePhoto(self.listeDesMaitresses+self.listeDesMasques,
-                                 titre=_('Liste des images maîtresses et des masques '),
+                                 titre=_('Liste des images maîtres et des masques '),
                                  mode='single',
-                                 message=_("Images maîtresses et masques"),
+                                 message=_("Images maîtres et masques"),
                                  messageBouton=_("Fermer")
                                  )            
         else:
-            self.encadre(_("Pas de maîtresses définies pour ce chantier"))
+            self.encadre(_("Pas de maîtres définies pour ce chantier"))
 
     def afficherMasqueTarama(self):
 
@@ -4651,7 +4659,7 @@ class Interface(ttk.Frame):
             self.choisirUnePhoto([self.mosaiqueTaramaJPG,self.masqueTarama],
                                  titre=_('Mosaique Tarama et masque ')+"\n"+_("Option Ortho de Malt"),
                                  mode='single',
-                                 message=_("Image maîtresse et masque"),
+                                 message=_("Image maître et masque"),
                                  messageBouton=_("Fermer")
                                  )             
         
@@ -4686,7 +4694,7 @@ class Interface(ttk.Frame):
                 else:
                     plan = _("verticale")
                 self.choisirUnePhoto(masqueEtMaitre,
-                                 titre=_("Visualiser l'image maîtresse et le plan horizontal ou vertical"),
+                                 titre=_("Visualiser l'image maître et le plan horizontal ou vertical"),
                                  mode='single',
                                  message=_("Zone plane ")+plan,
                                  messageBouton=_("Fermer"))     
@@ -5622,7 +5630,7 @@ class Interface(ttk.Frame):
                     self.item804.configure(text = _("Pas de masque 3D"),foreground='black')            
             
 
-        # met à jour les infos sur les maîtresses et les masques
+        # met à jour les infos sur les maîtres et les masques
         
         self.miseAJourItem701_703()
         self.masqueProvisoire = str()   # utile pour tracemasque
@@ -5914,7 +5922,7 @@ class Interface(ttk.Frame):
             self.monImage_PlanTif = self.planProvisoireVertical            
             existe=True
            
-        xml = xml.replace("monImage_MaitrePlan",os.path.basename(self.monImage_MaitrePlan))                 # Nom de l'image maîtresse du plan repere (sans extension)
+        xml = xml.replace("monImage_MaitrePlan",os.path.basename(self.monImage_MaitrePlan))                 # Nom de l'image maître du plan repere (sans extension)
         xml = xml.replace("monImage_Plan",os.path.basename(self.monImage_PlanTif))                          # nom du masque correspondant 
         
         if existe:
@@ -6053,7 +6061,7 @@ class Interface(ttk.Frame):
         try:
             self.photosUtilesAutourDuMaitre.set(int(self.photosUtilesAutourDuMaitre.get())) # met un entier (sinon galère !)
             if self.photosUtilesAutourDuMaitre.get()<1 and self.photosUtilesAutourDuMaitre.get()!=-1:
-                texte += "\n" + _("Malt mode Geomimage :") + "\n" + _("Le nombre de photos utiles autour de l'image maîtresse est trop petit : %s")  % (str(self.photosUtilesAutourDuMaitre.get())) + "\n"
+                texte += "\n" + _("Malt mode Geomimage :") + "\n" + _("Le nombre de photos utiles autour de l'image maître est trop petit : %s")  % (str(self.photosUtilesAutourDuMaitre.get())) + "\n"
         except Exception as e:
             texte += "\n" + _("Malt mode Geomimage :") + "\n" + _("Le nombre de photos utiles autour de l'image centrale n'est pas numérique : ") + "\n" + _("Il est mis à 5.") + "\n"
             self.photosUtilesAutourDuMaitre.set(5)
@@ -6298,12 +6306,12 @@ class Interface(ttk.Frame):
             supprimeFichier(os.path.splitext(e)[0]+"_Masq.xml")
             supprimeFichier(os.path.splitext(e)[0]+"_Masq.tif")
 
-        # choix des nouvelles maîtresses :
+        # choix des nouvelles maîtres :
                 
         self.choisirUnePhoto(self.photosAvecChemin,
-                             _("Choisir les maîtresses"),
-                             _("Choisir une ou plusieurs image(s) maîtresse(s)") + "\n" + _("en jaune : les maitresses actuelles") + "\n" + _("Une info bulle informe de la présence d'un masque"),
-                             boutonDeux=_("Supprimer les images maîtresses"), # self.fermerVisu=True
+                             _("Choisir les maîtres"),
+                             _("Choisir une ou plusieurs image(s) maître(s)") + "\n" + _("en jaune : les maitresses actuelles") + "\n" + _("Une info bulle informe de la présence d'un masque"),
+                             boutonDeux=_("Supprimer les images maîtres"), # self.fermerVisu=True
                              mode="extended",
                              bulles=bulles)
 
@@ -6336,10 +6344,10 @@ class Interface(ttk.Frame):
                 self.item701.config(text=_("Image maitresse obligatoire pour GeomImage."))
   
             if self.listeDesMaitresses.__len__()==1:
-                self.item701.config(text=_("image maîtresse = ")+os.path.basename(self.listeDesMaitresses[0]))
+                self.item701.config(text=_("image maître = ")+os.path.basename(self.listeDesMaitresses[0]))
             
             if self.listeDesMaitresses.__len__()>1:
-                self.item701.config(text=str(self.listeDesMaitresses.__len__())+_(" images maîtresses"))
+                self.item701.config(text=str(self.listeDesMaitresses.__len__())+_(" images maîtres"))
         
             if self.listeDesMasques.__len__()==0:
                 self.item703.config(text="\n" + _("Pas de masque."))                
@@ -6369,7 +6377,7 @@ class Interface(ttk.Frame):
         self.fermerVisuPhoto()
 
         if self.listeDesMaitresses.__len__()==0:
-            self.item703.config(text=_("Il faut au moins une image maîtresse pour définir un masque."),
+            self.item703.config(text=_("Il faut au moins une image maître pour définir un masque."),
                                 background="#ffffaa")
             return
         bulles=dict()     
@@ -6379,7 +6387,7 @@ class Interface(ttk.Frame):
                     bulles[f]=_("Un masque existe déjà")
         self.choisirUnePhoto(self.listeDesMaitresses,
                              _("Choisir l'image pour le masque"),
-                             _("Choisir une image maîtresse pour le masque\nen jaune = un masque existe"),
+                             _("Choisir une image maître pour le masque\nen jaune = un masque existe"),
                              mode="single",
                              bulles=bulles)
        
@@ -6399,7 +6407,7 @@ class Interface(ttk.Frame):
         self.fermerVisuPhoto()
 
         if self.listeDesMaitresses.__len__()==0:
-            self.item703.config(text=_("Il faut au moins une image maîtresse pour définir un masque."),
+            self.item703.config(text=_("Il faut au moins une image maître pour définir un masque."),
                                 background="#ffffaa")
             return
 
@@ -6410,7 +6418,7 @@ class Interface(ttk.Frame):
         else:
             self.choisirUnePhoto(self.listeDesMaitresses,
                                  _("Choisir l'image pour le masque"),
-                                 _("Choisir une image maîtresse pour le masque"),
+                                 _("Choisir une image maître pour le masque"),
                                  mode="single")
             if self.selectionPhotosAvecChemin.__len__()==0:
                 return
@@ -6430,7 +6438,7 @@ class Interface(ttk.Frame):
                  self.masqueProvisoire = str()                                                  # pas de masque : détricotage
                  self.item703.config(text=_("pas de masque"))
         else:
-            self.item703.config(text=_("Il faut une image maîtresse pour définir un masque."),
+            self.item703.config(text=_("Il faut une image maître pour définir un masque."),
                                 background="#ffffaa")
 
     def MasqueXML(self):      # préparation du masque pour malt GeomImage. self.maitreSansChemin est nécessaire
@@ -7467,7 +7475,7 @@ class Interface(ttk.Frame):
 
         self.referentiel()
         
-        # on ne peut poursuivre que si l'orientation a été trouvée", et une image maîtresse si malt geomimage
+        # on ne peut poursuivre que si l'orientation a été trouvée", et une image maître si malt geomimage
 
         if orientationKO():
             ligne = (_("Tapas n'a pas trouvé d'orientation.") + "\n"+
@@ -7479,10 +7487,10 @@ class Interface(ttk.Frame):
             return
 
         if self.choixDensification.get()=="Malt" and not self.existeMaitre2D(): # existeMaitre2D = True si malt geomimage
-            ligne = (_("Pas d'image maîtresse pour Malt option geoimage.") + "\n"+
+            ligne = (_("Pas d'image maître pour Malt option geoimage.") + "\n"+
                      _("Le traitement ne peut se poursuivre.") + "\n"+
-                     _("Définir une image maîtresse") +"\n"+                     
-                     _("ou Changer le mode 'GeomImage' qui impose une image maîtresse") )
+                     _("Définir une image maître") +"\n"+                     
+                     _("ou Changer le mode 'GeomImage' qui impose une image maître") )
             self.ajoutLigne(ligne)            
             self.encadre(ligne)
             return
@@ -7540,11 +7548,11 @@ class Interface(ttk.Frame):
             self.ajoutLigne(_("Tapas non effectué, lancer MicMac depuis le menu. Etat du chantier = "),self.etatDuChantier)
             return
 
-        # il faut une image maîtresse si le mode est geoimage
+        # il faut une image maître si le mode est geoimage
 
         if self.listeDesMaitresses.__len__()==0 and self.modeCheckedMalt.get()=="GeomImage":    # self.photoMaitre : nom de la photo sans extension ni chemin, l'extension est dans self.extensionChoisie
             message = ( _("Pourquoi MicMac est arrêté :")+
-                        "\n" + _("Pas d'image maîtresse.")+
+                        "\n" + _("Pas d'image maître.")+
                         "\n" + _("Celle-ci est nécessaire pour l'option choisie geomImage de Malt.")+
                         "\n" + _("Pour corriger modifier les options de Malt ou choisissez un masque 3D avec C3DC.")+
                         "\n" + _("Corriger."))
@@ -8094,7 +8102,7 @@ class Interface(ttk.Frame):
     # ------------------ MALT -----------------------
     
     def lanceMalt(self):    # malt prend les points homologues dans le répertoire "Homol",
-                            # et si geoImage : l'image maîtresse dans self.maitreSansChemin (str() si absent)
+                            # et si geoImage : l'image maître dans self.maitreSansChemin (str() si absent)
                             #                  et dans self.photosSansChemin les images autour de l'image maitressse
                             #                  si il y a un masque il faut les 2 fichiers maitre_Masq.xml et maitre_Masq.tif sans les indiquer dans la syntaxe
 
@@ -8171,20 +8179,20 @@ class Interface(ttk.Frame):
     def reinitialiseMaitreEtMasque(self):                                                       # on conserve si la photo appartient au nouveau lot
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
         self.maitre                     =   str()        
-        self.maitreSansChemin           =   str()                                               # image maîtresse        
+        self.maitreSansChemin           =   str()                                               # image maître        
         self.fichierMasqueXML           =   str()                                               # nom du fichier XML décrivant le masque
         self.maitreSansExtension        =   str()
-        self.monImage_MaitrePlan        =   str()                                               # Nom de l'image maîtresse du plan repere (sans extension)
+        self.monImage_MaitrePlan        =   str()                                               # Nom de l'image maître du plan repere (sans extension)
         self.monImage_PlanTif           =   str()                                               # nom du masque correspondant
         self.listeDesMaitresses         =   list()                                              # liste des images maitresses
-        self.listeDesMasques            =   list()                                              # liste Des Masques associès aux maîtresses
+        self.listeDesMasques            =   list()                                              # liste Des Masques associès aux maîtres
         self.miseAJourItem701_703()                                                             # met à jour les windgets de l'onglet Malt
 
     def reinitialiseMaitreEtMasqueDisparus(self):                                               # on conserve les options si la photo appartient au nouveau lot (photos = liste avec chemins)
 
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
         self.maitre                     =   str()        
-        self.maitreSansChemin           =   str()                                               # image maîtresse        
+        self.maitreSansChemin           =   str()                                               # image maître        
         self.fichierMasqueXML           =   str()                                               # nom du fichier XML décrivant le masque
         self.maitreSansExtension        =   str()
 
@@ -8209,7 +8217,7 @@ class Interface(ttk.Frame):
         # maitre plan et image
             
         if self.monImage_MaitrePlan not in photos:
-            self.monImage_MaitrePlan        =   str()                                           # Nom de l'image maîtresse du plan repere (sans extension)
+            self.monImage_MaitrePlan        =   str()                                           # Nom de l'image maître du plan repere (sans extension)
             self.monImage_PlanTif           =   str()                                           # nom du masque correspondant            
 
         # Distance
@@ -8240,7 +8248,7 @@ class Interface(ttk.Frame):
         # masques et maitresses
           
         self.listeDesMaitresses         =   [e for e in self.listeDesMaitresses if e in photos] # liste des images maitresses avec chemin
-        # liste Des Masques associès aux maîtresses : chemin complet de la maitresse + extension spécifique : _masque.tif
+        # liste Des Masques associès aux maîtres : chemin complet de la maitresse + extension spécifique : _masque.tif
         self.listeDesMasques            =   [e for e in self.listeDesMasques if e.replace('_masque.tif',self.extensionChoisie) in photos]
 
 
@@ -10100,7 +10108,7 @@ class Interface(ttk.Frame):
                          self.dicoLigneVerticale,
                          self.dicoCalibre,
                          self.distance.get(),
-                         self.monImage_MaitrePlan,                                               # Nom de l'image maîtresse du plan repere (sans extension)
+                         self.monImage_MaitrePlan,                                               # Nom de l'image maître du plan repere (sans extension)
                          self.monImage_PlanTif,                                                   # nom du masque correspondant
                          self.etatSauvegarde,
                          self.modeCheckedTapas.get(),
@@ -10288,7 +10296,7 @@ class Interface(ttk.Frame):
             self.dicoLigneVerticale         =   r[25]
             self.dicoCalibre                =   r[26]
             self.distance.set               (r[27])
-            self.monImage_MaitrePlan        =   r[28]                                               # Nom de l'image maîtresse du plan repere (sans extension)
+            self.monImage_MaitrePlan        =   r[28]                                               # Nom de l'image maître du plan repere (sans extension)
             self.monImage_PlanTif           =   r[29]                                               # nom du masque correspondant
             self.etatSauvegarde             =   r[30]
             self.modeCheckedTapas.set       (r[31])
