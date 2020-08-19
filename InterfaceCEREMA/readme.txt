@@ -1,6 +1,13 @@
 ﻿L'interface CEREMA offre une interface graphique conviviale pour 
 MICMAC, l'outil de photogrammétrie libre de l'IGN.
 
+The CEREMA interface provides a user-friendly graphical user interface to 
+MICMAC, the IGN's free photogrammetry tool.
+
+Version V 5.54 du 21 août 2020
+- corrections de traductions : le mot "maîtresses" est parfois mal interprété !
+- 'Fraser' devient l'option par défaut de Tapas
+
 Version V 5.53 du 14 août 2020
 - Suppression des 'bandes blanches' dans les nuages 3D des chantiers aux coordonnées GPS  
 - multiples améliorations de détails, voir l'historique des versions

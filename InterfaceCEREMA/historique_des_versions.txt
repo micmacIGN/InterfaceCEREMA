@@ -1,6 +1,11 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
-              Version 5.53 : 14 août 2020
+            Version 5.54 : 21 août 2020
+			
+				- corrections de traductions : le mot "maîtresses" est parfois mal interprété !
+				- 'Fraser' devient l'option par défaut de Tapas
+
+            Version 5.53 : 14 août 2020
 			  
               Nouveautés : 
               - Prise en compte de l'offset pour les chantiers GPS ou Drones : les bandes blanches des nuages denses sont supprimées. 
@@ -28,7 +33,7 @@
 				
 			Version déconfinée 5.51 du 23 juin 2020 :
 
-				- Essentiellemnt : ajout d'un item "Outils métier" dans le menu principal		
+				- Essentiellement : ajout d'un item "Outils métier" dans le menu principal		
 				  Ce nouveau menu permet le calcul de volume entre 2 nuages, donc la comparaison des nuages.
 				  La comparaison s'effectue sur les MNT construits à partir des nuages.
 				  Le nuage de points de l'écart est construit et visualisable.
@@ -67,26 +72,163 @@
 				- Le controle des photos avant traitement a été considérablement accéléré
 				- amélioration des fonctions "du ménage" et "retirer des photos"
 
-Anciennes versions, dans l'ordre chronologique :
+			version 5.30 21 février 2019 :
+              				- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
+              				  Ces photos font 'planter' la recherche de l'orientation.
+              				- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
+              				  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
+              				  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
+              				- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
+              				- prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
+              				- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
+							
+			Version 5.48 25 mai 2019
+				- Possibilité de copier les fichiers de calibration des appareils photos à partir d'un autre chantier
+				- correction d'un bug empêchant le lancement de Tarama
+
+			Version 5.47 21 mai 2019
+			    - Robustesse accrue sur plusieurs points : voir le source
 				
-             Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
+			Version 5.46 20 mai 2019
+				- Ajout de l'item Outils/Qualité des points GCP
+				- Ajout de l'item Expert/Personnaliser les paramètres optionnels des modules de MicMac
 
-             Version 1.55 : décembre 2015
-                Sous Windows le fichier paramètre est placé sous le répertoire APPDATA de l'utilisateur,
-                ce qui règle les questions relatives aux droits d'accès en écriture. 
+			Version 5.45 13 mai 2019
+                - Sécurisation de l'import d'un chantier à partir d'un répertoire
+                - Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier
+                - Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)
+				- Sécurisation de la calibration des appareils par Tapas (option ForCalib) pour les chantiers comportant beaucoup de photos
 
-             Version 1.60 :
-              - Ajout des fonctions :
-              - Qualité des photos lors du dernier traitement
-              - Exportation du chantier en cours
-              - Importation d'un chantier (permet de recopier le chantier sur un autre répertoire, disque, ordinateur, système)
+			Version 5.44 9 mai 2019
+				Ajout de la fonction "recherche" dans les textes affichés par texte201 (trace, aide) ; Ctrl F et  F3
+				Possibilité de relancer Tapas sans relancer Tapioca.
+
+			Version 5.43 18 avril 2019
+			voir script
+			
+			version 5.40 mars 2019 :
+				modification ergonomie saisies des points GPC, photo suivante/précédente dans fenêtre de saisie
+				corrections de bugs
+				ajout du drapage pour les options quickmac micmac et bigmap de c3dc
+				modification de l'option par défaut de c3dc : bigmac
+				
+			version 5.21 février 2019 :
+					- ajout possibilité de passer une commande "python" dans le menu expert
+					- Modification de l'option "Autocal" de Tapas : Figee (au lieu de Autocal) : permet de 'figer' la calibration initiale					
+
+			Version 5.2 janvier 2019 : 
+					- ajout des paramètres pour Campari dans la fenêtre options/points GPS
+					- ajout dans le menu expert de la consultation du log mm3d
+					- possibilité de renommer dans l'exif des appareils photos différents 
+					- mise à jour de dico camera pour "tous" les appareils photos du lot de données
+					- ajout de l'item " ajout d'un chantier à partir d'un répertoire" dans le menu fichier
+
+			Version 5.1 : 4 décembre 2018 : 
+					- Options/Tapas : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appareil photo
+					- ajout d'un item dans le menu expert : copier les coordonnées des points gps à partir d'un fichier texte
+					- modification des onglets Malt et C3DC, réunis dans un même onglet "Densification"
+					- renommage de l'onglet "calibration" en "mise à l'échelle"
+
+		     Version 5.0 : janvier 2018 
+			        - Suppression de l'item "Indices surfaciques" de la version 4.0
+
+            Version 4.11 : Noël 2017
+			        - Diffusion de la version 4.10 sur GitHub
+      
+            Version 4.10 : octobre 2017   
+              - Affichage de la taille disque du chantier, en MO, dans l'état du chantier.
+              - La fonction "Du ménage" propose un choix : nettoyer le chantier ou le supprimer totalement
+              - Nouvelle icone pour la fenêtre : logo du cerema.
+              - Correction de 2 bugs concernant :
+                  - la fonction "renommer un chantier" 
+                  - Un message parfois non pertinent sur l'absence de focales
+     
+            Version 4.0 : 4 avril 2017  
+              - Ajout d'un item de menu : Indices_surfaciques proposant 3 fonctions (Réalisation : Dhia Eddine Stambouli)   
+              - Calcul d'un maillage régulier à partir d'un modéle 3D représentant une surface calibrée ou géoréférencée.
+                Ce maillage est affiché, la tortuosité et la rugosité sont calculées.
+              - La profondeur moyenne de profil ainsi que la profondeur moyenne de texture équivalente sont calculées.
+                Les profils sont affichés sur la surface ou figurés par une courbe.
+              - Le pas du maillage est déterminé par l'utilisateur, dans l'unité du modéle 3D.
+              - Deux méthodes sont proposées pour le calcul de l'interpolation
+
+		    Version 3.32 : 7 février 2017
+			        - Possibilité de copier des points gps d'un chantier à un autre (menu expert)
+
+	        Version 3.30 :26 janvier 2017
+		          - Nouveauté : faire un masque sur une mosaique Tarama pour le mode Ortho de Malt et draper le résultat avec une orthomosaïque tawny.
+          		- Possibilité de créer une mosaique  aprés tapas sur toutes les photos par "Tarama" 
+          		- Saisir un masque sur la mosaïque créée : par l'outil de saisie de masque
+          		- Lancer Malt option Ortho : attention les photos doivent concerner un terrain naturel tel que z=f(x,y) (un seul z pour tout (x,y)
+          		- Lancer Tawny pour créer une ortho-mosaïque sur le résultat de malt, pour draper le nuage densifié
+		          - Le masque Malt peut être inversé : la sélection concerne l'extérieur du polygone au lieu de l'intérieur.
+		          - menu edition : affichage des mosaïques Tarama et Tawny
+		          - Un item de menu "expert" permettant de saisir et d'exécuter des commandes en mode "console"
+
+	        Version 3.20 :  17 janvier 2017
+		          - Les photos autour de la maitresse pour Malt ne sont plus "autour" mais choisies parmi les meilleures en correspondances
+              - Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche les maitresses et les photos correspondantes
+              - Ajout filtre pour afficher l'erreur max sur gcpbascule (erreur positionnement des points GPS.
+              - controle affiné des points gps : 
+                on indique ceux qui ne sont placés sur une seule photo et on vérifie la présence de 3 points sur 2 photos
+              - Aprés plantage durant malt ou fusion : on renomme les JPG et les PLY lors du rédémarrage (reste pb semblable pour calibration intrinsèque)
+              - Suppression d'un point GPS sur une photo (avant : suppression de tous les points)
+              - Affichage dans l'état du chantier des points GPS positionnés sur une seule photo
+              - Non mise dans le xml des points gps positionnés une seule fois.
+              - Si le controle des points GPS est négatif alors les fichiers xml ne sont pas créés
+              
+            Version 3.14  30 décembre 2016
+              - correction d'une régression au démarrage
+              
+             Version 3.13  décembre 2016
+              - la distance de la calibration accepte une unité
+              - lancement de Tapas accéléré
+              - diverses corrections de bogues 
+
+	        Version 3.10 : novembre 2016
+              - Ajout d'un item permettant de sélectionner les meilleures photos suivant les points	homologues 
+              (compléte et différe du choix des meilleures images vidéos) 
+
+	        Version 3.00 : novembre 2016
+	             - version bilingue : ajout de la langue anglaise, par Alexandre Courallet
+		            La langue est demandée au premier lancement.
+		            Un item du menu "paramètrage" ("Settings permet de changer la langue utilisée.
+
+	         Version 2.61
+              - correction d'un bogue de compatibilité ascendante sur les points GPS
+
+            Version 2.60 : juillet 2016
+              - saisie des incertitudes sur la position des points gps
+
+            Version 2.50 : Juin 2016
+              - Item dans le menu paramètrage pour désactiver le message de lancement.
+
+            Version 2.5 : Juin 2016
+              - Ajout de Tawny aprés Malt en mode Ortho
+			  
+            Version 2.45 : Mai 2016
+               - Référentiel GPS calculé après Tapas (et toujours avant Malt). 
+               - La virgule est un séparateur décimal accepté.\n"+\
+             
+			Version 2.40 :  Mai 2016
+               - Ajout de l'option (Statue ou QuickMac) pour C3DC.			  
+
+            Version 2.30 : Mai 2016
+              - Modification des options par défaut (menu outils).
+              - Référentiel GPS calculé après Tapas. 
+              - La virgule devient un séparateur décimal accepté.
+              - Possiblité d'appliquer la calibration GPS sans relancer malt. 			   
+
+            Version 2.20 : Février 2016
+              - Maintien des options compatibles lors du choix de nouvelles photos. 
+
+             Version 2.10 : février 2016
               - Ajout d'un item du menu édition fusionnant les images 3D.
-              - Plusieurs images maîtresses, plusieurs masques.
-              - Choix possible de fichiers PNG, BMP, GIF, TIF. Ces fihiers sont convertit en JPG.
+              - Plusieurs images maîtresses, plusieurs masques pour Malt.
+              - Choix possible de fichiers PNG, BMP, GIF, TIF.
               - Ajout d'un item du menu Outils permettant de modifier les exifs.
-              - Les fichiers 'trace' sont enregistrés au format utf-8.
-
-             Version 2 :
+			  
+			Version 2 :
               - Choix de photos pour la calibration intrinsèque par Tapas
               - Possibilité de relancer Malt sans relancer Tapioca/Tapas tout en conservant les images 3D générées.             
               - Modification possible des options par défaut dans le menu outils : 
@@ -100,384 +242,22 @@ Anciennes versions, dans l'ordre chronologique :
               - Ajout de deux contrôles sur le lot des photos : mêmes dimensions, même focale.
               - Ajout d'un item 'historique' dans le menu Aide.
 
-             Version 2.10 : février 2016
+            Version 1.60 :
+              - Ajout des fonctions :
+              - Qualité des photos lors du dernier traitement
+              - Exportation du chantier en cours
+              - Importation d'un chantier (permet de recopier le chantier sur un autre répertoire, disque, ordinateur, système)
               - Ajout d'un item du menu édition fusionnant les images 3D.
-              - Plusieurs images maîtresses, plusieurs masques pour Malt.
-              - Choix possible de fichiers PNG, BMP, GIF, TIF.
+              - Plusieurs images maîtresses, plusieurs masques.
+              - Choix possible de fichiers PNG, BMP, GIF, TIF. Ces fihiers sont convertit en JPG.
               - Ajout d'un item du menu Outils permettant de modifier les exifs.
+              - Les fichiers 'trace' sont enregistrés au format utf-8.
 
-             Version 2.20 : Février 2016
-              - Maintien des options compatibles lors du choix de nouvelles photos. 
-
-             Version 2.30 : Mai 2016
-              - Modification des options par défaut (menu outils).
-              - Référentiel GPS calculé après Tapas. 
-              - La virgule devient un séparateur décimal accepté.
-              - Possiblité d'appliquer la calibration GPS sans relancer malt. 
-
-             Version 2.40 :  Mai 2016
-               - Ajout de l'option (Statue ou QuickMac) pour C3DC.
-
-             Version 2.45 : Mai 2016
-               - Référentiel GPS calculé après Tapas (et toujours avant Malt). 
-               - La virgule est un séparateur décimal accepté.\n"+\
-
-             Version 2.5 : Juin 2016
-              - Ajout de Tawny aprés Malt en mode Ortho 
-
-             Version 2.50 : Juin 2016
-              - Item dans le menu paramètrage pour désactiver le message de lancement.
-
-             Version 2.60 : juillet 2016
-              - saisie des incertitudes sur la position des points gps
-
-	           Version 2.61
-              - correction d'un bogue de compatibilité ascendante sur les points GPS
-
-	           Version 3.00 : novembre 2016
-	             - version bilingue : ajout de la langue anglaise, par Alexandre Courallet
-		            La langue est demandée au premier lancement.
-		            Un item du menu "paramètrage" ("Settings permet de changer la langue utilisée.
-
-	           Version 3.10 : novembre 2016
-              - Ajout d'un item permettant de sélectionner les meilleures photos suivant les points	homologues 
-              (compléte et différe du choix des meilleures images vidéos)
-              
-             Version 3.13  décembre 2016
-              - la distance de la calibration accepte une unité
-              - lancement de Tapas accéléré
-              - diverses corrections de bogues
-              
-             Version 3.14  30 décembre 2016
-              - correction d'une régression au démarrage
-       
-	           Version 3.20 :  17 janvier 2017
-		          - Les photos autour de la maitresse pour Malt ne sont plus "autour" mais choisies parmi les meilleures en correspondances
-              - Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche les maitresses et les photos correspondantes
-              - Ajout filtre pour afficher l'erreur max sur gcpbascule (erreur positionnement des points GPS.
-              - controle affiné des points gps : 
-                on indique ceux qui ne sont placés sur une seule photo et on vérifie la présence de 3 points sur 2 photos
-              - Aprés plantage durant malt ou fusion : on renomme les JPG et les PLY lors du rédémarrage (reste pb semblable pour calibration intrinsèque)
-              - Suppression d'un point GPS sur une photo (avant : suppression de tous les points)
-              - Affichage dans l'état du chantier des points GPS positionnés sur une seule photo
-              - Non mise dans le xml des points gps positionnés une seule fois.
-              - Si le controle des points GPS est négatif alors les fichiers xml ne sont pas créés
-
-	           Version 3.30 :26 janvier 2017
-		          - Nouveauté : faire un masque sur une mosaique Tarama pour le mode Ortho de Malt et draper le résultat avec une orthomosaïque tawny.
-          		- Possibilité de créer une mosaique  aprés tapas sur toutes les photos par "Tarama" 
-          		- Saisir un masque sur la mosaïque créée : par l'outil de saisie de masque
-          		- Lancer Malt option Ortho : attention les photos doivent concerner un terrain naturel tel que z=f(x,y) (un seul z pour tout (x,y)
-          		- Lancer Tawny pour créer une ortho-mosaïque sur le résultat de malt, pour draper le nuage densifié
-		          - Le masque Malt peut être inversé : la sélection concerne l'extérieur du polygone au lieu de l'intérieur.
-		          - menu edition : affichage des mosaïques Tarama et Tawny
-		          - Un item de menu "expert" permettant de saisir et d'exécuter des commandes en mode "console"
-
-		         Version 3.32 : 7 février 2017
-			        - Possibilité de copier des points gps d'un chantier à un autre (menu expert)
-      
-             Version 4.0 : 4 avril 2017
-    
-              - Ajout d'un item de menu : Indices_surfaciques proposant 3 fonctions (Réalisation : Dhia Eddine Stambouli)   
-              - Calcul d'un maillage régulier à partir d'un modéle 3D représentant une surface calibrée ou géoréférencée.
-                Ce maillage est affiché, la tortuosité et la rugosité sont calculées.
-              - La profondeur moyenne de profil ainsi que la profondeur moyenne de texture équivalente sont calculées.
-                Les profils sont affichés sur la surface ou figurés par une courbe.
-              - Le pas du maillage est déterminé par l'utilisateur, dans l'unité du modéle 3D.
-              - Deux méthodes sont proposées pour le calcul de l'interpolation
-      
-            Version 4.10 : octobre 2017
-    
-              - Affichage de la taille disque du chantier, en MO, dans l'état du chantier.
-              - La fonction "Du ménage" propose un choix : nettoyer le chantier ou le supprimer totalement
-              - Nouvelle icone pour la fenêtre : logo du cerema.
-              - Correction de 2 bugs concernant :
-                  - la fonction "renommer un chantier" 
-                  - Un message parfois non pertinent sur l'absence de focales
-                  
-            Version 4.11 : Noël 2017
-			        - Diffusion de la version 4.10 sur GitHub
-			
-		     Version 5.0 : janvier 2018 
-			        - Suppression de l'item "Indices surfaciques" de la version 4.0
-			Version 5.1 : 4 décembre 2018 : 
-					- Options/Tapas : ajout du widget pour éliminer les photos ayant servis à la calibration de l'appareil photo
-					- ajout d'un item dans le menu expert : copier les coordonnées des points gps à partir d'un fichier texte
-					- modification des onglets Malt et C3DC, réunis dans un même onglet "Densification"
-					- renommage de l'onglet "calibration" en "mise à l'échelle"
-			Version 5.2 janvier 2019 : 
-					- ajout des paramètres pour Campari dans la fenêtre options/points GPS
-					- ajout dans le menu expert de la consultation du log mm3d
-					- possibilité de renommer dans l'exif des appareils photos différents 
-					- mise à jour de dico camera pour "tous" les appareils photos du lot de données
-					- ajout de l'item " ajout d'un chantier à partir d'un répertoire" dans le menu fichier
-			version 5.21 février 2019 :
-					- ajout possibilité de passer une commande "python" dans le menu expert
-					- Modification de l'option "Autocal" de Tapas : Figee (au lieu de Autocal) : permet de 'figer' la calibration initiale					
-			version 5.30 21 février 2019 :
-              				- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
-              				  Ces photos font 'planter' la recherche de l'orientation.
-              				- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
-              				  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
-              				  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
-              				- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
-              				- prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
-              				- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
-			version 5.40 mars 2019 :
-				modification ergonomie saisies des points GPC, photo suivante/précédente dans fenêtre de saisie
-				corrections de bugs
-				ajout du drapage pour les options quickmac micmac et bigmap de c3dc
-				modification de l'option par défaut de c3dc : bigmac
-			Version 5.43 18 avril 2019
-			voir script
-			Version 5.44 9 mai 2019
-				Ajout de la fonction "recherche" dans les textes affichés par texte201 (trace, aide) ; Ctrl F et  F3
-				Possibilité de relancer Tapas sans relancer Tapioca.
-			Version 5.45 13 mai 2019
-                - Sécurisation de l'import d'un chantier à partir d'un répertoire
-                - Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier
-                - Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)
-				- Sécurisation de la calibration des appareils par Tapas (option ForCalib) pour les chantiers comportant beaucoup de photos
-			Version 5.46 20 mai 2019
-				- Ajout de l'item Outils/Qualité des points GCP
-				- Ajout de l'item Expert/Personnaliser les paramètres optionnels des modules de MicMac
-			Version 5.47 21 mai 2019
-			    - Robustesse accrue sur plusieurs points : voir le source
-			Version 5.48 25 mai 2019
-				- Possibilité de copier les fichiers de calibration des appareils photos à partir d'un autre chantier
-				- correction d'un bug empêchant le lancement de Tarama
+            Version 1.55 : décembre 2015
+                Sous Windows le fichier paramètre est placé sous le répertoire APPDATA de l'utilisateur,
+                ce qui règle les questions relatives aux droits d'accès en écriture. 
 				
------------------------------------------------------------------------
-History of the main versions of the CEREMA AperoDeDenis interface
-
-              Version 5.53: August 14, 2020
-			  
-              What's New : 
-              - Taking into account the offset for GPS or UAV sites: white bands in dense clouds are removed. 
-                This white stripes effect is due to the large values of the coordinates. The offset used is displayed in the status of the construction site. 
-              - Possibility to define several customized parameters for each MicMac module. 
-              - Add option 'Circ=0' for Tapioca Line, by default the photos of the building site do not 'loop'. 
-              - Adding the fusion of orthomosaics by Gdal_merge, allows to generate custom orthomosaics.  
-              - Adding an item in the Help menu: if several focal lengths, several dimensions, several cameras
-			  - Redesign of the Edit and Help menus: distribution of items in several sub-menus
-              - Additions and corrections to messages, including : 
-                Adding the orthomosaic path in the consultation dialog box 
-                Addition of 2 warnings in the state of the building site: if several focal lengths or several dimensions of photos 
-                Adding the size of the building site in the 'household' dialog box!
-
-			  - Miscellaneous modifications, bug fixes: see at the top of the script
+            Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
+	
+--------------------------------------------------------------------------------------------				
 				
-			Version 5.52 of July 8, 2020 :
-			
-				- Massively Multilingual: English, German, Italian, Spanish, Chinese, Arabic
-				- display of the size of the building site in the "open a building site" dialog box
-				- successive dense point clouds are numbered in order V1, V2, V3...
-				- various improvements, modifications : see the script
-				
-				- the msi installer for Windows is too big for GitHub, ask for it at interface-micmac@cerema.fr.
-				
-			Deconfined version 5.51 of June 23, 2020 :
-
-				- Essentially : add a "Business Tools" item in the main menu		
-				  This new menu allows the calculation of volume between 2 clouds, thus the comparison of clouds.
-				  The comparison is performed on the DTMs built from the clouds.
-				  The point cloud of the deviation is built and visualized.
-				  The main new items :
-					- Writing a DTM from an XYZ file
-					- Calculating the volume of a DTM
-					- Calculate the volume between 2 DTM
-					- View the difference between the 2 DTMs
-					- Writing an XYZ file from a PLY
-				- Added 2 items in the Edit menu to get information about a PLY file.
-					
-				- the item "Write a DTM from a PLY", present in version 5.50 under the expert menu, 
-				  is moved under the menu 'Business Tools', the GRASS format is no longer written
-				
-				- Miscellaneous modifications, bug fixes: see at the top of the script
-				
-			Contained Version 5.50 of May 4, 2020 :
-
-				- Writing as DTM in IGN and GRASS formats of .ply point clouds			
-				- Choice of an EPSG repository for UAV GPS data		
-				- Choice between cloud and mesh for the 3D models obtained by Malt.
-				- Calculation of the non dense cloud becomes optional
-				- Orientation can be copied from another site
-
-				Miscellaneous modifications, bug fixes: see at the top of the script
-
-Older versions in chronological order :
-   
-             Version 1.5: first version diffused on the site of the IGN the 23/11/2015.
-
-             Version 1.55: December 2015
-                Under Windows the parameter file is placed under the APPDATA directory of the user,
-                Which resolves issues related to write access rights.
-
-             Version 1.60:
-              - Added functions:
-              - Quality of photos during the last treatment
-              - Export of the site in progress
-              - Import a site (allows to copy the site on another directory, disk, computer, system)
-              - Added a menu item editing the 3D images.
-              - Several master images, several masks.
-              - Possible selection of PNG, BMP, GIF, TIF files. These files are converted to JPG.
-              - Added an item in the Tools menu to modify exifs.
-              - 'trace' files are saved in utf-8 format.
-
-             Version 2:
-              - Choice of photos for intrinsic calibration by Tapas
-              - Possibility to restart Malt without restarting Tapioca / Tapas while retaining the 3D images generated.
-              - Possible modification of the default options in the tool menu:
-              - the current job options become the default options.
-              - Preservation of all files model3D.ply for the same site.
-              - Choice of the stop zoom level of the Malt procedure: from 1 to 8.
-              - Create all corresponding .ply files at all calculated zoom levels.
-              - Added an item from the edit menu listing and viewing all generated 3D images.
-              - Choice of the number of photos to remember around the master image for Malt.
-              - Processing of videos (for example GoPro): unpacking, selection, update of exif.
-              - Added two controls on the batch of photos: same dimensions, even focal length.
-              - Added a 'history' item in the Help menu.
-
-             Version 2.10: February 2016
-              - Added a menu item editing the 3D images.
-              - Several master images, several masks for Malt.
-              - Possible selection of PNG, BMP, GIF, TIF files.
-              - Added an item in the Tools menu to modify exifs.
-
-             Version 2.20: February 2016
-              - Maintain compatible options when choosing new photos.
-
-             Version 2.30: May 2016
-              - Changing the default options (tool menu).
-              - GPS baseline calculated after Tapas.
-              - The comma becomes an accepted decimal separator.
-              - Possibility to apply GPS calibration without restarting malt.
-
-             Version 2.40: May 2016
-               - Added option (Statue or QuickMac) for C3DC.
-
-             Version 2.45: May 2016
-               - GPS baseline calculated after Tapas (and always before Malt).
-               - The comma is an accepted decimal separator. \ N "+ \
-
-             Version 2.5: June 2016
-              - Added Tawny after Malt in Ortho mode
-
-             Version 2.50: June 2016
-              - Item in the setup menu to disable the launch message.
-
-             Version 2.60: July 2016
-              - entering uncertainties on the position of gps points
-
-			       Version 2.61
-						  - Fixed an upward compatibility bug on GPS points
-
-			       Version 3.00: November 2016
-        			- bilingual version: addition of the English language, by Alexandre Courallet
-        			Language is requested at first launch.
-        			An item in the "Settings" menu allows you to change the language used.
-
-			       Version 3.10: November 2016
-						  - Added an item to select the best photos following the homologous points
-						  (Complete and different from the choice of the best video images)
-						  
-				     Version 3.13 December 2016
-						  - the calibration distance accepts one unit
-						  - launch of Tapas acceleré
-						  - various bug fixes
-						  
-				     Version 3.14 30 December 2016
-						  - correction of a regression at start-up
-			  
-			       Version 3.30: 26 January 2017
-          			New: make a mask on a Tarama mosaic for the Malt Ortho mode and drape the result with a tawny orthomosaic.
-          			1) Possibility of creating a mosaic after tapas on all the photos by "Tarama"
-          			2) enter a mask on the mosaic created: by the mask input tool
-          			3) Launch Malt option Ortho: be careful the photos must relate to a natural terrain such as z = f (x, y) (a single z for all (x, y)
-          			4) Launch Tawny to create an ortho-mosaic on the malt result, to drape the densified cloud
-          			The Malt mask can be inverted: the selection concerns the outside of the polygon instead of the inside.
-          			Menu edition: displaying Tarama and Tawny mosaics
-          			An "expert" menu item for entering and executing commands in "console" mode
-			
-		        Version 3.32 : 7 february 2017
-			       - Ability to copy gps points from one project to another (expert menu)
-             
-             Version 4.0 : 4 april 2017
-    
-            Add menu item : Indices_surfaciques.
-            
-			   Calculation of a regular mesh from a 3D model representing a calibrated or georeferenced surface.
-               This mesh is displayed, the tortuosity and the roughness are calculated.
-               The average profile depth as well as the equivalent average texture depth is calculated.
-               profiles are displayed on the surface or exposed in detail.
-               The mesh pitch is expressed in the unit of the model.
-              
-            Version 4.10 october 2017
-            
-			   Display of the size of the site in MO in the state of the site.
-               The "Household" function offers a choice: clean the site or completely remove it
-               New window icon: cerema logo.
-               Correction of 2 bugs: rename and sometimes irrelevant message on the absence of focal lengths.
-              
-            Version 4.11 Christmas 2017
-				- Release of version 4.10 on GitHub- Release of version 4.10 on GitHub
-
-		     Version 5.0 : January 2018 
-			        - Removal of the item "Area indices" from version 4.0
-			Version 5.1 : 4 december 2018 : 
-					- Options / Tapas: addition of the widget to eliminate the photos used to calibrate the camera
-					- addition of an item in the expert menu: copy the coordinates of the gps points from a text file
-					- modification of the Malt and C3DC tabs, combined in the same "Densification" tab
-					- renaming of the "calibration" tab to "scaling"
-			Version 5.2 January 2019 : 
-					- added parameters for Campari in the GPS options / points window
-					- addition to the mm3d log consultation expert menu
-					- possibility to rename different cameras in the exif
-					- update of dico camera for "all" cameras in the data set
-					- addition of the item "addition of a site from a directory" in the file menu
-			version 5.21 february 2019 :
-					- added possibility to place a "python" order in the expert menu
-					- Modification of the "Autocal" option of Tapas: Figee (instead of Autocal): allows to 'freeze' the initial calibration					
-			version 5.30 21 february 2019 :
-					- in the 'Tools / Photo quality' items, add 'isolated' photos, separate from all the others.
-						These photos make the search for orientation 'crash'.
-					- Following the search for homologous points, verification of the uniqueness of the scene photographed.
-						Several scenes without common homologous points cause the search for an orientation to crash.
-						This function is added to the 'Tools / Photo quality' item.
-					- When the message MAXLINELENGTH is issued by Tapioca it is displayed and explained in the synthetic trace.
-					- taking into account the error concerning the filedialog function on Mac-Os when searching for programs (exiftool ...).
-					- Addition of an item in configuration: search for a new GitHub version.
-			version 5.40 march 2019 :
-					- ergonomic modification of GPC points, next / previous photo in input window
-					- some bug fixes
-					- added layup for quickmac micmac and bigmap options in c3dc
-					- modification of the default option of c3dc: bigmac
-			Version 5.43 18 april 2019
-					- see script
-			Version 5.44 9 may 2019
-					- Addition of the "search" function in the texts displayed by texte201 (trace, help); Ctrl F and F3
-					- Possibility of relaunching Tapas without relaunching Tapioca.
-			Version 5.45 13 may 2019
-					- Securing the import of a site from a directory "
-					- Securing the import of GCP points (Ground Control Point = GPS) from a site or from a file
-					- Addition of the function 'rename a building site' (function removed in V5.41)
-					- Securing the calibration of devices by Tapas (ForCalib option) for sites with a lot of photos	
-			Version 5.46 20 may 2019
-					- Addition of the Tools / Quality item of GCP points
-					- Addition of the item Expert / Customize the optional parameters of the MicMac modules
-			Version 5.47 May 21, 2019
-					- Increased robustness on several points: see source
-			Version 5.48 May 25, 2019
-					- Ability to copy camera calibration files from another site
-					- correction of a bug preventing the launch of Tarama
-			Version 5.49 January 2020
-					- taking into account of the GPS data written by the cameras on board the drones
-						the calculation of a local GWGS84 repository is automatic (uses OriConvert and CenterBascule)
-						There is no longer any need to use proprietary software like AGISOFT
-						The coordinates of the local landmark are provided in WGS84 and Lambert 93 (in mainland France)
-						The user can choose a geocentric reference point or deactivate the function (expert menu)
-					- When the homologous points do not allow to define a single scene it is proposed
-						the user to perform the processing on the scene with the most photos
-					- Possibility of copying homologous points from one site to another
-					- The control of photos before processing has been considerably accelerated
-					- improved ""Let's clean"" and "remove photos" functions				
