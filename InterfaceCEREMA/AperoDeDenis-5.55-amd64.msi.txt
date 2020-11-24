@@ -1,0 +1,2 @@
+The msi file to install version 5.55 of Interface CEREMA can be found at :
+https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA

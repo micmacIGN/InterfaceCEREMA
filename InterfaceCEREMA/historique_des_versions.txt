@@ -1,5 +1,25 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+            Version 5.55 : 24 novembre 2020
+			
+			nouveautés fontionnelles :
+              - Ajout du module schnaps après Tapioca : détecte les photos à rejeter
+              - Aide à la saisie des points GPS : cercle centré sur la position probable
+              - Affichage des points homologues sur les photos
+              - utilisation des points homologues 'réduits' par schnaps
+			
+			Améliorations :
+              - Options personnalisées pour schnaps
+              - Possibilité d'ouvrir 'en grand' les photos en cours de visualisation
+              - Ajout, dans l'aide; d'une présentation de la ... photogrammétrie
+              - Parfois AperoDeDenis s'arrétait suite à un plantage de MicMac, c'est corrigé
+              - Quitter l'interface : les modules mm3d actifs sont tués 
+              - Rapidité améliorée pour la recherche des exifs
+              - Ajout dans l'aide d'un item 'trucs et astuces'
+              - recherche dans les traces : insensible à la casse
+              - quelques modifications de vocabulaire : voir le source
+			  - toutes les traductions mises à jour (en,de,it,es,ar,zh)
+
             Version 5.54 : 21 août 2020
 			
 				- corrections de traductions : le mot "maîtresses" est parfois mal interprété !

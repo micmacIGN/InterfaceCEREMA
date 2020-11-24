@@ -1,149 +1,157 @@
-﻿L'interface CEREMA offre une interface graphique conviviale pour 
-MICMAC, l'outil de photogrammétrie libre de l'IGN.
+The CEREMA interface provides a user-friendly graphical user interface for 
+MICMAC, the IGN's free photogrammetry tool.
 
 The CEREMA interface provides a user-friendly graphical user interface to 
 MICMAC, the IGN's free photogrammetry tool.
 
-Version V 5.54 du 21 août 2020
-- corrections de traductions : le mot "maîtresses" est parfois mal interprété !
-- 'Fraser' devient l'option par défaut de Tapas
+Version V 5.55 of 24 November 2020
+- Addition of the MicMac Schnaps module
+- Display of homologous points
+- Help for entering GPS points 
 
-Version V 5.53 du 14 août 2020
-- Suppression des 'bandes blanches' dans les nuages 3D des chantiers aux coordonnées GPS  
-- multiples améliorations de détails, voir l'historique des versions
+Version V 5.54 of 21 August 2020
+- correction of translations: the word "mistresses" is sometimes misinterpreted!
+- Fraser' becomes the default option for Tapas
 
-Version V 5.52 du 8 juillet 2020
-- Version massivement multilingue : Français, Anglais, Allemand, Italien, Espagnol, Chinois, Arabe
-- Ajout de la taille du fichier dans le menu "ouvrir chantier"
+Version V 5.53 of 14 August 2020
+- Removal of 'white stripes' in 3D clouds of GPS coordinates on construction sites  
+- multiple detail improvements, see version history
 
-Version confinée V 5.512 du 25 juin 2020 :
-- Ajout d'un Menu outils Métier : pour comparer 2 nuages de points
-- diverses améliorations et corrections : voir l'historique et le script
-- l'installateur msi pour Windows est trop gros pour GitHub, le demander à interface-micmac@cerema.fr
+Version V 5.52 of 8 July 2020
+- Massively multilingual version: French, English, German, Italian, Spanish, Chinese, Arabic
+- Adding the file size in the menu "open job site".
 
-Version confinée V 5.50 du 4 mai 2020 :
-- Ecritures des ply au format MNT IGN et GRASS
-- Choix d'un référentiel EPSG pour les données GPS des drones
-- Choix entre maillage et nuage pour les ply densifiés issus de Malt
-- le nuage non dense devient facultatif
-- diverses améliorations et corrections : voir l'historique et le script
+Contained version V 5.512 of 25 June 2020 :
+- Addition of a Business Tools Menu : to compare 2 point clouds
+- various improvements and corrections: see the history and the script
+- the msi installer for Windows is too big for GitHub, ask for it at interface-micmac@cerema.fr.
 
-version V 5.49  15 janvier 2020 :
-- les données GPS des caméras embarquées sur drone sont exploitées pour définir le référentiel des nuages de point.
-  4 nouveaux item dans le menu expert pour gérer ces données GPS.
-- si un lot de photos définit plusieurs scène : proposition de traiter le plus nombreux
-- copie des points homologues d'un chantier à un autre
-- diverses améliorations : voir l'historique et le source
+Contained version V 5.50 of May 4, 2020 :
+- Writing plys in MNT IGN and GRASS format
+- Choice of an EPSG repository for UAV GPS data
+- Choice between mesh and cloud for densified ply from Malt
+- the non dense cloud becomes optional
+- various improvements and corrections: see the history and the script
 
-version V 5.48  25 mai 2019 :
-- récupération de la calibration des appareils à partir d'un autre chantier.
-- les chantiers proposés pour copier les points GCP et la calibration sont filtrés
-- correction d'une régression de la V 5.47 (Tarama bug)
+version V 5.49 15 January 2020 :
+- GPS data from the UAV's onboard cameras are used to define the point cloud referential.
+  4 new items in the expert menu to manage these GPS data.
+- if a batch of photos defines several scenes: proposal to process the most numerous ones
+- copying of homologous points from one job site to another
+- various improvements: see history and source
 
-version V 5.47  21 mai 2019 :
-- diverses améliorations de l arobustesse du programme, voir le source.
+version V 5.48 25 May 2019 :
+- recovery of the calibration of the devices from another site.
+- the sites proposed to copy the GCP points and the calibration are filtered.
+- correction of a regression of V 5.47 (Tarama bug)
 
-version V 5.46  20 mai 2019 :
-- Ajout de l'item Outils/Qualité des points GCP
-- Ajout de l'item Expert/Personnaliser les paramètres optionnels de MicMac
+version V 5.47 21 May 2019 :
+- various improvements of the programme s aromatics, see source.
 
-version V 5.45  13 mai 2019 :
-- Sécurisation de l'import d'un chantier à partir d'un répertoire") + "\n"+\
-- Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier") + "\n"+\
-- Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)") + "\n"+\
-- Sécurisation de la calibration des appareils par Tapas (option ForCalib) pour les chantiers comportant beaucoup de photos
+version V 5.46 20 May 2019 :
+- Addition of the item Tools/GCP points quality
+- Added item Expert/Customise MicMac optional parameters
 
-version V 5.44  9 mai 2019 :
+version V 5.45 13 May 2019 :
+- Securing the import of a building site from a directory") + "\n "+\
+- Securing the import of GCP points (Ground Control Point=GPS) from a building site or a file") + "\n "+\
+- Add function 'rename a job site' (function deleted in V5.41)") + "\n "+\
+- Securing the calibration of the devices by Tapas (ForCalib option) for sites with a lot of photos
 
- - ajout de la fonction "recherche" dans les textes affichés par texte201 (trace, aide) ; Ctrl F puis  F3
- - le ménage dans un chantier ne supprime plus les éventuels chantiers présents dessous
- - affiche le résultat des commandes systèmes dans une fenêtre texte (menu expert/commande système)
- - aprés un échec dans Tapas le choix "option" propose de conserver les points homologues (= item 'lancer micmac')
-Voir liste complète dans le script
+version V 5.44 9 May 2019 :
+
+ - addition of the "search" function in the texts displayed by text201 (trace, help); Ctrl F then F3
+ - the cleaning in a building site no longer removes the possible building sites present underneath it
+ - displays the result of system commands in a text window (menu expert/system command)
+ - after a failure in Tapas the choice "option" proposes to keep the homologous points (= item 'throw micmac')
+See complete list in the script
  
-version V 5.44  :
-	Possibilité de lancer plusieurs instances de l'interface sous windows
-	L'aide 'quelques conseils' répartie sur 3 items
-	Quelques corrections de bugs et modifications mineures : voir le script
+version V 5.44 :
+	Possibility to launch several instances of the interface under windows
+	Help 'some tips' divided into 3 items
+	Some bug fixes and minor modifications: see the script
 	
-version 5.42 04 avril 2019 :
-	Correction d'une régression ce la version 5.41 concernant la trace
+version 5.42 04 April 2019 :
+	Correction of a regression this version 5.41 concerning the trace
 	
-version 5.41 04 avril 2019 :
-	Amélioration ergonomie de la fonction Fichier/du ménage et correction d'un bug
-	L'item de menu "Fichier/renommer le chantier" devient "Enregistrer sous..." avec l'ergoomie correspondante
+version 5.41 04 April 2019 :
+	Ergonomic improvement of the File/Household function and correction of a bug
+	The menu item "File/Rename job" changes to "Save as..." with the corresponding error message.
 
-version 5.40 01 avril 2019 :
-	modification ergonomie saisies des points GPC, photo suivante/précédente dans fenêtre de saisie
-	corrections de bugs
-	ajout du drapage pour les option quickmac micmac et BigMac de c3dc
-	modification de l'option par défaut de c3dc : BigMac
+version 5.40 01 April 2019 :
+	modification ergonomics input of GPC points, next/previous picture in input window
+	bug corrections
+	added draping for c3dc's quickmac micmac and BigMac options
+	modification of c3dc's default option: BigMac
 	
-version 5.34 suite aux conseils de Xavier Rolland (26/03/19)
-- remplacement global de GPS par GCP = Ground Control Point
-- Au retour de saisie des points GCP : fenêtre liste des photos
-- l'affichage des coordonnées des points saisis devient optionnel
-- la limite du zoom dans la fenêtre de saisie des points est augmentée
+version 5.34 following the advice of Xavier Rolland (26/03/19)
+- global replacement of GPS by GCP = Ground Control Point
+- When you return from entering GCP points: photo list window
+- the display of the coordinates of the entered points becomes optional
+- the zoom limit in the point input window is increased
 
-Le 25 mars 2019 : ajout d'un tutoriel pour prendre en main MicMac à travers l'interface CEREMA.
+March 25, 2019: addition of a tutorial to get to grips with MicMac through the CEREMA interface.
 
-Version du 25 mars 2019 : 5.33
-- Possibilité de relancer un chantier non terminé en conservant les points homologues.
-- ajout d'un item au menu expert : modifier la longueur du préfixe utilisé pour définir plusieurs appareils. 
-- suppression pour les anciennes versions des installateurs windows 32 bits et linux.
-  Ces installateurs (msi 32 bit pour la version 5.0 ; deb et rpm pour la version 3.14) restent disponibles dans l'historique Github. 
+March 25th 2019 version: 5.33
+- Possibility of restarting an unfinished building site while keeping the homologous points.
+- Addition of an item to the expert menu: change the length of the prefix used to define several devices. 
+- removal for old versions of 32-bit windows and linux installers.
+  These installers (msi 32 bit for version 5.0; deb and rpm for version 3.14) remain available in the Github history. 
 
-Version du 12 mars 2019 : 5.32
-- la recherche d'une nouvelle version sur le web propose la visualisation du fichier "readme.txt" (Outils/véifier la présence...)
-- sous windows : avertissement si la longueur d'une ligne de commande dépasse 8191 caractères, risque de plantage 
-- correction bug lors de la définition de plusieurs appareils photos, amélioration de la vitesse du traitement 
+Version of 12 March 2019: 5.32
+- the search for a new version on the web proposes the visualization of the file "readme.txt" (Tools/check presence...)
+- under windows : warning if the length of a command line exceeds 8191 characters, risk of crashing 
+- correction bug when defining several cameras, improvement of the processing speed 
 
-Version du 8 mars 2019 : 5.31
-- Les échelles par défaut de Tapioca sont calculées suivant les photos : 60% de la dimension maxi des photos
-- suppresssion des items de menu outils\qualité des photos line et qualité des photos ALL,
-  maintient de la qualité des photos sur le dernier traitement
-- Ajout d'un controle d'unicité de la scène aprés le premier passage, rapide, de Tapioca MultiScale :
-  évite de se lancer dans une recherche approfondie de points homologues si l'échec est prévu
-- Ajout de 1 item au menu outils : retirer des photos au chantier
-- optimisation de la fonction "Expert/plusieurs appareils"
-- l'installateur msi pour Windows installe un item dans le menu démarrer, un raccourci sur le bureau et
-  ajoute le répertoire d'installation au path
+March 8, 2019 version: 5.31
+- Tapioca's default scales are calculated according to the photos: 60% of the maximum dimension of the photos
+- Deleting the tool menu items\line photo quality and ALL photo quality,
+  maintains the quality of the photos on the last treatment
+- Addition of a stage uniqueness control after the first, fast passage of Tapioca MultiScale :
+  avoids the need for an in-depth search for homologous points if failure is expected.
+- Add 1 item to the tools menu: remove photos from the worksite
+- optimisation of the "Expert/multiple devices" function
+- the msi installer for Windows installs a start menu item, a desktop shortcut, and
+  adds the installation directory to the path
 
-Plusieurs nouveautés dans la version 5.30 février 2019:
-- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
-  Ces photos font 'planter' la recherche de l'orientation.
-- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
-  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
-  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
-- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
-- prise en compte de l'erreur concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
-- Ajout d'un item dans paramètrage : recherche d'une nouvelle version GitHub.
+Several new features in version 5.30 February 2019:
+- in the 'Tools/Photo Quality' items, added 'isolated' photos, in disjunction of all the others.
+  These photos make the orientation search 'crash'.
+- Following the search for homologous points, verification of the uniqueness of the photographed scene.
+  Several scenes with no common homologous points cause the search for orientation to fail.
+  This function is added to the 'Tools/Photo quality' item.
+- When the MAXLINELENGTH message is issued by Tapioca, it is displayed and explained in the synthetic trace.
+- The error concerning the filedialog function in Mac-Os is taken into account when searching for programmes (exiftool...).
+- Addition of an item in parameter setting : search for a new GitHub version.
 
-dans les versions 5.2 :
-- lancement automatique de campari après GCP_bascul (menu MicMac/options/points gps)
-- ajout de la consultation du log mm3d (menu expert)
-- mise à jour de dicocamera.xml pour "tous" les appareils photos du lot de données (menu outils)
-- ajout d'un chantier à partir d'un répertoire (menu fichier)
-- ajout d'un item dans le menu expert : ouverture d'une console pour lancer des commandes "python"
+in versions 5.2 :
+- automatic launch of campari after GCP_bascul (menu MicMac/options/gps points)
+- addition of mm3d log consultation (expert menu)
+- update of dicocamera.xml for "all" cameras in the dataset (tools menu)
+- adding a job site from a directory (file menu)
+- addition of an item in the expert menu: opening of a console to launch "python" commands
 
-Plusieurs nouveautés dans la version 5.11 : 
+Several new features in version 5.11 : 
 
-- menu MicMac/options : l'onglet "calibration" est renommé : "mise à l'échelle"
-- menu MicMac/option/Tapas : les photos pour calibrer l'appareil photo sont, ou pas, indépendantes des photos utilisées pour construire le nuage
-- menu outils/nom de l'appareil photo : affichage des dimensions des photos et du numéro de série de l'appareil (si présent dans l'exif)
-- Menu Expert, nouveaux item :
-  - saisie des points GPS à partir d'un fichier texte (séparateur espace  : nom, x,y,z, dx,dy,dz)
-  - possibilité de répartir les photos suivant plusieurs appareils photos 
-  - liste des différents appareils photos présents dans le lot de photos
+- MicMac menu/options: the "calibration" tab is renamed: "scaling".
+- MicMac/option/Tapas menu: the photos to calibrate the camera are, or not, independent of the photos used to build the cloud
+- tools/camera name menu: display of photo dimensions and camera serial number (if present in the exif)
+- Expert menu, new items :
+  - entry of GPS points from a text file (space separator: name, x,y,z, dx,dy,dz)
+  - possibility to divide the photos into several cameras 
+  - list of the different cameras present in the batch of photos
   
-Pour plus de détail voir l'item de menu "Aide/historique" ou le code source.
-Première diffusion sur internet : le 23 novembre 2015.
+For more details see the menu item "Help/History" or the source code.
+First webcast: 23 November 2015.
 
 
-Un installateur msi facilite l'installation sous Windows 64 bits.
-Sous linux et mac/os : voir la documentation
+An msi installer facilitates the installation under 64-bit Windows.
+Under linux and mac/os: see the documentation
  
-L'application MicMac de l'IGN doit être installée :
+The IGN MicMac application must be installed :
 https://micmac.ensg.eu/index.php/Install
-Voir aussi :
-https://github.com/micmacIGN ou http://logiciels.ign.fr/?Micmac )
+See also :
+https://github.com/micmacIGN or http://logiciels.ign.fr/?Micmac )
+
+Translated with www.DeepL.com/Translator (free version)
+

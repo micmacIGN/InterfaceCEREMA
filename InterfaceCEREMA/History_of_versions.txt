@@ -1,5 +1,26 @@
 History of the main versions of the CEREMA AperoDeDenis interface
 
+
+			Version 5.55: 24 November 2020
+			
+			functional novelties :
+              - Adding the schnapps module after Tapioca : detects photos to reject
+              - Help for entering GPS points: circle centred on the probable position
+              - Display of homologous points on photos
+              - use of 'reduced' homologous points per schnapps
+			
+			Improvements :
+              - Customised options for schnapps
+              - Possibility to open 'wide' the photos being viewed.
+              - Addition, in the help section, of a presentation of the ... photogrammetry
+              - Sometimes AperoDeDenis stopped after a MicMac crash, it's been corrected
+              - Leaving the interface: active mm3d modules are killed 
+              - Improved speed for searching for exifs
+              - Adding a 'tips and tricks' item in the help file
+              - search in the traces: case-insensitive
+              - some changes in vocabulary: see the source
+			  - all updated translations (en,de,it,es,ar,zh)
+
             Version 5.54: August 21, 2020
 			
 				- translation corrections: the word "mistresses" was sometimes misinterpreted!
