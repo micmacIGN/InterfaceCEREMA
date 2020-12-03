@@ -445,6 +445,12 @@
 # traductions mises à jour en anglais, italien, allemand, espagnol, arabe, chinois
 # correction : self.mercurialmm3d remplacé par self.mercurialMicMac
 
+# V 5.56 : 3 décembre 2020 correction de 2 bugs et modif 2 options par défaut
+# modfif options par défaut : pas de nuage non dense, Malt Ortho au lieu de C3DC
+# correction faute de frappe resulé2200... empêche l'ouverture de la console python
+# remise de maitreSansChemin dans l'initialisation : le démarrage sur un nouveau micro n'enregistrait pas les chantiers
+
+
 # a faire :
 #le nombre de scènes varient entre les 2 passage de tapioca option Multiscale ! Mal géré actuelement.
 # Propager effectivement l'option ExpTxt vers tapas, campari, apericloud...
@@ -729,7 +735,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.55"
+numeroVersion = "5.56"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -3523,6 +3529,8 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version 5.56 :")+chr(9)+_("3 décembre 2020") + "\n\n"+\
+              chr(9)+chr(9)+_("- Correction de 2 bugs et modif de 2 options par défaut. Voir le source.") + "\n"+\
               "\n" + _("Version 5.55 :")+chr(9)+_("novembre 2020") + "\n\n"+\
               chr(9)+chr(9)+_("- Ajout du module schnaps après Tapioca : détecte les photos à rejeter") + "\n"+\
               chr(9)+chr(9)+_("- Aide à la saisie des points GPS : un cercle rouge centré sur la position probable") + "\n"+\
@@ -3992,14 +4000,14 @@ class Interface(ttk.Frame):
 
     # Calculer le nuage non dense :
     
-        self.calculNuageNonDense.set(1)                         # par défaut : le nuage non dense est calculé
+        self.calculNuageNonDense.set(0)                         # par défaut : le nuage non dense est calculé=1, pas calculé = 0
         
     # Malt
     # mieux que Mic Mac qui prend par défaut le masque de l'image maitre avec le nom prédéfini masq
 
         self.modeCheckedMalt.set('Ortho')                       # par défaut (GeoImage,AperoDedenis,UrbanMNE,Ortho
         self.photosUtilesAutourDuMaitre.set(5)                  # 5 autour de l'image maître (les meilleures seront choisies en terme de points homologues)
-        self.tawny.set(1)                                       # lancement par défaut de Tawny après Malt Ortho (1, sinon 0)
+        self.tawny.set(1)                                       # lancement par défaut de Tawny après Malt Ortho (1, sinon 0 pas lancé)
         self.zoomF.set('4')                                     # doit être "1","2","4" ou "8" (1 le plus détaillé, 8 le plus rapide)
         self.etapeNuage                 = "5"                   # par défaut (très mystérieux!)
         self.modele3DEnCours            = "modele3D.ply"        # Nom du nuage en cours de traitement avec son niveau de zoom
@@ -4022,7 +4030,7 @@ class Interface(ttk.Frame):
 
     # choix de la densification par défaut : C3DC ou MALT
     
-        self.choixDensification.set("C3DC")                     # valeur possible : C3DC ou Malt
+        self.choixDensification.set("Malt")                     # valeur possible : C3DC ou Malt Malt pour avoir une ortho
         
     # Tawny : drapage pour nuage dense généré par MALT option Ortho  : nom du fichier généré
 
@@ -4512,7 +4520,7 @@ class Interface(ttk.Frame):
                                                 # simplifiable !
         try:
             self.etatSauvegarde = ""             
-            self.sauveParam()                   # sauve les paramètres généraux et ceux du chantier
+            self.sauveParam()                   # sauve les paramètres généraux et ceux du chantier 
             try: shutil.copy(self.fichierParamChantierEnCours,self.repTravail)          # pour éviter de copier un fichier sur lui même
             except Exception as e:
                 print(heure()," "+_("anomalie copie fichier param chantier : %s vers %s ")
@@ -5572,7 +5580,7 @@ class Interface(ttk.Frame):
         self.encadrePlus("\n"+_("Controle des photos (dimensions et focales)... Patience"))
         message = str()
         
-        ######### définir le dictionnnaire de tous les tags utiles :
+        ######### définir le dictionnnaire de tous les tags utiles depuis l'exif des photos :
         
         self.tousLesTagsUtiles()
         
@@ -5588,7 +5596,7 @@ class Interface(ttk.Frame):
             message += _("Attention : les dimensions des photos ne sont pas toutes identiques.") + "\n"+\
                       "\n" + _("Le traitement par MicMac ne sera peut-être pas possible.") + "\n\n"
             
-        # conséquences du choix de nouvelles photos sur un ancien chantier : on supprime tous le répertoire de travail ancien
+        # conséquences du choix de nouvelles photos sur un ancien chantier : on supprime tout le répertoire de travail ancien
         # on conserve les options
         #  - s'il y a une visualisation en cours des photos ou du masque on la ferme
 
@@ -8527,17 +8535,19 @@ class Interface(ttk.Frame):
                 return ligne.strip(" -")          
         if 'BEGIN BLOC' in ligne:
             return " - "+ligne.strip(" -")        
-    
+
     def reinitialiseMaitreEtMasque(self):                                                       # on conserve si la photo appartient au nouveau lot
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
-        self.maitre                     =   str()               
+        self.maitre                     =   str()        
+        self.maitreSansChemin           =   str()                                               # image maître        
         self.fichierMasqueXML           =   str()                                               # nom du fichier XML décrivant le masque
+        self.maitreSansExtension        =   str()
         self.monImage_MaitrePlan        =   str()                                               # Nom de l'image maître du plan repere (sans extension)
         self.monImage_PlanTif           =   str()                                               # nom du masque correspondant
         self.listeDesMaitresses         =   list()                                              # liste des images maitresses
         self.listeDesMasques            =   list()                                              # liste Des Masques associès aux maîtres
-        self.miseAJourItem701_703()                                                             # met à jour les windgets de l'onglet Malt
-
+        self.miseAJourItem701_703()
+        
     def reinitialiseMaitreEtMasqueDisparus(self):                                               # on conserve les options si la photo appartient au nouveau lot (photos = liste avec chemins)
 
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
@@ -14828,7 +14838,7 @@ class MyDialogTexte:
         fenetreIcone(self.top)                
         l=ttk.Label(top, text=titre)
         l.pack(pady=10,padx=10)
-        self.resulé2200 = ttk.Frame(top,height=100,relief='sunken')  # fenêtre texte pour afficher le bilan
+        self.resul2200 = ttk.Frame(top,height=100,relief='sunken')  # fenêtre texte pour afficher le bilan
         self.scrollbar = ttk.Scrollbar(self.resul2200)
         self.scrollbar.pack(side='right',fill='y',expand=1)              
         self.scrollbar.config(command=self.yviewTexte)
