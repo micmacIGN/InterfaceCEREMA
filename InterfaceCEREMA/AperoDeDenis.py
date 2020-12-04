@@ -12667,7 +12667,6 @@ class Interface(ttk.Frame):
                             self.nuage2Mesh.get(),
                             self.tolerance,
                             self.arrondi,
-                            self.afficherPointsHomologues,
                             ),
                         sauvegarde3)
             sauvegarde3.close()
@@ -12708,7 +12707,6 @@ class Interface(ttk.Frame):
             self.nuage2Mesh.set(r[22])
             self.tolerance=r[23]
             self.arrondi=r[24]
-            self.afficherPointsHomologues=[25]
         except Exception as e:
             print(_("erreur restauration options : ")+str(e))
         # Restauration des paramètres nommés personnalisés : si pas alors initialisation
