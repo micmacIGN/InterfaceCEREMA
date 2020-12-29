@@ -1,5 +1,9 @@
 History of the main versions of the CEREMA AperoDeDenis interface
 
+            Version 5.56.1 : 29 december 2020
+			
+			Some corrections. See the source.
+			
             Version 5.56 : 3 december 2020
 			
 			Correction of 2 bugs and modification of 2 default options. See the source.

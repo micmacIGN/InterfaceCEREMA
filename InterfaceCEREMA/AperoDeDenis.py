@@ -446,12 +446,28 @@
 # correction : self.mercurialmm3d remplacé par self.mercurialMicMac
 
 # V 5.56 : 3 décembre 2020 correction de 2 bugs et modif 2 options par défaut
-# modfif options par défaut : pas de nuage non dense, Malt Ortho au lieu de C3DC
+# modif options par défaut : pas de nuage non dense, Malt Ortho au lieu de C3DC
 # correction faute de frappe resulé2200... empêche l'ouverture de la console python
 # remise de maitreSansChemin dans l'initialisation : le démarrage sur un nouveau micro n'enregistrait pas les chantiers
-
+# suppression de affichagedespointshomologues dans les paramètres : cela doit rester exceptionnel
+# ajout d'un item dans le menu Metier : conversion d'un MNT en XYZ
+# ajout d'une fonction générique : abandon()
+# si pas de chantier : pas d'affichage de la trace
+# suppression import signal, tempfile
+# a propos : 2015-2021 au lieu de 2015-2020
+# visualiser les orthos mosaïques : ajout de la mosaique "fusion" avec la mosaique tawny
+# modif supprimeArborescenceSauf : suppression du répertoire si vide
+# modif duMenage : plus robuste suppression complète effective même si le nom du chantier est un nom de fichier ou le répertoire absent
+# ajout d'un chantier dans la liste : strip() du chemin 
+# modif mydialogtexte : la saisie en retour est strictement la saisie effectuée par l'utilisateur, sans \n
+# modif expert/commmande système et python si saisie = '' : message d'abandon utilisateur
+# modif version : 5.56.1
+# correction du message si il y a un espace dans le chemin de micmac/bin (le début était absent)
+# remplacement du chemin de micmac/bin : source devient source.strip()
 
 # a faire :
+# en cas d'orientation non trouvée les points homologues sont supprimées depuis le 5.55 : revenir à l'état antérieur
+# le mode UrbanMNE de Malt n'est pas correctement pris en compte (pas de nuage de points....)
 #le nombre de scènes varient entre les 2 passage de tapioca option Multiscale ! Mal géré actuelement.
 # Propager effectivement l'option ExpTxt vers tapas, campari, apericloud...
 ##1) vérifier si après l'install la vérif d'une nouvelle version est faite : non, ok
@@ -528,13 +544,11 @@ import shutil                               # copie des fichiers, gestions répe
 import time
 import sys                                  # info système
 import subprocess                           # appel des procédures MicMac
-import signal
 import traceback                            # uniquement pour pv : affiche les propriétés des variables (qui sert pour débug)
 from   PIL import Image                     # pour travailler sur les images, définir le masque, placer les points GCP : PIL
 from   PIL import ImageTk
 from   PIL import ImageDraw
 import base64
-import tempfile
 import inspect
 import zipfile
 import ctypes
@@ -735,7 +749,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.56"
+numeroVersion = "5.56.1"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -1623,7 +1637,7 @@ class Interface(ttk.Frame):
         menuEdition.add_separator()
         menuEditionAffiche = tkinter.Menu(menuEdition,tearoff = 0)
         menuEditionAffiche.add_command(label=_("Afficher la mosaïque Tarama"), command=self.afficheMosaiqueTarama)
-        menuEditionAffiche.add_command(label=_("Afficher l'ortho mosaïque Tawny"), command=self.afficheMosaiqueTawny)        
+        menuEditionAffiche.add_command(label=_("Afficher les orthos mosaïque"), command=self.afficheLesOrthos)      
         menuEditionAffiche.add_separator()
         menuEditionAffiche.add_command(label=_("Afficher l'image 3D non densifiée"), command=self.afficheApericloud)         
         menuEditionAffiche.add_command(label=_("Afficher l'image 3D densifiée"), command=self.affiche3DNuage)
@@ -1745,12 +1759,12 @@ class Interface(ttk.Frame):
         
         self.miseAJourLibelleNavigationGPS()
                 
-
         # menu métiers
 
         menuMetier = tkinter.Menu(mainMenu,tearoff = 0)         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
         menuMetier.add_command(label=_("Ecrire un MNT à partir d'un PLY"), command=self.ply2Mnt)
-        menuMetier.add_command(label=_("Ecrire un MNT à partir d'un fichier XYZ"), command=self.xyz2Mnt)                       
+        menuMetier.add_command(label=_("Ecrire un MNT à partir d'un fichier XYZ"), command=self.xyz2Mnt)
+        menuMetier.add_command(label=_("Visualiser un fichier MNT"), command=afficheMNTIGN)        
         menuMetier.add_separator()
         menuMetier.add_command(label=_("Information sur le calcul des volumes"), command=infoVolume)
         menuMetier.add_command(label=_("Calculer le volume d'un MNT"), command=calculVolumeMnt)        
@@ -1763,8 +1777,7 @@ class Interface(ttk.Frame):
         menuMetier.add_command(label=_("Ecrire un fichier XYZ à partir d'un PLY"), command=self.ecrireXYZ)
         menuMetier.add_command(label=_("Visualiser un fichier XYZ"), command=self.afficheXYZ)        
         menuMetier.add_separator()         
-        menuMetier.add_command(label=_("Aide sur les outils métiers"), command=self.aideOutilsMetiers)         
-     
+        menuMetier.add_command(label=_("Aide sur les outils métiers"), command=self.aideOutilsMetiers)
 
         # Paramétrage : mise à jour dynamique des menus dépendants du contexte      
 
@@ -3529,6 +3542,8 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version 5.56.1 :")+chr(9)+_("29 décembre 2020") + "\n\n"+\
+              chr(9)+chr(9)+_("- Quelques améliorations/corrections. Voir le source.") + "\n"+\
               "\n" + _("Version 5.56 :")+chr(9)+_("3 décembre 2020") + "\n\n"+\
               chr(9)+chr(9)+_("- Correction de 2 bugs et modif de 2 options par défaut. Voir le source.") + "\n"+\
               "\n" + _("Version 5.55 :")+chr(9)+_("novembre 2020") + "\n\n"+\
@@ -3835,7 +3850,7 @@ class Interface(ttk.Frame):
 
     # A propos
     
-        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2020") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
+        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2021") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
                                 _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr")
 
 
@@ -3935,7 +3950,6 @@ class Interface(ttk.Frame):
         
         self.etatDuChantier             =   0
         self.tailleDuChantierEnMO       =   -1
-        
     # Type de chantier : c'est une liste de string (on pourrait aussi mettre un dictionnaire), avec :
     # [0] = s'il s'agit de 'photos' ou d'une 'vidéo' ou d'un travail "métier" sans chantier
     # [1] = s'il s'agit d'un chantier 'initial' ou 'renommé'
@@ -4110,7 +4124,9 @@ class Interface(ttk.Frame):
         
     ################# Le Menu FICHIER : Ouvre un nouveau chantier avec les valeurs par défaut, ouvre un chantier existant, enregistrer, renommer, supprimer 
 
-    # Enregistre le chantier précédent, prépare un chantier vide avec le répertoire de travail par défaut   
+    # Enregistre le chantier précédent, prépare un chantier vide avec le répertoire de travail par défaut
+    # appelé lors de changement de photos...
+
 
     def nouveauChantier(self):                                          # conserve : micMac,meshlab,tousLesRepertoiresDeTravail
         self.menageEcran()
@@ -4138,7 +4154,8 @@ class Interface(ttk.Frame):
                    
     def ouvreChantier(self):
         self.menageEcran()
-        self.enregistreChantier()   # enregistrement systématique du chantier précédent (la variable self.etatSauvegarde est peu fiable)
+        if self.etatDuChantier!=0:       # s'il y a des photos
+            self.enregistreChantier()    # enregistrement systématique du chantier précédent (la variable self.etatSauvegarde est peu fiable)
         bilan = self.choisirUnChantier(_("Choisir un chantier."))        # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if bilan!=None:
             self.encadre(bilan)
@@ -4221,6 +4238,9 @@ class Interface(ttk.Frame):
             return chantierExistant      
 
     def deplacerChantier(self):
+        if self.etatDuChantier==0:
+            self.encadre(_("Pas de photos : pas de chantier."))            
+            return
         message = _("Cette fonction permet de changer le chemin du chantier dans l'arborescence.")
         message += "\n"+"\n"+_("Le chantier sera déplacé sous le répertoire choisi. Il garde son nom")                                                    
         if MyDialog_OK_KO(fenetre,titre=_("Enregistre sous..."),texte=message,b1="OK",b2="KO").retour!=1:
@@ -4231,9 +4251,7 @@ class Interface(ttk.Frame):
                                                                     title = _("Choisir ou créer le répertoire ou sera enregistré le chantier"),
                                                                     parent=fenetre,
                                                                     )
-        if not nouveauRepChantier:
-            self.encadre(_("Abandon utilisateur"))
-            return
+        if not nouveauRepChantier: return abandon()
 
         if os.path.isfile(nouveauRepChantier):      # c'est un nom de fichier : abandon
             self.encadre(_("Le chemin choisi est un nom de fichier : abandon !"))
@@ -4263,7 +4281,7 @@ class Interface(ttk.Frame):
         oschdir(self.repertoireData)                                              # quitter le répertoire courant
         # Avant la copie ou le renommage, il faut d'abord supprimer le répertoire destination :
         if os.path.isdir(nouveauRepertoire):      # c'est pas un répertoire : abandon
-            try: os.rmdir(nouveauRepertoire)
+            try: os.rmdir(nouveauRepertoire)    # suppression racine mais il faut qu'elle soit "vide"
             except Exception as e:
                 self.encadre(_("Le répertoire\n %s \ndestination est probablement non vide :\nErreur :  %s.\n Abandon.") %   (nouveauRepertoire,str(e)))
                 return   
@@ -4489,6 +4507,7 @@ class Interface(ttk.Frame):
         self.menageEcran()
         nouveauRepChantier  = tkinter.filedialog.askdirectory(title=_('Désigner le répertoire contenant un chantier '),
                                                         initialdir=self.repTravail)
+        if not nouveauRepChantier: return abandon()
         if nouveauRepChantier in self.tousLesChantiers:
             self.encadre(_("Ce répertoire est déjà un chantier. Abandon"))
             return
@@ -4522,9 +4541,7 @@ class Interface(ttk.Frame):
             self.etatSauvegarde = ""             
             self.sauveParam()                   # sauve les paramètres généraux et ceux du chantier 
             try: shutil.copy(self.fichierParamChantierEnCours,self.repTravail)          # pour éviter de copier un fichier sur lui même
-            except Exception as e:
-                print(heure()," "+_("anomalie copie fichier param chantier : %s vers %s ")
-                                  % (self.fichierParamChantierEnCours,self.repTravail) ,str(e))
+            except Exception as e: pass
             fenetre.title(self.etatSauvegarde+self.titreFenetre)            
         except Exception as e:
             self.ajoutLigne(_("Erreur lors de la copie du fichier paramètre chantier") + "\n" + self.fichierParamChantierEnCours + "\n" + _("vers") + "\n" + self.repTravail + "\n" + _("erreur :") + "\n" +str(e))
@@ -4708,6 +4725,9 @@ class Interface(ttk.Frame):
                         texte = texte+"\n" + _("Drapage demandé")+"\n"
                     else:
                         texte = texte+"\n" + _("Pas de drapage")+"\n"
+
+                if self.modeCheckedMalt.get()=="UrbanMNE":
+                    texte += "\n"
                                                 
                 texte = texte +_("arrêt au zoom : %s, rendu : ") % (str(self.zoomF.get()))
 
@@ -4727,7 +4747,7 @@ class Interface(ttk.Frame):
             # 5 terminé après malt ou c3dc,
             # 6 terminé, redevenu modifiable (??)
             # 7 : la densification a échoué
-            
+
             if self.etatDuChantier == 0:                                        # pas encore de chantier
                 texte = texte+"\n" + _("Chantier en cours de définition.") + "\n"
 
@@ -5019,7 +5039,8 @@ class Interface(ttk.Frame):
                              message="",
                              messageBouton=_("Fermer"))
 
-    def afficheMosaiqueTawny(self):
+    def afficheLesOrthos(self): # les orhos tawny et fusion
+        listeOrthos = []
         orthoMosaiqueTIF = os.path.join(self.repTravail,"Ortho-MEC-Malt",self.orthoMosaiqueTawny) # chemin complet
         if not os.path.exists(orthoMosaiqueTIF):
             orthoMosaiqueTIF = os.path.join(self.repTravail,self.orthoMosaiqueTawny) # chemin après ménage
@@ -5029,14 +5050,24 @@ class Interface(ttk.Frame):
         orthoMosaiqueJPG = os.path.splitext(orthoMosaiqueTIF)[0]+".JPG"
         if not os.path.exists(orthoMosaiqueJPG):
             self.conversionJPG(liste=[orthoMosaiqueTIF])
-            if not os.path.exists(orthoMosaiqueJPG):
-                self.encadre(_("Echec de la conversion de la mosaïque TIF en JPG."))    
-                return        
-
-        self.choisirUnePhoto([orthoMosaiqueJPG],
+        if os.path.exists(orthoMosaiqueJPG):            
+            listeOrthos.append(orthoMosaiqueJPG)
+        # ortho fusionnée par GDAL sur demande utilisateur :
+        orthoMosaiqueFusion = os.path.join(self.repTravail,"Ortho-MEC-Malt","fusion.tif") # chemin complet
+        orthoMosaiqueFusionJPG = os.path.splitext(orthoMosaiqueFusion)[0]+".JPG"        
+        if not os.path.exists(orthoMosaiqueFusion):
+            orthoMosaiqueFusion = os.path.join(self.repTravail,"fusion.tif") # chemin après ménage
+        orthoMosaiqueFusionJPG = os.path.splitext(orthoMosaiqueFusion)[0]+".JPG"             
+        if os.path.exists(orthoMosaiqueFusionJPG):
+                supprimeFichier(orthoMosaiqueFusionJPG)            
+        self.conversionJPG(liste=[orthoMosaiqueFusion])
+        if os.path.exists(orthoMosaiqueFusionJPG):
+            listeOrthos.append(orthoMosaiqueFusionJPG)       
+        if not listeOrthos: return abandon(_("Pas d'orthomosaïque"))
+        self.choisirUnePhoto(listeOrthos,
                              titre=_('Ortho mosaique créée par Tawny'),
                              mode='single',
-                             message=_("fichier : ")+"\n"+orthoMosaiqueJPG,
+                             message=_("fichiers orthomosaïques"),
                              messageBouton=_("Fermer"))
         
 ############### Affichages des traces
@@ -5045,6 +5076,9 @@ class Interface(ttk.Frame):
         self.lectureTraceMicMac(complete=False)
         
     def lectureTraceMicMac(self,complete=True):
+        if self.etatDuChantier==0:
+            return abandon(_("Pas de chantier, pas de trace"))
+            
         self.ecritureTraceMicMac()        
         if complete:
             contenu = lireFichier(self.traceMicMacComplete)
@@ -5193,14 +5227,16 @@ class Interface(ttk.Frame):
         # Choisir le répertoire de MicMac
         
         source=tkinter.filedialog.askdirectory(title=_('Désigner le répertoire bin sous Micmac '),initialdir=self.micMac)
+        source = source.strip()
         if len(source)==0:
             texte=_("Abandon, pas de changement.") + "\n" + _("Répertoire bin de Micmac :") + "\n\n"+afficheChemin(self.micMac)
             self.encadre(texte)
             return
 
         if " " in source:
-            texte = _("Le chemin du répertoire bin de micmac ne doit pas comporter le caractère 'espace'.") + "\n"
-            texte = _("Renommer le répertoire de MicMac.") + "\n"            
+            texte = _("Le chemin du répertoire bin de micmac ne doit pas comporter le caractère 'espace' : ") + "\n"
+            texte +=  "'"+source+"'\n"
+            texte += _("Déplacer ou renommer le répertoire de MicMac.") + "\n"            
             texte += _("Abandon, pas de changement.") + "\n" + _("Répertoire bin de Micmac :") + "\n\n"+afficheChemin(self.micMac)
             self.encadre(texte)
             return
@@ -5208,8 +5244,7 @@ class Interface(ttk.Frame):
         # mm3d  sous Windows :
         
         if self.systeme=="nt":
-            mm3d = os.path.join(source,"mm3d.exe")
-            
+            mm3d = os.path.join(source,"mm3d.exe")           
             if os.path.exists(mm3d):
                 self.micMac = source
                 self.mm3d = mm3d
@@ -9859,8 +9894,7 @@ class Interface(ttk.Frame):
                _("Possibilité de copier une commande du fichier mm3d-LogFile.txt.")+"\n"+                 
                _("Le tout sous votre responsabilité"))                
         new = MyDialogTexte(fenetre,texte,basDePage=bas,boutonDialogueTexteOk="Exécuter")
-        if new.saisie=="":
-            return
+        if not new.saisie: return abandon()
         lignes = new.saisie.split("\n")
         self.cadreVide()
         self.ecritureTraceMicMac()
@@ -9892,8 +9926,7 @@ class Interface(ttk.Frame):
                _("et aussi dans la trace synthétique.")+"\n"+                 
                _("Le tout sous votre responsabilité"))                
         new = MyDialogTexte(fenetre,texte,basDePage=bas,boutonDialogueTexteOk="Exécuter")
-        if new.saisie=="":
-            return
+        if not new.saisie: return abandon()
         lignes = new.saisie.split("\n")
         self.cadreVide()
         self.ecritureTraceMicMac()
@@ -9919,15 +9952,14 @@ class Interface(ttk.Frame):
                     r="\n"+_("L'exécution de la commande python retourne la valeur : ")+"\n"                     
                     r+="\n".join(wrap(str(resul1),100))   # on coupe tout les 100 caractères                
                 else:
-                    print("e exec = ",e_exec)
-                    r="\n"+_("L'éxécution de la commande python ne retourne pas de valeur")+"\n"+e_exec
-                    
+                    r="\n"+_("L'éxécution de la commande python %s ne retourne pas de valeur") % (ligne) +"\n"+e_exec
+                    print(r)                    
                 self.encadrePlus("\n"+r)
                 if resul2:
                     r="\n"+_("L'évaluation de la commande python retourne la valeur : ")+"\n"                     
                     r+="\n".join(wrap(str(resul2),100))   #on coupe tout les 100 caractères                
                 else:                   
-                    r="\n"+_("L'évaluation de la commande python ne retourne pas de valeur")+"\n"+e_eval
+                    r="\n"+_("L'évaluation de la commande python %s ne retourne pas de valeur") % (ligne)+"\n"+e_eval
                 self.encadrePlus("\n"+r)
                 self.ajoutLigne(r)
                     
@@ -10971,7 +11003,6 @@ class Interface(ttk.Frame):
         if "." not in premiereVersion: # pour éviter les éventuelles confusions avec un autre " V "
             return
         versionGitHub = premiereVersion.split()[1]
-        print("versionGitHub = '",versionGitHub,"' numéro version = '",numeroVersion,"'")
         if versionGitHub.strip() == numeroVersion.strip():             # version utilisateur sous la forme : " V 5.43 " non trouvée dans version GitHub (espace V majuscule espace numéro espace)
             return True
         else:
@@ -11012,7 +11043,7 @@ class Interface(ttk.Frame):
         # rien à faire
         
         if len(self.selectionPhotosAvecChemin)==0:
-            return
+            return abandon()
 
         # Suppression de la taille des chantiers :
         self.selectionPhotosAvecChemin = [ e.split(" : ")[0] for e in self.selectionPhotosAvecChemin]
@@ -11045,28 +11076,33 @@ class Interface(ttk.Frame):
             self.encadre(_("Suppression en cours....")  + "\n")
             erreur = str()
             for e in self.selectionPhotosAvecChemin:
-                if os.path.exists(e):
+                e = e.strip()   # rmtree supporte pas les espaces superflus (contrairement à os.path)
+                                # pour compatibilité avec anciennes versions qui laissait passer des espaces
+                if os.path.isdir(e):
                     espaceGagne+=sizeDirectoryMO(e)
                     if self.repTravail==e:
                         self.etatDuChantier = -1
                         texte=_("Le chantier en cours %s est supprimé. Un nouveau chantier est proposé") % (self.chantier)+ "\n"                    
                         self.nouveauChantier()
-                        time.sleep(0.1)
-                    try: shutil.rmtree(e)   # suppression arborescence sous racine, la racine reste présente il faut ensuite la supprimer
-                    except Exception as e:
-                        erreur +="erreur rmtree = "+str(e)
-                        pass
-                    try:    os.rmdir(e)     # suppression racine
-                    except Exception as e:
-                        erreur +="erreur rmdir = "+str(e)
-                    time.sleep(0.01)
-                if erreur: print("erreur supprime chantier  :",erreur)
-                if os.path.exists(e):
+                    try:
+                        print("e=",e)
+                        shutil.rmtree(e)   # suppression arborescence sous racine
+                    except Exception as err:
+                        erreur +="erreur rmtree = "+str(err)
+                    if erreur:
+                        print("erreur supprime chantier  :",erreur)
+                    else:
+                        print("Suppression du chantier : ",e)
+                if os.path.isfile(e):
+                    supprimeFichier(e)
+                if os.path.isdir(e):
                     ajout(conserve,e)       # dossier non supprimé (en cours d'utilisation ?)
+                    print("conservé")
                 else:
+                    print("supprimé")
                     try:
                         ajout(supprime,e)                   
-                        self.tousLesChantiers = [f for f in self.tousLesChantiers if os.path.basename(e).strip()!=os.path.basename(f).strip()]
+                        self.tousLesChantiers.remove(e)
                     except Exception as e:
                         print("erreur suppression de chantier : ",str(e))
                         print(self.tousLesChantiers)
@@ -11106,8 +11142,7 @@ class Interface(ttk.Frame):
                         for s in self.listeRepertoiresASupprimer:
                             if r[:len(s)-1]==s[:len(s)-1]:
                                 lesRepertoiresASupprimer.append(r)
-                    for nom in lesRepertoiresASupprimer:
-                        # le                     
+                    for nom in lesRepertoiresASupprimer:                 
                         cheminASupprimer = os.path.join(chantier,nom)
                         if cheminASupprimer not in self.tousLesChantiers:   # ne pas supprimer les chantiers qui seraient sous-répertoire de ce chantier 
                             taille = sizeDirectoryMO(cheminASupprimer)
@@ -11570,7 +11605,6 @@ class Interface(ttk.Frame):
         self.cadreVide()
         self.ajoutLigne(_("Décompacte la vidéo"))       
         self.ecritureTraceMicMac()          # on écrit les fichiers trace
-        print("trace=",self.traceMicMacSynthese)
         # décompactage : extraction de toutes les photos :
         self.extensionChoisie = ".JPG"   # ou png
         #self.extensionChoisie = ".png"   # ou png
@@ -11944,7 +11978,7 @@ class Interface(ttk.Frame):
         chantierSansRepertoire = list()
         self.restaureParamMicMac()
         for e in self.tousLesChantiers:                             # suppression des répertoires inexistants (parce que supprimés)
-            if os.path.exists(e):
+            if os.path.isdir(e):
                 fichierParamChantier  =   os.path.join(e,self.paramChantierSav)
                 if os.path.exists(fichierParamChantier):            # le fichier paramètre existe :on le propose
                     ajout(self.fichierProposes,e)
@@ -12035,10 +12069,12 @@ class Interface(ttk.Frame):
             d = ttk.Label(f,text=_("Il y a des chantiers incomplets,") + "\n " + _("le fichier %s est absent.") % (self.paramChantierSav)+ "\n" + 
                           _("Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :") + "\n\n"+"\n".join(chantierSansParametre))
             d.pack(pady=5)
-        if len(chantierSansRepertoire)>0:
-            f = ttk.Label(f,text="\n\n"+_("Il y a des chantiers sur disque externe non connecté ou dont le répertoire a été supprimé,") + "\n" + 
-                          _("Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :") + "\n\n"+"\n".join(chantierSansRepertoire))
-            f.pack(pady=5)
+##            h = ttk.Button(f,text=_("Supprimer ces chantiers"))
+##            h.pack(pady=5)            
+##        if len(chantierSansRepertoire)>0:
+##            g = ttk.Label(f,text="\n\n"+_("Il y a des chantiers sur disque externe non connecté ou dont le répertoire a été supprimé,") + "\n" + 
+##                          _("Ces chantiers ne peuvent être ouverts mais peuvent être supprimés :") + "\n\n"+"\n".join(chantierSansRepertoire))
+##            g.pack(pady=5)
 
         self.topRepertoire.protocol("WM_DELETE_WINDOW", self.cancelRepertoire)    # Fonction a éxécuter lors de la sortie du programme
         self.topRepertoire.transient(fenetre)                            # 3 commandes pour définir la fenêtre comme modale pour l'application
@@ -12329,8 +12365,7 @@ class Interface(ttk.Frame):
                              messageBouton=_("Rechercher les infos"),                             
                              boutonDeux=_("Fermer"),
                              mode='extended')
-        if len(self.selectionPhotosAvecChemin)==0:
-            return
+        if len(self.selectionPhotosAvecChemin)==0: return abandon()
         ply = self.selectionPhotosAvecChemin[0]        
         self.infoSurPly(ply)
 
@@ -12340,9 +12375,8 @@ class Interface(ttk.Frame):
                                                 filetypes=[(_("ply"),"*.ply"),(_("Tous"),"*")],
                                                 multiple=False,
                                                 title = _("Info sur le fichier Ply"))
-    
+        if len(ply)==0: return abandon()
         self.infoSurPly(ply)
-
 
     def infoSurPly(self, ply):
         if not os.path.exists(ply):
@@ -12401,7 +12435,7 @@ class Interface(ttk.Frame):
                                                 filetypes=[(_("ortho"),"*.tfw"),(_("Tous"),"*")],
                                                 multiple=True,
                                                 title = _("Fusionner les orthomosaïques"))
-        if not tfw: return
+        if not tfw: return abandon()
         fusion = os.path.join(os.path.dirname(tfw[0]),"fusion.tif")
         supprimeFichier(fusion)
         
@@ -12423,14 +12457,13 @@ class Interface(ttk.Frame):
     ################### Conversion au format jpg
 
     def conversionJPG(self,liste=list()):
-
+        if liste.__len__()==0:
+            return
         if self.pasDeConvertMagick():
             self.ajoutLigne(_("Le programme de conversion n'est pas présent."))
             return
         if liste==list():
             liste = self.photosSansChemin
-        if liste.__len__()==0:
-            return
         curdir = os.getcwd()
         oschdir(os.path.dirname(liste[0]))
         for e in liste:
@@ -12796,6 +12829,7 @@ class Interface(ttk.Frame):
         fichierPlyPourXyz =tkinter.filedialog.askopenfilename(title=_('Fichier .PLY à convertir en XYZ : '),
                                                   filetypes=[(_("fichier ply"),("*.ply")),(_("Tous"),"*")],
                                                   multiple=False)
+        if not fichierPlyPourXyz: return abandon()
         self.encadre(_("Patience : lecture du fichier en cours."))
         semisDePoints = extraireLesXyzDuPly(fichierPlyPourXyz)
         if "semisDePoints" not in locals():
@@ -12882,7 +12916,7 @@ class Interface(ttk.Frame):
                                                             initialdir=self.repTravail,
                                                             filetypes=[(_("fichier ply ou asc"),extensions),(_("Tous"),"*")],
                                                             multiple=False)
-        
+        if not fichierPourMnt: return abandon()
         typePly = controleFichier()
         if typePly==False: return
         if typePly=="nuage de points binaire":
@@ -13301,7 +13335,7 @@ def pv(variable):       # affiche le nom de la variable, sa classe et sa valeur 
            '\n\n',str(valeurVariable),str(variable))
     print('\n------------------')
 
-def copieRepertoire(source,cible): #copie d'une arborescence de répertoire après suppression 
+def copieRepertoire(source,cible): # copie d'une arborescence de répertoire après suppression 
     retour=supprimeRepertoire(cible)
     if retour: return retour                                             
     try: shutil.copytree(source,cible)
@@ -13315,7 +13349,6 @@ def supprimeFichier(fichier):
         return _("Erreur suppression fichier :")+str(e)
 
 def supprimeRepertoire(repertoire):
-    if not os.path.exists(repertoire):     
         return
     try:
         shutil.rmtree(repertoire)
@@ -13358,6 +13391,7 @@ def ajout(liste,item):                                  # ajout d'un item dans u
             print (_("erreur ajout : "),str(e))
 
 def supprimeArborescenceSauf(racine,sauf=list()):   # supprime toute une arborescence, sauf une liste de fichiers et répertoires sous la racine
+    if not os.path.isdir(racine): return
     sauf = [os.path.basename(e) for e in sauf]      # sans chemin
     for item in os.listdir(racine):
         chemin = os.path.join(racine,item)
@@ -13369,7 +13403,11 @@ def supprimeArborescenceSauf(racine,sauf=list()):   # supprime toute une arbores
                     print(_("erreur remove = "),str(e))
             else:
                 shutil.rmtree(chemin)           # on supprime tous les sous répertoires 'calculs, temporaires...)
-                
+    # si la racine ne contient plus aucun fichier on la supprime :
+    if os.path.isdir(racine):
+        if not os.listdir(racine):
+            os.rmdir(racine)    # suppression racine mais il faut qu'elle soit "vide"
+                   
 def zipdir(path):                                                   # path = chemin complet du répertoire à archiver,
                                                                     # crée un zip qui contient tous les fichiers sauf les exports                                                                   # avec un nouveau nom de chantier = ancienNom(export)
     try:
@@ -13441,7 +13479,6 @@ def mercurialMm3d(mm3D):            # Il faudrait que la version de MicMac autor
         print("Erreur recherche version MicMac : ",str(e))
         return pasDeVersionMicMac
     else:
-        print("mercurial=",mercurial)
         return mercurial.splitlines()[0]
 
 def orientationOK():
@@ -14392,7 +14429,7 @@ def calculVolumeEntre2Mnt():
 
       
 
-    ########################## écrire les écarts
+    ########################## écrire les écarts XYZ
         
     def ecrireTableDesEcarts(infoMnt):
         sizF = infoMnt["cellsizeFond"]
@@ -14400,7 +14437,7 @@ def calculVolumeEntre2Mnt():
         if sizF!=sizD:
             return
         fichierFond = infoMnt["fichierFond"]
-        fichierDessus = infoMnt["fichierDessus"]
+        fichierDessus = infoMnt["fichierDessus"] 
         base = ("ecart_tolerance_"+str(tolerance)+"_"+
                 os.path.splitext(os.path.basename(fichierFond))[0]+"__"+
                 os.path.splitext(os.path.basename(fichierDessus))[0]+".XYZ")
@@ -14491,6 +14528,118 @@ def calculVolumeEntre2Mnt():
     traceMetier(message,fond,'volume')
     interface.ecritureTraceMicMac() 
     interface.encadre(rapport)
+
+################################ lire MNT
+    
+def lireMNTIGN(mntIgn):
+    if not mntIgn: return _("pas de fichier")
+    erreur = str()
+    infoMnt = dict()
+    infoMnt["avertissement"]=list()
+    with open (mntIgn) as p:
+        try:
+            tout = p.readlines()
+        except Exception as e:
+            erreur = _("erreur : le fichier %s n'est pas un MNT") % (mntIgn) +str(e)
+    l6 = tout[:6]
+    if "cols" in l6[0]: 
+        infoMnt["cols"] = int(l6[0].split()[1])
+    else:
+        erreur += "cols incorrecte"
+        
+    if "nrows" in l6[1]: 
+        infoMnt["nrows"] = int(l6[1].split()[1])
+    else:
+        erreur += "nrows incorrecte"            
+    
+    if "xllcorner" in l6[2]:    # ll = lower left
+        infoMnt["xllcorner"] = float(l6[2].split()[1])
+    else:
+        erreur += "xllcorner incorrecte"            
+  
+    # anomalie possible : valeur négative :
+
+    if infoMnt["xllcorner"]<0:
+        infoMnt["avertissement"].append(_("xllcorner est négatif"))
+    
+    if "yllcorner" in l6[3]: 
+        infoMnt["yllcorner"] = float(l6[3].split()[1])
+    else:
+        erreur += "yllcorner incorrecte"
+        
+    # anomalie possible : valeur négative :
+
+    if infoMnt["yllcorner"]<0:
+        infoMnt["avertissement"].append(_("yllcornerFond est négatif"))
+              
+    if "cellsize" in l6[4]:
+        sizF = float(l6[4].split()[1])
+        infoMnt["cellsize"] = sizF
+    else:
+        erreur += "cellsize incorrecte"
+        
+    if "NODATA_value" in l6[5]: 
+        infoMnt["remplissage"] = l6[5].split()[1]
+    else:
+        erreur += "NODATA_value incorrecte"
+    
+    if erreur : return erreur
+    
+    infoMnt["table"] = [ e.split() for e in tout[6:]]
+    return infoMnt
+
+def afficheMNTIGN():
+    mntIgn = demandeFichier(types=[("asc","*.ASC"),(_("Tous"),"*")])
+    if not mntIgn: return abandon()
+    fichierXYZ = MNTIGN2XYZ(mntIgn)
+    meshlab = [interface.meshlab, fichierXYZ]        
+    interface.lanceCommande(meshlab,
+                           info=_("Fichier XYZ %s a visualiser.") % (fichierXYZ),
+                           attendre=False)
+    
+
+def MNTIGN2XYZ(mntIgn):
+    infoMnt = lireMNTIGN(mntIgn)
+    if type(infoMnt)==type(str()):
+        return infoMnt
+    fichierXYZ = os.path.splitext(mntIgn)[0]+".XYZ"
+    ecrireXYZ(infoMnt,fichierXYZ)
+    return fichierXYZ
+
+def ecrireXYZ(infoMnt,fichierXYZ):
+    cols = infoMnt["cols"]
+    rows = infoMnt["nrows"]
+    xinf = infoMnt["xllcorner"]
+    ysup = infoMnt["yllcorner"]
+    sizF = infoMnt["cellsize"]
+    remplissage = infoMnt["remplissage"]
+    table = infoMnt["table"]
+    arrondi = interface.arrondi
+    with open(fichierXYZ,"w") as f:
+        for i in range(cols):
+            for j in range(rows):
+                x = round(xinf + i * sizF,arrondi)
+                y = round(ysup - j * sizF,arrondi)
+                v = table[j][i]               
+                if v!=remplissage:
+                    t = (str(x),str(y),v)
+                    f.write(" ".join(t)+"\n")
+
+def abandon(message=_("Abandon utilisateur")):
+    interface.encadre(message)
+    
+############### demande fichier    
+def demandeFichier(repIni="",types=[("txt","*.txt"),(_("Tous"),"*")],multiple=False,titre="Fichier ?"):
+
+    interface.menageEcran()
+    f = tkinter.filedialog.askopenfilename( initialdir=repIni,                                                 
+                                                filetypes=types,
+                                                multiple=multiple,
+                                                title = titre)
+    if f==str(): return abandon()   
+    return f
+
+################################
 
 def traceMetier(message,fichier,nom_trace):     # écrire le message dans la trace nom sous le répertoire de fichier
     interface.ecritureTraceMicMac()             # vider la liste d'attente
@@ -14782,6 +14931,7 @@ def homolCorrespondant(listeHomol,les3Indices,coefBary):
 def iconeGrainSel():
     iconeTexte = "AAABAAIAIC....
     iconeBin = base64.b64decode(iconeTexte)                 # décodage pour revenir au binaire du fichier icone :
+    import tempfile
     with tempfile.NamedTemporaryFile(delete=False) as f:    # écriture de ce binaire dans un fichier temporaire
         f.write(iconeBin)
     return f.name
@@ -14855,7 +15005,7 @@ class MyDialogTexte:
         fenetre.wait_window(top)
         
     def ok(self,event='none'):
-        self.saisie=self.texte2201.get("0.0",'end')
+        self.saisie=self.texte2201.get("1.0",'end-1c') # voir : https://stackoverflow.com/questions/14824163/how-to-get-the-input-from-the-tkinter-text-widget
         self.top.destroy()
         return
         
