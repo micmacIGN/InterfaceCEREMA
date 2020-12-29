@@ -13349,6 +13349,7 @@ def supprimeFichier(fichier):
         return _("Erreur suppression fichier :")+str(e)
 
 def supprimeRepertoire(repertoire):
+    if not os.path.isdir(repertoire):     
         return
     try:
         shutil.rmtree(repertoire)
@@ -13379,7 +13380,9 @@ def blancAuNoir(p):
         return 255
 
 def ajout(liste,item):                                  # ajout d'un item dans une liste en s'assurant qu'il n'y a pas de doublons et avec un tri:
+                                                        # et en supprimant les espaces en début et fin d'item
     if liste.__class__()==list():
+        item = item.strip()
         try:
             liste.append(item)
             c=list(set(liste))
