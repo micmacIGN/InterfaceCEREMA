@@ -464,7 +464,10 @@
 # modif version : 5.56.1
 # correction du message si il y a un espace dans le chemin de micmac/bin (le début était absent)
 # remplacement du chemin de micmac/bin : source devient source.strip()
-
+# début version 5.56.2
+# encadrePlus remit en place dans menageEcran ligne 11114
+# suppression des exe.terminate() dans 2 filtres (tapioca et oriconvert) : pb sous linux (voir remarque du 30/6/2020 sur github)
+# début version 5.57 le 30/12/20
 # a faire :
 # en cas d'orientation non trouvée les points homologues sont supprimées depuis le 5.55 : revenir à l'état antérieur
 # le mode UrbanMNE de Malt n'est pas correctement pris en compte (pas de nuage de points....)
@@ -749,7 +752,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.56.1"
+numeroVersion = "5.56.2"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -3542,6 +3545,8 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version 5.56.2 :")+chr(9)+_("début le 30 décembre 2020") + "\n\n"+\
+              chr(9)+chr(9)+_("- Quelques améliorations/corrections. Voir le source.") + "\n"+\
               "\n" + _("Version 5.56.1 :")+chr(9)+_("29 décembre 2020") + "\n\n"+\
               chr(9)+chr(9)+_("- Quelques améliorations/corrections. Voir le source.") + "\n"+\
               "\n" + _("Version 5.56 :")+chr(9)+_("3 décembre 2020") + "\n\n"+\
@@ -8036,8 +8041,7 @@ class Interface(ttk.Frame):
                            info=(_("Recherche des points homologues sur %s photos.") % (self.photosSansChemin.__len__())))
                                     
     def filtreTapioca(self,ligne):
-        try: self.exe.terminate()
-        except Exception as e : print("erreur self.exe.terminate=",str(e))
+
         if ligne[0]=="|":
             return ligne        
         if 'points' in ligne and len(ligne)<=15:            
@@ -9539,8 +9543,6 @@ class Interface(ttk.Frame):
                            info = _("Les triplets sont les écarts X,Y,Z par rapport à la photo précédente et T = le délai écoulé"))
 
     def filtreOriConvert(self,ligne):
-        try: self.exe.terminate()
-        except Exception as e : print("erreur self.exe.terminate=",str(e))
         if "insuitable" in ligne:
             return ligne
 
@@ -11082,7 +11084,7 @@ class Interface(ttk.Frame):
                     espaceGagne+=sizeDirectoryMO(e)
                     if self.repTravail==e:
                         self.etatDuChantier = -1
-                        texte=_("Le chantier en cours %s est supprimé. Un nouveau chantier est proposé") % (self.chantier)+ "\n"                    
+                        texte+=_("Le chantier en cours %s est supprimé. Un nouveau chantier est proposé") % (self.chantier)+ "\n"                    
                         self.nouveauChantier()
                     try:
                         print("e=",e)
@@ -11106,7 +11108,7 @@ class Interface(ttk.Frame):
                     except Exception as e:
                         print("erreur suppression de chantier : ",str(e))
                         print(self.tousLesChantiers)
-                    self.encadrePlus("...")
+                self.encadrePlus("...")
             if len(supprime)>=1:            
                 texte = texte+_("Compte rendu de la suppression :") + "\n\n" + _("les chantiers supprimés :") + "\n\n"+'\n'.join(supprime)+"\n"               
             if len(conserve)==0:
