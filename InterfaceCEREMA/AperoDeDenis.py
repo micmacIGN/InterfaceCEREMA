@@ -10969,7 +10969,7 @@ class Interface(ttk.Frame):
                                    question=_("Nouvelle version disponible sur Internet : ")+"\n"+
                                             _("Téléchargement à l'adresse : ")+"\n\n"+
                                             "https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA"+"\n\n"+
-                                            "Le menu 'Paramètre' permet d'activer/désactiver une recherche systématique lors du lancement d'AperoDeDenis",                                   
+                                            "Le menu 'Paramètres' permet d'activer/désactiver une recherche systématique lors du lancement d'AperoDeDenis",                                   
                                    b1=_("Vu"),
                                    b2=_("Ouvrir la page web"),
                                    b3=_("Lire le readme.txt"
