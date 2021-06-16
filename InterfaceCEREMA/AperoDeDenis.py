@@ -468,10 +468,13 @@
 # encadrePlus remit en place dans menageEcran ligne 11114
 # suppression des exe.terminate() dans 2 filtres (tapioca et oriconvert) : pb sous linux (voir remarque du 30/6/2020 sur github)
 # début version 5.57 le 30/12/20
+# 29 avril : changement de la couleur des points homologues (idem libellés); taille dépendant du nombre. Modif aide.
+#           nouveau logo du cerema (avec le sigle en forme de France)
+# 3 juin : suppression de l'offset [0,0,0] dans le lancement de C3DC suite à erreur signalée par Poupinet (Stagiaire Aix En Provence)
 # a faire :
 # en cas d'orientation non trouvée les points homologues sont supprimées depuis le 5.55 : revenir à l'état antérieur
 # le mode UrbanMNE de Malt n'est pas correctement pris en compte (pas de nuage de points....)
-#le nombre de scènes varient entre les 2 passage de tapioca option Multiscale ! Mal géré actuelement.
+# le nombre de scènes varient entre les 2 passage de tapioca option Multiscale ! Mal géré actuelement.
 # Propager effectivement l'option ExpTxt vers tapas, campari, apericloud...
 ##1) vérifier si après l'install la vérif d'une nouvelle version est faite : non, ok
 ##4) si lors de la comparaison de 2 MNT les territoires ne se recouvrent pas : améliorer le message, tenter un rapprochement
@@ -535,8 +538,9 @@
 # la correction corrige le plantage qui arrive lors de l'écriture d'un ply en MNT.
 # ecartmajusc2moins1= 2 {'LIBWRAP_DUM.37XXVKIHM5ANYBLPIHFVIOO3H5TQVGWB.GFORTRAN-WIN_AMD64.DLL', 'LIBDCSRCH.I2AOPDCXAPDRFNPWY55H5UE7XZSU5CVN.GFORTRAN-WIN_AMD64.DLL'}
 
+# 2 install non standard python : PIL (pip install pillow) et Scipy,Numpy (pip install scipy)
 
-from tkinter import *                       # gestion des fenêtre, des boutons ,des menus, importe les constantes de tkinter
+from   tkinter import *                     # gestion des fenêtre, des boutons ,des menus, importe les constantes de tkinter
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
 import tkinter.messagebox                   # pour le message avertissant que AperoDeDenis est déjà lancé
 import tkinter.ttk as ttk                   # amélioration de certains widgets de tkinter : le comportement est géré indépendamment de l'apparence : c'est mieux ! mais différent !
@@ -566,6 +570,7 @@ import struct
 from itertools import cycle
 from html.parser import HTMLParser
 import atexit
+import re
 
 def foreach_window(hwnd, lParam):
     if IsWindowVisible(hwnd):
@@ -752,7 +757,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.56.2"
+numeroVersion = "5.57"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -765,8 +770,7 @@ listeDesFichiersTrace = list()      # pour modifier la trace en cours (par exemp
 
 iconeTexte = "R0lGODlhIAAgAIcAMfr8+EqrpcfLEe16CJnE1Lnb3Hm7whaXjuzdu+VLEp64HuiRL9TYVfPImeqoU4e1NAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAIAAgAAcI/gABCBxIEACCgwgENliYsKDDhwMVKHjwQOCAiwMgaiwoUaLABRgbboSIYKLEhCAvNhipkUFHBQwAOMC4gOVDBAI6CoiJAOMAkTYFMhCQUwHRjzSDDhxK1CjRmA18OlDKlKjVozKlssR5VQCAqzEBpLy4YGXBgwyqWk2oNmFPnwMWOGjQsOvVhAUCdHU7NoFfvwnt7hSYN4CBvQCi/l0cGGxDAgEiB3jQte/iBGzTiixgQHLkAlxnwh3A2CFnz5EJCB1L0wFQAAViE+iM2nABpD7LPixwoHdvw5INGJhNgPUAs7AJKFfN27dv28tnP6DZsMDs4cphO39+GwBx5TNrcCbHHl1ggOeeVXtfbmABXvLf1Q887bk7+9uc2RPoDhFyfdjkWXefTYVFZoBA7AUwYFAFKgggZAcMZwB/QflnGIKdRbifUgT9x9lv8nHonWTMnXdAABRyWOCBCJiIoogdSiaQczASJJxw5slY444DBQQAOw=="
 logoIGN = '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'
-logoCerema = 'R0lGODlhyABHAIIAMfstBC/TifepcLXxE6nt127nqvxnCfz9+ywAAAAAyABHAAID/ni63P4wykmrvTjrzbv/YCiOZGmeaKqubOu+cCzPdG3feK7vfO//wKBwSCwaj8ikcslsOp/QqHRKrVqv2KyWRDh0FYJDeEvuDM6BQVdgaBvG5biFkB6kxe63fE9Bn795cHyDDWd2Zwp5BoSMC4Z1A4mBJQKVloKNPIaHanh5ImyKipmaj5uSbpgaoaKKqqQ0m7Jgox2srZ+wOLK8qKkbt22WYpV6ujW8ybSuGcGvxzfJXb2etRbM0DgEyade1AIAiuFvz77GwMMY6Q6Xq5UQ6xKX5SncfwoEBdTV4QD+/uWsZcClKhSAMMXasBN3jkGbcOYULmAIL5iBcPRK2FuQ/i+APllfwP0bCSDCrYwPLE5iwCqMQJW/GqSCuegArpoyb0pkwY2jxwJAeSUk+e/ZrVWunOV8I8phIKVOdQrTqeriVKgrZjEAyjXoJotEIwi8FnPZzmqi4Kw0izPiO4IIxxJzIPdEJAdAf3Ltsm2A1HhLz1YAJ4xu2QPjDqNdeFEQNrYNWR0kWxhGvq5cA3xB+5SyYAq5GrRcEOzBWtKhbaY2Z7gyaMUnClzGnBkogTWtVG02DVvearZRG050AyH1aV9Ve4MpdnIFnQDQoXfVa1slg9u2C4j97Vtq6OaivRuH7WZy4LbDcZlP8Tx69L2y4xd4jD3fZZPc8Ys/e5zz/t/0wqnmGmoD+peWc+4l+MVsl8WEXXbxmZQYSqQl5h2BBRp4U3DJZfhSUi7lN0J77u2Fz2X5sDFGffJxpR9xFhz1zowIBZZSZzQS4xh5sI0GIHr9mTAdZprh0+KKXaF4226tZQiPiIw5CWWTHQZozVHhwejCbEkaGR9fX9rG5ItORoneBEEGWRyPGfq4WGAUlkCbbF4w+KB9Y6L5mAR13dhbn7x5yOZOhAlWmgxcAmXkZZrJx0FuNTKHYZuYiLjncnBSGSUc4JkTpwlcFnlAdnrdxoFKFmqpYXmCSGZUYqmqKqCVg7aVFi410OaldPZ9QNNq4tlIJq4capplZLFOg1WmC5jx1dFPebojlZkHTpoRVUutB2CH2hroCUQ1zCZqAe9pR8I8gLEzDzxiXIDuKzWaJK9RgH2qAmb4uBdtNlc064W+/MZBh4nPkbtvwFQwSieJByM8hambQezwxBRXbPHFGGes8cYcd+zxxyCHLPLIJJds8skop6zyyiy37PLLDCQAADs='
-logoCerema = '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'
+logoCerema = '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'
 flecheGauche = 'R0lGODlhJAAkAIcAMSRSlJyuxEx+tDxqpNTa5HSGrFRypGSOvER2rLzGzOzu7GSCrExupHSezDxytFSGvMzS3DRenLS+1DxqrOTm5Pz6/IyevDRmpFx+tFR6rGyWxEx2rKyyxOTi5HSStGyOvMzO3PT29NTS1FR+tERqnNzi7MTO3GSKvFyGtDxinERurJSmxFx6pEx6rISWtKSyxNza3GSSxMTK1PTy9ExypISatERyrDRinLzCzDxurOzq7IyivDxmnNTW5FSCvERupFyKvJyuzFR2pGSOxER2tOzu9GyGtMzW5LTC1OTm7Pz+/FyCtFR6tEx2tKy2vHySvGySxPT2/NTW1FR+vERqpGSKxFyGvFx6rEx6tISWvNze3MTK3ExyrISavERytDRipDxutIyixDxmpAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAJAAkAAcI/gCVCFQyQ4GCgiEGCix48KBCgg0dPhQYcUZChRUVPAxRkOHEhREvDuxocMZDhg0/QmxY4WRJiSM76jD5kaPNEBVy5rQ4wyJOnRVC3JwBVKWSChE1KgwDwaDBlgpRGkXakKbAFRG2KChSEOrAqlMZdlUS5cmHETJIegUJcyLSGToczjCyoIEQGQriEnVZcGrJuEkWQLFiBcsWtS7b9mx4sSUBIYMdAOECQufKkmu/khRpQogGH02IWMGQggGJ06gZiNlxdKJYiRIyQJlCBIvtA7iHDDlRBQiQKkOyqJTZU0mQDVAE2MZSGwERIs6fE2kiwEqX1ifjGgyxQjaWJsxb/tgGT148FgRTfFz/2LN9lhFQmn8n0oK+febnqfuwgP1jEg9LxADecgQWSKAPPoSRF1cfWcAFFBfkIGEOA0hY4QQUZljhADYQEQZcBn0URRhUMHHDFzdcgOIXK57I4otfXODFDnm19VAAPwhwwY489ugjjw58GFcRUwVAAhYDxLijkj/uKCGNJSlkU084IUFCEzkwqaKWPGJoQQVR5BRVVTQdQcMGOaQYow0O2OCFAyo4MCEYNQwX0kAlsGBDDirmwAMJQghhgKAM0GAAAwH0N9JLaxXBggoqfJFmD2NK9VFVMx1VAVEdLCCGhDeYUMFMM1Cgg6khsudUV4spoIUWigVEgMANOCjQgakdaHGrDjoYNdCmFFCQKwwd3FpDBDdwAAMEUsBAwUEWjZrScDoUqwUMp3agwwsAcKCFCDBI8SyVIYCl0qi4PpsXBRW8kEAHMOh60E9KvOSXQbwGJRRRp/aL05g2KvSWUw9R1VFmMgkc1MI4/eQwwzhFy/Cm//pq8cUYZ6zxxhsHBAA7'
 flecheDroite = 'R0lGODlhJAAkAIcAMSxWjKS2zFSCtDxurNze3FR2pHyStER6tCxipMTGzExunGSSxPTy9MzS3DxinGyGrFyKvER2rOTq9GR+pERupFR+tHyizMTO3Nza3CxelDRqpEx2pNTa5DxqpGSCrOTm5Fx6pPT6/NTS1ERytLTC1FR6tEx6rDRmpMTK3ExyrGSOvOzq7ERypIyivDRelERqnKy6zFSGvOTi5FR6rHyavMTK1ExypHSezMzOzPz6/NTW5Ex+tOzu7JSqxDRalKS61FSCvDxyrNze5FR2rCxmpMTG1ExupGySxPT29MzW3DxmnHSOtFyOvER2tERurFx+rCxenDRqrEx2rDxqrGSCtOTm7NTW1Ex6tDRmrGSOxERyrIymvDRenERqpISexMzO3Pz+/Ozu9AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAJAAkAAcI/gDBCBTIgAePgkgGEjRYkIFCMA0ZPhx4kGFChRUrPkQSkcfEhQV5XBzY0aHCkBo/hiyY4+HKgy4brjA5sSKDmQ9t4jyZkeZGBhyR5BhKNChQoURzIAnKkejHgTkMSlXYIoxUgy15enwKJmpDnz6oCAnTMCvFgly79lQo5UaBCzd5mAWZNmpGhTZuqLBB4ubEkHUPzlyhsECWCkdswJCbE+3JiA5btkTZZUGTHVlS/PgK86PNBlxs2DAymoIRCi8oqGhyZYcKClviOv7LYwWPIhUsZDmygHeW3yqAXDkwPIsTAzys+uRZsEgJCEEONIkwXUoT1sOvDIdw5YHtrbRn/hYxAYF49vPmzTeBAASEEAZzSTasIQUCa+L4h0s5kH84ECAzcJCWQDpIkQV22iWooII7XBFDBTOgMNtEOmhxRRQDZIjhABtqyGEQA0yhwRVaFNDZRzp0MQICLCJABIsvwujiCS4iIOIQSRjElQ4DaIHACUAGKWSQRAA5gAYTSNAQVxxMEcGPRUZ5QpEz/njCACcsEQIYUynEEQMMfEFBED9CGeSMQWIxBRQ0gAnfUC4lx0ARAwCx3xXXNTFCE1pMUSYWHWTQgmxPRZREF0NIUYCiohlhRAZYIhBFFFwEwJCOKkkVxkgLGaREECdMMYAScH03IUaQFcWADDIQ8IEDlByeQCoYH6xQxQo70Sbbl7VhYAUGGDgA6gsNMFBFqzLU+sGAXTHwQasEYPAsATI4gIUCCWCAg7S2AZVDt2k5O620z34AwAQ4cCDCrx8cdFRKT337wbwyGIRrD61iQAC1By01mW2B3YSrUv4iMe8KtQqFKngf2QWYQg5jFedyQwllMcEVK6VxwRpvrDCzIIcs8shgBAQAOw=='
 
@@ -1226,7 +1230,7 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         ttk.Label(self.frame5,text=_("La position du curseur devient le centre du zoom suivant.")).pack()
         if interface.etatDuChantier>3:
             if interface.afficherPointsHomologues:
-                messagePointsHomologues = _("Les points homologues sont affichés en bleu. Voir menu expert.")
+                messagePointsHomologues = _("Les points homologues sont affichés en couleur. Voir menu expert.")
             else:
                 messagePointsHomologues = _("Les points homologues ne sont pas affichés. Voir menu expert.")           
             ttk.Label(self.frame5,text=messagePointsHomologues).pack()
@@ -1435,14 +1439,16 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         for photo in interface.photosAvecChemin:
         # ci-dessous fait apparaitre les points homologues
             listeHomol += lirePointsHomol(self.file,photo,SH="_mini",ExpTxt=0) #
+        taille=2 if len(listeHomol)>200 else 4 if len(listeHomol)>50 else 8 
         for e in listeHomol:
             self.xyJPGVersCanvas(e[0],e[1])
-            self.canvas.create_oval(self.xFrame-1, self.yFrame-1,self.xFrame+1, self.yFrame+1,outline='blue',width=2)
+            self.canvas.create_oval(self.xFrame-1, self.yFrame-1,self.xFrame+1, self.yFrame+1,outline=self.couleurTexte,width=taille)
                 
     def changerCouleurTexte(self):
         self.listeCouleurs.insert(0,self.listeCouleurs.pop()) # pythonesque : passe de (1,2,3) à (3,1,2)
         self.couleurTexte = self.listeCouleurs[0]
         self.afficherTousLesPoints()
+        self.ajouterPointsHomologues()
 
     def supprimeXY(self):
         self.afficheXY = not self.afficheXY
@@ -2798,7 +2804,7 @@ class Interface(ttk.Frame):
 
         self.logo1          = ttk.Frame(fenetre)                                    # cadre dans la fenetre de départ : CEREMA !
         self.logo           = ttk.Frame(self.resul100)                              # logo cerema dans l'apropos             
-        self.canvasLogo     = tkinter.Canvas(self.logo,width = 302, height = 80)    # Canvas pour revevoir l'image
+        self.canvasLogo     = tkinter.Canvas(self.logo,width = 302, height = 72)    # Canvas pour revevoir l'image : taille ene pixel du gif : 302*72
         self.logoIgn        = ttk.Frame(self.resul100)                              # logo IGN dans l'apropos 
         self.canvasLogoIGN  = tkinter.Canvas(self.logoIgn,width = 149, height = 162)# Canvas pour revevoir l'image
         self.labelIgn       = ttk.Label(self.logo,text=_("MicMac est une réalisation de\n Marc Pierrot-Deseilligny, IGN"))
@@ -3134,8 +3140,8 @@ class Interface(ttk.Frame):
     
     # Divers
 
-        self.logoCerema                 =       os.path.join(self.repertoireScript,'logoCerema.jpg')
-        self.logoIGN                    =       os.path.join(self.repertoireScript,'logoIGN.jpg')
+        #self.logoCerema                 =       os.path.join(self.repertoireScript,'logoCerema.jpg') # dans le script
+        #self.logoIGN                    =       os.path.join(self.repertoireScript,'logoIGN.jpg')
         self.messageNouveauDepart       =       str()   # utilisé lorsque l'on relance la fenêtre
         self.nbEncadre                  =       0       # utilisé pour relancer la fenetre
         self.suffixeExport              =       "_export"  # ne pas modifier : rendra incompatible la nouvelle version
@@ -3545,6 +3551,8 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version 5.57 :")+chr(9)+_(" 18 juin 2021") + "\n\n"+\
+              chr(9)+chr(9)+_("- Quelques améliorations/corrections. Voir le source.") + "\n"+\
               "\n" + _("Version 5.56.2 :")+chr(9)+_("début le 30 décembre 2020") + "\n\n"+\
               chr(9)+chr(9)+_("- Quelques améliorations/corrections. Voir le source.") + "\n"+\
               "\n" + _("Version 5.56.1 :")+chr(9)+_("29 décembre 2020") + "\n\n"+\
@@ -3909,7 +3917,7 @@ class Interface(ttk.Frame):
         self.aide11 += _("Aprés le calcul des points homologues vous pouvez :")+"\n"        
         self.aide11 += _("  Visualiser les points homologues :")+"\n"
         self.aide11 += _("      1) dans le menu expert demander de visualiser les point homologues")+"\n"
-        self.aide11 += _("      2) saisir, fictivement si besoin, des points GPS (ou saisir la distance dans l'onglet 'Mise à l'échelle').")+"\n"
+        self.aide11 += _("      2) ouvrir 'ligne horizontale' dans l'onglet 'Mise à l'échelle' ou saisir des points GPS ').")+"\n"
         self.aide11 += _("  Localiser les points GPS lors de la saisie : ")+"\n"
         self.aide11 += _("      saisir un premier emplacement pour chaque point")+"\n"                                        
         self.aide11 += _("      l'emplacement sur les autres photos est indiqué par un point au milieu d'un cercle rouge.")+"\n"+"\n"                    
@@ -7726,14 +7734,18 @@ class Interface(ttk.Frame):
         self.lanceSchnaps()     # ajout schnaps le10/11/2020
         if self.rejetSchnaps:
             titre = _("Attention : une photo est rejetée")
-            rapport = _("Attention : MicMac considére qu'une ou plusieurs photos doivent être rejetées :\n %s"+"\n") % (self.rejetSchnaps)
+            rapport = _("Attention : MicMac considére qu'une ou plusieurs photos doivent être rejetées :\n\n %s"+"\n") % (self.rejetSchnaps)
             rapport += "\n"+_("Vous pouvez arréter le traitement pour retirer cette photo.")
             rapport += "\n"+_("Vous pouvez poursuivre le traitement avec un fort risque d'échec")
             lancer = _("Poursuivre le traitement")
             arret = _("Arrêt du traitement")
-            if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=arret,b2=lancer).retour:      
-                texte=_("Une photo est rejetée par le module schnaps de MicMac :\n %s" % (self.rejetSchnaps))
-                texte +="\n"+_("Retirer cette photo puis relancer le traitement (menu Outils/retirer des photos)")
+            if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=arret,b2=lancer).retour:
+                if self.nbRejetSchnaps==1:
+                    texte=_("Une photo est rejetée par le module schnaps de MicMac :\n\n %s" % (self.rejetSchnaps))
+                    texte +="\n"+_("Retirer cette photo puis relancer le traitement (menu Outils/retirer des photos)")
+                else:
+                    texte=_(f"{self.nbRejetSchnaps} photos sont rejetées par le module schnaps de MicMac :\n\n %s" % (self.rejetSchnaps))
+                    texte +="\n"+_("Retirer ces photos puis relancer le traitement (menu Outils/retirer des photos)")                    
                 self.encadre(texte)
                 return
         # Vérification qu'il y ait bien des points homologues : soit sous homol_mini, soit sous homol
@@ -8073,6 +8085,7 @@ class Interface(ttk.Frame):
 
     def lanceSchnaps(self):
         self.rejetSchnaps = str()
+        self.nbRejetSchnaps = int()
         schnaps = [self.mm3d,
                    "Schnaps",
                    ".*"+self.extensionChoisie,
@@ -8084,7 +8097,8 @@ class Interface(ttk.Frame):
 
     def filtreSchnaps(self,ligne):
         if "rejected!" in ligne:
-            self.rejetSchnaps += ligne+"\n"
+            self.rejetSchnaps += ligne
+            self.nbRejetSchnaps +=1
             return ligne
         if "icture" in ligne: # Picture parfois avec un P
             return ligne
@@ -8722,9 +8736,9 @@ class Interface(ttk.Frame):
                     ]+self.C3DCPerso.get().split(",")+[  # surcharge la suite                   
                     "Masq3D="+self.masque3DSansChemin,
                     "Out="+self.modele3DFinal,
-                    "PlyCoul=1",
-                    "OffsetPly="+self.Offs,
-                    ]
+                    "PlyCoul=1"]
+            if self.Offs!="[0,0,0]":
+                    C3DC.append("OffsetPly="+self.Offs)
         else:
             C3DC = [self.mm3d,
                     "C3DC",
@@ -8733,9 +8747,9 @@ class Interface(ttk.Frame):
                     self.orientationCourante,
                     ]+self.C3DCPerso.get().split(",")+[  # surcharge la suite
                     "Out="+self.modele3DFinal,
-                    "PlyCoul=1",
-                    "OffsetPly="+self.Offs,                    
-                    ]
+                    "PlyCoul=1"]
+            if self.Offs!="[0,0,0]":
+                    C3DC.append("OffsetPly="+self.Offs)
             
         self.lanceCommande(C3DC,
                            filtre=self.filtreC3DC,
@@ -9713,7 +9727,7 @@ class Interface(ttk.Frame):
         texte = _("Cette bascule permet l'affichage des points homologues dans les fenêtres de saisie des points GPS\n et de la mise à l'échelle")+"\n"
         texte +=_("Les points homologues doivent avoir été calculés par Tapioca.")+"\n"
         texte +=_("Les points affichés sont ceux trouvés sur la photo (en premier) avec toutes les autres photos.")+"\n"
-        texte +=_("Les points sont affichés en couleur bleue.")+"\n"
+        texte +=_("Les points sont affichés en couleur.")+"\n"
         texte +=_("Nouvelle valeur pour l'affichage : %s") % (str(self.afficherPointsHomologues)) +"\n"     
         MyDialog_OK_KO(fenetre,titre=_("Affiche les points homologues"),
                                          texte=texte,b1="OK",b2=None,hauteur=150)
@@ -13789,8 +13803,8 @@ def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; Les
                       
     semisDePoints["mnt"]=grid
     return semisDePoints
-##Pour insérer une image, ou un logo, dans un script, utilisable ensuite par Tkinter :
-##1) Convertir l'image au format GIF (sinon il faudra utiliser PIL) voir (les images dans http://tkinter.fdex.eu/doc/sa.html#images)
+##Pour insérer une image, ou un logo, dans un script, utilisable ensuite par Tkinter : (effctuer les points 2 et 3)
+##1) Enregistrr l'image au format GIF (sinon il faudra utiliser PIL) voir (les images dans http://tkinter.fdex.eu/doc/sa.html#images)
 ##2) Convertir le binaire GIF en texte encodé en 64 bits par le bout de code suivant :
 ##3) Copier le contenu du fichier sauf le 'b' initial dans le script et l'affecter à une variable :
 ##monGif = 'RRARAFVA....'

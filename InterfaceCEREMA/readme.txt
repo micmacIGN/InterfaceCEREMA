@@ -4,6 +4,8 @@ MICMAC, the IGN's free photogrammetry tool.
 The CEREMA interface provides a user-friendly graphical user interface to 
 MICMAC, the IGN's free photogrammetry tool.
 
+Version V 5.57 18 of june 2021
+
 Version V 5.56 3 of december 2020
 - Correction of 2 bugs and modification of 2 default options. See the source.
 
