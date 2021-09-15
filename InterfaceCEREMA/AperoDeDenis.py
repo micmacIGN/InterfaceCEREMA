@@ -471,6 +471,18 @@
 # 29 avril : changement de la couleur des points homologues (idem libellés); taille dépendant du nombre. Modif aide.
 #           nouveau logo du cerema (avec le sigle en forme de France)
 # 3 juin : suppression de l'offset [0,0,0] dans le lancement de C3DC suite à erreur signalée par Poupinet (Stagiaire Aix En Provence)
+# Publication sur drive  le 16 juin
+
+# début version 5.58 le 7 septembre 2021
+# ajout de TiPunch aprés C3DC : case à cocher dans les options de C3DC, création d'un maillage, texturé par tequila.
+# ajout de PIMs2Mnt après C3DC : génération d'un MNT par fusion des cartes de profondeurs
+# modif de version python : la version 9 ne supporte plus la méthode string pour frame.cget("cursor") : effet de bord regrettable !
+
+# Modification de la boite de dialogue de choix : désormais, par défaut, le premier item est sélectionné (il faut fermer la fenêtre pour abandonnner)
+
+# quelques stat : 9 items de menu principal, 71 items de menus secondaires, 46 de second niveaux,
+# les boites de dialogues comportent une centaine d'items distincts, le programme fait 15400 lignes. (600 à 800 jours de travail)
+
 # a faire :
 # en cas d'orientation non trouvée les points homologues sont supprimées depuis le 5.55 : revenir à l'état antérieur
 # le mode UrbanMNE de Malt n'est pas correctement pris en compte (pas de nuage de points....)
@@ -757,7 +769,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.57"
+numeroVersion = "5.58"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -949,47 +961,47 @@ class TracePolygone():
             return
         try : self.bulle.destroy()
         except: pass
-        if self.frame.cget("cursor").string=="plus":            # le cursor "plus" indique l'ajout d'un point
+        if curseurFrame(self.frame)=="plus":            # le cursor "plus" indique l'ajout d'un point
             self.ajouterPointPolyligne(event)                   # on ajoute (ou modifie) le point sur l'image
-        if self.frame.cget("cursor").string=="arrow":           # sinon : drag and drop : bouton 1 enfoncé; on initialise le déplacement de l'image
+        if curseurFrame(self.frame)=="arrow":           # sinon : drag and drop : bouton 1 enfoncé; on initialise le déplacement de l'image
             self.xDrag,self.yDrag = event.x,event.y
             self.frame.config(cursor="hand2")                   # cursor "main" pour déplacer l'image
 
     def finDrag(self,event):                                    # l'utilisateur relache le bouton 1 de la souris : fin du "drag"
-        if self.frame.cget("cursor").string=="hand2":
+        if curseurFrame(self.frame)=="hand2":
             self.b1Move(event)                                  
             self.frame.config(cursor="arrow")
             
     def b1Move(self,event):                                     # l'utilisateur déplace la souris avec le bouton 1 enfoncé : déplacement de l'image
 
         if event.widget!=self.canvas: return                    # si le clic n'est pas sur l'image (canvas=frame=image) on ne fait rien        
-        if self.frame.cget("cursor").string=="hand2":
+        if curseurFrame(self.frame)=="hand2":
             self.xNW,self.yNW = self.xNW - int((event.x-self.xDrag) / self.scale),self.yNW - int((event.y-self.yDrag) / self.scale)
             self.xSE,self.ySE = self.xSE - int((event.x-self.xDrag) / self.scale),self.ySE - int((event.y-self.yDrag) / self.scale)
             self.xDrag,self.yDrag = event.x,event.y
             self.retailleEtAffiche()
-        if self.frame.cget("cursor").string=="plus":
+        if curseurFrame(self.frame)=="plus":
             self.ajouterPointPolyligne(event)
             self.afficherPolyligne()
             self.retirerPointPolyligne()
             
     def move(self,event):
         if event.widget!=self.canvas: return                    # si le clic n'est pas sur l'image (canvas=frame=image) on ne fait rien
-        if self.frame.cget("cursor").string=="plus":
+        if curseurFrame(self.frame)=="plus":
             self.ajouterPointPolyligne(event)                   # ajoute provisoirement le point courant
             self.afficherPolyligne()                            # affiche la polyligne avec le point courant
             self.retirerPointPolyligne()                        # retire le point courant qui n'était que provisoire
             
     def delete(self,event):                                     # retirer un point dans le polygone en construction
-        if self.frame.cget("cursor").string=="plus":
+        if curseurFrame(self.frame)=="plus":
             self.retirerPointPolyligne()
             self.afficherPolyligne()                            # affiche la polyligne 
-        if self.frame.cget("cursor").string=="arrow":
+        if curseurFrame(self.frame)=="arrow":
             self.tracerMasqueBis()
         
     def b1Double(self,event):                                   # pour clore la polyligne
         if event.widget!=self.canvas: return                    # si le clic n'est pas sur l'image (canvas=frame=image) on ne fait rien
-        if self.frame.cget("cursor").string=="plus":            # le cursor "plus" indique l'ajout d'un point : on clot
+        if curseurFrame(self.frame)=="plus":            # le cursor "plus" indique l'ajout d'un point : on clot
             if self.listePointsJPG.__len__()<=1:                #polygone avec trop peu de point
                 self.infoBulle(event,_("Il faut au moins 2 points dans le polygone."))
                 return            
@@ -1070,7 +1082,7 @@ class TracePolygone():
         self.afficheMasque()
                 
     def tracerMasqueBis(self):                                  # appui sur un bouton "tracermasque" : on active le tracé
-        if self.frame.cget("cursor").string=="plus":            # Nouvel appui sur le bouton : on arrête la saisie
+        if curseurFrame(self.frame)=="plus":            # Nouvel appui sur le bouton : on arrête la saisie
             self.frame.config(cursor="arrow")                   # on remet le cursor "normal"
             return
         self.listePointsJPG=list()                              # nouvelles données
@@ -1093,7 +1105,7 @@ class TracePolygone():
         else: self.afficherPolyligne() 
             
     def afficherPolyligne(self):
-        if self.frame.cget("cursor").string=="plus": 
+        if curseurFrame(self.frame)=="plus": 
             self.menagePol()
             listePointsCanvas=[self.xyJPGVersCanvas(e[0],e[1]) for e in self.listePointsJPG]
             if len(listePointsCanvas)>1:
@@ -1155,7 +1167,7 @@ class TracePolygone():
 ################# Classe CalibrationGPS : placer des points repérés en XYZ sur des images.
 # création d'un dictionnaire dicoPointsJPG : clé = tuple (nom du point, nom de la photo); valeur = tuple (X,Y)
 
-class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom du fichier image, liste des noms des boutons, dictionnaire des points déjà placés
+class CalibrationGPS:   # Paramètres : fenetre maitre,Nom du fichier image, liste des noms des boutons, dictionnaire des points déjà placés
     
     def __init__(self,fenetre,image,points,dejaPlaces,
                  position="900x900+50+50",
@@ -1306,19 +1318,19 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         self.pointProbable = False                              # suppression du point probable précédent
         if event.widget!=self.canvas:                           # si le clic n'est pas sur l'image (canvas=frame=image) on ne fait rien
             return
-        if self.frame.cget("cursor").string=="plus":            # le cursor "plus" indique l'ajout d'un point
+        if curseurFrame(self.frame)=="plus":            # le cursor "plus" indique l'ajout d'un point
             self.ajouterPoint(event)                            # on ajoute (ou modifie) le point sur l'image
-        if self.frame.cget("cursor").string=="arrow":                                      # sinon : drag and drop : bouton 1 enfoncé; on initialise le déplacement de l'image
+        if curseurFrame(self.frame)=="arrow":                                      # sinon : drag and drop : bouton 1 enfoncé; on initialise le déplacement de l'image
             self.xDrag,self.yDrag = event.x,event.y
             self.frame.config(cursor="hand2")
           
     def finDrag(self,event):                                    # l'utilisateur relache le bouton 1 de la souris : fin du "drag"
-        if self.frame.cget("cursor").string=="hand2":
+        if curseurFrame(self.frame)=="hand2":
             self.b1Move(event)
             self.frame.config(cursor="arrow")
 
     def b1Move(self,event):                                     # l'utilisateur déplace la souris avec le bouton 1 enfoncé : déplacement de l'image        
-        if self.frame.cget("cursor").string=="hand2":
+        if curseurFrame(self.frame)=="hand2":
             self.xNW,self.yNW = self.xNW - int((event.x-self.xDrag) / self.scale),self.yNW - int((event.y-self.yDrag) / self.scale)
             self.xSE,self.ySE = self.xSE - int((event.x-self.xDrag) / self.scale),self.ySE - int((event.y-self.yDrag) / self.scale)
             self.xDrag,self.yDrag = event.x,event.y
@@ -1540,8 +1552,8 @@ class CalibrationGPS:                       # Paramètres : fenetre maitre,Nom d
         cor=(xs/nbValides,ys/nbValides)
         self.pointProbable=cor
         self.afficheImage()
+
            
-        
 ################# Classe Principale : la fenêtre maître de l'application, le menu, l'IHM
 
 class Interface(ttk.Frame):
@@ -2079,6 +2091,11 @@ class Interface(ttk.Frame):
         self.choixDensification = tkinter.StringVar()                      # 
         self.modeC3DC           = tkinter.StringVar()       
 
+        # Pour TiPunch ! création d'un maillage après C3DC et PIMs2Mnt création d'un MNT aprés C3DC :
+
+        self.lancerTiPunch      = tkinter.BooleanVar()
+        self.lancerPIMs2Mnt     = tkinter.BooleanVar()
+
         # Pour la localisation GPS par exif des photos :
 
         self.repereLocalXml         =   "SysCoRTL.xml"          # fichier systéme de coordonnées : référentiel terrestre local
@@ -2110,6 +2127,8 @@ class Interface(ttk.Frame):
         self.nuage2PlyPerso         = tkinter.StringVar()
         self.divPerso               = tkinter.StringVar()
         self.mergePlyPerso          = tkinter.StringVar()
+        self.tiPunchPerso           = tkinter.StringVar()
+        self.PIMs2MntPerso          = tkinter.StringVar()    
         self.initDicoPerso()
 
         self.memoPerso()            # crée le dico des paramètres perso
@@ -2177,9 +2196,10 @@ class Interface(ttk.Frame):
         # Schnaps
 
         self.item490  = ttk.Frame(self.item400,height=50,relief='sunken',padding="0.3cm")     
-        self.item491 = ttk.Checkbutton(self.item490, variable=self.lancerSchnaps,
+        self.item491  = ttk.Checkbutton(self.item490, variable=self.lancerSchnaps,
                                        text=" "+_("Sélection de points homologues pour calculer l'orientation (module schnaps)"))
         self.item491.pack()
+
         
         #   Tapas : 500
         
@@ -2481,6 +2501,20 @@ class Interface(ttk.Frame):
         self.item802.pack(ipady=2,pady=3)  
         self.item804 = ttk.Label(self.item800, text= "")    # état du masque (créé, supprimé, absent, absence de nuage non dense)
         self.item804.pack(ipady=2,pady=3)
+        
+        # maillage après C3DC :
+        
+        self.item820 = ttk.Checkbutton(self.item800, variable=self.lancerTiPunch,
+                                       text=" "+_("Générer un maillage texturé après C3DC (modules TiPunch et Tequila)")+"\n"+
+                                                _("Ce maillage sera affiché aprés traitement"))
+        self.item820.pack(ipady=2,pady=3)
+
+        # maillage après C3DC :
+        
+        self.item825 = ttk.Checkbutton(self.item800, variable=self.lancerPIMs2Mnt,
+                                       text=" "+_("Générer un MNT après C3DC (module PIMs2Mnt)"+"\n"+
+                                                  "Ce MNT se trouvera dans un répertoire PIMS suivi du mode de C3DC"))
+        self.item825.pack(ipady=2,pady=3)
 
         
         # Ajout des onglets dans la boite à onglet :
@@ -2661,7 +2695,7 @@ class Interface(ttk.Frame):
         self.item9005.pack(pady=15)
 
         # La boite de dialogue pour personnaliser les options des modules micmac
-        py = 5
+        py = 1
         self.item9100 = ttk.Frame(fenetre)
         self.item9101 = ttk.Label(self.item9100,
                                   text= _("Personnaliser les options des modules MicMac.") + "\n\n"+
@@ -2784,6 +2818,20 @@ class Interface(ttk.Frame):
         self.item9242.pack(pady=py,side="left")
         self.item9243.pack(pady=py)
         self.item9240.pack()
+
+        self.item9250 = ttk.Frame(self.item9100)
+        self.item9252 = ttk.Label(self.item9250, text=_("Paramètres nommés pour TiPunch : "))
+        self.item9253 = ttk.Entry(self.item9250, textvariable=self.tiPunchPerso)
+        self.item9252.pack(pady=py,side="left")
+        self.item9253.pack(pady=py)
+        self.item9250.pack()        
+
+        self.item9260 = ttk.Frame(self.item9100)
+        self.item9262 = ttk.Label(self.item9260, text=_("Paramètres nommés pour PIMs2Mnt : "))
+        self.item9263 = ttk.Entry(self.item9260, textvariable=self.PIMs2MntPerso)
+        self.item9262.pack(pady=py,side="left")
+        self.item9263.pack(pady=py)
+        self.item9260.pack()
         
         self.item9500 = ttk.Frame(self.item9100)
         self.item9501 = ttk.Button(self.item9500,
@@ -3551,6 +3599,9 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version 5.58 :")+chr(9)+_(" 18 septembre 2021") + "\n\n"+\
+              chr(9)+chr(9)+_("- Maillage après C3DC. Voir le source.") + "\n"+\
+              chr(9)+chr(9)+_("- Compatible avec la version 3.9 de python.") + "\n"+\
               "\n" + _("Version 5.57 :")+chr(9)+_(" 18 juin 2021") + "\n\n"+\
               chr(9)+chr(9)+_("- Quelques améliorations/corrections. Voir le source.") + "\n"+\
               "\n" + _("Version 5.56.2 :")+chr(9)+_("début le 30 décembre 2020") + "\n\n"+\
@@ -3775,20 +3826,23 @@ class Interface(ttk.Frame):
                 _("                 Ces informations sont exploitées par apéroDeDenis pour définir un repere local en coordonnées métriques et orienté comme le WGS84.") + "\n"+\
                 _("                 Ces informations remplacent et supplantent la mise à l'échelle manuelle. Un item du menu expert permet de les ignorer") + "\n\n"+\
                 _("               - Points GCP (ou GPS) : définir au moins 3 points cotés et les placer sur 2 photos. L'état du chantier indique s'ils sont pris en compte") + "\n\n"+\
-                _("               - Densification :") + "\n"          +\
-                _("                       Malt fournit des nuages beaucoup plus denses que C3DC mais parfois exotiques si peu de points homologues") + "\n"+\
+                _("               - Densification : Malt (historique) ou C3DC (récent)") + "\n"+\
+                _("                       Malt fournit des nuages parfois exotiques si peu de points homologues") + "\n"+\
                 _("                            Pour éviter cela utiliser l'option geoimage avec masque sur les zones denses en points homologues") + "\n" +\
-                _("                       C3DC fournit des nuages peu denses mais plus précis") + "\n" +\
+                _("                       C3DC fournit des nuages un peu plus précis") + "\n" +\
                 _("                            Masque 3D possible sur le nuage non dense'") + "\n" +\
                 _("                            L'option la plus fructueuse est 'BigMac'") + "\n" +\
-                _("               - Densification par Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtres.") + "\n"          +\
-                _("                        Seuls les points visibles sur ces images seront conservés dans le nuage de points.") + "\n"                +\
+                _("                       Les 2 modules permettent d'obtenir des nuages de points ou des maillages (mesh).'") + "\n" +\
+                _("                       Malt option Ortho génére une orthophoto en plus du nuage.'") + "\n" +\
+                _("                       Aprés C3DC le module Pims2MNT génére, sur demande, une orthophoto.'") + "\n"+\
+                _("               - Densification par Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtres.") + "\n"+\
+                _("                        Seuls les points visibles sur ces images seront conservés dans le nuage de points.") + "\n"+\
                 _("                        Sur ces images maîtres tracer les masque délimitant la partie 'utile' de la photo.") + "\n"+\
                 _("                        Le résultat sera mis en couleur suivant les images maitresses.") + "\n"+\
                 _("                        (éviter trop de recouvrement entre les maîtres !).") + "\n"+\
-                _("                        Le traitement avec masque sera accéléré et le résultat plus 'propre'.") + "\n\n"                                 +\
-                _("               - Densification par C3DC : propose de définir un masque en 3D qui conservera tout le volume concerné.") + "\n"                  +\
-                _("                        Alternative à Malt, le traitement est parfois plus rapide, plus précis, moins dense. Nécessite une version récente de MicMac.") + "\n\n"+\
+                _("                        Le traitement avec masque sera accéléré et le résultat plus 'propre'.") + "\n\n"+\
+                _("               - Densification par C3DC : possibilité de définir un masque 3D sur le nuage non dense.") + "\n"+\
+                _("                        Alternative à Malt, le traitement est parfois plus rapide, plus précis.") + "\n\n"+\
                 "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
 
     # pas d'orientation
@@ -3863,7 +3917,7 @@ class Interface(ttk.Frame):
 
     # A propos
     
-        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2021") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
+        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2022") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
                                 _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr")
 
 
@@ -3999,8 +4053,16 @@ class Interface(ttk.Frame):
 
     # Schnaps: effectue du ménage dans les points homologues, détecte les images inappropriées
 
-        self.lancerSchnaps.set(True)   
+        self.lancerSchnaps.set(True)
+        
+    # TiPunch: création d'un maillage après C3DC : oui, améliore la présentation du modéle 3D
 
+        self.lancerTiPunch.set(True)
+
+    # PIMs2Mnt création d'un MNT aprés C3DC : non (peu convaincant et peu accessible : sous le répertoire PIMS_mode de C3DC)
+    
+        self.lancerPIMs2Mnt.set(False)
+        
     # TAPAS
 
         self.modeCheckedTapas.set('Fraser')                     # mode par défaut depuis la v 5.54 août 2020
@@ -4028,6 +4090,10 @@ class Interface(ttk.Frame):
     # Calculer le nuage non dense :
     
         self.calculNuageNonDense.set(0)                         # par défaut : le nuage non dense est calculé=1, pas calculé = 0
+
+    # Premier indice des nuages denses successifs :
+
+        self.indiceModeleFinal          =   1
         
     # Malt
     # mieux que Mic Mac qui prend par défaut le masque de l'image maitre avec le nom prédéfini masq
@@ -4037,7 +4103,7 @@ class Interface(ttk.Frame):
         self.tawny.set(1)                                       # lancement par défaut de Tawny après Malt Ortho (1, sinon 0 pas lancé)
         self.zoomF.set('4')                                     # doit être "1","2","4" ou "8" (1 le plus détaillé, 8 le plus rapide)
         self.etapeNuage                 = "5"                   # par défaut (très mystérieux!)
-        self.modele3DEnCours            = "modele3D.ply"        # Nom du nuage en cours de traitement avec son niveau de zoom
+        self.modele3DEnCours            = "modele3D_V1.ply"     # Nom du nuage en cours de traitement avec son niveau de zoom
         self.modele3DFinal              = "modele3D_V1.ply"     # nom du premier nuage final (puis _V2, _V3...)
         self.dicoInfoBullesAAfficher    = None                  # pour passer l'info à afficherLesInfosBullesDuDico (dans choisirUnePhoto)
         self.listeDesMaitresses         = list()
@@ -4064,6 +4130,10 @@ class Interface(ttk.Frame):
         self.orthoMosaiqueTawny         = "OrthoMosaique.tif"
         self.resultatAConserver         = [os.path.join("Ortho-MEC-MALT",self.orthoMosaiqueTawny),] # à conserver si ménage
 
+    # TiPunch, Tequila : maillage texturé aprés C3DC
+
+        self.plyTextureC3DC             =   str()
+    
     # Positionnement par points GCP 
 
         self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
@@ -4713,6 +4783,11 @@ class Interface(ttk.Frame):
                 else:
                     texte = texte+'\n' + _('Densification : C3DC %s') % (self.modeC3DC.get()) + '\n'
                     
+            if self.lancerTiPunch.get():
+                    texte = texte+_('Maillage demandé') + '\n'
+            else:
+                    texte = texte+_('Nuage de points demmandé') + '\n'
+                    
             # Malt est choisi : 
 
             if self.choixDensification.get()=="Malt":
@@ -4824,7 +4899,7 @@ class Interface(ttk.Frame):
             elif self.etatDuChantier == 35:		
                 texte = texte+"\n" + _("Chantier interrompu lors de la recherche de l'orientation.") + "\n" + _("Modifier les options, relancer micmac.") + "\n"                
 
-            if os.path.exists(self.modele3DEnCours):
+            if os.path.exists(self.modele3DEnCours) or os.path.exists(self.modele3DFinal):
                texte = texte+_("Nuage de points densifié généré.")+"\n"
                nbPly+=1
                if self.Offs!="[0,0,0]":
@@ -5543,7 +5618,7 @@ class Interface(ttk.Frame):
             if self.troisBoutons(_("Nouvelles photos pour le meme chantier"),
                                  _("Choisir de nouvelles photos réinitialisera le chantier." ) + "\n"+
                                 _("Les traces et l'arborescence des calculs seront effacées.") + "\n"+
-                                _("Le nuages de points obtenus sont conservés.") + "\n"+                                 
+                                _("Les nuages de points obtenus sont conservés.") + "\n"+                                 
                                 _("Les options compatibles avec les nouvelles photos seront conservées.") + "\n",
                                 _("Abandon"),
                                 _("Réinitialiser le chantier")) == 0:
@@ -7257,6 +7332,7 @@ class Interface(ttk.Frame):
                              mode='single',
                              bulles=bulles,
                              ouvrirEnGrand=False)
+        
         self.messageSiPasDeFichier  = 1
 
         # en retour une liste : self.selectionPhotosAvecChemin        
@@ -7834,7 +7910,7 @@ class Interface(ttk.Frame):
             [self.retirerPhotos(e) for e in self.lesGroupesDePhotos[1:]]
             return True
         
-    def suiteMicmac(self):  # poursuite après tapas : génération d'un nuage dense 
+    def suiteMicmac(self):  # poursuite après tapas (l'utilisateur peut choisir d'arrêter après Tapas) : génération d'un nuage dense 
 
         # Mise à jour du référentiel (Mise à l'échelle, points GCP ou GPS embarqué ) :
 
@@ -7874,9 +7950,8 @@ class Interface(ttk.Frame):
         # malt ou D3CD 
         # la production sera self.modele3DEnCours
         
-        if self.choixDensification.get()=="C3DC":                               
-            self.lanceC3DC()                                    # C3DC crée directement le fichier self.modele3DEnCours
-            ret=0
+        if self.choixDensification.get()=="C3DC":                                                                   
+            ret=self.suiteMicmacC3DC()      # C3DC crée le fichier plys puis le mesh si demandé
         else:
             ret = self.suiteMicmacMalt()
 
@@ -7928,7 +8003,7 @@ class Interface(ttk.Frame):
             self.afficheEtat(message)
             return 
 
-        # mise à jouor du réferentiel si besoin (points gcp, mise à l'échelle, points gps embarqués)
+        # mise à jour du réferentiel si besoin (points gcp, mise à l'échelle, points gps embarqués)
 
         self.referentiel()
 
@@ -8718,6 +8793,29 @@ class Interface(ttk.Frame):
             return ligne
         
     # ------------------ C3DC : alternative à Malt avec un masque 3D -----------------------
+
+    def suiteMicmacC3DC(self):
+        self.lanceC3DC()
+        # Maillage demandé ?
+        if self.lancerTiPunch.get():
+            self.maillageTiPunch = "maillageTiPunch_"+str(self.indiceModeleFinal)+"_.ply"
+            self.lanceTiPunch()
+            lesfichiers=os.listdir(self.repTravail)
+            self.lanceTequila()            
+        # déplace les fichiers créés par TiPunch et Tequila sous le répertoire maillage :  self.maillageTiPunch et maillage_UVtexture.jpg
+        # les 2 fichiers sont nécessaires
+        # raison : l'ajout du fichier UVTexture.jpg sous le répertoire du chantier empêche le lancement de micmac.
+            repertoireMaillage="maillageC3DC"
+            creeRepertoire(repertoireMaillage)
+            shutil.move(self.maillageTiPunch,repertoireMaillage)
+            fichierTexture = os.path.splitext(self.maillageTiPunch)[0]+"_UVtexture.jpg"
+            shutil.move(fichierTexture,repertoireMaillage)
+            textureC3DC = os.path.splitext(self.maillageTiPunch)[0]+"_textured.ply"
+            self.plyTextureC3DC = shutil.move(textureC3DC,repertoireMaillage)
+            self.ajoutTraceSynthese("\n"+_("Copie du maillage texturé sous le répertoire ")+repertoireMaillage)
+        # MNT demandé ?
+        if self.lancerPIMs2Mnt.get():
+            self.lancePIMs2Mnt()
         
     def lanceC3DC(self):
 
@@ -8765,8 +8863,39 @@ class Interface(ttk.Frame):
                 self.beginStep = ligne
                 return ligne.strip(" -")          
         if 'BEGIN BLOC' in ligne:
-            return " - "+ligne.strip(" -")       
-                
+            return " - "+ligne.strip(" -")
+
+    def lanceTiPunch(self):         # création d'un maillage sur le nuage C3DC
+        tiPunch = [self.mm3d,
+                    "TiPunch",
+                    self.modele3DFinal,
+                    "Mode="+self.modeC3DC.get(),
+                    'Pattern=.*'+self.extensionChoisie,
+                    "Out="+self.maillageTiPunch,
+                    ]+self.tiPunchPerso.get().split(",")+[  # surcharge la suite
+                    "Depth=6",]
+        self.lanceCommande(tiPunch,
+                            )
+        
+    def lanceTequila(self):     # Drapage du maillage de TiPunch
+        tequila = [self.mm3d,
+                   "Tequila",
+                   ".*"+self.extensionChoisie,
+                   self.orientationCourante,
+                   self.maillageTiPunch,
+                    ]
+        self.lanceCommande(tequila,
+                          )
+
+    def lancePIMs2Mnt(self):
+        PIMs2Mnt = [self.mm3d,
+                    "PIMs2Mnt",
+                    self.modeC3DC.get(),
+                    'Pat=.*'+self.extensionChoisie,                    
+                   ]+self.PIMs2MntPerso.get().split(",")+[  # surcharge la suite                   
+                    "DoOrtho=1",
+                    ]
+        
     # ------------------ NUAGE2PLY -----------------------
     
     # exemple après GeomImage : C:\MicMac64bits\bin\nuage2ply.exe MM-Malt-Img-P1000556\NuageImProf_STD-MALT_Etape_8.xml Attr=P1000556.JPG Out=self.modele3DEnCours
@@ -8934,7 +9063,7 @@ class Interface(ttk.Frame):
                                 # cette variable est réinitialisée lorsque :
                                 # - des photos sont retirées (peut-être pas nécessaire : variables réinitialisées ?)
                                 # - des points gcp sont modifiés (retirés ou placés; ajouter =inutile, si coordonénes modifiées : à faire...)
-                                # - la mise à l'échelle est modifiée (fait suaf si modif de la distance)
+                                # - la mise à l'échelle est modifiée (fait sauf si modif de la distance)
                                 # - on ferme AperoDeDenis
         # Définition d'un référentiel : 3 possibilités 
 
@@ -9196,7 +9325,9 @@ class Interface(ttk.Frame):
             "nuage2PlyPerso" : self.nuage2PlyPerso.get(),
             "divPerso" : self.divPerso.get(),
             "mergePlyPerso" : self.mergePlyPerso.get(),
-            "schnapsPerso" : self.schnapsPerso.get(),            
+            "schnapsPerso" : self.schnapsPerso.get(),
+            "tiPunchPerso" : self.tiPunchPerso.get(),
+            "PIMs2MntPerso" : self.PIMs2MntPerso.get(),
             }
     def restauPerso(self):
         try:
@@ -9216,7 +9347,9 @@ class Interface(ttk.Frame):
             self.nuage2PlyPerso.set(self.dicoPerso["nuage2PlyPerso"])
             self.divPerso.set(self.dicoPerso["divPerso"])
             self.mergePlyPerso.set(self.dicoPerso["mergePlyPerso"])
-            self.schnapsPerso.set(self.dicoPerso["schnapsPerso"])            
+            self.schnapsPerso.set(self.dicoPerso["schnapsPerso"])
+            self.tiPunchPerso.set(self.dicoPerso["tiPunchPerso"])
+            self.PIMs2MntPerso.set(self.dicoPerso["PIMs2MntPerso"])            
         except Exception as e:
             self.ajoutLigne(_("Erreur lors de la restauration des options personnalisées : ")+str(e))
 
@@ -9238,6 +9371,8 @@ class Interface(ttk.Frame):
         self.divPerso.set("")
         self.mergePlyPerso.set("")
         self.schnapsPerso.set("")
+        self.tiPunchPerso.set("")
+        self.PIMs2MntPerso.set("")
         
     def initDicoPerso(self):
         self.dicoPerso = {
@@ -9257,7 +9392,9 @@ class Interface(ttk.Frame):
             "nuage2PlyPerso" : "",
             "divPerso" : "",
             "mergePlyPerso" : "",
-            "schnapsPerso" : "",            
+            "schnapsPerso" : "",
+            "tiPunchPerso" : "",
+            "PIMs2MntPerso" : "",
             }
         self.restauPerso()
         
@@ -10542,7 +10679,9 @@ class Interface(ttk.Frame):
                          self.Offs,                         # décalage d'offset pour le nuage dense                         
                          self.nbFocales,                    # nombre de focales différentes
                          self.dimensionsOK,                 # booléen : si True les dimensions sont les  mêmes pour toutes les photos
-                         self.lancerSchnaps.get(),          # schnaps après Tapioca ?
+                         self.lancerSchnaps.get(),          # schnaps après Tapioca : fait du ménage dans les Tie points
+                         self.lancerTiPunch.get(),          # TiPunch aprés C3DC : génére un maillage
+                         self.lancerPIMs2Mnt.get(),         # PIMs2Mnt aprés C3DC : génére un MNT                        
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -10732,6 +10871,8 @@ class Interface(ttk.Frame):
             self.nbFocales                  = r[65] # pour affichage messages (calculé lors du choix des photos)
             self.dimensionsOK               = r[66] # booléen : vrai si toutes le photos sont de même dimension
             self.lancerSchnaps.set           (r[67])
+            self.lancerTiPunch.set           (r[68])
+            self.lancerPIMs2Mnt.set          (r[69])
         except Exception as e: print(_("Erreur restauration param chantier : "),str(e))
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
         # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
@@ -11476,7 +11617,7 @@ class Interface(ttk.Frame):
                                                selectmode=mode,
                                                width=min(self.largeurMaxListboxChoixPhoto,(5+max([0]+[len (r) for r in listeSansChemin]))),
                                                height= min(self.hauteurMaxListboxChoixPhoto,len(listeSansChemin)+2))
-        self.selectionPhotos.select_set(1)
+
         self.selectionPhotos.bind("<KeyRelease-Up>", self.upDown)
         self.selectionPhotos.bind("<KeyRelease-Down>", self.upDown)
         self.selectionPhotos.bind("<KeyRelease-Prior>", self.upDown)
@@ -11496,7 +11637,7 @@ class Interface(ttk.Frame):
             if i in l:
                  self.selectionPhotos.itemconfig("end",bg='yellow')   
         frameSelect.pack()                                                  # fin de la boite à liste
-        
+    
         self.b1 = ttk.Button(self.topVisuPhoto,text=messageBouton,command=self.validPhoto)  # le premier bouton (fermer ou OK
         if boutonDeux!=None:
             c = ttk.Button(self.topVisuPhoto,text=boutonDeux,command=self.cloreVisuPhoto)   # le second bouon si demandé
@@ -11509,10 +11650,12 @@ class Interface(ttk.Frame):
         self.canvasPhoto = tkinter.Canvas(foto,width = 200)       # Canvas pour voir l'image
         self.canvasPhoto.pack(fill='both',expand = 1)
         foto.pack()
+            
         if bulles==dict():
             self.selectionPhotos.select_set(0)                                  # si pas de dictionnaire sélection de la première photos (sinon colorisation &éventuelle de la première photo)
         else:
             self.retailleEtAffichePhoto(self.listeChoisir[0])                   # pour afficher la première photo, même s'il n'y a pas de sélection
+        self.selectionPhotos.select_set(0) 
         self.current = self.selectionPhotos.curselection()                      # sélection courante
         self.list_has_changed(self.current)                                     # la sélection est définie : on réagit
 
@@ -11799,16 +11942,24 @@ class Interface(ttk.Frame):
             new = "modele3D_V"+str(i)+".ply"
             if not os.path.exists(new):
                 self.modele3DFinal = new
+                self.indiceModeleFinal = i
                 return
  
-    def chercheModele3D(self):  # suppose le répertoire courant = self.repTravail; renvoi le plus récent des modeles 3D dans self.modele3DFinal
-        for i in range(50,0,-1):
+    def chercheModele3D(self,maillage=True):  # suppose le répertoire courant = self.repTravail; renvoi le plus récent des modeles 3D dans self.modele3DFinal
+        for i in range(100,0,-1):
+            # si le plus grand numéro correspond à un maillage texturé C3DC on le retient :
+            self.modele3DFinal = os.path.join("maillageC3DC","maillageTiPunch_"+str(self.indiceModeleFinal)+"__textured.ply")
+            if maillage and os.path.exists(self.modele3DFinal):
+                return
+            # sinon le plus grand numéro non texturé :
             self.modele3DFinal = "modele3D_V"+str(i)+".ply"
             if os.path.exists(self.modele3DFinal):
                 return
         test = "modele3D.ply"   # pour compatibilité avec les versions antérieures
         if os.path.exists(test):
-            self.modele3DFinal = test  
+            self.modele3DFinal = test
+
+        # sinon : self.modele3DFinal vaut modele3D_V1.ply, qui n'existe pas
                 
 ########################################## Outils divers (raccourcis clavier, infobulle, afficher un dico de points....)
 
@@ -12716,6 +12867,8 @@ class Interface(ttk.Frame):
                             self.nuage2Mesh.get(),
                             self.tolerance,
                             self.arrondi,
+                            self.lancerTiPunch.get(),
+                            self.lancerPIMs2Mnt.get(),
                             ),
                         sauvegarde3)
             sauvegarde3.close()
@@ -12756,8 +12909,10 @@ class Interface(ttk.Frame):
             self.nuage2Mesh.set(r[22])
             self.tolerance=r[23]
             self.arrondi=r[24]
+            self.lancerTiPunch.set(r[25])
+            self.lancerPIMs2Mnt.set(r[26])
         except Exception as e:
-            print(_("erreur restauration options : ")+str(e))
+            print(_("erreur restauration options : ")+str(e))           
         # Restauration des paramètres nommés personnalisés : si pas alors initialisation
         if type(self.dicoPerso)!=dict(): self.initPerso() 
         else: self.restauPerso()
@@ -12911,8 +13066,13 @@ class Interface(ttk.Frame):
             else:
                 erreur = _("Le fichier\n %s \nn'a pas une extension ASC, XYZ,CSV,TXT ou PLY. Abandon") % (fichierPourMnt)
                 self.encadre(erreur)
-                return False                                               # Abandon si pas fichier ply                
-            self.ajoutLigne(heure()+_("Fichier a écrire en MNT : %s") % (fichierPourMnt))
+                return False                                               # Abandon si pas fichier ply
+            if typePly=="mesh binary": # a écrire pour lire des mesh binaires
+                    erreur = _("Désolé : le fichier %s \nest de type %s. \nFormat non traité dans cette version d'AperoDeDenis.\n\n"+
+                               "Utiliser CloudCompare pour l'enregistrer au format mesh ascii ou nuage de point binary.") % (fichierPourMnt,typePly)
+                    self.encadre(erreur)
+                    return
+            self.ajoutLigne(heure()+"\n"+_("Fichier a écrire en MNT : %s") % (fichierPourMnt))
             return typePly
         
         # Traitement
@@ -12934,13 +13094,12 @@ class Interface(ttk.Frame):
                                                             multiple=False)
         if not fichierPourMnt: return abandon()
         typePly = controleFichier()
+        print("typePly=",typePly)
         if typePly==False: return
         if typePly=="nuage de points binaire":
             retour = self.ecrireMNTPlyNuage(fichierPourMnt)
         if typePly=="mesh ascii":
-            retour = self.ecrireMNTPlyMesh(fichierPourMnt)
-##        if typePly=="mesh binary": # a écrire pour lire des mesh binaires
-##            retour = self.ecrireMNTPlyMeshBinaryMesh(fichierPourMnt)            
+            retour = self.ecrireMNTPlyMesh(fichierPourMnt)        
         if typePly=="ASC":
             retour = self.ecrireMNTPlyNuage(fichierPourMnt)
             
@@ -13371,13 +13530,19 @@ def supprimeRepertoire(repertoire):
         shutil.rmtree(repertoire)
     except Exception as e:
         erreur = _("Erreur lors de la suppression du répertoire : %s\n%s") % (repertoire,str(e))
-        print(erreur)
         return erreur
     if os.path.exists(repertoire):
-        erreur=_("Erreur répertoire non supprimé : %s" % (repertoire))
-        print(erreur)        
+        erreur=_("Erreur répertoire non supprimé : %s" % (repertoire))        
         return erreur
 
+def creeRepertoire(repertoire): # crée le répertoire s'il n'existe pas, sinon ne fait rien
+    if os.path.isdir(repertoire):     
+        return
+    if os.path.isfile(repertoire):     
+        supprimeFichier(repertoire)    
+    os.mkdir(repertoire)
+    
+    
 # nombre de "fichiers" dans l'arborescence du répertoires
 def compteurFichiers(repertoire):
     nbfile=0
@@ -14942,8 +15107,14 @@ def homolCorrespondant(listeHomol,les3Indices,coefBary):
     xCorrespondant = xA + coefBary[0] * xAB + coefBary[1] * xAC
     yCorrespondant = yA + coefBary[0] * yAB + coefBary[1] * yAC
     return xCorrespondant,yCorrespondant
-    
 
+def curseurFrame(frame):   # renvoie la chaine de caractère représentant le curseur de frame (0/09/2021)
+                            # en python 3.6 : frame.cget("cursor") renvoie un objet cursor, en 3.9 un string
+    if isinstance(frame.cget("cursor"),str): return frame.cget("cursor")
+    try:
+        if isinstance(frame.cget("cursor").string,str): return frame.cget("cursor").string
+    except:
+        pass
 
 '''################################## Crée un fichier contenant l'icone de l'application et en renvoie le nom conserver pour exemple de fichier temporaire
 

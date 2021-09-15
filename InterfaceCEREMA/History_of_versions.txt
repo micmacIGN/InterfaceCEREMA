@@ -1,16 +1,18 @@
 History of the main versions of the CEREMA AperoDeDenis interface
 
+            Version 5.58: 18 September 2021
+			
+			Functional innovations, C3DC densification:
+			- Add TiPunch and Tequila modules to obtain a textured mesh after C3DC
+			- Addition of the Pims2MNT module to obtain an orthophoto after C3DC
+			
+			- Compatible with Python 3.9
+			
             Version 5.57 : 18 june 2021
-			
-			Some corrections. See the source.
-			
-			Version 5.56.1 : 29 december 2020
-			
-			Some corrections. See the source.
-			
+			Version 5.56.1 : 29 december 2020			
             Version 5.56 : 3 december 2020
 			
-			Correction of 2 bugs and modification of 2 default options. See the source.
+			Correction. See the source.
 
 			Version 5.55: 24 November 2020
 			
