@@ -480,6 +480,11 @@
 
 # Modification de la boite de dialogue de choix : désormais, par défaut, le premier item est sélectionné (il faut fermer la fenêtre pour abandonnner)
 
+# version 5.58.1 le 20/9
+# correction de la recherche d'une nouvelle version
+# ajout dans cx_freeze de la commande gdal_merge.py (pour fusionner les ortho mosaïques)
+#ajout de la verrsion python lors de l'affichage des paramètres
+
 # quelques stat : 9 items de menu principal, 71 items de menus secondaires, 46 de second niveaux,
 # les boites de dialogues comportent une centaine d'items distincts, le programme fait 15400 lignes. (600 à 800 jours de travail)
 
@@ -769,7 +774,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.58"
+numeroVersion = "5.58.1"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -4123,7 +4128,7 @@ class Interface(ttk.Frame):
 
     # choix de la densification par défaut : C3DC ou MALT
     
-        self.choixDensification.set("Malt")                     # valeur possible : C3DC ou Malt Malt pour avoir une ortho
+        self.choixDensification.set("C3DC")                     # valeur possible : C3DC ou Malt Malt pour avoir une ortho
         
     # Tawny : drapage pour nuage dense généré par MALT option Ortho  : nom du fichier généré
 
@@ -4783,10 +4788,10 @@ class Interface(ttk.Frame):
                 else:
                     texte = texte+'\n' + _('Densification : C3DC %s') % (self.modeC3DC.get()) + '\n'
                     
-            if self.lancerTiPunch.get():
-                    texte = texte+_('Maillage demandé') + '\n'
-            else:
-                    texte = texte+_('Nuage de points demmandé') + '\n'
+                if self.lancerTiPunch.get():
+                        texte = texte+_('Maillage demandé') + '\n'
+                else:
+                        texte = texte+_('Nuage de points demmandé') + '\n'
                     
             # Malt est choisi : 
 
@@ -5281,22 +5286,23 @@ class Interface(ttk.Frame):
     ################################## Le menu PARAMETRAGE : répertoires MicMAc et Meshlab ###########################################################
 
     def afficheParam(self):       
-        texte =('\n' + _("Répertoire bin de MicMac : ")+'\n\n'+afficheChemin(self.micMac)+
-                '\n------------------------------\n'+
-                '\n' + _("Version MicMac :")+'\n\n' + str(self.mercurialMicMac)+
-                '\n------------------------------\n'+
-                '\n' + _("Outil exiftool :") + '\n\n' + afficheChemin(self.exiftool)+
-                '\n------------------------------\n'+
-                '\n' + _("Outil convert d\'ImageMagick :") + ' \n\n' + afficheChemin(self.convertMagick)+                
-                '\n------------------------------\n'+                
-                '\n' + _("Outil pour afficher les .ply :") + '\n\n' + afficheChemin(self.meshlab)+
-                '\n------------------------------\n'+
-                '\n' + _("Outil pour décompacter les vidéos (ffmpeg):") + "\n\n" + afficheChemin(self.ffmpeg)+                
-                '\n------------------------------\n'+
-                '\n' + _("Répertoire d'AperoDeDenis :") + "\n\n" + afficheChemin(self.repertoireScript)+
-                '\n------------------------------\n'+
-                '\n' + _("Répertoire des paramètres :") + "\n\n" + afficheChemin(self.repertoireData)+
-                '\n------------------------------\n')       
+        texte =('\n' + _("Répertoire bin de MicMac : ")+'\n'+afficheChemin(self.micMac)+
+                '\n-------------------'+
+                '\n' + _("Version MicMac :")+'\n' + str(self.mercurialMicMac)+
+                '\n-------------------'+
+                '\n' + _("Outil exiftool :") + '\n' + afficheChemin(self.exiftool)+
+                '\n-------------------'+
+                '\n' + _("Outil convert d\'ImageMagick :") + ' \n' + afficheChemin(self.convertMagick)+                
+                '\n-------------------'+                
+                '\n' + _("Outil pour afficher les .ply :") + '\n' + afficheChemin(self.meshlab)+
+                '\n-------------------'+
+                '\n' + _("Outil pour décompacter les vidéos (ffmpeg):") + "\n" + afficheChemin(self.ffmpeg)+                
+                '\n-------------------'+
+                '\n' + _("Répertoire d'AperoDeDenis :") + "\n" + afficheChemin(self.repertoireScript)+
+                '\n-------------------'+
+                '\n' + _("Répertoire des paramètres :") + "\n" + afficheChemin(self.repertoireData)+
+                '\n-------------------'+
+                '\n' + "Version python :" + "\n" + sys.version )       
         self.encadre(texte)
 
     def repMicmac(self):
@@ -11149,10 +11155,12 @@ class Interface(ttk.Frame):
          
     def versionOkInGitHub(self): # retour = true or False
         try:
-            sock = urllib.request.urlopen("https://github.com/micmacIGN/InterfaceCEREMA/blob/master/InterfaceCEREMA/readme.txt")
-            htmlLu = str(sock.read(100000))
+            url = "https://github.com/micmacIGN/InterfaceCEREMA/blob/master/InterfaceCEREMA/readme.txt"
+            sock = urllib.request.urlopen(url)
+            htmlLu = str(sock.read())
             sock.close
-        except:
+        except Exception as e:
+            print("erreur lecture web : ",url,"\n",e)
             return
         # Y-a-t-il une nouvelle version sur internet ?  Le readme.txt comporte " V N.nn " pour la version en cours
         positionVersion = htmlLu.find(" V ")
