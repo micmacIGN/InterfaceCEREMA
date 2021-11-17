@@ -4,6 +4,9 @@ MICMAC, l'outil de photogrammétrie libre de l'IGN.
 The CEREMA interface provides a user-friendly graphical user interface to 
 MICMAC, the IGN's free photogrammetry tool.
 
+Version 5.60 du 17 novembre 2021
+Version 5.59 du 18 octobre 2021
+
 Version 5.58 du 18 septembre 2021
 Nouveautés fonctionnelles,  densification C3DC :
 	- Ajout des modules TiPunch et Tequila pour obtenir un maillage texturé aprés C3DC

@@ -519,11 +519,26 @@
 # 5.58.2 diffusée sous le numéro 5.59 le 18 octobre 2021
 
 # Version 5.60
+# Modification du message lorsque internet n'est pas accessible
+# On ne lance schnaps que si Tapioca vient d'être éxécuté
+# Messages "répertoires bin de MicMac" remplacés par "répertoire de MicMac"
+# Modification du menu édition afficher les nuages
+# correction tapas ligne 8351 : nom du répertoire calib incorrect (remplace , par +)
+# correction tapas ligne 8374 : "SH="+SH (remplace , par +)
+# Correction : ajout de la variable dimensionsDesPhotos dans la liste des paramètres suvegardés (oubli)
+# correction : test du nombre de fichiers de points homologues sous homol ou homol_mini
+#   (si scnaps n'a pas été éxécuté ou copie de points homologues depuis un autre chantier)
+# copie des points homologues depuis un autre chantier : on copie la variable lancerSchnaps et les 2 répertoires hmol et homol_mini
+# (la copie de homol est nécessaie pour apericloud, ce qui est surprenant car absent des paramètres (question à Marc ?)
+# ajout d'un filtre à centerbascule pour limiter la trace
+#remplacer l'appel à taskkill par tskill : taskkill sous windows nécessite une version "pro"
 
 #-------------
 # quelques stat : 9 items de menu principal, 71 items de menus secondaires, 46 de second niveaux,
 # les boites de dialogues comportent une centaine d'items distincts, le programme fait 15400 lignes. (600 à 800 jours de travail)
 # Suppression de la création d'un MNT par PIMS2Mnt : pas convaincant, niveau expert
+
+#à corriger : si imtation de points homologues achnaps ne les trouve pas (micma_55)
 
 # a faire :
 # permettre de ne lancer que l'orientation lorsqu'il faut débloquer le chantier
@@ -626,6 +641,7 @@ def foreach_window(hwnd, lParam):
         buff = ctypes.create_unicode_buffer(length + 1)
         GetWindowText(hwnd, buff, length + 1)
         titles.append(buff.value)
+        #print(str(hwnd)," titre : ",buff.value,"Parent : ",GetParent(hwnd))
     return True
 
 def heure():        #  time.struct_time(tm_year=2015, tm_mon=4, tm_mday=7, tm_hour=22, tm_min=56, tm_sec=23, tm_wday=1, tm_yday=97, tm_isdst=1)
@@ -635,13 +651,13 @@ def killMm3d(): # https://stackoverflow.com/questions/19447603/how-to-kill-a-pyt
     # l'appel par atexit peut, parfois, ne pas marcher si l'utilisateur utilise "brutalement" la croix de fermeture de la fenêtre.
     if os.name=="nt":
         try:
-            p = subprocess.Popen("taskkill /IM mm3d.exe /F", # tasklist pour avoir la liste des processus
+            p = subprocess.Popen("tskill mm3d.exe /V", # tasklist pour avoir la liste des processus
                                   stdin=subprocess.PIPE,
                                   shell=True, #pour ne pas ouvrir la console si exe
                                  universal_newlines=True) # pour communicate en string et pas en bianire
             p.communicate(input='\n') # pour débloquer si besoin
         except Exception as e:
-            print("erreur taskkill windows: ",str(e))            
+            print("erreur tskill mm3d: ",str(e))            
     if os.name=='posix':
         try:
             p = subprocess.Popen("kill -9 $(pidof mm3d)",shell=True,universal_newlines=True) # https://korben.info/commande-kill-linux-tuer-processus.html
@@ -805,7 +821,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.59"
+numeroVersion = "5.60"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -874,15 +890,16 @@ except:
     def _(a=str(),b=str()):
         return a+b
 
-if os.name=="nt":      
+if os.name=="nt":
     EnumWindows = ctypes.windll.user32.EnumWindows
     EnumWindowsProc = ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
     GetWindowText = ctypes.windll.user32.GetWindowTextW
     GetWindowTextLength = ctypes.windll.user32.GetWindowTextLengthW
-    IsWindowVisible = ctypes.windll.user32.IsWindowVisible 
+    IsWindowVisible = ctypes.windll.user32.IsWindowVisible
+    GetParent = ctypes.windll.user32.GetParent
     titles = []
     EnumWindows(EnumWindowsProc(foreach_window), 0)     # liste des fenetres ouvertes dans titles 
-
+    print("\n".join(titles))
 # pour indiquer à pyproj ou se trouve le répertoire des data si installation via msi, la recherche se fait d'abord sur pyproj.datadir.get_data_dir()
 # le même code peut servir avec ou sans l'installateur
 
@@ -1688,19 +1705,20 @@ class Interface(ttk.Frame):
         menuEditionVisu.add_command(label=_("Visualiser la zone plane"), command=self.afficherZonePlane)
         menuEditionVisu.add_command(label=_("Visualiser la distance"), command=self.afficherDistance)
 
-        menuEditionAffiche = tkinter.Menu(menuEdition,tearoff = 0)
+        menuEditionAffiche = tkinter.Menu(menuEdition,tearoff = 0)        
+        menuEditionAffiche.add_command(label=_("Afficher le nuage dense"), command=self.affiche3DNuage)
+        menuEditionAffiche.add_command(label=_("Afficher le nuage non dense"), command=self.afficheApericloud)         
+        menuEditionAffiche.add_separator()        
         menuEditionAffiche.add_command(label=_("Afficher la mosaïque Tarama"), command=self.afficheMosaiqueTarama)
         menuEditionAffiche.add_command(label=_("Afficher les orthos mosaïque"), command=self.afficheLesOrthos)      
         menuEditionAffiche.add_separator()
-        menuEditionAffiche.add_command(label=_("Afficher l'image 3D non densifiée"), command=self.afficheApericloud)         
-        menuEditionAffiche.add_command(label=_("Afficher l'image 3D densifiée"), command=self.affiche3DNuage)
-        menuEditionAffiche.add_separator()        
+        
         menuEditionAffiche.add_command(label=_("Lister-Visualiser les images 3D"), command=self.lister3DPly)
         
         menuEdition.add_command(label=_("Afficher l'état du chantier"), command=self.afficheEtat)
         menuEdition.add_separator()
         menuEdition.add_cascade(label=_("Visualiser les photos et les options"),menu=menuEditionVisu)
-        menuEdition.add_cascade(label=_("Visualiser les Mosaïques et les nuages de points"),menu=menuEditionAffiche)        
+        menuEdition.add_cascade(label=_("Visualiser les nuages et les mosaïques"),menu=menuEditionAffiche)        
         menuEdition.add_separator()
         menuEdition.add_command(label=_("Afficher la trace synthétique du chantier"), command=self.lectureTraceSynthetiqueMicMac)
         menuEdition.add_command(label=_("Afficher la trace complète du chantier"), command=self.lectureTraceMicMac)
@@ -1774,7 +1792,7 @@ class Interface(ttk.Frame):
         menuExpertImport.add_command(label=_("Importer points homologues, calibration, orientation, Tarama"), command=self.copierHomolOriTarama)
         menuExpertImport.add_separator()         
         menuExpertImport.add_command(label=_("Importer les points homologues d'un autre chantier"), command=self.copierPointsHomologues)             
-        menuExpertImport.add_command(label=_("Importer la calibration de l'appeil d'un autre chantier"), command=self.chargerCalibrationIntrinsequeDepuisMenu)
+        menuExpertImport.add_command(label=_("Importer la calibration de l'appareil d'un autre chantier"), command=self.chargerCalibrationIntrinsequeDepuisMenu)
         menuExpertImport.add_command(label=_("Importer l'orientation d'un autre chantier"), command=self.copierOrientation)
         menuExpertImport.add_command(label=_("Importer la mosaique Tarama d'un autre chantier"), command=self.copierMosaiqueTarama)                
         menuExpertImport.add_command(label=_("Importer les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)
@@ -1855,7 +1873,7 @@ class Interface(ttk.Frame):
         menuParametres = tkinter.Menu(mainMenu,tearoff = 0,postcommand=updateParam)
         menuParametres.add_command(label=_("Afficher les paramètres"), command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
         menuParametres.add_separator()        
-        menuParametres.add_command(label=_("Associer le répertoire bin de MicMac"), command=self.repMicmac)    ## Ajout d'une option au menu fils menuFile
+        menuParametres.add_command(label=_("Associer le répertoire de MicMac"), command=self.repMicmac)    ## Ajout d'une option au menu fils menuFile
         menuParametres.add_command(label=_("Associer 'exiftool'"), command=self.repExiftool)                   ## Exiftool : sous MicMac\binaire-aux si Windows, mais sinon ???   
         menuParametres.add_command(label=_("Associer 'convert' d'ImageMagick"), command=self.repConvert)       ## convert : sous MicMac\binaire-aux si Windows, mais sinon ???   
         menuParametres.add_command(label=_("Associer 'ffmpeg (décompacte les vidéos)"), command=self.repFfmpeg)                        ## ffmpeg : sous MicMac\binaire-aux si Windows, mais sinon ???
@@ -2000,7 +2018,7 @@ class Interface(ttk.Frame):
 
         self.hauteurMaxListboxChoixPhoto = 12               # nombre de lignes de choix
         self.largeurMaxListboxChoixPhoto = 250              # largeur boîte
-        self.positionBddChoixPhoto       = "400x480+50+50"  # dimension+position à l'écran
+        self.positionBddChoixPhoto       = "400x580+50+50"  # dimension+position à l'écran
         
         # les caractéristiques de l'appareil photo :
         
@@ -3605,7 +3623,7 @@ class Interface(ttk.Frame):
                 _("   Tout d'abord : installer MicMac. Consulter le wiki MicMac : https://micmac.ensg.eu/index.php") + "\n"+\
                 _("   Ensuite : installer CloudCompare (ou Meshlab) (pour afficher les nuages de points)") + "\n\n"+\
                 _("   Puis :") + "\n\n"+\
-                _("1) Paramètrer l'interface : indiquer ou se trouvent le répertoire bin de MicMac et l'éxécutable CloudCompare (ou Meshlab).") + "\n"+\
+                _("1) Paramètrer l'interface : indiquer ou se trouvent le répertoire de MicMac et l'éxécutable CloudCompare (ou Meshlab).") + "\n"+\
                 _("   Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick (en principe sous MicMac\\binaire-aux).") + "\n"+\
                 _("   Vérifier en affichant les paramètres (menu Paramètres).") + "\n\n"+\
                 _("2) Choisir quelques photos pour commencer (menu MicMac/choisir des photos).") + "\n\n"+\
@@ -3627,6 +3645,8 @@ class Interface(ttk.Frame):
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
+              "\n" + _("Version 5.59 :")+chr(9)+_(" 18 octobr 2021") + "\n\n"+\
+              chr(9)+chr(9)+_("- Nombreuses modifications ponctuelles. Voir le source.") + "\n"+\
               "\n" + _("Version 5.58 :")+chr(9)+_(" 18 septembre 2021") + "\n\n"+\
               chr(9)+chr(9)+_("- Maillage après C3DC. Voir le source.") + "\n"+\
               chr(9)+chr(9)+_("- Compatible avec la version 3.9 de python.") + "\n"+\
@@ -3877,15 +3897,16 @@ class Interface(ttk.Frame):
         self.aide6 = _("Interface graphique AperoDeDenis : quelques conseils") + "\n\n"+\
             _("si MicMac ne trouve pas de points homologues.") + "\n"+\
             _("               - Une cause possible est le trop grand nombre de photos : au dela de 200 sous windows et de 400 sous linux le risque est important.") + "\n"+\
-            _("                 Relancer le traitement aprés avoir découper le chantier en paquets plus petits.") + "\n"+\
+            _("                 Relancer le traitement aprés avoir découpé le chantier en paquets plus petits.") + "\n"+\
             _("                 Vous pourrez regrouper les nuages obtenus s'ils sont référencés par des points GCP ou GPS.") + "\n"+\
-            _("               - Une cause possible est la non conformité des photos aux standards minimum de la phtogrammétrie :") + "\n"+\
+            _("               - Une cause possible est la non conformité des photos aux standards minimum de la photogrammétrie :") + "\n"+\
             _("                 la scéne photographiée doit être 'immobile', une nature morte. Les êtres vivants et la nature ventée sont à proscrire.") + "\n"+ "\n"+\
             _("Si MicMac trouve des points homologues mais ne trouve pas l'orientation des appareils photos:") + "\n\n"+\
             _("               - Consulter la trace :") + "\n"+\
             _("                        1) si erreur dans la trace : 'Radiale distorsion abnormaly high' :") + "\n"+\
             _("                           modifier le type d'appareil pour l'orientation (fraser, radialstd ou radialbasic ou RadialExtended ou...)") + "\n"+\
             _("                        2) Eliminer les photos ayant les plus mauvais scores : menu Outils/qualité des photos puis Outils/retirer des photos") + "\n"+\
+            _("                           Si des photos sont trouvées par le module schnaps, les retirer du chantier ") + "\n"+\
             _("                        3) si ce n'est pas suffisant ne garder que les meilleures photos (typiquement : moins de 10)") + "\n"+\
             _("                           Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.")+ "\n"+\
             _("                        4) Augmenter l'échelle des photos pour tapioca, mettre -1 au lieu de la valeur par défaut.") + "\n"+\
@@ -3901,7 +3922,7 @@ class Interface(ttk.Frame):
             _("                        9) Si la trace synthétique contient'Not Enouh Equation in ElSeg3D::L2InterFaisceaux' alors choisir 'radialbasic'.") + "\n"+\
             _("                        10) consulter le wiki micmac (https://micmac.ensg.eu/index.php)") + "\n"+\
             _("                        11) consulter le forum micmac (http://forum-micmac.forumprod.com)") + "\n"+\
-            _("                        12) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)") + "\n\n"+\
+            _("                        12) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)")+" denis.jouin@gmail.com" + "\n\n"+\
             "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
 
         self.aide10 = _("Plusieurs focales, plusieurs dimensions de photos, plusieurs appareils") + "\n\n\n"+\
@@ -3946,7 +3967,7 @@ class Interface(ttk.Frame):
     # A propos
     
         self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2022") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
-                                _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr")
+                                _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr")+ "\n\n" + "mail : denis.jouin@gmail.com"
 
 
     # pas de nuage dense
@@ -5324,7 +5345,7 @@ class Interface(ttk.Frame):
     ################################## Le menu PARAMETRAGE : répertoires MicMAc et Meshlab ###########################################################
 
     def afficheParam(self):       
-        texte =('\n' + _("Répertoire bin de MicMac : ")+'\n'+afficheChemin(self.micMac)+
+        texte =('\n' + _("Répertoire de MicMac : ")+'\n'+afficheChemin(self.micMac)+
                 '\n-------------------'+
                 '\n' + _("Version MicMac :")+'\n' + str(self.mercurialMicMac)+
                 '\n-------------------'+
@@ -5363,18 +5384,18 @@ class Interface(ttk.Frame):
         
         # Choisir le répertoire de MicMac
         
-        source=tkinter.filedialog.askdirectory(title=_('Désigner le répertoire bin sous Micmac '),initialdir=self.micMac)
+        source=tkinter.filedialog.askdirectory(title=_('Désigner le répertoire de Micmac '),initialdir=self.micMac)
         source = source.strip()
         if len(source)==0:
-            texte=_("Abandon, pas de changement.") + "\n" + _("Répertoire bin de Micmac :") + "\n\n"+afficheChemin(self.micMac)
+            texte=_("Abandon, pas de changement.") + "\n" + _("Répertoire de Micmac :") + "\n\n"+afficheChemin(self.micMac)
             self.encadre(texte)
             return
 
         if " " in source:
-            texte = _("Le chemin du répertoire bin de micmac ne doit pas comporter le caractère 'espace' : ") + "\n"
+            texte = _("Le chemin du répertoire de micmac ne doit pas comporter le caractère 'espace' : ") + "\n"
             texte +=  "'"+source+"'\n"
             texte += _("Déplacer ou renommer le répertoire de MicMac.") + "\n"            
-            texte += _("Abandon, pas de changement.") + "\n" + _("Répertoire bin de Micmac :") + "\n\n"+afficheChemin(self.micMac)
+            texte += _("Abandon, pas de changement.") + "\n" + _("Répertoire de Micmac :") + "\n\n"+afficheChemin(self.micMac)
             self.encadre(texte)
             return
 
@@ -5392,7 +5413,7 @@ class Interface(ttk.Frame):
             else:
                 self.encadre(_("Le répertoire %s ne contient pas le fichier mm3d.exe. Abandon") % (source))
                 return
-
+            
          # chemin pour lire les exifs               
             if not os.path.exists(self.exiftool):    
                 exiftool = os.path.join(source+"aire-aux","exiftool.exe")   # recherche de l'existence de exiftool sous binaire-aux
@@ -5405,7 +5426,7 @@ class Interface(ttk.Frame):
                         self.exiftool = exiftool
                         exiftoolOK = True
             else: exiftoolOK = True
-
+            
         # chemin pour convertir les formats de photos            
             if self.pasDeConvertMagick():
                 convertMagick = os.path.join(source+"aire-aux","convert.exe")
@@ -5420,14 +5441,14 @@ class Interface(ttk.Frame):
             else: convertOK = True
                 
         # Chemin de ffmpeg pour décompacter les vidéo : si existe
-            if self.pasDeFfmpeg():
+            if not os.path.exists(self.ffmpeg):
                 ffmpeg = os.path.join(source,"ffmpeg.exe")  # vrai dans certaines anciennes versions de micmac
                 if os.path.exists(ffmpeg):
                     self.ffmpeg = ffmpeg
                     ffmpgegOK = True
  
 
-        # mm3D sous linux, mas os :
+        # mm3D sous linux, mac os :
             
         if self.systeme=="posix":
             mm3d = os.path.join(source,"mm3d")
@@ -5654,7 +5675,7 @@ class Interface(ttk.Frame):
     def lesPhotos(self):                                # Choisir des images dans un répertoire
 
         if not os.path.isdir(self.micMac):
-                self.encadre(_("Avant de choisir les photos associer le répertoire bin de micmac (Menu paramètres\\associer le répertoire bin de MicMac)."))
+                self.encadre(_("Avant de choisir les photos associer le répertoire de micmac (Menu paramètres\\associer le répertoire de MicMac)."))
                 return
             
         if not os.path.isfile(self.exiftool):
@@ -6929,6 +6950,7 @@ class Interface(ttk.Frame):
     def affiche3DApericloud(self):          # lance SaisieMasqQT, sur apericloud ou modele3d, attente de saisie/fermeture (subprocess.call)
         
         if not os.path.exists("AperiCloud.ply"):
+            self.encadre(_("Absence de nuage AperiCloud.ply : saisie d'un masque 3D impossible"))
             return
         
         nuage = "AperiCloud.ply"
@@ -6936,10 +6958,16 @@ class Interface(ttk.Frame):
         self.masque3DBisSansChemin      =   "AperiCloud_polyg3d.xml"                # nom du second fichier XML pour le masque 3D
         verifParametresSaisieMasqQT()                           # modifie si besoin le paramètre de centrage du nuage : au barycentre
         masque3D = [self.mm3d,"SaisieMasqQT",nuage]             # " SaisieAppuisInitQT AperiCloud.ply"
+        subprocess.Popen("tskill mm3D.exe")
+        subprocess.Popen("tskill SaisieQT.exe")        
         self.lanceCommande (masque3D,
                             info=(_("Saisie masque 3D pour C3DC sur le nuage dense ou non dense."))
                            )
-
+        subprocess.Popen("tskill mm3D.exe")           
+        subprocess.Popen("tskill SaisieQT.exe")
+        print("tskill fait")
+    
+##        os.system('cmd /c "mm3d SaisieMasqQT AperiCloud.ply"')
         try:                                                                # marche pas si on est en visu
             if self.existeMasque3D():
                 self.item804.configure(text= _("Masque 3D créé"),foreground='red')
@@ -7693,10 +7721,14 @@ class Interface(ttk.Frame):
             if retour==-1:                                  # 1 ou -1 : abandon ou fermeture de la fenêtre par la croix
                 return
             
-            if retour==0:            
+            if retour==0:
+                print(heure())
                 self.ajoutLigne(heure()+_("Reprise de la densification, après un premier échec de la densification.")+ "\n")
+                print(heure())
                 self.nettoyerChantierApresTapas()
-                self.cadreVide()    # début de la trace                
+                print(heure())
+                self.cadreVide()    # début de la trace
+                print(heure())
                 self.suiteMicmac()                              # on poursuit par Malt ou C3DC
                 return
             if retour==1:                                       # b2 : débloquer le chantier, effacer les points homologues
@@ -7767,7 +7799,7 @@ class Interface(ttk.Frame):
 
             # Vérification que les photos, les options et les paramètres  autorisent l'exécution, sinon exit ATTENTION : on efface tout avant de recopier les photos
             
-            retourAvantScene = self.avantScene()                     # Efface tout, Prépare le contexte,
+            retourAvantScene = self.avantScene()                    # Efface tout, Prépare le contexte,
                                                                     # crée le répertoire de travail, efface et ouvre les traces
 
             if retourAvantScene!=None:                              # Préparation de l'éxécution de MicMac
@@ -7777,13 +7809,13 @@ class Interface(ttk.Frame):
 
             # Prêt : modification de l'état, lancement du premier module Tapioca (recherche des points homologues) arrêt si pas de points homologues
            
-            self.etatDuChantier = 3		                        # trés provisoirement (en principe cette valeur est transitoire sauf si avantScène plante)
+            self.etatDuChantier = 3		                    # trés provisoirement (en principe cette valeur est transitoire sauf si avantScène plante)
             
             self.lanceTapioca()
                 
-        # tapioca a-t-il trouvé des points homologues ?
+        # tapioca n'a pas trouvé des points homologues ?
         
-        if  not os.path.exists("Homol"):                         # le répertoire Homol contient les points homologues, si absent, pas de points en correspondancce
+        if  not os.path.exists("Homol") and not os.path.exists("Homol_mini"):   # le répertoire Homol (ou Homol_mini après schnaps) contient les points homologues, si absent, pas de points en correspondancce
             message = _("Pourquoi MicMac s'arrête : ") + "\n"+_("Aucun point en correspondance sur 2 images n'a été trouvé par Tapioca.") + "\n\n"+\
                       _("Parmi les raisons de cet échec il peut y avoir :") + "\n"
             if self.photosSansChemin.__len__()>200:
@@ -7842,29 +7874,29 @@ class Interface(ttk.Frame):
                 return
             
         # controle qualité des photos et réduction des points homologues par schnaps
-        
-        self.lanceSchnaps()     # ajout schnaps le10/11/2020
-        if self.rejetSchnaps:
-            titre = _("Attention : une photo est rejetée")
-            rapport = _("Attention : MicMac considére qu'une ou plusieurs photos doivent être rejetées :\n\n %s"+"\n") % (self.rejetSchnaps)
-            rapport += "\n"+_("Vous pouvez arréter le traitement pour retirer cette photo.")
-            rapport += "\n"+_("Vous pouvez poursuivre le traitement avec un fort risque d'échec")
-            lancer = _("Poursuivre le traitement")
-            arret = _("Arrêt du traitement")
-            if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=arret,b2=lancer).retour:
-                if self.nbRejetSchnaps==1:
-                    texte=_("Une photo est rejetée par le module schnaps de MicMac :\n\n %s" % (self.rejetSchnaps))
-                    texte +="\n"+_("Retirer cette photo puis relancer le traitement (menu Outils/retirer des photos)")
-                else:
-                    texte=_(f"{self.nbRejetSchnaps} photos sont rejetées par le module schnaps de MicMac :\n\n %s" % (self.rejetSchnaps))
-                    texte +="\n"+_("Retirer ces photos puis relancer le traitement (menu Outils/retirer des photos)")                    
-                self.encadre(texte)
-                return
+        if self.etatDuChantier==3:   # uniquement si on vient de Tapioca (ajout v5.60)
+            self.lanceSchnaps()     # ajout schnaps le10/11/2020
+            if self.rejetSchnaps:
+                titre = _("Attention : une photo est rejetée")
+                rapport = _("Attention : MicMac considére qu'une ou plusieurs photos doivent être rejetées :\n\n %s"+"\n") % (self.rejetSchnaps)
+                rapport += "\n"+_("Vous pouvez arréter le traitement pour retirer cette photo.")
+                rapport += "\n"+_("Vous pouvez poursuivre le traitement avec un fort risque d'échec")
+                lancer = _("Poursuivre le traitement")
+                arret = _("Arrêt du traitement")
+                if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=arret,b2=lancer).retour:
+                    if self.nbRejetSchnaps==1:
+                        texte=_("Une photo est rejetée par le module schnaps de MicMac :\n\n %s" % (self.rejetSchnaps))
+                        texte +="\n"+_("Retirer cette photo puis relancer le traitement (menu Outils/retirer des photos)")
+                    else:
+                        texte=_(f"{self.nbRejetSchnaps} photos sont rejetées par le module schnaps de MicMac :\n\n %s" % (self.rejetSchnaps))
+                        texte +="\n"+_("Retirer ces photos puis relancer le traitement (menu Outils/retirer des photos)")                    
+                    self.encadre(texte)
+                    return
         # Vérification qu'il y ait bien des points homologues : soit sous homol_mini, soit sous homol
         homol=os.path.join(self.repTravail,"Homol")
         homolMini = homol+"_mini"
         # il faut au moins un fichier par photo :
-        if compteurFichiers(homolMini)<len(self.photosSansChemin):
+        if compteurFichiers(homolMini)<len(self.photosSansChemin) and compteurFichiers(homol)<len(self.photosSansChemin) :
             self.encadre("Pas de points homologues après schnaps. Abandon")
             return
         
@@ -7897,6 +7929,7 @@ class Interface(ttk.Frame):
         if self.calculNuageNonDense.get():
             self.lanceApericloud()              # création d'un nuage de points 3D
             self.lanceApericloudMeshlab()       # affiche le nuage 3D si il existe
+            print("pour test : on n'attend pas le retour de clodcompar")
 
         # Situation stable, orientation trouvée, changement d'état : 4 = Tapioca et Tapas exécutés, sauvegarde des paramètres
 
@@ -7934,9 +7967,7 @@ class Interface(ttk.Frame):
         
     def continuerSurUnGroupe(self):
         # 1) trier du plus long au plus petit,
-        print("avant tri self.lesGroupesDePhotos=",self.lesGroupesDePhotos)
-        self.lesGroupesDePhotos.sort(key = lambda e: e.__len__(), reverse=True)
-        print("après tri self.lesGroupesDePhotos=",self.lesGroupesDePhotos)        
+        self.lesGroupesDePhotos.sort(key = lambda e: e.__len__(), reverse=True)        
         message =   _("Les photos se répartissent en plusieurs groupes distincts (consulter la trace) :\n\n")+\
                       "\n".join([str(e) for e in self.lesGroupesDePhotos])+\
                     "\n\n"+_("Voulez-vous poursuivre l'éxécution sur le groupe le plus nombreux ?")+\
@@ -8336,7 +8367,7 @@ class Interface(ttk.Frame):
                      ]+self.tapasPerso.get().split(",")+[  # surcharge la suite
                      "ForCalib=1",
                      "SauvAutom=NONE",
-                     "Out=Calib"+
+                     "Out=Calib",
                      "ExpTxt="+self.exptxt,
                      "SH="+SH]  # ajout du 10/11/2020 : SH est le suffixe du répertoire HOMOL (_mini pour schnaps) défaut = ""        
             self.lanceCommande(tapas,
@@ -8359,7 +8390,7 @@ class Interface(ttk.Frame):
                      'Out=Arbitrary',
                      "SauvAutom=NONE",
                      "ExpTxt="+self.exptxt,
-                     "SH=",SH]  # ajout du 10/11/2020 : SH est le suffixe du répertoire HOMOL (_mini pour schnaps) défaut = ""                        ]        
+                     "SH="+SH]  # ajout du 10/11/2020 : SH est le suffixe du répertoire HOMOL (_mini pour schnaps) défaut = ""                        ]        
             self.lanceCommande(tapas,
                                filtre=self.filtreTapas,
                                info=(_("Calibration de l'appareil effectuée.\n Recherche de l'orientation sur %s photos.") % (self.photosSansChemin.__len__()))+ "\n" )
@@ -8462,12 +8493,19 @@ class Interface(ttk.Frame):
                  "nav-Brut",
                  "nav"]
         self.lanceCommande(param,
+                           filtre=self.filtreCenterBascule,
                            info=_("Mixe les orientations de Tapas et des données GPS et positions des exifs des photos prises par drone"))
         if os.path.isdir("Ori-nav"):
             self.orientationCourante = "nav"                      
             self.ajoutLigne(self.messageRepereLocal)
         else:
             self.ajoutLigne(_("La prise en compte des données de navigation du drone a échoué."))
+
+    def filtreCenterBascule(self,ligne):
+        if "---" in ligne: 
+            return ligne
+        if "NUM" in ligne:
+            return ligne 
 
     # ------------------ APERO : orientation par axe, plan et métrique, le nom de l'orientation est "echelle3" (attention : polysème)
 
@@ -9438,8 +9476,8 @@ class Interface(ttk.Frame):
         
     @decorateTrySilencieux
     def traceDicoPerso(self):
-        print("Liste des options personnalisées (si il y en a) :")
-        [ print(e,f,"\n") for e,f in self.dicoPerso.items() if f!=""]
+
+        [ print("Option personnalisée : ",e,f,"\n") for e,f in self.dicoPerso.items() if f!=""]
         
     @decorateTry
     def avertissementOptionsPerso(self):
@@ -10318,12 +10356,22 @@ class Interface(ttk.Frame):
             self.echelle2.set               (r[8])
             self.delta.set                  (r[9])
             self.echelle3.set               (r[10])
+            self.lancerSchnaps.set          (r[67])# pour copier homol ou homol_mini
         except Exception as e:
             message = _("Ouverture du chantier impossible : %s.") % str(e)
             return message         
-        homolDepart = os.path.join(repDepart,"Homol")
-        homolCible = os.path.join(self.repTravail,"Homol")
-        bilan = copieRepertoire(homolDepart,homolCible)
+
+# Copie des 2 répertoires Homol et Homol_mini
+        if self.lancerSchnaps.get():    #on copie à la fois homol et
+            homolDepart = os.path.join(repDepart,"Homol_mini")
+            homolCible = os.path.join(self.repTravail,"Homol")
+            homolCibleMini  = homolCible+"_mini"            
+            bilan = copieRepertoire(homolDepart,homolCible)            
+            bilan = copieRepertoire(homolDepart,homolCibleMini)            
+        else:
+            homolDepart = os.path.join(repDepart,"Homol")
+            homolCible = os.path.join(self.repTravail,"Homol")            
+            bilan = copieRepertoire(homolDepart,homolCible)
         self.menageDansHomol()  # fait du ménage dans le répertoire Homol : supprime les points homologues des photos absentes
         if bilan :
             return bilan                  
@@ -10360,7 +10408,7 @@ class Interface(ttk.Frame):
             self.afficheEtat(message)
             return message
         bilanCopie = self.copieRepertoireHomol(self.selectionRepertoireAvecChemin)
-        message=_("Points homologues copiés.\n Paramètres de Tapioca copiés.\Autres paramètres, calibration, mise à l'échelle, points GPS non copiés")
+        message=_("Points homologues copiés.\n Paramètres de Tapioca copiés.")
         if bilanCopie:
             self.encadre(bilanCopie)
             return bilanCopie
@@ -10720,7 +10768,8 @@ class Interface(ttk.Frame):
                          self.lancerSchnaps.get(),          # schnaps après Tapioca : fait du ménage dans les Tie points
                          self.lancerTiPunch.get(),          # TiPunch aprés C3DC : génére un maillage
                          self.lancerPIMs2Mnt.get(),         # PIMs2Mnt aprés C3DC : génére un MNT
-                         self.masqueTarama                  # masque pour malt ortho fait sur la mosaïque tarama (oublié jusque la v 5.58.2
+                         self.masqueTarama,                 # masque pour malt ortho fait sur la mosaïque tarama (oublié jusque la v 5.58.2
+                         self.dimensionsDesPhotos,          # utile pour le masque geoimage
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -10913,6 +10962,7 @@ class Interface(ttk.Frame):
             self.lancerTiPunch.set           (r[68])
             self.lancerPIMs2Mnt.set          (r[69])
             self.masqueTarama               = r[70] # oubli jusqu'à la version 5.58.2
+            self.dimensionsDesPhotos        = r[71] # pour pallier un oubli (utile pour le masque geoimag)
         except Exception as e: print(_("Erreur restauration param chantier : "),str(e))
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
         # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
@@ -11168,7 +11218,8 @@ class Interface(ttk.Frame):
         # Y-a-t-il une nouvelle version sur internet ? Si oui faut-il un message ?
         retourVersion = self.versionOkInGitHub()    # en retour : erreur+libellé, True si OK, ou le numéro de la nouvelle version
         if retourVersion[0:6]=="erreur":
-            self.encadre(_("Accès internet en erreur. Controle version impossible"))             
+            self.encadre(_("Accès internet en erreur. Controle version impossible")+"\n\n"+
+                         _("Vérifier si un proxy n'interdit pas l'accès")+"\n")             
             return
         if retourVersion=="OK":    # version utilisateur trouvée dans version GitHub : OK
             self.avertissementVersionAJour()
@@ -11213,7 +11264,6 @@ class Interface(ttk.Frame):
     def versionOkInGitHub(self): # retour = true or False
         try:
             url = "https://github.com/micmacIGN/InterfaceCEREMA/blob/master/InterfaceCEREMA/readme.txt"
-            print(url)
             sock = urllib.request.urlopen(url,timeout=2)
             htmlLu = str(sock.read())
             sock.close
@@ -12825,7 +12875,7 @@ class Interface(ttk.Frame):
     def pasDeMm3d(self):
         if not os.path.exists(self.mm3d):
              texte=("\n" + _("Bonjour !") + "\n\n" + _("Commencer par indiquer où se trouve MicMac :") + "\n\n "+
-                         _("- menu Paramétres/Associer le répertoire bin de MicMac") + "\n\n"+
+                         _("- menu Paramétres/Associer le répertoire de MicMac") + "\n\n"+
                          _("Ensuite :") + "\n "+
                          _("- Associer un outil (CloudCompare ou Meshlab) pour afficher les nuages de points 3D") + "\n "+
                          _("- consulter l'aide, item 'pour commencer'.") + "\n"+                    

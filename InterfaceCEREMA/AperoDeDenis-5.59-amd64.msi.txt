@@ -1,3 +1,0 @@
-The msi file to install version 5.59 depuis le 18 octobre 2021 of Interface CEREMA can be found at :
-(le fichier à télécharger porte le numéro 5.58 mais la version est la 5.59)
-https://drive.google.com/file/d/1fQrSOwoxpN-vSIhLJfaA9fRxN0CsFUO8/view?usp=sharing
