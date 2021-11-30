@@ -518,7 +518,7 @@
 # simplification du message "nouveau chantier"
 # 5.58.2 diffusée sous le numéro 5.59 le 18 octobre 2021
 
-# Version 5.60
+# Version 5.60 publiée le 17/11/21
 # Modification du message lorsque internet n'est pas accessible
 # On ne lance schnaps que si Tapioca vient d'être éxécuté
 # Messages "répertoires bin de MicMac" remplacés par "répertoire de MicMac"
@@ -531,14 +531,23 @@
 # copie des points homologues depuis un autre chantier : on copie la variable lancerSchnaps et les 2 répertoires hmol et homol_mini
 # (la copie de homol est nécessaie pour apericloud, ce qui est surprenant car absent des paramètres (question à Marc ?)
 # ajout d'un filtre à centerbascule pour limiter la trace
-#remplacer l'appel à taskkill par tskill : taskkill sous windows nécessite une version "pro"
+# remplacer l'appel à taskkill par tskill : taskkill sous windows nécessite une version "pro"
 
 #-------------
 # quelques stat : 9 items de menu principal, 71 items de menus secondaires, 46 de second niveaux,
 # les boites de dialogues comportent une centaine d'items distincts, le programme fait 15400 lignes. (600 à 800 jours de travail)
 # Suppression de la création d'un MNT par PIMS2Mnt : pas convaincant, niveau expert
 
-#à corriger : si imtation de points homologues achnaps ne les trouve pas (micma_55)
+# version 5.61 : début le 17/11/21 17h
+# menu outil remplacer "modifier l'exif" par modifier la focale"
+# acquisition de self.focale35MM : si la valeur est "0 mm" alors on met ""
+# si pas de focale eq 35 ou de dicocamera : affichage d'un message dans afficheetat et
+#                                           blocage du traitement au lancement de micmac
+# Sécurise "miseAJourDicoCamera()" : ajout de return aprés les encadre (risque d'erreur)
+# Ajout dans la trace des modifications de DicoCamera
+# correction bogue ligne 8898 (repertoireMaillage était défini dans la première partie du if, utilsié dans la seconde)
+
+# à corriger : si importation de points homologues achnaps ne les trouve pas (micmac_55)
 
 # a faire :
 # permettre de ne lancer que l'orientation lorsqu'il faut débloquer le chantier
@@ -821,7 +830,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.60"
+numeroVersion = "5.61"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -899,7 +908,7 @@ if os.name=="nt":
     GetParent = ctypes.windll.user32.GetParent
     titles = []
     EnumWindows(EnumWindowsProc(foreach_window), 0)     # liste des fenetres ouvertes dans titles 
-    print("\n".join(titles))
+
 # pour indiquer à pyproj ou se trouve le répertoire des data si installation via msi, la recherche se fait d'abord sur pyproj.datadir.get_data_dir()
 # le même code peut servir avec ou sans l'installateur
 
@@ -1759,7 +1768,7 @@ class Interface(ttk.Frame):
         menuOutils.add_command(label=_("Sélectionner les N meilleures photos"), command=self.outilMeilleuresPhotos)
         menuOutils.add_command(label=_("Retirer des photos"), command=self.retirerPhotos)       
         menuOutils.add_separator()        
-        menuOutils.add_command(label=_("Modifier l'exif des photos"), command=self.majExif)
+        menuOutils.add_command(label=_("Modifier les 2 focales des photos"), command=self.majExif)
         menuOutils.add_separator()
         menuOutils.add_command(label=_("Modifier les paramètres par défaut"), command=self.majOptionsParDefaut)
         menuOutils.add_separator()
@@ -4119,7 +4128,7 @@ class Interface(ttk.Frame):
         self.lancerTarama.set(0)                                # 0 : on ne lance pas Tarama (mosaique des photos après Tapas), 1 on lance       
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
         self.photosCalibrationSansChemin      = list()
-        self.calibSeule.set(True)                               # par défaut : uniquement pour la calibration de l'appareil
+        self.calibSeule.set(False)                              # on garde les photos pour le chantier ; autre otion : uniquement pour la calibration de l'appareil
         self.mosaiqueTaramaTIF = str() 
         self.mosaiqueTaramaJPG = str()
         self.masqueTarama = str()
@@ -4745,7 +4754,9 @@ class Interface(ttk.Frame):
                 texte = texte+'\n' + _('remarque : plusieurs focales différentes.')
             if self.dimensionsOK==False:
                 texte = texte+'\n' + _('remarque : plusieurs taille de photos différentes.')
-                    
+            if self.focaleOK()==False:
+                texte = texte+'\n' + _('Absence de focale eq 35mm et de taille de capteur dans dicoCamera')
+                
             # Indication de la présence de paramètres nommés personnalisés :
 
             if self.nettoiePerso()[1]:
@@ -7526,7 +7537,6 @@ class Interface(ttk.Frame):
                 if nbPhotosPourTapas<2:
                     message = _("Nombre de photos insuffisant après retrait des photos pour la calibration : ")+str(nbPhotosPourTapas)
                     self.encadre(message,)
-                    
                 
     # les photos de calibration retirées ne doivent pas servir après : mise à l'échelle, points gps, maitresses
     
@@ -7679,6 +7689,14 @@ class Interface(ttk.Frame):
             self.encadre(message)
             return
 
+        if self.focaleOK()==False:
+            message = _('Absence de focale eq 35mm et de taille de capteur dans dicoCamera')+ "\n"+\
+                      _("L'orientation ne pourra pas être calculée.")+ "\n\n"+\
+                      _("Il faut ajouter la taille du capteur dans DicoCamera (menu Outils)")+ "\n"+\
+                      _("ou modifier les focales dans l'exif des photos (menu Outils).")        
+            self.encadre(message)
+            return
+        
         # EtatDuChantier :
         # 0 : pas encore de photos
         # 1 : il y a des photos choisies
@@ -7733,7 +7751,7 @@ class Interface(ttk.Frame):
                 return
             if retour==1:                                       # b2 : débloquer le chantier, effacer les points homologues
                 self.nettoyerChantier()                         # self.etatDuChantier remis à 2, on repart à Tapioca
-                self.afficheEtat(_("Chantier réinitialisé : points homologues effacés.")+ "\n")
+                self.afficheEtat("\n"+_("Chantier réinitialisé : points homologues effacés.")+ "\n")
                 return
 
             if retour==2:                                       # b3 : débloquer le chantier, conserver les points homologues
@@ -7922,7 +7940,7 @@ class Interface(ttk.Frame):
         
         # Tapas OK, orientation trouvée, on applique un référentiel (mise à l'échelle, points GCP ou GPS embarqué) sur "Arbitrary"
 
-        self.referentiel()                                      # mise à l'échelle, points GCP ou BPS embarqué
+        self.referentiel()                                      # mise à l'échelle, points GCP ou GPS embarqué
 
         # troisième module facultatif : Apericloud  crée le nuage 3D des points homologues puis visualisation :
         
@@ -8018,7 +8036,7 @@ class Interface(ttk.Frame):
         # la production sera self.modele3DEnCours
         
         if self.choixDensification.get()=="C3DC":                                                                   
-            ret=self.suiteMicmacC3DC()      # C3DC crée le fichier plys puis le mesh si demandé
+            ret = self.suiteMicmacC3DC()      # C3DC crée le fichier plys puis le mesh si demandé
         else:
             ret = self.suiteMicmacMalt()
 
@@ -8872,14 +8890,17 @@ class Interface(ttk.Frame):
     def suiteMicmacC3DC(self):
         self.lanceC3DC()
         # Maillage demandé ?
+        self.maillageTiPunch = "maillageTiPunch_"+str(self.indiceModeleFinal)+"_.ply"        
         if self.lancerTiPunch.get():
-            self.maillageTiPunch = "maillageTiPunch_"+str(self.indiceModeleFinal)+"_.ply"
-            self.lanceTiPunch()
+            self.lanceTiPunch() # créationn d'un ply maillé
+        else:
+            return
+        repertoireMaillage="maillageC3DC"        
+        if os.path.exists(self.maillageTiPunch): # le maillage a réussi : création d'une texture
             self.lanceTequila()            
         # déplace les fichiers créés par TiPunch et Tequila sous le répertoire maillage :  self.maillageTiPunch et maillage_UVtexture.jpg
         # les 2 fichiers sont nécessaires
-        # raison : l'ajout du fichier UVTexture.jpg sous le répertoire du chantier empêche le lancement de micmac.
-            repertoireMaillage="maillageC3DC"
+        # raison : l'ajout du fichier JPG UVTexture.jpg sous le répertoire du chantier empêche le lancement de micmac.
             creeRepertoire(repertoireMaillage)
             shutil.move(self.maillageTiPunch,repertoireMaillage)
             fichierTexture = os.path.splitext(self.maillageTiPunch)[0]+"_UVtexture.jpg"
@@ -8887,9 +8908,12 @@ class Interface(ttk.Frame):
             textureC3DC = os.path.splitext(self.maillageTiPunch)[0]+"_textured.ply"
             self.plyTextureC3DC = shutil.move(textureC3DC,repertoireMaillage)
             self.ajoutTraceSynthese("\n"+_("Copie du maillage texturé sous le répertoire ")+repertoireMaillage)
-        # MNT demandé ?
-        if self.lancerPIMs2Mnt.get():
-            self.lancePIMs2Mnt()
+        else:
+            self.ajoutTraceSynthese("\n"+_("Le maillage n'a pas été créé. Voir la trace."))
+            
+        # MNT demandé ? (supprimé)
+##        if self.lancerPIMs2Mnt.get():
+##            self.lancePIMs2Mnt()
         
     def lanceC3DC(self):
 
@@ -9091,7 +9115,7 @@ class Interface(ttk.Frame):
     def ouvreModele3D(self):
         self.chercheModele3D() 
         aOuvrir = os.path.join(self.repTravail,self.modele3DFinal)
-        if not os.path.exists(aOuvrir):
+        if not (aOuvrir):
            texte=_("Pas de fichier %s généré.") % (self.modele3DFinal)+ "\n\n" + _("Echec du traitement MICMAC") 
            self.ajoutLigne(texte)
            return -1
@@ -9160,16 +9184,16 @@ class Interface(ttk.Frame):
         if os.path.exists(self.mesureAppuis):
             self.orientationCourante = "Arbitrary"
             self.lanceGCPBascule()         # des points GCP : positionne la scène dessus, cela remplace le positonnement prcédent
-            # lancement de campari avec points GCP
+            # lancement de campari avec points GCP 
             self.lanceCampariGCP()
             return     
         
 
-        # PRIORITE 2 : Coordonnées GPS embarquées via Drone, le répertoire Ori-nav-Brut est présent, on l'utilise
+        # PRIORITE 2 : Coordonnées GPS embarquées via Drone, le répertoire Ori-nav-Brut est présent, on l'utilise dans CenterBascule
         if os.path.isdir("Ori-nav-Brut"):
             self.orientationCourante = "Arbitrary"
-            self.lanceCenterBascule()
-            self.lanceCampari()                     # Campari sans points GCP            
+            self.lanceCenterBascule()               # prend Arbitrary + nav_brut pour fabriquer nav
+            self.lanceCampari()                     # Campari sans points GCP  (compensation de mesures hétérogènes)          
             return
 
 
@@ -9201,7 +9225,7 @@ class Interface(ttk.Frame):
                     fi = rep+os.sep+fic
                     if os.path.exists(fi):
                         with  open(fi) as infile:
-                            lignes = infile.readlines()    #lecture dicoCamera.xml
+                            lignes = infile.readlines() 
 
         self.ajoutLigne("\n ****** " + _("Fin d'examen de qualité des photos."))
 
@@ -9512,10 +9536,28 @@ class Interface(ttk.Frame):
         listeCorrigee.append(maitresse)
         return "|".join(listeCorrigee)
 
-    ###################### Stratégie APERODEDENIS pour trouver les maitresses et les images associées. (dépend des noms de répertoire et fichiers donnés par micmac)
-    # renvoie une liste de tuple : maitresse, liste des photos associées
-    # supprime version 5.51 en juin 2020
+    ###################### Vérifie la présence soit d'une focale eq 35mm soit de l'appareil dans  dicocamera (sinon plantage probable
 
+    def focaleOK(self):
+        if self.pasDePhoto():return
+        if self.pasDeExiftool():return
+        if self.focale35(): return True # l'exif contient la focale équivalente 35 mm
+        camera = self.tagExif("Model")
+        if self.tailleCapteurAppareil(camera)==1: return True # dicocamera.xml connait la camera
+        if "35" in self.tagExif("FocalLength"): return True   # la focale est de 335 (très probablement)
+        return False
+
+    def focale35(self):
+        focale35mm = self.tagExif("FocalLengthIn35mmFormat")
+        # controle qu'il s'agit d'une valeur strictement positive
+        if len(focale35mm)==1:
+            if focale35mm=="0":
+                focale35mm=""        
+        if len(focale35mm)>1:
+            if focale35mm[0:2]=="0 ":
+                focale35mm=""                
+        return focale35mm
+        
     ###################### Appareil photo : affiche le nom de l'appareil de la première photo, la focale, la taille du capteur dans dicocamera
 
     def outilAppareilPhoto(self,silence=None):
@@ -9538,7 +9580,7 @@ class Interface(ttk.Frame):
         if self.numeroSerieCamera!=str():
             texte += _("Numéro de série de l'appareil photo : ")+self.numeroSerieCamera+"\n"
             
-        self.focale35MM = self.tagExif("FocalLengthIn35mmFormat")
+        self.focale35MM = self.focale35()
             
         self.focale = self.tagExif("FocalLength")
         if self.focale==str():
@@ -10005,15 +10047,18 @@ class Interface(ttk.Frame):
         self.menageEcran()
         if nb == 0:
             self.encadre(-("Pas de modèle d'appareil photo dans les exif."))
+            return
         self.nomCamera = self.lesTags[0]
-        if self.nomCamera==[]: #pas de nom d'appaeil photo dans les exifs
+        if self.nomCamera=="": # pas de nom d'appaeil photo dans les exifs
             message=_("\Pas de nom d'appareil photo dans l'exif")
             self.encadre(message)
+            return
         if nb == 1:  # un seul appareil photo
             if self.tailleCapteurAppareil()==1:
                 message =(   "\n"+_("Le fichier DicoCamera.xml contient déjà la taille du capteur pour l'appareil :") + "\n\n"+
                              self.nomCamera+"\n\n"+ _("taille  = ")+self.tailleCapteur+"\n\n"+_("Pas de modification possible."))
                 self.encadre(message)
+                return
             else:
                 self.menageEcran()
                 self.lesAppareilsPourDicocamera = [self.nomCamera]
@@ -10082,7 +10127,8 @@ class Interface(ttk.Frame):
         else:
             self.encadre(_("Dimensions du capteur non mis à jour") + "\n")
             return
-
+        self.ajoutLigne("\n\n"+heure()+_(" : Mise à jour de dicoCamera.xml :")+"\n"+modif+"\n"+message)
+        self.ecritureTraceMicMac()        
         self.encadre(_("Mise à jour de dicocamera.xml : ") + "\n"+modif+"\n"+message)
         
 

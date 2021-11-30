@@ -1,7 +1,7 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
-            Version 5.60 : 1 novembre 2021
-
+            Version 5.61 : 30 novembre 2021
+            Version 5.60 : 17 novembre 2021
             Version 5.59 : 18 octobre 2021
 			
 			Nouveautés fonctionnelles,  densification C3DC :
