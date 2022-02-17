@@ -1,5 +1,24 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
+Version 5.62: February 17, 2022
+			- A new possibility of referencing: use the repository of another site.
+			  If you have 400 photos, you can create 2 worksites of 200 photos
+			  and generate point clouds that can be overlaid in the same reference frame.
+			- The referencing options are grouped together in a single tab: Options/Referencing
+			    - GPS target points, 
+				- scaling, 
+				- GPS metadata of photos
+				- repository of another site
+				- default micmac referencing
+
+The photo "rayon vert à Merlimont" was added following a discussion on 
+			Wednesday evening, 2021 December 1, with the participants of the 3D consortium for SHS
+			consortium at the Montaigne University in Bordeaux. This exceptional photo recorded
+			the last rays of the sun, tinged with green, on October 8, 2008 on the beach
+			of Merlimont. Thanks to its author, Gilles Troispoux, who took the picture without knowing
+			the phenomenon known as "the green ray".
+
+Translated with www.DeepL.com/Translator (free version)
             Version 5.61: 30 November 2021
             Version 5.60: 17 November 2021
 

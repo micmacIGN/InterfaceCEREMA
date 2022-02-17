@@ -1,7 +1,0 @@
-The msi file to install version 5.61 Interface CEREMA is here :
-version 5.61 :
-https://drive.google.com/file/d/1RER9gK9ba5loa8WfPVwBYdFTk0Vqol8t/view?usp=sharing
-30/11/2021
-
-version 5.60 :
-https://drive.google.com/file/d/18TpDHCL64EINGD_Cf4H6siVP5pKh5P3K/view?usp=sharing

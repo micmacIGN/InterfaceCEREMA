@@ -1,5 +1,24 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 5.62 : 17 février 2022
+			- Une nouvelle possibilité de référencement : utiliser le référentiel d'un autre chantier.
+			  Si vous disposer de 400 photos vous pouvez ainsi créer 2 chantiers de 200 photos
+			  et générer des nuages de points superposables dans le même référentiel.
+			- Les options de référencement sont regroupées sous un seul onglet : Options/référentiel
+			    - Points cibles GPS, 
+				- mise à l'échelle, 
+				- métadonnées GPS des photos
+				- référentiel d'un autre chantier
+				- référentiel micmac par défaut
+			- autres corrections : voir le source
+
+			La photo "rayon vert à Merlimont" a été ajouté suite à une discussion le 
+			mercredi 1 décembre soir, avec les participants au consortium 3D pour les SHS
+			à l'université Montaigne de Bordeaux. Cette photo exceptionnelle a enregistré
+			les derniers rayons du soleil, teintés de vert, le 8 octobre 2008 sur la plage
+			de Merlimont. Merci à son auteur, Gilles Troispoux, qui a pris la photo sans connaître
+			le phénomène dit "du rayon vert".
+			
             Version 5.61 : 30 novembre 2021
             Version 5.60 : 17 novembre 2021
             Version 5.59 : 18 octobre 2021
