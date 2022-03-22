@@ -1,37 +1,42 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# Version AperoDedenis 5.60 : version python minimum 3.8
+# à partir de la version AperoDedenis 5.60 : version python minimum 3.8
 # Version AperoDedenis 5.54 : version python minimum 3.6
+
+# Depuis la version 5.0 le script n'est plus testé sous Linux et Mac OS
 
 # info sur ce script :
 # Réalisé depuis 2015 par Denis Jouin à la demande de Cyrille Fauchard, HDR au Cerema Normandie Centre
 # Ce script empaquette MicMac dont il dépend complétement, sauf pour l'item "outils métiers" (depuis la V 5.53)
 # Pensé, écrit, testé, documenté par un développeur unique il est fait de bric et de broc, sans autre règle que celle du scripteur
+# l'auteur n'est pas un "programmeur", il s'intéresse à l'expérience "utilisateur" plus qu'a la propreté du code
+# il a le souci de simplifications pour l'utilisateur au risque de complications dans le code
+# il essaie, au maximum, d'éviter les "plantages"; les bogues
 # le résultat est brouillon, parfois incompréhensible, même pour l'auteur
-# L'objectif étant de limiter les "bogues", sans pouvoir les supprimer, tout en pensant au maximum à l'"utilisateur"
 # le cycle de vie des logiciels étant limité, l'ambition est de durer quelques années, d'accompagner MicMac tant que celui-ci reste égal à lui-même
-# Un principe : utiliser les modules standard de python au maximum, pour faciliter les évolutions de version (tkinter au lieu de QT par exemple)
+# Un principe concernant python : utiliser les modules standard au maximum, pour faciliter les évolutions de version (tkinter au lieu de QT par exemple)
 
 # Hormis l'écriture python, qui n'est pas un exemple à suivre, ce script peut présenter des aspects pédagogiques sur des points précis :
 
-# appels et dialogue minimum avec des commandes externes (MicMac (mm3d), exiftool, CloudCompare, query, regedit..),
-#   usage de filtres passés en paramètre, module subprocess
+# - appels et dialogue minimum, comme la réponse "enter" à des sollicitations des programmes,
+#   avec des commandes externes (MicMac (mm3d), exiftool, CloudCompare, query, regedit..),
+# usage de fonctions passés en paramètre (appel du module subprocess et gestion des output)
 # affichage en temps réel des traces MicMac filtrées pour ne garder que l'essentiel
 # mémorisation de la trace intégrale, affichage différé par menu
-# lecture/ecriture de fichiers binaires (ie : format ply) (module struct)
+# lecture/ecriture de fichiers binaires structurés (ie : format ply) (module struct)
 # encapsulation d'icone, de logo, d'image dans des variables (module base64)
-# saisie de données sur des images (ergonomie, PIL)
+# saisie de données sur des images, par exemple saisie des points GPS (ergonomie, PIL) 
 # Affichage de toutes les infos sur une variable (procédure pv) incluant le nom de la variable dans le script (module traceback)
 # manipulation des référentiels géographiques (module proj4)
-# récupérarion d'informations lièes à une projection géographique, par exemple les fausses coordonnées est et nord
-# recherche sur internet
+# récupérarion d'informations lièes à une projection géographique, par exemple les fausses coordonnées est et nord)
+# recherche sur internet (recherche d'une nouvelle version sur GitHub)
 # utilisation de thread
 # utilisation d'un décorateur
 # utilisation répétée et variée de Tkinter (menu et boites de dialogues dynamiques, i.e. : l'onglets points GCP est particulièrment complexe)
 # massivement multilangues (i18n, poedit)
 # fenêtre de saisie et d'éxécution d'une commande Python, d'une commande de l'OS
-# extraction d'image à partir d'une vidéo
+# extraction d'image à partir d'une vidéo (ffmpeg)
 # parseur de xml (module html.parser)
 # lecture/écriture dans les exif des photos (exiftool)
 # persistence par le module pickle
@@ -48,8 +53,14 @@
 # Ce mécanisme a été mis en place car le lancement de plusieurs instances de mm3d successifs sous windows provoquait (en 2015) des plantages mémoires.
 # Je n'ai pas vérifié si les nouvelles versions de MicMac présentait ce même symptome.
 
-# adresse programmes sources de MicMac : http://phd-sid.ethz.ch/debian/micmac/micmac-1.0.beta13%2Bgit20180918/src/TpMMPD/
+# Quelques ressources :
+# adresse MicMac sur GitHub : https://github.com/micmacIGN
+# une adresse des sources de micmac : http://phd-sid.ethz.ch/debian/micmac/micmac-1.0.beta13%2Bgit20180918/src/TpMMPD/
+# wiki mimac : https://micmac.ensg.eu/index.php/Accueil
+# forum micmac : http://forum-micmac.forumprod.com/?sid=3e080e75b237b7f966a1ebd16d7f5ca5
+# cette interface sur GitHub : https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA
 
+# Historique des versions diffusées (antérieurement : version utilisé en interne Labo de Rouen, Cerema Normandie Centre) 
 # Version 2.35 :
 # le 26 avril 2016
 # - affichage des heures avec les secondes
@@ -585,7 +596,22 @@
 # modif : TiPunch Tequila ne se lancent plus si le nuage dense n'est pas créé par C3DC, un message trace l'échec.
 # correction : la fermeture des threads par taskill (notamment pour le masque 3D) : le nom de la tache est mm3d au lieu de mm3d.exe
 #   cette modif limite le risque de plantage lors de la saisie du masque 3D. (remarque : SaisieQT utilise la base de registre, clé culture3D)
+
+# version 5.64
+# la ligne saisie dans "expert/éxécuter une commande sytème ou python" est mémorisée et rappelée.
+# modification du message de relance après la fin des traitements
+# la copie de la calibration depuis un autre chantier est limitée aux photos utiles
+# la copie des points homologues ne conserve que les fichiers utiles
+# la copie de l'orientation depuis un autre chantier ne conserve que les fichiers utiles
+# menu expert : la copie conjuguée des points homol, orientation et calibration mise en sommeil
+# si des photos sont choisies pour calibrer l'appareil alors le mode frazer est mis pout tapas
+#    l'utilisateur peut le modifier mais ce mode est le plus précis, notammenet si la calib doit servir dans d'autres chantier
+# avant copie de la calibration : ne présenter les chantiers que s'ils ont le même appareil photo
+# modification du message entête de l'onglet "orientation"
+# fusion des nuages de points : limités aux nuages, hors maillages
+
 ####################"
+# le lancement après avoir généré le nuage dense est à simplifier si possible ; 2 boites de dialogues pour positionner l'état du chantier à relancer...
 # la trace fait apparaitre de multiples "Le référentiel est déjà préparé." vérifier.
 # si plusieurs groupes de photos : ne pas relancer Tapioca lorsque l'on a décider de travailler sur un groupe de photos
 #    même si le lancement "avorte"
@@ -748,24 +774,7 @@ def foreach_window(hwnd, lParam):
         GetWindowText(hwnd, buff, length + 1)
         titles.append(buff.value)
         l=GetClassName(hwnd, buf1, length + 1)        
-''' essai de fermeture de CloudCompare
-        print(" titre : ",buff.value," - Parent : ",GetParent(hwnd)," - classe = ",buf1.value[:l])
-        if "CloudCompare"==buff.value[:12]:
-            print("***************************")
-            print("destroycloudcompare=",DestroyWindow(hwnd),"-")
-            print("***************************")
-        if "Quit"==buff.value[:4]:
-            print(EnumWindows(EnumWindowsProc(foreach_item),0))
-            print("OK pour quitter cloudCompare = ")
-
-    return True
-def foreach_item(hwnd, lParam):
-    length = GetWindowTextLength(hwnd)    
-    buf2 = ctypes.create_unicode_buffer(length + 1)
-    GetWindowText(hwnd, buf2, length + 1)    
-    print("titre = ",buf2.value,"- parent : ",GetParent(hwnd))
-    #r=SendDlgItemMessage (hwnd,1,"WM_LBUTTONDOWN",0,0)
-'''    
+    
 def heure():        #  time.struct_time(tm_year=2015, tm_mon=4, tm_mday=7, tm_hour=22, tm_min=56, tm_sec=23, tm_wday=1, tm_yday=97, tm_isdst=1)
         return ("le %(jour)s/%(mois)s/%(annee)s à %(heure)s:%(minutes)s:%(secondes)s") % {"jour" : str(time.localtime()[2]), "mois" : str(time.localtime()[1]), "annee" : str(time.localtime()[0]), "heure" : str(time.localtime()[3]), "minutes" : str(time.localtime()[4]), "secondes": str(time.localtime()[5])}
 
@@ -943,7 +952,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.63"
+numeroVersion = "5.64"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -2161,7 +2170,7 @@ class Interface(ttk.Frame):
         menuEdition.add_command(label=_("Afficher la trace complète du chantier"), command=self.lectureTraceMicMac)
         menuEdition.add_separator()     
         menuEdition.add_command(label=_("Fusionner des orthomosaïques"), command=self.fusionOrthomosaiques)
-        menuEdition.add_command(label=_("Fusionner des images 3D"), command=self.choisirPuisFusionnerPly)
+        menuEdition.add_command(label=_("Fusionner des nuages 3D (maillages exclus)"), command=self.choisirPuisFusionnerPly)
         menuEdition.add_separator()        
         menuEdition.add_command(label=_("Informations sur un nuage de points du chantier"), command=self.demandePlyChantierPourInfo)
         menuEdition.add_command(label=_("Informations sur un fichier ply"), command=self.demandePlyPourInfo)
@@ -2226,14 +2235,14 @@ class Interface(ttk.Frame):
 
         # Sous-menu du menu expert : Import
 
-        menuExpertImport = tkinter.Menu(menuExpert,tearoff = 0)
-        menuExpertImport.add_command(label=_("Importer points homologues, la calibration, l'orientation"), command=self.copierHomolOriTarama)
-        menuExpertImport.add_separator()         
+        menuExpertImport = tkinter.Menu(menuExpert,tearoff = 0)         
         menuExpertImport.add_command(label=_("Importer les points homologues d'un autre chantier"), command=self.copierPointsHomologues)             
         menuExpertImport.add_command(label=_("Importer la calibration de l'appareil d'un autre chantier"), command=self.chargerCalibrationIntrinsequeDepuisMenu)
         menuExpertImport.add_command(label=_("Importer l'orientation d'un autre chantier"), command=self.copierOrientation)              
-        menuExpertImport.add_command(label=_("Importer les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)
-        menuExpertImport.add_separator()        
+        #menuExpertImport.add_separator() # en sommeil dans la version 5.64, il faut ajouter des controles
+        #menuExpertImport.add_command(label=_("Importer les points homologues, la calibration et l'orientation"), command=self.copierHomolOriTarama)
+        menuExpertImport.add_separator()
+        menuExpertImport.add_command(label=_("Importer les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)        
         menuExpertImport.add_command(label=_("Importer les points GCP à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)
 
         menuExpert.add_cascade(label = _("Importer points homologues, les points GCP/GPS"),menu=menuExpertImport)
@@ -2704,10 +2713,12 @@ class Interface(ttk.Frame):
         #   Tapas : 500
         
         self.item500=ttk.Frame(self.onglets,height=150,relief='sunken',padding="0.3cm")                               
-        self.item505=ttk.Label(self.item500, text=_("Tapas positionne les appareils photos sur le nuage de points homologues. Préciser le type d'appareil."))
+        self.item505=ttk.Label(self.item500, text=_("Tapas oriente les appareils photos à partir des points homologues."))
         self.item506=ttk.Label(self.item500, text=_("Quelques photos avec une grande profondeur d'image aident à calibrer l'optique des appareils photos."))        
+        self.item507=ttk.Label(self.item500, text=_("La géométrie 'optique/capteur' est déterminée avec plus (frazer) ou moins (RadialBasic) de paramètres."))        
         self.item505.pack()
         self.item506.pack()
+        self.item507.pack()        
         modesTapas=[('Fraser (souvent le meilleur choix ; utiliser des photos de calibration)','Fraser','active'),
                     ('FraserBasic','FraserBasic','active'),
                     ('RadialExtended','RadialExtended','active'),
@@ -2772,11 +2783,12 @@ class Interface(ttk.Frame):
         # lancer la densification ? item 540
         self.item540 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.3cm")      # pour le check button, fera un encadrement
         self.item550 = ttk.Checkbutton(self.item540, variable=self.arretApresTapas,
-                                       text=_("Ne pas lancer la densification - permet de définir un masque pour C3DC"))
+                                       text=_("Ne pas lancer la densification - permet de définir un masque pour C3DC ou Malt Ortho"))
         self.item550.pack(ipady=5)
 
         self.item505.pack()
-        self.item506.pack()            
+        self.item506.pack()
+        self.item507.pack()        
         self.item525.pack()
         self.item526.pack()
         self.item527.pack() # je ne comprends plus l'intérêt de cet item : la suite s'accomode très bien de 2 focales différentes... mais si : camille utilise des photos d'un autre site
@@ -3862,17 +3874,18 @@ class Interface(ttk.Frame):
             _("                                'Line' : seules les N photos avant et aprés sont examinées.") + "\n"+\
             _("                                L'objectif est d'accélérr la recherche :  pour 200 photos il y a 40000 paires.") + "\n"+\
             _("                                Voir la documentation MicMac sur Tapioca : https://micmac.ensg.eu/index.php/Tapioca.") + "\n"+\
-            _("                    - Orientation : Tapas : choix d'un type d'appareil  photo , possibilité d'arrêter le traitement après tapas.") + "\n"+\
-            _("                                Le type d'appareil photo détermine le nombre de paramètres décrivant l'optique et le capteur.") + "\n"+\
+            _("                    - Orientation : Tapas : choix d'un mode de calcul de la géométrie 'optique/capteur' de l'appareil.") + "\n"+\
+            _("                                Le mode de calcul détermine le nombre de paramètres décrivant l'optique et le capteur.") + "\n"+\
             _("                                Si plusieurs appareils photos alors il faut les distinguer, voir menu expert.") + "\n"+\
-            _("                                La calibration permet de déterminer les caractéristiques de l'appareil sur des photos spécifiques :") + "\n"+\
+            _("                                La calibration permet de figer les caractéristiques de l'appareil sur des photos spécifiques :") + "\n"+\
             _("                                  Par exemple photos d'un angle de batiment avec une grande longueur de mur.")+ "\n"+\
             _("                                  Ces photos ne servent pas nécessairement pour la suite du chantier.")+ "\n"+\
+            _("                                  La calibration peut être recopiée d'un autre chantier avec le même appareil photo.")+ "\n"+\
+            _("                                Masque pour C3DC : sur le nuage non dense, pour Malt Ortho : sur la mosaique.")+ "\n"+\
             _("                                L'arrêt après Tapas est nécessaire pour décrire le masque 2D ou 3D pour Malt ou C3DC.") + "\n"+\
             _("                                La production du nuage de point non dense est optionnelle.") + "\n\n"+\
             _("                                Si elle est demandée l'image 3D non dense positionne les appareils photos.") + "\n\n"+\
             _("                                Voir la documentation MicMac sur Tapas : https://micmac.ensg.eu/index.php/Tapas.") + "\n"+\
-            _("                                Possibiit de demander une mosaïque des photos par Tarama.") + "\n"+\
             _("                    - Mise à l'échelle : définir un axe, une zone plane, une distance pour définir la métrique du chantier.") + "\n"+\
             _("                                Cette mise à l'échelle définit un repère local pour les nuages de points, mais l'origine est fixée par MicMac") + "\n\n"+\
             _("                    - GCP : Ground Control Point : point de repère marqués sur le terrain, coordonnées repérées localement ou par GPS.") + "\n"+\
@@ -4701,7 +4714,7 @@ Version 5.44 et 5.45 :	mai 2019
     # TAPAS
 
         # radialbasic : mode par défaut version 5.62; frazer : mode par défaut depuis la v 5.54 août 2020
-        self.modeCheckedTapas.set('Fraser')                     # mode par défaut depuis la v 5.54 août 2020
+                             # mode par défaut depuis la v 5.54 août 2020
         self.arretApresTapas.set(0)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.lancerTarama.set(0)                                # 0 : on ne lance pas Tarama (mosaique des photos après Tapas), 1 on lance       
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
@@ -4849,6 +4862,8 @@ Version 5.44 et 5.45 :	mai 2019
         self.ecartPointsGCPByBascule    =   str()
         self.optionsMicMacActivees      =   False                       # mémorise l'ouverture des onglets options, pour les écrire dans la trace 
         self.texte101Texte              =   str()
+        self.texteLignePython           =   str()                       # texte pour éxécution dans une console python
+        self.texteLigneConsole          =   str()                       # texte pour éxécution dans une console système
         
     # si les options par défaut sont personnalisées on les restaure :
         self.restaureOptions() 
@@ -6450,11 +6465,9 @@ Version 5.44 et 5.45 :	mai 2019
         # S'il y a des données GPS dans les exifs on crée une orientation provisoire "Ori-nav-Brut" (qui est prioritaire sur la mise à l'échelle)
 
         self.GpsExif()
-        print ("gps ?")
         if os.path.exists(self.nomOriGPS):      # il y a des données gps extraites des photos :
             self.choixReferentiel.set("META")   # on modifie le choix du référentiel par défaut
             self.metadonneesGpsPresentes = True
-            print("gps présent")
             
         # sauvegarde = recréation du fichier param.sav qui a été supprimé
 
@@ -6559,7 +6572,6 @@ Version 5.44 et 5.45 :	mai 2019
     ################# définir le répertoire de travail, le créer :
     
     def quelChantier(self,unePhoto):                            # on a une photo ou une vidéo : quel répertoire de travail et quel chantier ?
-        print("unePhoto=",unePhoto)
         self.chantier = os.path.basename(self.repTravail)       #   par défaut on suppose que le répertoire existe déjà : on ne change rien
         # Le répertoire de unePhoto est-il le répertoire des photos : si oui on ne change pas le répertoire de travail, sinon nouveau $repTravail et nouveau chantier
         
@@ -6644,7 +6656,7 @@ Version 5.44 et 5.45 :	mai 2019
                                          b1=_("Modifier les options des points homologues et d'orientation"),
                                          b2=_('Modifier les options de la densification'),
                                          b3=_('Ne rien faire'),)
-            if retour in (-1,2):                                # -1 : fermeture fenêtre ou 2 : b3 ne rien fire
+            if retour in (-1,2):                                # -1 : fermeture fenêtre ou 2 : b3 ne rien faire
                 self.afficheEtat()
                 return
             if retour==0:                                       # 1 : on nettoie, on passe à l'état 2  (avec photos, enregistr(b1))
@@ -7295,7 +7307,6 @@ Version 5.44 et 5.45 :	mai 2019
             nuageDistantACopier = os.path.join(self.chantierReferentiel,nuageDistant)
             self.orientationReference = os.path.basename(orientationACopier)+"_"+chantierOrigine
             bilan = copieRepertoire(orientationACopier,self.orientationReference)
-            print("orientationACopier=",orientationACopier," orientationReference=",self.orientationReference," bilan=",bilan)
             if bilan :
                 print("bilan copie répertoire du chantier devant servir de référence : ",bilan)
                 return bilan
@@ -7357,40 +7368,40 @@ Version 5.44 et 5.45 :	mai 2019
         self.encadre(bilanOK)
         return bilanOK
     
-    def chargerCalibrationIntrinseque(self,repertoireInconnu=True):
+    def chargerCalibrationIntrinseque(self,repertoireInconnu=True): 
+        # controles :
         if self.pasDePhoto(False):
             self.item572.configure(text=_("Commencer par choisir des photos."),foreground='red')
             return
         if repertoireInconnu:
-            bilan = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration de l'appareil."),filtre="CALIB")
+            bilan = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration de l'appareil."),filtre="calib")
             if bilan!=None:
                 message = _("Aucun chantier choisi.") + "\n" + bilan + "\n"
                 self.item572.configure(text=_("Pas de chantier choisi."))
                 self.afficheEtat(message)
                 return message
-        repertoireCalib  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Calib")
-        if not os.path.exists(repertoireCalib):
-            bilan = _("le chantier choisi %s n'a pas de données de calibration pour l'appareil photo.") % (repertoireCalib)
+        origine  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Calib")
+        if not os.path.exists(origine):
+            bilan = _("le chantier choisi \n%s\n n'a pas de données de calibration pour l'appareil photo.") % (origine)
             self.item572.configure(text=bilan)
             return bilan
-        # copie du répertoire : tentative
-        calibChantier = os.path.join(self.repTravail,"Ori-Calib")
-        supprimeRepertoire(calibChantier)        
-        try: shutil.copytree(repertoireCalib,calibChantier)
-        except Exception as e:
-            self.item572.configure(text=_("la copie a échouée : %s.") % (str(e)))
-            bilan = _("La copie de la calibration de l'appareil à partir de\n %s \na échoué : \n%s") % (repertoireCalib,str(e))
+       # copie du répertoire origine vers répertoire calib du chantier calibChantier
+        destination = os.path.join(self.repTravail,"Ori-Calib")  # répertoire destination
+        bilan = self.copier_les_fichiers_utiles_orientation(origine,destination)
+        if bilan:
+            self.item572.configure(text=_("la copie de la calibration a échouée."))
+            bilan = _("La copie de la calibration de l'appareil à partir de\n %s \na échoué.") % (origine)
             self.ajoutLigne(bilan)
             return bilan
-        # copie du répertoire: réussite
-        if os.path.exists(calibChantier):
+        # Destination existe vraiment ?    
+        if os.path.exists(destination):
             self.chantierOrigineCalibration = os.path.basename(self.selectionRepertoireAvecChemin)
-            self.item572.configure(text=_("Calibration de l'appareil photo à partir de '%s' recopiée.") % (self.chantierOrigineCalibration))
+            self.item572.configure(text=_("Calibration de l'appareil photo à partir de '%s' recopiée.") % (origine))
             self.supprimeCalibrationParPhotos()
-            self.ajoutLigne(_("Copie de la calibration du chantier\n %s.") % (repertoireCalib))
+            self.ajoutLigne(_("Copie de la calibration du chantier\n %s\n effectuée.") % (origine))
         else:
             self.item572.configure(text=_("la recopie a échouée : %s.") % (str(e)))
-            bilan = _("La copie de la calibration de l'appareil\n %s \na échoué.") % (repertoireCalib)
+            bilan = _("La copie de la calibration depuis\n %s \na échoué.") % (origine)
             self.ajoutLigne(bilan)           
             return bilan
             
@@ -7415,6 +7426,7 @@ Version 5.44 et 5.45 :	mai 2019
         self.item526.config(text=_("Nombre de photos choisies pour caliber l'appareil photo : ")+str(self.photosPourCalibrationIntrinseque.__len__()))
         self.photosCalibrationSansChemin = [os.path.basename(f) for f in self.photosPourCalibrationIntrinseque]
         self.supprimeCalibrationParCopie()
+        self.modeCheckedTapas.set('Fraser')     # le mode fraser est imposé pour la calibration de l'appareil
         
     def supprimeCalibrationParCopie(self):
         # suppression de la calibration de l'appareil par copie de chantier
@@ -8178,14 +8190,17 @@ Version 5.44 et 5.45 :	mai 2019
     def lanceMicMac(self):          # controles puis Aiguillage en fonction de l'etatDuChantier
 
         if self.etatDuChantier==5:  # Chantier terminé
-            titre = _("Attention : chantier terminé, options non modifiées")
+            titre = _("Attention : chantier terminé")
             rapport = _("Attention : Le chantier %s est terminé après %s"+"\n") % (self.chantier,self.choixDensification.get())
-            rapport += _("Vous pouvez arréter le traitement pour modifier les options avant de relancer MicMac.")
+            rapport += _("Vous pouvez modifier les options avant de relancer MicMac.")+"\n"
+            rapport += _("Vous pouvez lancer le traitement avec les options en cours.")
             lancer = _("Lancer le traitement")
-            arret = _("Arrêt")
+            arret = _("Modifier les options")
             if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=arret,b2=lancer).retour:
                 self.encadre(_("Le chantier %s est terminé après %s") % (self.chantier,self.choixDensification.get()) + ".\n\n"+
-                         _("Vous pouvez modifier les options puis relancer MicMac."))                
+                         _("Modifier les options puis relancer MicMac."))
+                self.nettoyerChantierApresTapioca() # etat = 35 + sauvegarde
+                self.optionsOnglet()
                 return
             self.etatDuChantier = 4 # permet de poser la question : homologue, orientation ou densification
         self.encadre(_("Lance MicMac : controles en cours....")+"\n")   
@@ -9419,11 +9434,9 @@ Version 5.44 et 5.45 :	mai 2019
 
     def lanceMorito(self):
         if self.choixReferentiel.get()=="CHANTIER":         # référence venue d'un autre chantier
-            print("OK1",heure())
             if os.path.exists(self.orientationReference):   # l'orientation est présente sous le chantier
                 photosCibles = os.path.join(self.orientationReference,"Orientation.*xml")
                 photosLocales = os.path.join("Ori-"+self.orientationCourante,"Orientation.*xml")
-                print("photos",photosCibles,"\n",photosLocales)
                 morito = [self.mm3d,
                           "Morito",
                           photosCibles,
@@ -9909,7 +9922,7 @@ Version 5.44 et 5.45 :	mai 2019
         self.ajoutLigne("\n ****** " + _("Chantier réinitialisé aprés Orientation sur demande utilisateur. Prochain départ : densification")+"\n")
         self.ecritureTraceMicMac()
         
-    def nettoyerChantierApresTapioca(self,trace=True):     # Le chantier est remis aprés Tapioca
+    def nettoyerChantierApresTapioca(self,trace=True):     # Le chantier est remis aprés Tapioca, seul self.etatDuChantier est modifié
         self.etatDuChantier = 35            # 35 = Chantier arrété aprés tapioca, points homoloques conservés      
         self.enregistreChantier()
         self.sauveParam()
@@ -11064,8 +11077,9 @@ Version 5.44 et 5.45 :	mai 2019
                _("ou une commande mm3d interactive comme : mm3d vC3DC")+"\n"+               
                _("Possibilité de copier une commande du fichier mm3d-LogFile.txt.")+"\n"+                 
                _("Le tout sous votre responsabilité"))                
-        new = MyDialogTexte(fenetre,texte,basDePage=bas,boutonDialogueTexteOk="Exécuter")
+        new = MyDialogTexte(fenetre,texte,basDePage=bas,boutonDialogueTexteOk="Exécuter",texte=self.texteLigneConsole)
         if not new.saisie: return abandon()
+        self.texteLigneConsole = new.saisie
         lignes = new.saisie.split("\n")
         self.cadreVide()
         self.ecritureTraceMicMac()
@@ -11090,14 +11104,14 @@ Version 5.44 et 5.45 :	mai 2019
         texte = _("Ceci est une console python : Saisir une ou plusieurs ligne(s) de script python") + "\n"        
         if self.etatDuChantier==0:
             texte+="\n\n"+_("Attention : Le chantier n'existe pas.")                      
-
         bas = (
                _("Entrer soit une commande python, par exemple : locals()")+"\n"+
                _("la commande  sera éxécutée puis évaluée et les résultats affichés dans une fenetre")+"\n"+
                _("et aussi dans la trace synthétique.")+"\n"+                 
                _("Le tout sous votre responsabilité"))                
-        new = MyDialogTexte(fenetre,texte,basDePage=bas,boutonDialogueTexteOk="Exécuter")
+        new = MyDialogTexte(fenetre,texte,basDePage=bas,boutonDialogueTexteOk="Exécuter",texte=self.texteLignePython)
         if not new.saisie: return abandon()
+        self.texteLignePython=new.saisie
         lignes = new.saisie.split("\n")
         self.cadreVide()
         self.ecritureTraceMicMac()
@@ -11349,7 +11363,7 @@ Version 5.44 et 5.45 :	mai 2019
             return message
         # vérification état du chantier
         
-        bilan = self.choisirUnChantier(_("Choisir le chantier d'où copier les points homologues. Seuls les chantiers compatibles sont proposés."),filtre="Homol")
+        bilan = self.choisirUnChantier(_("Choisir le chantier d'où copier les points homologues. Seuls les chantiers compatibles sont proposés."),filtre="homol")
 
         if bilan!=None:
             message = _("Aucun chantier choisi.") + "\n" + bilan + "\n"
@@ -11365,20 +11379,49 @@ Version 5.44 et 5.45 :	mai 2019
             return str()
 
     def menageDansHomol(self): # supprime les répertoires fichiers ne correspondant pas aux photos du chantier (à faire aprés copie des points homologues)
-        # probablement inutile
-        return
-        repHomol = os.path.join(self.repTravail,"Homol","*.*")
-        lesRepertoiresHomol = glob.glob(repHomol)
-        lesNomsUtilises = [os.path.basename(e).replace("Pastis","") for e in lesRepertoiresHomol]
-        SupprimelesNomsAbsents = [supprimeRepertoire(os.path.join("Homol","Pastis"+e)) for e in lesNomsUtilises if e not in self.photosSansChemin]
-        ficHomol = os.path.join(self.repTravail,"Homol","**")
-        fichiersHomol = glob.glob(ficHomol,recursive=True)
-        lesFichiersUtilises = [os.path.basename(e) for e in fichiersHomol]
-        lesFichiersASupprimer = [e for e in lesNomsUtilises if e not in self.photosSansChemin]
-        suppressionEffective = [(e,supprimeFichier(e)) for e in fichiersHomol if os.path.splitext(os.path.basename(e))[0] in lesFichiersASupprimer]
+        # probablement inutile, mais...
+        #attention : glob ne renvoie que des fichiers, pas de répertoire
+        def menagePointsHomologues(repHomol):
+            repertoire = os.path.join(self.repTravail,repHomol)
+            if not os.path.isdir(repertoire): return
+            lesRepertoiresHomol = os.listdir(os.path.join(repertoire))
+            lesNomsUtilises = [os.path.basename(e).replace("Pastis","") for e in lesRepertoiresHomol]
+            SupprimelesNomsAbsents = [supprimeRepertoire(os.path.join(repHomol,"Pastis"+e)) for e in lesNomsUtilises if e not in self.photosSansChemin]
+            ficHomol = os.path.join(self.repTravail,repHomol,"**")  # ** pour tous les fihiers et les répertoires
+            fichiersHomol = glob.glob(ficHomol,recursive=True)
+            lesFichiersUtilises = [os.path.basename(e) for e in fichiersHomol if e[-4:] in [".dat",".txt"]]           
+            lesFichiersASupprimer = [e for e in lesFichiersUtilises if e[:-4] not in self.photosSansChemin]
+            suppressionEffective = [(e,supprimeFichier(e)) for e in fichiersHomol if os.path.basename(e) in lesFichiersASupprimer]
+            return
+        menagePointsHomologues("Homol")
+        menagePointsHomologues("Homol_mini")
 
+    # copie raisonnable des seuls fichiers de calibration (ou d'orientation, même structure) utiles
+    def copier_les_fichiers_utiles_orientation(self,origine,destination):
+        supprimeFichier(destination)                # du ménage
+        supprimeRepertoire(destination)             # du ménage
+        os.mkdir(destination)                       # création répertoire
+        listeOrigine = os.listdir(origine)          # les fichiers du répertoire origines
+        for x in listeOrigine: # les xml sont de la forme Orientation-DJI_0135.JPG.xml
+            fi=os.path.join(origine,x)
+            if "Orientation" in x or "ImSec" in x or "Pt3dlm" in x:  # en général orientation mais pour morito ImSec,Pt3dlm
+                for p in self.photosSansChemin:
+                    if p in x:
+                        try: shutil.copy(fi,destination)          # copie fichier car la photo est présente dans le chantier
+                        except Exception as e:
+                            bilan = _("Fichier impossible à copier : ")+x+"\n"+_("erreur=")+str(e)
+                            self.ajoutLigne(bilan)
+                            return bilan
+                        break
+            else:
+                        try: shutil.copy(fi,destination)          # fichier non lié à une photo
+                        except Exception as e:
+                            bilan = _("Fichier impossible à copier : ")+x+"\n"+_("erreur=")+str(e)
+                            return bilan                    
+        return        
 # l'orientation obtenue après Tapas est Ori-Arbitrary, durant tapas il peut y avoir Ori-Calib                                                                       
     def copierOrientation(self,repertoireInconnu=True):
+       
         self.menageEcran()
         message = str()
         if self.etatDuChantier == 0:
@@ -11388,14 +11431,14 @@ Version 5.44 et 5.45 :	mai 2019
         # choisir le chantier origine de la copie de l'orientation :
         if repertoireInconnu:
             bilan = self.choisirUnChantier(_("Choisir le chantier d'où copier l'orientation. Seuls les chantiers compatibles sont proposés."),
-                                           filtre="Orientation")
+                                           filtre="orientation")
             if bilan!=None:
                 message = _("Aucun chantier choisi.") + "\n" + bilan + "\n"
                 self.afficheEtat(message)
                 return message
         orientationACopier  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Arbitrary")
         orientationCible = os.path.join(self.repTravail,"Ori-Arbitrary")
-        bilan = copieRepertoire(orientationACopier,orientationCible)
+        bilan = self.copier_les_fichiers_utiles_orientation(orientationACopier,orientationCible)
         if bilan :
             self.encadre(bilan)
             return bilan
@@ -11410,7 +11453,8 @@ Version 5.44 et 5.45 :	mai 2019
         self.encadre(message)
         return str()
                                                                      
-    def copierHomolOriTarama(self):
+    def copierHomolOriTarama(self): #copie les points homologues, la calibration et l'orientation
+        return # mis en sommeil dans la version 5.64, il faudra vérifier que le chantier choisi posséde tous les critères
         self.encadre(_("Patience : copie des points homologues"))
         bilan  = self.copierPointsHomologues()
         if bilan != str():
@@ -11422,8 +11466,8 @@ Version 5.44 et 5.45 :	mai 2019
                      "\n"+_("copie de l'orientation en cours")+"\n"+
                      _("bilan %s") % bilan)                    
         bilan += str(self.chargerCalibrationIntrinseque(repertoireInconnu=False))
-        if len(bilan)>0:
-            self.encadre(_("Copie non totalement effectuée : ")+bilan)
+        if len(bilan)>5: #bilan = None : len=4 ! j'avoue, c'est nul !
+            self.encadre(_("Copie non totalement effectuée : ")+"\n"+bilan)
         else:
             self.encadre(_("Copie des points homologues, de l'orientation, de la calibration, et de la mosaïque Tarama effectuées depuis :")+"\n"+
                          self.selectionRepertoireAvecChemin)
@@ -12315,9 +12359,7 @@ Version 5.44 et 5.45 :	mai 2019
                     supprimeFichier(e)
                 if os.path.isdir(e):
                     ajout(conserve,e)       # dossier non supprimé (en cours d'utilisation ?)
-                    print("conservé")
                 else:
-                    print("supprimé")
                     try:
                         ajout(supprime,e)                   
                         self.tousLesChantiers.remove(e)
@@ -12924,7 +12966,6 @@ Version 5.44 et 5.45 :	mai 2019
                 "-i",
                 video,
                 self.repTravail+"\Im_0000_%5d_Ok"+self.extensionChoisie]
-        print("ffmpeg=",ffmpeg)
         self.lanceCommande(ffmpeg,
                            filtre=self.filtreFfmpeg,
                            info=_("ATTENTION : cette procédure est longue : patience !"))
@@ -13123,10 +13164,10 @@ Version 5.44 et 5.45 :	mai 2019
     # le filtre, si présent, opère une présélection sur les chantiers proposés :
     # filtres possibles :
     #      - "GCP" avec GCP : référentiel défini par des points GCP ou GPS
-    #      - "CALIB" avec Ori-Calib,
-    #      - "Homol" avec répertoire Homol pour copier les points homologues,
-    #      - "Orientation" avec répertoire 'Ori-Arbitrary' pour copier l'orientation
-    #      - "Referentiel" avec orientation et nuage dense, pour fusionner le référentiel d'un autre chantier
+    #      - "calib" avec Ori-Calib,
+    #      - "homol" avec répertoire Homol pour copier les points homologues,
+    #      - "orientation" avec répertoire 'Ori-Arbitrary' pour copier l'orientation
+    #      - "referentiel" avec orientation et nuage dense, pour fusionner le référentiel d'un autre chantier
     # retour :
     #      - la variable self.selectionRepertoireAvecChemin est la liste du ou des répertoire(s)( si choix multiple possible) choisi(s) par l'utilisateur
     #        cette liste peut être vide
@@ -13143,10 +13184,7 @@ Version 5.44 et 5.45 :	mai 2019
                     with open(os.path.join(e,self.paramChantierSav),mode='rb') as sauvegarde1:
                         r = pickle.load(sauvegarde1)
                     photosSansChemin = r[2]
-                    # les photos du chantier en cours doivent être un sous ensemble des photos du chantier à copier
-                    pprint("rep=",e)
-                    print("photosSansChemin=",photosSansChemin)
-                    print("self.photosSansChemin=",self.photosSansChemin)                    
+                    # les photos du chantier en cours doivent être un sous ensemble des photos du chantier à copier                   
                     if not set(self.photosSansChemin).issubset(photosSansChemin):
                          self.fichierProposes.remove(e)                         
             except Exception as e:
@@ -13162,7 +13200,6 @@ Version 5.44 et 5.45 :	mai 2019
                     modele3D = r[37]
                     if not modele3D:
                         self.fichierProposes.remove(e)
-                        print("modele3D=",modele3D," chantier=",e)
                         continue
                     # 2 photos au moins du chantier en cours doivent être dans le chantier proposé
                     intersection = {e for e in photosSansChemin if e in self.photosSansChemin}
@@ -13170,7 +13207,35 @@ Version 5.44 et 5.45 :	mai 2019
                          self.fichierProposes.remove(e)                         
             except:
                 pass
-            
+        def controleAppareilPhoto():
+            try:
+                liste = list(self.fichierProposes)
+                for e in liste:
+                    with open(os.path.join(e,self.paramChantierSav),mode='rb') as sauvegarde1:
+                        r = pickle.load(sauvegarde1)
+                    lesTags = r[51]
+                    photos = r[2]
+                    photoDistante = photos[0]
+                    photoLocale = self.photosSansChemin[0]
+                    if ("SerialNumber",photoDistante) in lesTags:
+                        numDistant = lesTags[("SerialNumber",photoDistante)]
+                        if ("SerialNumber",photoLocale) in self.lesTagsExif:                    
+                            numLocal = self.lesTagsExif[("SerialNumber",photoLocale)]
+                            if numLocal!=numDistant:
+                                self.fichierProposes.remove(e)
+                                continue
+                    cameraDistant="D"
+                    cameraLocal="L"
+                    if ("Model",photoDistante) in lesTags:
+                        cameraDistant = lesTags[("Model",photoDistante)]
+                    if ("Model",photoLocale) in self.lesTagsExif:
+                        cameraLocal = self.lesTagsExif[("Model",photoLocale)]
+                    if cameraLocal!=cameraDistant:
+                        self.fichierProposes.remove(e)
+            except Exception as e:
+                print("erreur=",str(e))
+                pass    # pas grave
+                
         # traitement :z
         self.retourChoixRepertoire=_("Abandon")
         self.fichierProposes = list()
@@ -13192,10 +13257,11 @@ Version 5.44 et 5.45 :	mai 2019
             return _("Aucun chantier mémorisé.")
 
         # filtre Calib
-        
-        if filtre == "CALIB": # il faut un répertoire Ori-Calib", les photos peuvent être différentes (il faut que ce soit le même appareil)
-            
+        if filtre in ["calib",]: # il faut un répertoire Ori-Calib", les photos peuvent être différentes (il faut que ce soit le même appareil)
             self.fichierProposes = [ e for e in self.fichierProposes if os.path.exists(os.path.join(e,"Ori-Calib"))]
+
+            # controle qu'il s'agit du même appareil photo :
+            controleAppareilPhoto()
             
             if len(self.fichierProposes)==0:  return _("Aucun chantier avec calibration d'appareil photo.")
 
@@ -13215,7 +13281,7 @@ Version 5.44 et 5.45 :	mai 2019
             if len(self.fichierProposes)==0:
                 return _("Aucun chantier avac points GCP.")
                      
-        if filtre == "Homol": 
+        if filtre in ["homol",]: 
             compatibleChantierEnCours() # il faut des points homologues et que les photos du chantier en cours soit un sous ensemble des photos du chantier de départ
             self.fichierProposes = [ e for e in self.fichierProposes if os.path.exists(os.path.join(e,"Homol"))]
             if len(self.fichierProposes)==0:
@@ -13223,7 +13289,7 @@ Version 5.44 et 5.45 :	mai 2019
                 self.encadre(message)
                 return message
             
-        if filtre == "Orientation":
+        if filtre in ["orientation",]:
             compatibleChantierEnCours() # il faut des points homologues et que les photos du chantier en cours soit un sous ensemble des photos du chantier de départ
             self.fichierProposes = [ e for e in self.fichierProposes if os.path.exists(os.path.join(e,"Ori-Arbitrary"))]
 
@@ -13516,9 +13582,10 @@ Version 5.44 et 5.45 :	mai 2019
 
     def choisirPuisFusionnerPly(self):
 
-        listePly = [e for e in os.listdir() if os.path.splitext(e)[1]==".ply"]
+        ToutLesPly = [e for e in os.listdir() if os.path.splitext(e)[1]==".ply"]  # tout les ply
+        listePly = [e for e in ToutLesPly if "nuage" in typeDePly(e)]             # les nuages de points
         if listePly==list():
-            self.encadre(_("Aucun nuage de points dans ce chantier."))
+            self.encadre(_("Aucun nuage de points dans ce chantier. (Maillages exclus)"))
             return
         self.choisirUnePhoto(listePly,
                              titre=_("Fusion de nuages"),
@@ -16123,13 +16190,6 @@ def lePointEnCorrespondance(photoIni,photoDest,pointIni,SH="",ExpTxt=0,inverse=F
     les3Indices = pointsLesPlusProches(pointIni,listeHomol)
     if not les3Indices: return 0,0    
     if len(les3Indices)<3: return 0,0
-    '''
-    print("-début-------------------")
-    print("La photo origine : ",photoIni)
-    print("La photo destination : ",photoDest)    
-    print("Le point initial en correspondance : ",pointIni)
-    print("Les points les plus proches :\n",listeHomol[les3Indices[0]],"\n",listeHomol[les3Indices[1]],"\n",listeHomol[les3Indices[2]])
-    '''
     coefBary=barycentre(listeHomol[les3Indices[0]],
                       listeHomol[les3Indices[1]],
                       listeHomol[les3Indices[2]],
@@ -16232,7 +16292,7 @@ class MyDialog:
 
 class MyDialogTexte:
    
-    def __init__(self,parent,titre=_("Console"),basDePage='none',boutonDialogueTexteOk='OK'):
+    def __init__(self,parent,titre=_("Console"),basDePage='none',boutonDialogueTexteOk='OK',texte=""):
         self.saisie=str()
         top = self.top = tkinter.Toplevel(parent,width=250,relief='sunken')
         top.transient(parent)
@@ -16246,7 +16306,8 @@ class MyDialogTexte:
         self.scrollbar.config(command=self.yviewTexte)
         self.texte2201 = tkinter.Text(self.resul2200,width=60,height=5,yscrollcommand = self.scrollbar.set,wrap='word')
         self.resul2200.pack()
-        self.texte2201.pack() 
+        self.texte2201.pack()
+        self.texte2201.insert(tkinter.END, texte)
         self.texte2201.focus_set()
         b = ttk.Button(top, text=_(boutonDialogueTexteOk), command=self.ok)
         b.pack(pady=5)

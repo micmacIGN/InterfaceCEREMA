@@ -1,5 +1,8 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			
+			Version 5.64 : 22 mars 2022
+			
 			Version 5.62 : 17 février 2022
 			- Une nouvelle possibilité de référencement : utiliser le référentiel d'un autre chantier.
 			  Si vous disposer de 400 photos vous pouvez ainsi créer 2 chantiers de 200 photos

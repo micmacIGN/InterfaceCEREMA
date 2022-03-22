@@ -1,5 +1,7 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
+Version 5.64: March 22,2022
+
 Version 5.62: February 17, 2022
 			- A new possibility of referencing: use the repository of another site.
 			  If you have 400 photos, you can create 2 worksites of 200 photos
