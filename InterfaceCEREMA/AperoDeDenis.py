@@ -634,17 +634,21 @@
 # modification du message entête de l'onglet "orientation"
 # fusion des nuages de points : limités aux nuages, hors maillages
 
-# Version 5.65
+# Version 5.65 diffusée le 5 avril 2022
 # afficher le choix référentiel "gps des photos" si ce choix est possible dans l'onglet "référentiel" des options
 # Ajout d'un item "construire le nuage non dense" dans le menu outils. Permet de réparer un oubli sans rejouer toute l'orientation
 # Ajout d'un item "construire la mosaique tarama" dans le menu outils.  
 # ajout d'un item : "générer un maillage texturé aprés C3DC, modif du calcul du maillage
 # suppression de l'import de l'orientation d'un autre chantier
 # correction de bogues sur l'ajout de points gps, la mise à l'échelle
-# Tequila on retient le nb photos utiles, lorsque Tequila sera moodifié on pourra mettre 200
+# Tequila : on retient le nb photos utiles, lorsque Tequila sera modifié on pourra mettre 200
+
+# Version 5.66
+
 
 #problème : faut-il nettoyer le chantier dans avantScène
-  
+# problème des instance de mm3d restent en activités aprés la fin du traitement micmac (liées à la texture ?)
+#instances non supprimées au lancement d'aperodeDenis...
 
 ####################"
 # le lancement après avoir généré le nuage dense est à simplifier si possible ; 2 boites de dialogues pour positionner l'état du chantier à relancer...
@@ -989,7 +993,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.65"
+numeroVersion = "5.66"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -15462,7 +15466,7 @@ def calculVolumeMnt():
 
     rapport  = _("Calcul du volume d'un MNT : rapport final.")+"\n\n"   
     rapport += _("Volume entre le MNT et la cote de base %s %s : %s %s3") % (coteDeBase,interface.uniteDistance,infoMnt["volumeFond"],interface.uniteDistance)  +"\n"    
-    rapport  = _("Tout ce qui se trouve sous la cote de base est ignoré.")+"\n\n" 
+    rapport += _("Tout ce qui se trouve sous la cote de base est ignoré.")+"\n\n" 
     rapport += _("Mnt      :\n %s") % (infoMnt["fichierFond"])+"\n\n"
     rapport += _("Hauteur moyenne: %s %s") % (infoMnt["hauteurMoyenne"],interface.uniteDistance)  +"\n\n"       
     empfond=str(infoMnt['Emprise fond'])
