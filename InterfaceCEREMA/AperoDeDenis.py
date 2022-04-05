@@ -53,6 +53,7 @@
 # Ce mécanisme a été mis en place car le lancement de plusieurs instances de mm3d successifs sous windows provoquait (en 2015) des plantages mémoires.
 # Je n'ai pas vérifié si les nouvelles versions de MicMac présentait ce même symptome.
 
+
 # Quelques ressources :
 # adresse MicMac sur GitHub : https://github.com/micmacIGN
 # une adresse des sources de micmac : http://phd-sid.ethz.ch/debian/micmac/micmac-1.0.beta13%2Bgit20180918/src/TpMMPD/
@@ -60,7 +61,30 @@
 # forum micmac : http://forum-micmac.forumprod.com/?sid=3e080e75b237b7f966a1ebd16d7f5ca5
 # cette interface sur GitHub : https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA
 
-# Historique des versions diffusées (antérieurement : version utilisé en interne Labo de Rouen, Cerema Normandie Centre) 
+# remarque sur un autre mécanisme bizarre :
+# les expressions régulières de pattern ne fonctionnent pas toujours lorsqu'elles sont invoquées depuis python
+# par exemple : Empty list for StdGetListOfFile
+# la solution de contournement consiste a renommer les fichiers (jpg ou ply) et a utiliser l'expression générique ".*.JPG"
+# Sur l'expression régulière utilisée par MicMac pour désigner les photos :
+# ".*((6)|(3)).JPG" = toutes les photos dont le dernier chiffre est 3 ou 6
+# ".*((0)|(2)|(4)|(6)|(8]).JPG" : les numéros pairs
+# "IMGP41((6[7-9])|([7-8][0-9])).JPG" : toutes les photos IMGP416(7|8|9).JPG ou IMGP41(7|8)(0-9) (doc micmac page 45)
+# ".*.JPG" : toutes
+
+# agacements : des commandes fonctionnent en mode console et pas en appel depuis python (typique : tequila options out et texture)
+# les expressions régulières de pattern ne fonctionnent pas toujours lorsqu'elles sont invoquées depuis python
+# Tequila ne marche qu'avec "peu" de photos (inférieur à 40, voire 25)
+
+####### Définition des 3 jeux de photos pour la syntaxe des commandes micmac :
+#       - toutes les photos
+#       - les photos pour la calibration de l'appareil
+#       - les photos sans la calibration
+#        self.jeuToutesLesPhotos = '".*('+"|".join(self.photosSansChemin)+')"'
+#        self.jeuCalibration = '"('+"|".join(self.photosCalibrationSansChemin)+')"'
+#        sansCalibration = [e for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]
+#        self.jeuSansCalibration = '"'+"|".join(sansCalibration)+'"'
+
+# Historique des versions diffusées (antérieurement : version utilisée en interne Labo de Rouen, Cerema Normandie Centre) 
 # Version 2.35 :
 # le 26 avril 2016
 # - affichage des heures avec les secondes
@@ -557,7 +581,7 @@
 #                                           blocage du traitement au lancement de micmac
 # Sécurise "miseAJourDicoCamera()" : ajout de return aprés les encadre (risque d'erreur)
 # Ajout dans la trace des modifications de DicoCamera
-# correction bogue ligne 8898 (repertoireMaillage était défini dans la première partie du if, utilsié dans la seconde)
+# correction bogue ligne 8898 (repertoireMaillage était défini dans la première partie du if, utilisé dans la seconde)
 # diffusée le 30/11/21
 #
 # version 5.62
@@ -597,7 +621,7 @@
 # correction : la fermeture des threads par taskill (notamment pour le masque 3D) : le nom de la tache est mm3d au lieu de mm3d.exe
 #   cette modif limite le risque de plantage lors de la saisie du masque 3D. (remarque : SaisieQT utilise la base de registre, clé culture3D)
 
-# version 5.64
+# version 5.64 diffusée le 22 mars 2022
 # la ligne saisie dans "expert/éxécuter une commande sytème ou python" est mémorisée et rappelée.
 # modification du message de relance après la fin des traitements
 # la copie de la calibration depuis un autre chantier est limitée aux photos utiles
@@ -609,6 +633,18 @@
 # avant copie de la calibration : ne présenter les chantiers que s'ils ont le même appareil photo
 # modification du message entête de l'onglet "orientation"
 # fusion des nuages de points : limités aux nuages, hors maillages
+
+# Version 5.65
+# afficher le choix référentiel "gps des photos" si ce choix est possible dans l'onglet "référentiel" des options
+# Ajout d'un item "construire le nuage non dense" dans le menu outils. Permet de réparer un oubli sans rejouer toute l'orientation
+# Ajout d'un item "construire la mosaique tarama" dans le menu outils.  
+# ajout d'un item : "générer un maillage texturé aprés C3DC, modif du calcul du maillage
+# suppression de l'import de l'orientation d'un autre chantier
+# correction de bogues sur l'ajout de points gps, la mise à l'échelle
+# Tequila on retient le nb photos utiles, lorsque Tequila sera moodifié on pourra mettre 200
+
+#problème : faut-il nettoyer le chantier dans avantScène
+  
 
 ####################"
 # le lancement après avoir généré le nuage dense est à simplifier si possible ; 2 boites de dialogues pour positionner l'état du chantier à relancer...
@@ -765,6 +801,7 @@ from itertools import cycle
 from html.parser import HTMLParser
 import atexit
 import re
+from random import *
 
 def foreach_window(hwnd, lParam):
     if IsWindowVisible(hwnd):
@@ -952,7 +989,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.64"
+numeroVersion = "5.65"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -2205,8 +2242,12 @@ class Interface(ttk.Frame):
         menuOutils.add_command(label=_("Sélectionner les N meilleures photos"), command=self.outilMeilleuresPhotos)
         menuOutils.add_command(label=_("Retirer des photos"), command=self.retirerPhotos)       
         menuOutils.add_separator()        
-        menuOutils.add_command(label=_("Modifier les 2 focales des photos"), command=self.majExif)
+        menuOutils.add_command(label=_("Construire le nuage non dense (utile pour masque C3DC)"), command=self.nuageNonDense)   # si oubli
+        menuOutils.add_command(label=_("Construire la mosaïque Tarama (utile pour masque Malt/Orho)"), command=self.lanceTaramaMenu) # si oubli
+        menuOutils.add_command(label=_("Générer un maillage texturé aprés C3DC"), command=self.maillageTequila)     # si échec sur toutes les photos     
         menuOutils.add_separator()
+        menuOutils.add_command(label=_("Modifier les métadonnées des photos"), command=self.majExif)
+        menuOutils.add_separator()        
         menuOutils.add_command(label=_("Afficher les options par défaut"), command=self.afficheOptionsParDefaut)        
         menuOutils.add_command(label=_("Modifier les options par défaut"), command=self.majOptionsParDefaut)
         menuOutils.add_separator()
@@ -2238,7 +2279,7 @@ class Interface(ttk.Frame):
         menuExpertImport = tkinter.Menu(menuExpert,tearoff = 0)         
         menuExpertImport.add_command(label=_("Importer les points homologues d'un autre chantier"), command=self.copierPointsHomologues)             
         menuExpertImport.add_command(label=_("Importer la calibration de l'appareil d'un autre chantier"), command=self.chargerCalibrationIntrinsequeDepuisMenu)
-        menuExpertImport.add_command(label=_("Importer l'orientation d'un autre chantier"), command=self.copierOrientation)              
+        #menuExpertImport.add_command(label=_("Importer l'orientation d'un autre chantier"), command=self.copierOrientation) version 5.65 : supprimé, compliqué
         #menuExpertImport.add_separator() # en sommeil dans la version 5.64, il faut ajouter des controles
         #menuExpertImport.add_command(label=_("Importer les points homologues, la calibration et l'orientation"), command=self.copierHomolOriTarama)
         menuExpertImport.add_separator()
@@ -2419,7 +2460,7 @@ class Interface(ttk.Frame):
         self.systeme                    =   os.name                                             # nt ou posix
         self.nomApplication             =   os.path.splitext(os.path.basename(sys.argv[0]))[0]  # Nom du script
         self.nomApplication             =   self.nomApplication[0].upper()+self.nomApplication[1:]
-        self.titreFenetre               =   self.nomApplication+version                         # nom du programme titre de la fenêtre (version = varaioble globale)
+        self.titreFenetre               =   self.nomApplication+version                         # nom du programme titre de la fenêtre (version = variable globale)
         self.tousLesChantiers           =   list()                                              # liste de tous les réchantiers créés, avec chemin
         self.exptxt                     =   "0"                                                 # 0 pour exptxt format binaire, 1 format texte (pts homologues)             
         self.indiceTravail              =   0                                                   # lors de l'installation, valeur initial de l'indice des répertoires de travail
@@ -2832,7 +2873,7 @@ class Interface(ttk.Frame):
         self.item1150 = ttk.Frame(self.item1100,height=50,relief='sunken',padding="0.15cm")      # pour le check button, fera un encadrement
         self.item1155 = ttk.Label(self.item1150, text=  _("Le référentiel sera celui du chantier choisi.")+"\n"+
                                                         _("Les 2 chantiers ont au moins 2 photos en commun."+"\n"+
-                                                        _("Le chantier possède un nuage dense")+"\n"
+                                                        _("Le chantier possède une orientation")+"\n"
                                                         ))
         self.item1156 = ttk.Label(self.item1150)    # pour accueillir le nom du chantier retenu
         self.item1155.pack()
@@ -3032,7 +3073,7 @@ class Interface(ttk.Frame):
         self.item813.pack(anchor='w')          
         self.item814.pack(anchor='w')
         self.item815.pack(anchor='w')        
-        self.item801 = ttk.Button(self.item800,text=_('Tracer un masque 3D'),command=self.affiche3DApericloud)              
+        self.item801 = ttk.Button(self.item800,text=_('Tracer un masque 3D'),command=self.effaceEtAffiche3DApericloud)              
         self.item801.pack(ipady=2,pady=3)
         self.item802 = ttk.Button(self.item800,text=_('Supprimer le masque 3D'),command=self.supprimeMasque3D)              
       
@@ -3054,8 +3095,8 @@ class Interface(ttk.Frame):
         # maillage après C3DC :
         
         self.item820 = ttk.Checkbutton(self.item800, variable=self.lancerTiPunch,
-                                       text=" "+_("Générer un maillage texturé après C3DC (modules TiPunch et Tequila)")+"\n"+
-                                                _("Ce maillage sera affiché aprés traitement"))
+                                       text=" "+_("Générer un maillage texturé après C3DC")+"\n"+
+                                                _("Si le maillage n'est pas généré, essayer menu Outil/maillage"))
         self.item820.pack(ipady=2,pady=3)
 
         # maillage après C3DC :
@@ -3515,173 +3556,173 @@ class Interface(ttk.Frame):
         "distance
         "-->'''
        
-        self.miseAEchelleXml = ("<Global>\n"+
-        "   <ParamApero>\n"+
-        "      <DicoLoc>\n"+
-        "         <Symb>  AeroIn=-Arbitrary  </Symb>\n"+
-        "         <Symb>  AeroOut=-echelle3  </Symb>\n"+
-        "      </DicoLoc>\n"+
-        "      <SectionBDD_Observation>\n"+
-        "         <BDD_PtsLiaisons>\n"+
-        "            <Id>    Id_Pastis_Hom  </Id>\n"+
-        "            <KeySet> NKS-Set-Homol@@dat  </KeySet>\n"+
-        "            <KeyAssoc>  NKS-Assoc-CplIm2Hom@@dat   </KeyAssoc>\n"+
-        "          </BDD_PtsLiaisons>\n"+
-        "             <BDD_Orient>\n"+
-        "                  <Id>  Or-Init   </Id>\n"+
-        "                  <KeySet>  NKS-Set-Orient@${AeroIn} </KeySet>\n"+
-        "                  <KeyAssoc>  NKS-Assoc-Im2Orient@${AeroIn} </KeyAssoc>\n"+
-        "             </BDD_Orient>\n"+ 
-        "       </SectionBDD_Observation>\n"+
-        "       <SectionInconnues>\n"+
-        "          <CalibrationCameraInc>\n"+
-        "             <Name> GenerateKC-Others   </Name>\n"+
-        "             <CalValueInit>\n"+
-        "                <CalFromFileExtern>\n"+
-        "                   <NameFile>   ####  </NameFile>\n"+
-        "                   <NameTag>    CalibrationInternConique </NameTag>\n"+
-        "                </CalFromFileExtern>\n"+
-        "             </CalValueInit>\n"+
-        "             <CalibPerPose>\n"+
-        "                <KeyPose2Cal> NKS-Assoc-FromFocMm@TheKeyCalib_@ </KeyPose2Cal>\n"+
-        "                <KeyInitFromPose>  NKS-Assoc-FromFocMm@Ori${AeroIn}/AutoCal@.xml  </KeyInitFromPose>\n"+
-        "             </CalibPerPose>\n"+ 
-        "          </CalibrationCameraInc>\n"+
-        "          <PoseCameraInc>\n"+
-        "             <PatternName>  Fichiers </PatternName>\n"+
-        "             <CalcNameCalib>  GenerateKC-Others  </CalcNameCalib>\n"+
-        "             <PosValueInit>\n"+
-        "                <PosFromBDOrient> Or-Init </PosFromBDOrient>\n"+
-        "             </PosValueInit>\n"+
-        "          </PoseCameraInc>\n"+
-        "       </SectionInconnues>\n"+
-        "       <SectionChantier>\n"+
-        "	       <DirectoryChantier> ThisDir </DirectoryChantier>\n"+
-        "       </SectionChantier>\n"+
-        "       <SectionSolveur>\n"+
-        "    	   <ModeResolution> eSysL2BlocSym </ModeResolution>\n"+ 
-        "       </SectionSolveur>\n"+                                
-        "       <SectionCompensation>\n"+
-        "	   <EtapeCompensation>\n"+
-        "             <IterationsCompensation>\n"+
-        "	         <SectionContraintes>\n"+
-        "		    <ContraintesCamerasInc>\n"+
-        "		       <Val> eAllParamFiges  </Val>\n"+
-        "		       </ContraintesCamerasInc>\n"+
-        "		          <ContraintesPoses>\n"+
-        "			     <NamePose>   .* </NamePose>\n"+
-        "                            <ByPattern> true </ByPattern>\n"+
-        "			     <Val>      ePoseFigee   </Val>\n"+
-        "		          </ContraintesPoses>\n"+
-        "		       </SectionContraintes>\n"+
-        "                      <BasculeOrientation >\n"+
-        "                         <PatternNameEstim> monImage_MaitrePlan </PatternNameEstim>\n"+
-        "                          <ModeBascule>\n"+
-        "                             <BasculeLiaisonOnPlan >\n"+
-        "                                <EstimPl>\n"+
-        "                                   <KeyCalculMasq>  monImage_Plan </KeyCalculMasq>\n"+
-        "                                       <IdBdl >Id_Pastis_Hom </IdBdl>\n"+
-        "                                           <Pond>\n"+
-        "                                              <EcartMesureIndiv>  1.0 </EcartMesureIndiv>\n"+
-        "                                              <Show> eNSM_Paquet     </Show>\n"+
-        "                                              <NbMax>   100   </NbMax>\n"+
-        "                                              <ModePonderation>  eL1Secured </ModePonderation>\n"+
-        "                                              <SigmaPond> 2.0 </SigmaPond>\n"+
-        "                                              <EcartMax> 5.0 </EcartMax>\n"+
-        "                                       </Pond>\n"+
-        "                                       </EstimPl>\n"+
-        "                                   </BasculeLiaisonOnPlan>\n"+
-        "                               </ModeBascule>\n"+
-        "                        </BasculeOrientation>\n"+
-        "                        <FixeOrientPlane>\n"+
-        "                              <ModeFOP>\n"+
-        "                                  <HorFOP>\n"+
-        "                                     <VecFOH>\n"+
-        "                                        <Pt>  X1H Y1H </Pt>\n"+
-        "                                        <Im>  photoHorizon </Im>\n"+
-        "                                     </VecFOH>\n"+
-        "                                     <VecFOH>\n"+
-        "                                        <Pt>  X2H Y2H </Pt>\n"+
-        "                                        <Im>   photoHorizon </Im>\n"+
-        "                                     </VecFOH>\n"+
-        "                                  </HorFOP>\n"+
-        "                              </ModeFOP>\n"+
-        "                              <Vecteur> vecteurHV </Vecteur>\n"+            # 1 0 si l'axe est horizontal 01 si l'axe est vertical
-        "                          </FixeOrientPlane>\n"+
-        "			   <FixeEchelle>\n"+
-        "                               <ModeFE>\n"+
-        "                                    <StereoFE>\n"+
-        "                                       <!-- <Point1>-->\n"+
-        "                                     <HomFE>\n"+ 
-        "                                             <P1> X1P1 Y1P1 </P1>\n"+
-        "                                             <Im1> photo1Debut  </Im1>\n"+
-        "                                             <P2> X1P2 Y1P2 </P2>\n"+
-        "                                             <Im2> photo2Debut  </Im2>\n"+
-        "                                     </HomFE>\n"+
-        "                                     <!--  <Point2>-->\n"+
-        "                                      <HomFE>\n"+ 
-        "                                            <P1> X2P1 Y2P1 </P1>\n"+
-        "                                            <Im1>  photo1Fin </Im1>\n"+
-        "                                            <P2> X2P2 Y2P2 </P2>\n"+
-        "                                            <Im2>  photo2Fin </Im2>\n"+
-        "                                        </HomFE>\n"+
-        "                                    </StereoFE>\n"+
-        "                               </ModeFE>\n"+
-        "                               <DistVraie> distance </DistVraie>\n"+
-        "                           </FixeEchelle>\n"+
-        "                   </IterationsCompensation>\n"+
-        "             <SectionObservations> </SectionObservations>\n"+
-        "	      </EtapeCompensation>\n"+
-        "	      <EtapeCompensation>\n"+
-        "                    <IterationsCompensation> </IterationsCompensation>\n"+
-	"				<SectionObservations>\n"+
-        "                   <ObsLiaisons>\n"+
-        "                      <NameRef> Id_Pastis_Hom </NameRef>\n"+
-        "                      <Pond>\n"+
-        "                         <EcartMesureIndiv>  1.0 </EcartMesureIndiv>\n"+
-        "                         <Show> eNSM_Paquet     </Show>\n"+
-        "                         <NbMax>   100    </NbMax>\n"+
-        "                         <ModePonderation>  eL1Secured </ModePonderation>\n"+
-        "                         <SigmaPond> 2.0 </SigmaPond>\n"+
-        "                         <EcartMax> 5.0 </EcartMax>\n"+
-        "                      </Pond>\n"+
-        "                   </ObsLiaisons>\n"+
-        "            </SectionObservations>\n"+                     
-        "                    <SectionExport>\n"+
-        "                            <ExportPose>\n"+
-        "                                <PatternSel> (.*) </PatternSel>\n"+
-        "                                <KeyAssoc> NKS-Assoc-Im2Orient@${AeroOut} </KeyAssoc>\n"+
-        "                                <AddCalib>  true </AddCalib>\n"+
-        "                                <NbVerif>  10 </NbVerif>\n"+
-        "                                <TolWhenVerif> 1e-3 </TolWhenVerif>\n"+
-        "                                <FileExtern> NKS-Assoc-FromFocMm@Ori${AeroOut}/AutoCal@.xml </FileExtern>\n"+
-        "                                <FileExternIsKey> true </FileExternIsKey>\n"+
-        "                            </ExportPose>\n"+
-        "                             <ExportCalib>\n"+
-        "                                 <KeyAssoc>  NKS-Assoc-FromKeyCal@Ori${AeroOut}/AutoCal@.xml </KeyAssoc>\n"+
-        "                                 <KeyIsName> false </KeyIsName>\n"+
-        "                            </ExportCalib>\n"+
-        "                            <ExportNuage>\n"+
-        "                                   <NameOut> echelle3.ply </NameOut>\n"+
-        "                                   <PlyModeBin> true </PlyModeBin>\n"+
-        "                                   <NameRefLiaison> Id_Pastis_Hom </NameRefLiaison>\n"+
-        "                                   <Pond>\n"+
-        "                                          <EcartMesureIndiv>  1.0 </EcartMesureIndiv>\n"+
-        "                                          <EcartMax> 0.4 </EcartMax>\n"+
-        "                                   </Pond>\n"+
-        "                                   <KeyFileColImage>NKS-Assoc-Id   </KeyFileColImage>\n"+
-        "                                   <NuagePutCam >\n"+
-        "                                       <ColCadre > 255 0 0 </ColCadre>\n"+
-        "                                       <ColRay >  0 255 0 </ColRay>\n"+
-        "                                       <Long > 0.3 </Long>\n"+
-        "                                       <StepSeg > 0.01 </StepSeg>\n"+
-        "                                   </NuagePutCam>\n"+
-        "                             </ExportNuage>\n"+
-        "                    </SectionExport>\n"+
-        "	      </EtapeCompensation>\n"+
-        "	</SectionCompensation>\n"+
-        "   </ParamApero>\n"+
-        "</Global>")
+        self.miseAEchelleXml = _('''<Global> 
+            <ParamApero> 
+               <DicoLoc> 
+                  <Symb>  AeroIn=-Arbitrary  </Symb> 
+                  <Symb>  AeroOut=-echelle3  </Symb> 
+               </DicoLoc> 
+               <SectionBDD_Observation> 
+                  <BDD_PtsLiaisons> 
+                     <Id>    Id_Pastis_Hom  </Id> 
+                     <KeySet> NKS-Set-Homol@@dat  </KeySet> 
+                     <KeyAssoc>  NKS-Assoc-CplIm2Hom@@dat   </KeyAssoc> 
+                   </BDD_PtsLiaisons> 
+                      <BDD_Orient> 
+                           <Id>  Or-Init   </Id> 
+                           <KeySet>  NKS-Set-Orient@${AeroIn} </KeySet> 
+                           <KeyAssoc>  NKS-Assoc-Im2Orient@${AeroIn} </KeyAssoc> 
+                      </BDD_Orient>  
+                </SectionBDD_Observation> 
+                <SectionInconnues> 
+                   <CalibrationCameraInc> 
+                      <Name> GenerateKC-Others   </Name> 
+                      <CalValueInit> 
+                         <CalFromFileExtern> 
+                            <NameFile>   ####  </NameFile> 
+                            <NameTag>    CalibrationInternConique </NameTag> 
+                         </CalFromFileExtern> 
+                      </CalValueInit> 
+                      <CalibPerPose> 
+                         <KeyPose2Cal> NKS-Assoc-FromFocMm@TheKeyCalib_@ </KeyPose2Cal> 
+                         <KeyInitFromPose>  NKS-Assoc-FromFocMm@Ori${AeroIn}/AutoCal@.xml  </KeyInitFromPose> 
+                      </CalibPerPose>  
+                   </CalibrationCameraInc> 
+                   <PoseCameraInc> 
+                      <PatternName>  Fichiers </PatternName> 
+                      <CalcNameCalib>  GenerateKC-Others  </CalcNameCalib> 
+                      <PosValueInit> 
+                         <PosFromBDOrient> Or-Init </PosFromBDOrient> 
+                      </PosValueInit> 
+                   </PoseCameraInc> 
+                </SectionInconnues> 
+                <SectionChantier> 
+         	       <DirectoryChantier> ThisDir </DirectoryChantier> 
+                </SectionChantier> 
+                <SectionSolveur> 
+             	   <ModeResolution> eSysL2BlocSym </ModeResolution>  
+                </SectionSolveur>                                 
+                <SectionCompensation> 
+         	   <EtapeCompensation> 
+                      <IterationsCompensation> 
+         	         <SectionContraintes> 
+         		    <ContraintesCamerasInc> 
+         		       <Val> eAllParamFiges  </Val> 
+         		       </ContraintesCamerasInc> 
+         		          <ContraintesPoses> 
+         			     <NamePose>   .* </NamePose> 
+                                     <ByPattern> true </ByPattern> 
+         			     <Val>      ePoseFigee   </Val> 
+         		          </ContraintesPoses> 
+         		       </SectionContraintes> 
+                               <BasculeOrientation> 
+                                  <PatternNameEstim> monImage_MaitrePlan </PatternNameEstim> 
+                                   <ModeBascule> 
+                                      <BasculeLiaisonOnPlan> 
+                                         <EstimPl> 
+                                            <KeyCalculMasq>  monImage_Plan </KeyCalculMasq> 
+                                                <IdBdl>Id_Pastis_Hom </IdBdl> 
+                                                    <Pond> 
+                                                       <EcartMesureIndiv>  1.0 </EcartMesureIndiv> 
+                                                       <Show> eNSM_Paquet     </Show> 
+                                                       <NbMax>   100   </NbMax> 
+                                                       <ModePonderation>  eL1Secured </ModePonderation> 
+                                                       <SigmaPond> 2.0 </SigmaPond> 
+                                                       <EcartMax> 5.0 </EcartMax> 
+                                                </Pond> 
+                                                </EstimPl> 
+                                            </BasculeLiaisonOnPlan> 
+                                        </ModeBascule> 
+                                 </BasculeOrientation> 
+                                 <FixeOrientPlane> 
+                                       <ModeFOP> 
+                                           <HorFOP> 
+                                              <VecFOH> 
+                                                 <Pt>  X1H Y1H </Pt> 
+                                                 <Im>  photoHorizon </Im> 
+                                              </VecFOH> 
+                                              <VecFOH> 
+                                                 <Pt>  X2H Y2H </Pt> 
+                                                 <Im>   photoHorizon </Im> 
+                                              </VecFOH> 
+                                           </HorFOP> 
+                                       </ModeFOP> 
+                                       <Vecteur> vecteurHV </Vecteur>
+                                   </FixeOrientPlane> 
+         			   <FixeEchelle> 
+                                        <ModeFE> 
+                                             <StereoFE> 
+                                                <!-- <Point1>--> 
+                                              <HomFE>  
+                                                      <P1> X1P1 Y1P1 </P1> 
+                                                      <Im1> photo1Debut  </Im1> 
+                                                      <P2> X1P2 Y1P2 </P2> 
+                                                      <Im2> photo2Debut  </Im2> 
+                                              </HomFE> 
+                                              <!--  <Point2>--> 
+                                               <HomFE>  
+                                                     <P1> X2P1 Y2P1 </P1> 
+                                                     <Im1>  photo1Fin </Im1> 
+                                                     <P2> X2P2 Y2P2 </P2> 
+                                                     <Im2>  photo2Fin </Im2> 
+                                                 </HomFE> 
+                                             </StereoFE> 
+                                        </ModeFE> 
+                                        <DistVraie> distance </DistVraie> 
+                                    </FixeEchelle> 
+                            </IterationsCompensation> 
+                      <SectionObservations> </SectionObservations> 
+         	      </EtapeCompensation> 
+         	      <EtapeCompensation> 
+                             <IterationsCompensation> </IterationsCompensation> 
+	 				<SectionObservations> 
+                            <ObsLiaisons> 
+                               <NameRef> Id_Pastis_Hom </NameRef> 
+                               <Pond> 
+                                  <EcartMesureIndiv>  1.0 </EcartMesureIndiv> 
+                                  <Show> eNSM_Paquet     </Show> 
+                                  <NbMax>   100    </NbMax> 
+                                  <ModePonderation>  eL1Secured </ModePonderation> 
+                                  <SigmaPond> 2.0 </SigmaPond> 
+                                  <EcartMax> 5.0 </EcartMax> 
+                               </Pond> 
+                            </ObsLiaisons> 
+                     </SectionObservations>                      
+                             <SectionExport> 
+                                     <ExportPose> 
+                                         <PatternSel> (.*) </PatternSel> 
+                                         <KeyAssoc> NKS-Assoc-Im2Orient@${AeroOut} </KeyAssoc> 
+                                         <AddCalib>  true </AddCalib> 
+                                         <NbVerif>  10 </NbVerif> 
+                                         <TolWhenVerif> 1e-3 </TolWhenVerif> 
+                                         <FileExtern> NKS-Assoc-FromFocMm@Ori${AeroOut}/AutoCal@.xml </FileExtern> 
+                                         <FileExternIsKey> true </FileExternIsKey> 
+                                     </ExportPose> 
+                                      <ExportCalib> 
+                                          <KeyAssoc>  NKS-Assoc-FromKeyCal@Ori${AeroOut}/AutoCal@.xml </KeyAssoc> 
+                                          <KeyIsName> false </KeyIsName> 
+                                     </ExportCalib> 
+                                     <ExportNuage> 
+                                            <NameOut> echelle3.ply </NameOut> 
+                                            <PlyModeBin> true </PlyModeBin> 
+                                            <NameRefLiaison> Id_Pastis_Hom </NameRefLiaison> 
+                                            <Pond> 
+                                                   <EcartMesureIndiv>  1.0 </EcartMesureIndiv> 
+                                                   <EcartMax> 0.4 </EcartMax> 
+                                            </Pond> 
+                                            <KeyFileColImage>NKS-Assoc-Id   </KeyFileColImage> 
+                                            <NuagePutCam> 
+                                                <ColCadre> 255 0 0 </ColCadre> 
+                                                <ColRay>  0 255 0 </ColRay> 
+                                                <Long> 0.3 </Long> 
+                                                <StepSeg > 0.01 </StepSeg> 
+                                            </NuagePutCam> 
+                                      </ExportNuage> 
+                             </SectionExport> 
+         	      </EtapeCompensation> 
+         	</SectionCompensation> 
+            </ParamApero> 
+         </Global>''' )            
 
     # Contenu Fichier xml DicoCamera
     
@@ -3760,16 +3801,15 @@ class Interface(ttk.Frame):
         self.messageNouveauDepart       =       str()   # utilisé lorsque l'on relance la fenêtre
         self.nbEncadre                  =       0       # utilisé pour relancer la fenetre
         self.suffixeExport              =       "_export"  # ne pas modifier : rendra incompatible la nouvelle version
-        self.messageSauvegardeOptions   =       (_("Quelles options par défaut utiliser pour les nouveaux chantiers ?") + "\n"+
-                                                _("Les options par défaut concernent :") + "\n"+
-                                                _("Points homologues : All, MulScale, line ,les échelles et delta") + "\n"+
-                                                _("Orientation : toutes les options de la boite de dialogue") + "\n"+                                                 
-                                                _("Densification Malt : mode, zoom final, nombre de photos autour de la maître") + "\n"+
-                                                _("Densification Malt Ortho : Tawny et ses options en saisie libre") + "\n"+
-                                                _("Densification C3DC : mode") + "\n"+
-                                                _("Les paramètres presonnalisés des modules Micmac (menu Expert)") + "\n\n"+
-                                                _("Calcul du volume entre 2 MNT : tolerance") + "\n\n"
-                                                 )
+        self.messageSauvegardeOptions   =       _( ''' Quelles options par défaut utiliser pour les nouveaux chantiers ?         
+                                                  Les options par défaut concernent :         
+                                                  Points homologues : All, MulScale, line ,les échelles et delta         
+                                                  Orientation : toutes les options de la boite de dialogue                                                          
+                                                  Densification Malt : mode, zoom final, nombre de photos autour de la maître         
+                                                  Densification Malt Ortho : Tawny et ses options en saisie libre         
+                                                  Densification C3DC : mode         
+                                                  Les paramètres presonnalisés des modules Micmac (menu Expert           
+                                                  Calcul du volume entre 2 MNT : tolerance ''')  
         
         self.tacky                      = True    # Suite au message de Luc Girod sur le forum le 21 juin 17h        
         self.avertirNouvelleVersion     = True    # vérifie au lancement la présence d'une version sur GitHub
@@ -3786,313 +3826,318 @@ class Interface(ttk.Frame):
         
     # les aides par item de menu principal !
 
-        self.aide201 =    _("Menu Fichier :") + "\n\n"+\
-            _("       - Nouveau chantier : constitution d'un 'chantier' comportant les photos, les options d'exécution de Micmac et") + "\n"+\
-            _("         les résultats des traitements.") +"\n"+\
-            _("         Les paramètres du chantier sont conservés dans le fichier ")+self.paramChantierSav+".\n"+\
-            _("         Enregistrer le chantier crée une arborescence dont la racine est le répertoire des photos et le nom du chantier.") + "\n\n"+\
-            _("       - Ouvrir un chantier : revenir sur un ancien chantier pour le poursuivre ou consulter les résultats.") + "\n\n"+\
-            _("       - Enregistrer le chantier : enregistre le chantier en cours.") + "\n"+\
-            _("         Le chantier est systématiquement enregistré aprés chaque modification. Cet item est conservé pour mémoire.") + "\n"+\
-            _("         Le chantier en cours est enregistré lors de la fermeture de l'application.") + "\n\n"+\
-            _("       - Renommer le chantier : personnalise le nom du chantier.") + "\n\n"+\
-            _("         Le chantier est déplacé dans l'arborescence en indiquant un chemin absolu ou relatif.") + "\n"+\
-            _("         Par exemple : 'D:\\MonPremierChantier' nomme 'MonPremierChantier' sous la racine du disque D.") + "\n"+\
-            _("         Attention : le changement de disque n'est pas possible dans cette version de l'outil.") + "\n\n"+\
-            _("       - Enregistrer sous... : copie du chantier sous un nouveau répertoire. Le répertoire initial est conservé, inutilisé.") + "\n"+\
-            _("         Le changement d'unité disque est valide. Attention à la taille du chantier.:") + "\n\n"+\
-            _("       - Exporter le chantier en cours : création d'une archive ZIP du chantier, qui permet :") + "\n"+\
-            _("            - de conserver le chantier en l'état, pour y revenir.") + "\n"+\
-            _("            - de l'importer sous un autre répertoire, un autre disque, un autre ordinateur, un autre système d'exploitation") + "\n\n"+\
-            _("       - Importer un chantier :") + "\n"+\
-            _("            - copie le chantier sauvegardé dans un nouvel environnement (ordinateur, système d'exploitation)") + "\n"+\
-            _("            - un exemple d'intérêt : copier un chantier après tapas, lancer malt avec des options variées sans perdre l'original.") + "\n\n"+\
-            _("       - Ajouter le répertoire d'un chantier :") + "\n"+\
-            _("            - ajoute le chantier présent sous le répertoire indiqué. Alternative moins robuste à l'export/import)") + "\n\n"+\
-            _("       - Du ménage ! : nettoyer ou supprimer les chantiers : chaque chantier crée une arborescence de travail assez lourde.") + "\n"+\
-            _("         Le nettoyage ne garde que les photos, les modèles 3D résultats, les traces, les paramètres : gain de place assuré !.") + "\n"+\
-            _("         La suppression supprime tout le chantier sans mise à la corbeille.") + "\n"+\
-            _("         Un message demande confirmation avant la suppression définitive, sans récupération possible :") + "\n"+\
-            _("         Toute l'arborescence est supprimée, même les archives exportées.") + "\n\n"+\
-            _("       - Quitter : quitte l'application, le chantier en cours est conservé et sera ouvert lors du prochain lancement.") + "\n\n"
+        self.aide201 =   _('''   Menu Fichier :           
+                     - Nouveau chantier : constitution d'un 'chantier' comportant les photos, les options d'exécution de Micmac et          
+                       les résultats des traitements.         
+                       Les paramètres du chantier sont conservés dans le fichier    self.paramChantierSav  .    
+                       Enregistrer le chantier crée une arborescence dont la racine est le répertoire des photos et le nom du chantier.           
+                     - Ouvrir un chantier : revenir sur un ancien chantier pour le poursuivre ou consulter les résultats.           
+                     - Enregistrer le chantier : enregistre le chantier en cours.          
+                       Le chantier est systématiquement enregistré aprés chaque modification. Cet item est conservé pour mémoire.          
+                       Le chantier en cours est enregistré lors de la fermeture de l'application.           
+                     - Renommer le chantier : personnalise le nom du chantier.           
+                       Le chantier est déplacé dans l'arborescence en indiquant un chemin absolu ou relatif.          
+                       Par exemple : 'D:  MonPremierChantier' nomme 'MonPremierChantier' sous la racine du disque D.          
+                       Attention : le changement de disque n'est pas possible dans cette version de l'outil.           
+                     - Enregistrer sous... : copie du chantier sous un nouveau répertoire. Le répertoire initial est conservé, inutilisé.          
+                       Le changement d'unité disque est valide. Attention à la taille du chantier.:           
+                     - Exporter le chantier en cours : création d'une archive ZIP du chantier, qui permet :          
+                          - de conserver le chantier en l'état, pour y revenir.          
+                          - de l'importer sous un autre répertoire, un autre disque, un autre ordinateur, un autre système d'exploitation           
+                     - Importer un chantier :          
+                          - copie le chantier sauvegardé dans un nouvel environnement (ordinateur, système d'exploitation           
+                          - un exemple d'intérêt : copier un chantier après tapas, lancer malt avec des options variées sans perdre l'original.           
+                     - Ajouter le répertoire d'un chantier :          
+                          - ajoute le chantier présent sous le répertoire indiqué. Alternative moins robuste à l'export/import            
+                     - Du ménage ! : nettoyer ou supprimer les chantiers : chaque chantier crée une arborescence de travail assez lourde.          
+                       Le nettoyage ne garde que les photos, les modèles 3D résultats, les traces, les paramètres : gain de place assuré !.          
+                       La suppression supprime tout le chantier sans mise à la corbeille.          
+                       Un message demande confirmation avant la suppression définitive, sans récupération possible :          
+                       Toute l'arborescence est supprimée, même les archives exportées.           
+                     - Quitter : quitte l'application, le chantier en cours est conservé et sera ouvert lors du prochain lancement.       ''') +self.aideFinDePage 
 
-        self.aide202 =             _("Menu Edition :") + "\n\n"+\
-            _("       - Afficher l'état du chantier : affiche les paramètres du chantier et son état d'exécution.") + "\n"+\
-            _("         Par défaut l'état du chantier est affiché lors du lancement de l'application.") + "\n"+\
-            _("         Cet item est utile après un message ou l'affichage d'une trace.") + "\n\n"+\
-            _("       - Plusieurs items permettent de consulter les photos, les traces et les vues 3D du chantier en cours.") + "\n\n"+\
-            _("            Visualiser toutes les photos sélectionnées : visualise les photos") + "\n"+\
-            _("            Visualiser les photos pour la calibration de l'appareil photo") + "\n"+\
-            _("            Visualiser les maitresses et les masques   : visualise les masques 2D pour la densification Malt/géoimage.") + "\n"+\
-            _("            Visualiser le masque sur mosaïque TARAMA   : visualise le masque défini sur la mosaïque TARAMA.") + "\n"+\
-            _("            Visualiser le masque 3D                    : visualise le masque 3D pour la densification C3DC") + "\n"+\
-            _("            Visualiser les points GCP                  : visu des seules photos avec points GCP.") + "\n"+\
-            "\n"+\
-            _("            Visualiser la ligne horizontale/verticale  : visualise le repère Ox ou Oy pour la mise à l'échelle.") + "\n"+\
-            _("            Visualiser la zone plane                   : visualise la zone plane") + "\n"+\
-            _("            Visualiser la distance                     : visualise de la distance et les points associés.") + "\n"+\
-            "\n"+\
-            _("            Afficher la trace complete du chantier     : visualise la trace complète, standard micmac") + "\n"+\
-            _("            Afficher la trace synthétique du chantier  : visualise la trace filtrée par aperoDeDenis, moins bavarde") + "\n\n"+\
-            "\n"+\
-            _("            Afficher la mosaïque Tarama                : si la mosaïque tarama est demandée dans l'onglet 'orientation'") + "\n"+\
-            _("            Afficher l'ortho mosaïque Tawny            : l'ortho mosaïque tawny est demandée dans l'onglet Densifisation/Malt/Ortho") + "\n"+\
-            _("            Fusionner des orthomosaïaques              : fusion d'orthomosaïques de plusieurs chantiers ou des mosaïques de chaque photo") + "\n"+\
-            _("                                                         la fusion est effectuée par l'outil gdal_merge") + "\n"+\
-            "\n"+\
-            _("            Afficher l'image 3D non densifiée          : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Tapas") + "\n"+\
-            _("            Afficher l'image 3D densifiée              : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Malt ou C3DC") + "\n"+\
-            "\n"+\
-            _("            Lister Visualiser les images 3D            : liste la pyramide des images 3D, créées à chaque étape de Malt") + "\n"+\
-            _("            Fusionner des images 3D                    : permet de fusionner plusieurs PLY en un seul") + "\n"+\
-            _("            Infos sur une image 3D                     : affiche le nombre de points, les dimensions de la 'box',") + "\n"+\
-            _("                                                         la surface et le volume, la densité de points sur la surface et le volume. ") + "\n"+\
-            "\n"+\
-            _("            Informations sur un nuage du chantier      : propose la pyramide des nuages du chantier. Pour le nuage choisi affichage :") + "\n"+\
-            _("                                                         les limites du nuages en xyz, la surface et le volume, la densité de points en surface et en volume") + "\n"+\
-            _("            Informations sur un fichier Ply            : mêmes infos pour un ply choisi dans l'arborescence du disque") + "\n\n"
 
-        self.aide203 =            _("Menu MicMac :") + "\n\n"+\
-            _("       - Choisir les photos : permet choisir les photos JPG, GIF, TIF ou BMP pour le traitement.") + "\n\n"+\
-            _("         Les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert).") + "\n"+\
-            _("         Un EXIF avec la focale utilisée pour la prise de vue est nécessaire : si besoin l'ajouter (menu Outil/ajout exif).") + "\n"+\
-            _("         Remarques : 1) Si l'exif ne comporte pas la focale équivalente en 35 mm alors ")+ "\n"+\
-            _("                     le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils)") + "\n\n"+\
-            _("                     la page web http://www.dpreview.com/products fournit beaucoup de tailles de capteurs.") + "\n\n"+\
-            _("                     2) Si les photos proviennent de plusieurs appareils alors les tags 'model' des exif doivent") + "\n"+\
-            _("                     être différenciés (voir l'aide 'Plusieurs focales... plusieurs appareils et le menu Expert/plusieurs appareils photos)") + "\n"+\
-            _("                     3) Les photos géolocalisées par GPS sont automatiquement placées dans le référentiel WGS84") + "\n"+\
-            _("                        Le menu expert/Navigation GPS permet de changer le référentiel.") + "\n"+\
-            _("                        Les photos prises par les drones sont générallement géolocalisées.") + "\n\n"+\
-            _("       - Options : choisir les options des modules Tapioca, Tapas, GCP (nuage non densifié)  puis de densification Malt ou C3DC: ") + "\n\n"+\
-            _("                   Consulter le wiki MicMac pour obtenir de l'info sur les modules MicMac, par exemple : https://micmac.ensg.eu/index.php/Tapas") + "\n\n"+\
-            _("         Les options suivantes concernent le calcul du nuage de points NON densifié :") + "\n\n"+\
-            _("                    - Points homologues : Tapioca : options et sous options associées (échelles, fichier xml)")+ "\n"+\
-            _("                                la recherche des points homologues se fait sur toutes les paires de photos 'All'") + "\n"+\
-            _("                                'MulScale' : D'abord sur toutes les paires en faible résolution (300 par exemple) puis uniquement sur les paires.") + "\n"+\
-            _("                                ayant eues au moins 2 points homologues.") + "\n"+\
-            _("                                'Line' : seules les N photos avant et aprés sont examinées.") + "\n"+\
-            _("                                L'objectif est d'accélérr la recherche :  pour 200 photos il y a 40000 paires.") + "\n"+\
-            _("                                Voir la documentation MicMac sur Tapioca : https://micmac.ensg.eu/index.php/Tapioca.") + "\n"+\
-            _("                    - Orientation : Tapas : choix d'un mode de calcul de la géométrie 'optique/capteur' de l'appareil.") + "\n"+\
-            _("                                Le mode de calcul détermine le nombre de paramètres décrivant l'optique et le capteur.") + "\n"+\
-            _("                                Si plusieurs appareils photos alors il faut les distinguer, voir menu expert.") + "\n"+\
-            _("                                La calibration permet de figer les caractéristiques de l'appareil sur des photos spécifiques :") + "\n"+\
-            _("                                  Par exemple photos d'un angle de batiment avec une grande longueur de mur.")+ "\n"+\
-            _("                                  Ces photos ne servent pas nécessairement pour la suite du chantier.")+ "\n"+\
-            _("                                  La calibration peut être recopiée d'un autre chantier avec le même appareil photo.")+ "\n"+\
-            _("                                Masque pour C3DC : sur le nuage non dense, pour Malt Ortho : sur la mosaique.")+ "\n"+\
-            _("                                L'arrêt après Tapas est nécessaire pour décrire le masque 2D ou 3D pour Malt ou C3DC.") + "\n"+\
-            _("                                La production du nuage de point non dense est optionnelle.") + "\n\n"+\
-            _("                                Si elle est demandée l'image 3D non dense positionne les appareils photos.") + "\n\n"+\
-            _("                                Voir la documentation MicMac sur Tapas : https://micmac.ensg.eu/index.php/Tapas.") + "\n"+\
-            _("                    - Mise à l'échelle : définir un axe, une zone plane, une distance pour définir la métrique du chantier.") + "\n"+\
-            _("                                Cette mise à l'échelle définit un repère local pour les nuages de points, mais l'origine est fixée par MicMac") + "\n\n"+\
-            _("                    - GCP : Ground Control Point : point de repère marqués sur le terrain, coordonnées repérées localement ou par GPS.") + "\n"+\
-            _("                    - GCP : définir les points de calage qui permettent de (géo)localiser la scène.") + "\n"+\
-            _("                            Une première ligne permet de définir les options du module CAMPARI qui améliore la précision des calculs.") + "\n"+\
-            _("                            Il faut indiquer la précision des cibles GCP (en unité du GCP) et la précision des points images (en pixels).") + "\n"+\
-            _("                            CAMPARI ne sera lancé que si les points GCP sont corrects ainsi que les 2 paramètres ci-dessus.") + "\n\n"+\
-            _("                            Pour être utilisé chaque point GCP, au minimum 3, doit être placé sur au moins 2 photos.") + "\n"+\
-            _("                            Le bouton 'appliquer' positionne le nuage non densifié immédiatement, sans recalcul.") + "\n\n"+\
-            _("                            Si les points homologues sont calculés : un cercle rouge positionne le point en cours de saisie.") + "\n\n"+\
-            _("                            La qualité de positionnement des points GCP est consultable (menu Outils).") + "\n\n"+\
-            _("                    - Densification    : choix du module de densification : C3DC ou Malt.") + "\n"+\
-            _("                            La densification produit une représentation en 3D de la scène photographiée.") + "\n"+\
-            _("                            Cette représentation est dans un repère local ou un référentiel géographique qui peut être :") + "\n"+\
-            _("                                  - un repère choisi par MicMac en l'absence d'indication de l'utilisateur") + "\n"+\
-            _("                                  - un repère local définit par la 'mise à l'échelle' : axe dex x, plan horizontal, métrique. L'origine est fixée par MicMac.") + "\n"+\
-            _("                                  - un repère GPS défini par la donnée de points géoréférencés sur le terrain et placés sur les photos.") + "\n"+\
-            _("                                  - le reférentiel WGS84 lorsque les photos sont géoréférencées dans l'exif en latitude et longitude.") + "\n"+\
-            _("                                    Dans ce cas le menu Expert/navigation GPS permet de choisir un reférentiel EPSG..") + "\n"+\
-            _("                            Lorsque le coordonnées sont 'grandes' une translation est effectuèe sur le nuage pour obtenir des coordonnées inférieures à 100000.") + "\n\n"+\
-            _("                      L'utilisateur doit choisir entre 2 modules de densification : MALT ou C3DC.") + "\n"+\
-            _("                      Les 2 modules produisent des nuages assez semblables mais il sont différents sur certains points :") + "\n"+\
-            _("                            - Malt Ortho permet d'obtenir une orthomasaïque de la scène") + "\n"+\
-            _("                            - Malt Ortho permet de tracer un masque sur une mosaïque 2D (produit de TARAMA) de la scène") + "\n"+\
-            _("                            - Malt GeoImage permet de tracer des masques sur plusieurs photos du chantier ") + "\n"+\
-            _("                            - C3DC permet de tracer un masque en 3D sur le nuage non dense") + "\n\n"+\
-            _("                      - Malt : ") + "\n"+\
-            _("                            Si le mode est GeomImage : ") + "\n"+\
-            _("                                  désigner une ou plusieurs images maîtres") + "\n"+\
-            _("                                  dessiner sur les photos le ou les masques associés.") + "\n"+\
-            _("                                  Seuls les points visibles sur les images maitresses seront sur l'image 3D finale.") + "\n"+\
-            _("                                  Le masque limite la zone utile de l'image 3D finale.") + "\n"+\
-            _("                                  La molette permet de zoomer et le clic droit maintenu de déplacer l'image.") + "\n"+\
-            _("                                  Supprimer une image maître de la liste réinitialise le masque.") + "\n\n"+\
-            _("                                  Nombre de photos utiles autour de l'image maître :") + "\n"+\
-            _("                                    Permet de limiter les recherches aux images entourant chaque image maître.") + "\n\n"+\
-            _("                            Si le mode est Ortho : ") + "\n"+\
-            _("                                 le mode Ortho permet la création d'une orthomosaïque de la scène (en plus du nuage dense)") + "\n"+\
-            _("                                 Création possible d'un masque sur la mosaïque Tarama demandée aprés Tapas") + "\n\n"+\
-            _("                            Si le mode est UrbanMNE : ") + "\n"+\
-            _("                                 le mode UrbanMNE offre de multiples possibilités qui ne sont pas proposées dans l'interface .") + "\n"+\
-            _("                                 Utiliser les options personnalisées du menu expert pour les rendre actives.") + "\n\n"+\
-            _("                            Options communes à Malt Ortho, Malt GeomImage et Malt UrbanMne : ") + "\n"+\
-            _("                                  Choix du niveau de densification final : 8,4,2 ou 1.") + "\n"+\
-            _("                                    - Le niveau 8 est le moins dense, le niveau 1 est le plus dense. ") + "\n"+\
-            _("                                      La géométrie est revue à chaque niveau et de plus en plus précise : ") + "\n"+\
-            _("                                      la densification s'accroît, et la géométrie s'affine aussi.") + "\n"+\
-            _("                                  Choix du format du fichier PLY : nuage de points (cloud) ou maillage (mesh)") + "\n\n"+\
-            _("                      - C3DC : Choix par défaut. Plusieurs options, de précision croissante.") + "\n"+\
-            _("                               Choix du format du fichier PLY : nuage de points (cloud) ou maillage (mesh)") + "\n\n"+\
-            _("                               Possibilité de dessiner un masque 3D sur le nuage de points non dense.") + "\n"+\
-            _("                               Les touches fonctions à utiliser pour la saisie du masque sont décrites dans l'onglet.") + "\n"+\
-            _("                               Le masque limite la zone en 3 dimensions de l'image finale.") + "\n"+\
-            _("                               L'outil de saisie est issu de MicMac.") + "\n\n"+\
-            _("       - Lancer MicMac : enregistre le chantier et lance le traitement avec les options par défaut ou choisies par l'item 'options'.") + "\n"+\
-            _("                         Relance MicMac si l'arrêt a été demandé après tapas.") + "\n"+\
-            _("                         Une fois la densification terminée le chantier est 'bloqué'.") + "\n"+\
-            _("                         Pour le débloquer il faut lancer MicMac à nouveau et choisir le débloquage.") + "\n"+\
-            _("                         Le débloquage permet de relancer Tapas ou Malt sans relancer Tapioca tout en conservant le modèle densifié, renommé.") + "\n\n"
+        self.aide202 =_('''               Menu Edition :           
+                     - Afficher l'état du chantier : affiche les paramètres du chantier et son état d'exécution.          
+                       Par défaut l'état du chantier est affiché lors du lancement de l'application.          
+                       Cet item est utile après un message ou l'affichage d'une trace.           
+                     - Plusieurs items permettent de consulter les photos, les traces et les vues 3D du chantier en cours.           
+                          Visualiser toutes les photos sélectionnées : visualise les photos          
+                          Visualiser les photos pour la calibration de l'appareil photo          
+                          Visualiser les maitresses et les masques   : visualise les masques 2D pour la densification Malt/géoimage.          
+                          Visualiser le masque sur mosaïque TARAMA   : visualise le masque défini sur la mosaïque TARAMA.          
+                          Visualiser le masque 3D                    : visualise le masque 3D pour la densification C3DC          
+                          Visualiser les points GCP                  : visu des seules photos avec points GCP.          
+                 
+                          Visualiser la ligne horizontale/verticale  : visualise le repère Ox ou Oy pour la mise à l'échelle.          
+                          Visualiser la zone plane                   : visualise la zone plane          
+                          Visualiser la distance                     : visualise de la distance et les points associés.          
+                 
+                          Afficher la trace complete du chantier     : visualise la trace complète, standard micmac          
+                          Afficher la trace synthétique du chantier  : visualise la trace filtrée par aperoDeDenis, moins bavarde           
+                 
+                          Afficher la mosaïque Tarama                : si la mosaïque tarama est demandée dans l'onglet 'orientation'          
+                          Afficher l'ortho mosaïque Tawny            : l'ortho mosaïque tawny est demandée dans l'onglet Densifisation/Malt/Ortho          
+                          Fusionner des orthomosaïaques              : fusion d'orthomosaïques de plusieurs chantiers ou des mosaïques de chaque photo          
+                                                                       la fusion est effectuée par l'outil gdal merge          
+                 
+                          Afficher l'image 3D non densifiée          : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Tapas          
+                          Afficher l'image 3D densifiée              : lance l'outil pour ouvrir les .PLY sur l'image 3D produite par Malt ou C3DC          
+                 
+                          Lister Visualiser les images 3D            : liste la pyramide des images 3D, créées à chaque étape de Malt          
+                          Fusionner des images 3D                    : permet de fusionner plusieurs PLY en un seul          
+                          Infos sur une image 3D                     : affiche le nombre de points, les dimensions de la 'box',          
+                                                                       la surface et le volume, la densité de points sur la surface et le volume.           
+                 
+                          Informations sur un nuage du chantier      : propose la pyramide des nuages du chantier. Pour le nuage choisi affichage :          
+                                                                       les limites du nuages en xyz, la surface et le volume, la densité de points en surface et en volume          
+                          Informations sur un fichier Ply            : mêmes infos pour un ply choisi dans l'arborescence du disque''') +self.aideFinDePage         
 
-        self.aide204 =             _("menu Vidéo :") + "\n\n"+\
-            _("       - Options : indiquer le nom de la camera (GoPro, smartphone...), sa focale, sa focale equivalente 35mm") + "\n"+\
-            _("         Le nom permet de faire le lien avec DicoCamera.xml qui contient la taille du capteur.") + "\n"+\
-            _("         Les focales seront recopiées dans l'exif des images.") + "\n"+\
-            _("         Remarque :") + "\n"+\
-            _("           Il faut indiquer dans DicoCamera la taille du capteur effectivement utilisée par la fonction camera,") + "\n"+\
-            _("           taille qui peut être inférieure à la taille du capteur utilisée pour les photos.") + "\n"+\
-            _("           Voir par exemple pour une camera Gopro :") + "\n"+\
-            "           http://www.kolor.com/wiki-en/action/view/Autopano_Video_-_Focal_length_and_field_of_view#About_GoPro_focal_length_and_FOV" + "\n\n"+\
-            _("       - Nouveau chantier : choisir une video : choisir un fichier video issu d'une camera ou d'une GoPro.") + "\n"+\
-            _("         La vidéo sera décompactée en images, l'exif sera créé avec les informations en options.") + "\n"+\
-            _("         Cette étape nécessite la présence de l'outil ffmpeg sous le répertoire bin de MicMac (dépend de la version de MicMac).") + "\n"+\
-            _("       - Sélection des images : il est raisonnable de ne garder que quelques images par seconde de film.") + "\n"+\
-            _("         Créer un nouveau chantier avec ces images.") + "\n\n"
+        self.aide203 =  _('''            Menu MicMac :           
+                     - Choisir les photos : permet choisir les photos JPG, GIF, TIF ou BMP pour le traitement.           
+                       Les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert .          
+                       Un EXIF avec la focale utilisée pour la prise de vue est nécessaire : si besoin l'ajouter (menu Outil/ajout exif .          
+                       Remarques : 1  Si l'exif ne comporte pas la focale équivalente en 35 mm alors          
+                                   le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils            
+                                   la page web http://www.dpreview.com/products fournit beaucoup de tailles de capteurs.           
+                                   2  Si les photos proviennent de plusieurs appareils alors les tags 'model' des exif doivent          
+                                   être différenciés (voir l'aide 'Plusieurs focales... plusieurs appareils et le menu Expert/plusieurs appareils photos           
+                                   3  Les photos géolocalisées par GPS sont automatiquement placées dans le référentiel WGS84          
+                                      Le menu expert/Navigation GPS permet de changer le référentiel.          
+                                      Les photos prises par les drones sont générallement géolocalisées.           
+                     - Options : choisir les options des modules Tapioca, Tapas, GCP (nuage non densifié   puis de densification Malt ou C3DC:            
+                                 Consulter le wiki MicMac pour obtenir de l'info sur les modules MicMac, par exemple : https://micmac.ensg.eu/index.php/Tapas           
+                       Les options suivantes concernent le calcul du nuage de points NON densifié :           
+                                  - Points homologues : Tapioca : options et sous options associées (échelles, fichier xml          
+                                              la recherche des points homologues se fait sur toutes les paires de photos 'All'          
+                                              'MulScale' : D'abord sur toutes les paires en faible résolution (300 par exemple  puis uniquement sur les paires.          
+                                              ayant eues au moins 2 points homologues.          
+                                              'Line' : seules les N photos avant et aprés sont examinées.          
+                                              L'objectif est d'accélérr la recherche :  pour 200 photos il y a 40000 paires.          
+                                              Voir la documentation MicMac sur Tapioca : https://micmac.ensg.eu/index.php/Tapioca.          
+                                  - Orientation : Tapas : choix d'un mode de calcul de la géométrie 'optique/capteur' de l'appareil.          
+                                              Le mode de calcul détermine le nombre de paramètres décrivant l'optique et le capteur.          
+                                              Si plusieurs appareils photos alors il faut les distinguer, voir menu expert.          
+                                              La calibration permet de figer les caractéristiques de l'appareil sur des photos spécifiques :          
+                                                Par exemple photos d'un angle de batiment avec une grande longueur de mur.         
+                                                Ces photos ne servent pas nécessairement pour la suite du chantier.         
+                                                La calibration peut être recopiée d'un autre chantier avec le même appareil photo.         
+                                              Masque pour C3DC : sur le nuage non dense, pour Malt Ortho : sur la mosaique.         
+                                              L'arrêt après Tapas est nécessaire pour décrire le masque 2D ou 3D pour Malt ou C3DC.          
+                                              La production du nuage de point non dense est optionnelle.           
+                                              Si elle est demandée l'image 3D non dense positionne les appareils photos.           
+                                              Voir la documentation MicMac sur Tapas : https://micmac.ensg.eu/index.php/Tapas.          
+                                  - Mise à l'échelle : définir un axe, une zone plane, une distance pour définir la métrique du chantier.          
+                                              Cette mise à l'échelle définit un repère local pour les nuages de points, mais l'origine est fixée par MicMac           
+                                  - GCP : Ground Control Point : point de repère marqués sur le terrain, coordonnées repérées localement ou par GPS.          
+                                  - GCP : définir les points de calage qui permettent de (géo localiser la scène.          
+                                          Une première ligne permet de définir les options du module CAMPARI qui améliore la précision des calculs.          
+                                          Il faut indiquer la précision des cibles GCP (en unité du GCP  et la précision des points images (en pixels .          
+                                          CAMPARI ne sera lancé que si les points GCP sont corrects ainsi que les 2 paramètres ci-dessus.           
+                                          Pour être utilisé chaque point GCP, au minimum 3, doit être placé sur au moins 2 photos.          
+                                          Le bouton 'appliquer' positionne le nuage non densifié immédiatement, sans recalcul.           
+                                          Si les points homologues sont calculés : un cercle rouge positionne le point en cours de saisie.           
+                                          La qualité de positionnement des points GCP est consultable (menu Outils .           
+                                  - Densification    : choix du module de densification : C3DC ou Malt.          
+                                          La densification produit une représentation en 3D de la scène photographiée.          
+                                          Cette représentation est dans un repère local ou un référentiel géographique qui peut être :          
+                                                - un repère choisi par MicMac en l'absence d'indication de l'utilisateur          
+                                                - un repère local définit par la 'mise à l'échelle' : axe dex x, plan horizontal, métrique. L'origine est fixée par MicMac.          
+                                                - un repère GPS défini par la donnée de points géoréférencés sur le terrain et placés sur les photos.          
+                                                - le reférentiel WGS84 lorsque les photos sont géoréférencées dans l'exif en latitude et longitude.          
+                                                  Dans ce cas le menu Expert/navigation GPS permet de choisir un reférentiel EPSG..          
+                                          Lorsque le coordonnées sont 'grandes' une translation est effectuèe sur le nuage pour obtenir des coordonnées inférieures à 100000.           
+                                    L'utilisateur doit choisir entre 2 modules de densification : MALT ou C3DC.          
+                                    Les 2 modules produisent des nuages assez semblables mais il sont différents sur certains points :          
+                                          - Malt Ortho permet d'obtenir une orthomasaïque de la scène          
+                                          - Malt Ortho permet de tracer un masque sur une mosaïque 2D (produit de TARAMA  de la scène          
+                                          - Malt GeoImage permet de tracer des masques sur plusieurs photos du chantier           
+                                          - C3DC permet de tracer un masque en 3D sur le nuage non dense           
+                                    - Malt :           
+                                          Si le mode est GeomImage :           
+                                                désigner une ou plusieurs images maîtres          
+                                                dessiner sur les photos le ou les masques associés.          
+                                                Seuls les points visibles sur les images maitresses seront sur l'image 3D finale.          
+                                                Le masque limite la zone utile de l'image 3D finale.          
+                                                La molette permet de zoomer et le clic droit maintenu de déplacer l'image.          
+                                                Supprimer une image maître de la liste réinitialise le masque.           
+                                                Nombre de photos utiles autour de l'image maître :          
+                                                  Permet de limiter les recherches aux images entourant chaque image maître.           
+                                          Si le mode est Ortho :           
+                                               le mode Ortho permet la création d'une orthomosaïque de la scène (en plus du nuage dense           
+                                               Création possible d'un masque sur la mosaïque Tarama demandée aprés Tapas           
+                                          Si le mode est UrbanMNE :           
+                                               le mode UrbanMNE offre de multiples possibilités qui ne sont pas proposées dans l'interface .          
+                                               Utiliser les options personnalisées du menu expert pour les rendre actives.           
+                                          Options communes à Malt Ortho, Malt GeomImage et Malt UrbanMne :           
+                                                Choix du niveau de densification final : 8,4,2 ou 1.          
+                                                  - Le niveau 8 est le moins dense, le niveau 1 est le plus dense.           
+                                                    La géométrie est revue à chaque niveau et de plus en plus précise :           
+                                                    la densification s'accroît, et la géométrie s'affine aussi.          
+                                                Choix du format du fichier PLY : nuage de points (cloud  ou maillage (mesh            
+                                    - C3DC : Choix par défaut. Plusieurs options, de précision croissante.          
+                                             Choix du format du fichier PLY : nuage de points (cloud  ou maillage (mesh            
+                                             Possibilité de dessiner un masque 3D sur le nuage de points non dense.          
+                                             Les touches fonctions à utiliser pour la saisie du masque sont décrites dans l'onglet.          
+                                             Le masque limite la zone en 3 dimensions de l'image finale.          
+                                             L'outil de saisie est issu de MicMac.           
+                     - Lancer MicMac : enregistre le chantier et lance le traitement avec les options par défaut ou choisies par l'item 'options'.          
+                                       Relance MicMac si l'arrêt a été demandé après tapas.          
+                                       Une fois la densification terminée le chantier est 'bloqué'.          
+                                       Pour le débloquer il faut lancer MicMac à nouveau et choisir le débloquage.          
+                                       Le débloquage permet de relancer Tapas ou Malt sans relancer Tapioca tout en conservant le modèle densifié, renommé.''')       
 
-        self.aide205 =             _("menu Outils :") + "\n\n"+\
-            _("       - Nom et focale de l'appareil photo, dimension des photos : Info extraites de l'exif : fabricant, modèle, focale  et dimensions en pixels de la première photo.") + "\n"+\
-            _("         Il y a 2 types de focales : focale effective et focale équivalente 35 mm.") + "\n"+\
-            _("         Indique si l'appareil photo est connu dans '/XML MicMac/DicoCamera.xml'.") + "\n\n"+\
-            _("       - Afficher toutes les focales des photos : focales et focales equivalentes en 35mm.") + "\n"+\
-            _("         Si les focales ne sont pas identiques pour toutes les photos, utiliser la calibration pour chaque focale :") + "\n"+\
-            _("         Pour cela définir un appareil photo différent pour chaque focale (voir menu expert).") + "\n"+\
-            _("         Affiche aussi le nom de l'appareil photo pour chaque photo.") + "\n\n"+\
-            _("       - Mettre à jour DicoCamera.xml : ajouter la taille du capteur dans '/XML MicMac/DicoCamera.xml'.") + "\n"+\
-            _("         La taille du capteur dans DicoCamera.xml est requise si la focale équivalente 35mm est absente de l'exif.") + "\n"+\
-            _("         La taille du capteur facilite les calculs et améliore les résultats.") + "\n"+\
-            _("         La taille du capteur se trouve sur le site du fabricant ou sur http://www.dpreview.com.") + "\n\n"+\
-            _("       - Qualité des photos du dernier traitement : calcule le nombre moyen de points homologues par photo.") + "\n"+\
-            _("         La présence de photos avec peu de points homologues peut faire échouer le traitement.") + "\n"+\
-            _("         Il est parfois préférable de traiter peu de photos mais de bonne qualité.") + "\n\n"+\
-            _("       - Qualité des points GCP : le module GCPBascule vérifie la position annoncée des points GCP.") + "\n"+\
-            _("         Cet item affiche le résultat synthétique du controle effectué par MicMac. La trace détaillée comporte plus de détails.") + "\n\n"+\
-            _("       - Sélectionner les N meilleures photos : retire les photos ayant le moins de points homologues. Crée un nouveau chantier.") + "\n"+\
-            _("         Les points homologues antérieurs sont conservés.") + "\n\n"+\
-            _("       - Modifier l'exif des photos : permet la création et la modification des exifs des photos du chantier.") + "\n"+\
-            _("         Les tag de l'exif modifiés sont : la marque de l'appareil, le modèle, la focale et la focale équivalente 35mm.") + "\n"+\
-            _("         Toutes les photos sont modifiées et prennent les mêmes valeurs") + "\n"+\
-            _("         Si le tag est absent de l'exif il est créé.") + "\n\n"+\
-            _("       - Modifier les options par défaut : les valeurs par défaut de certains paramètres sont modifiables.") + "\n"+\
-            _("         Les paramètres concernés sont ceux des onglets du menu MicMac/options : 'Points homologues',... : .") + "\n\n"
+        self.aide204 =  _('''             menu Vidéo :           
+                     - Options : indiquer le nom de la camera (GoPro, smartphone... , sa focale, sa focale equivalente 35mm          
+                       Le nom permet de faire le lien avec DicoCamera.xml qui contient la taille du capteur.          
+                       Les focales seront recopiées dans l'exif des images.          
+                       Remarque :          
+                         Il faut indiquer dans DicoCamera la taille du capteur effectivement utilisée par la fonction camera,          
+                         taille qui peut être inférieure à la taille du capteur utilisée pour les photos.          
+                         Voir par exemple pour une camera Gopro :          
+                        http://www.kolor.com/wiki-en/action/view/Autopano Video - Focal length and field of view#About GoPro focal length and FOV          
+                     - Nouveau chantier : choisir une video : choisir un fichier video issu d'une camera ou d'une GoPro.          
+                       La vidéo sera décompactée en images, l'exif sera créé avec les informations en options.          
+                       Cette étape nécessite la présence de l'outil ffmpeg sous le répertoire bin de MicMac (dépend de la version de MicMac .          
+                     - Sélection des images : il est raisonnable de ne garder que quelques images par seconde de film.          
+                       Créer un nouveau chantier avec ces images. ''')         
+
+        self.aide205 =  _('''             menu Outils :           
+                     - Nom et focale de l'appareil photo, dimension des photos : Info extraites de l'exif : fabricant, modèle, focale  et dimensions en pixels de la première photo.          
+                       Il y a 2 types de focales : focale effective et focale équivalente 35 mm.          
+                       Indique si l'appareil photo est connu dans '/XML MicMac/DicoCamera.xml'.           
+                     - Afficher toutes les focales des photos : focales et focales equivalentes en 35mm.          
+                       Si les focales ne sont pas identiques pour toutes les photos, utiliser la calibration pour chaque focale :          
+                       Pour cela définir un appareil photo différent pour chaque focale (voir menu expert .          
+                       Affiche aussi le nom de l'appareil photo pour chaque photo.           
+                     - Mettre à jour DicoCamera.xml : ajouter la taille du capteur dans '/XML MicMac/DicoCamera.xml'.          
+                       La taille du capteur dans DicoCamera.xml est requise si la focale équivalente 35mm est absente de l'exif.          
+                       La taille du capteur facilite les calculs et améliore les résultats.          
+                       La taille du capteur se trouve sur le site du fabricant ou sur http://www.dpreview.com.           
+                     - Qualité des photos du dernier traitement : calcule le nombre moyen de points homologues par photo.          
+                       La présence de photos avec peu de points homologues peut faire échouer le traitement.          
+                       Il est parfois préférable de traiter peu de photos mais de bonne qualité.           
+                     - Qualité des points GCP : le module GCPBascule vérifie la position annoncée des points GCP.          
+                       Cet item affiche le résultat synthétique du controle effectué par MicMac. La trace détaillée comporte plus de détails.           
+                     - Sélectionner les N meilleures photos : retire les photos ayant le moins de points homologues. Crée un nouveau chantier.          
+                       Les points homologues antérieurs sont conservés.           
+                     - Modifier l'exif des photos : permet la création et la modification des exifs des photos du chantier.          
+                       Les tag de l'exif modifiés sont : la marque de l'appareil, le modèle, la focale et la focale équivalente 35mm.          
+                       Toutes les photos sont modifiées et prennent les mêmes valeurs          
+                       Si le tag est absent de l'exif il est créé.           
+                     - Modifier les options par défaut : les valeurs par défaut de certains paramètres sont modifiables.          
+                       Les paramètres concernés sont ceux des onglets du menu MicMac/options : 'Points homologues',... : . ''')         
+
+
+
         
-        self.aide206 = _("menu Expert :") + "\n\n"+\
-            _("       Le menu expert comporte des sous menus dédiés :).") + "\n\n"+\
-            _("         - aux chantiers comportant plusieurs appareils photos différents.") + "\n"+\
-            _("         - aux importaions de données d'un autre chantier (points homologues, orientation).") + "\n"+\
-            _("         - aux photos de drones comportant des données GPS.") + "\n"+\
-            _("       - Ouvrir une console permettant de passer des commandes système et MicMac (par exemple : mm3d).") + "\n\n"+\
-            _("       - Ouvrir une console permettant de passer des commandes Python (ex. : afficher une variable.)") + "\n\n"+\
-            _("       - Insérer de points GCP à partir d'un fichier texte, séparateur espace, format : NomDuPoint X Y Z 'dx dy dz' ") + "\n"+\
-            _("         Les valeurs dx dy dz sont des écarts en nombre entier de pixels image, en une seule chaine : exemple : '2 2 2' ") + "\n"+\
-            _("         Le caractère # en début de ligne signale un commentaire.") + "\n\n"+\
-            _("       - Recopier des points GCP à partir d'un autre chantier.") + "\n\n"+\
-            _("       - Recopier les points homologues à partir d'un autre chantier, seuls les chantiers compatibles sont proposés.") + "\n\n"+\
-            _("         Utile pour éviter le recalcul pour les nouveaux chantiers composés d'un sous ensemble de photos du chantier initial.") + "\n\n"+\
-            _("       - Définir plusieurs appareils photos.") + "\n"+\
-            _("         Si le lot de photos provient de plusieurs appareils de même type il faut informer MicMac de cette situation.") + "\n"+\
-            _("         AperoDeDenis propose de modifier le tag 'model' de l'exif des photos :") + "\n"+\
-            _("           - à défaut en utilisant le préfixe des noms de fichiers, que l'utilisateur a préparé de telle sorte") + "\n"+\
-            _("             que chaque préfixe corresponde à un appareil. Certains appareil proposent de modifier ce préfixe.") + "\n\n"+\
-            _("       - Définir la longueur du préfixe utilisé dans l'item précédent.") + "\n\n"+\
-            _("       - Lister les appareils photos présents dans le lot de photos.") + "\n\n"+\
-            _("       - Personnaliser les paramètres optionnels des modules MicMac.") + "\n\n"+\
-            _("         Permet l'ajout et la surcharge des paramètres nommés des modules MicMac.") + "\n\n"+\
-            _("         Exemple : Malt est très consommateur de ressources CPU et utilise tous les coeurs du processeur.") + "\n"+\
-            _("         Il admet un paramètre NbProc qui permet de limiter ce nombre, facilitant les autres activités de l'ordinateur.") + "\n\n"+\
-            _("         Autre exemple : Tapioca MulScale admet NbMinPt=XX indiquant le nombre minimum de points pour conserver les paires.") + "\n\n"+\
-            _("       - Consulter le fichier de logging MicMac : mm3d-logFile.txt.") + "\n\n"+\
-            _("       - Navigation GPS : utilisation des données GPS mémorisées par les caméras embarquées sur les drones.") + "\n"+\
-            _("         Les données sont exploitées automatiquement et un repère local WGS84 est créé.") + "\n"+\
-            _("         Si des points GCP sont saisis alors ils sont prioritaires et les données GPS sont ignorées.") + "\n"+\
-            _("         4 items de menus permettent de : .") + "\n"+\
-            _("           - choisir le repère : local (WGS84, équivalent Lambert 93 en France métropolitaine) , ou géocentrique") + "\n"+\
-            _("           - choisir un référentiel EPSG. Le référentiel doit avoir ses coordonnées en mètres. Le module pyproj est nécessaire.") + "\n"+\
-            _("           - ignorer les données GPS des photos.") + "\n"+\
-            _("           - afficher les ccoordonnées (WGS84 et Lambert 93) du point origine du repère local.") + "\n\n"+\
-            _("       - exporter un nuage de points au format MNT IGN et GRASS. Le ply doit être un nuage de points.")
+        self.aide206 = _(''' menu Expert :
+                      Le menu expert comporte des sous menus dédiés :
+                        - aux chantiers comportant plusieurs appareils photos différents.
+                        - aux importaions de données d'un autre chantier (points homologues, orientation).
+                        - aux photos de drones comportant des données GPS.
+                      - Ouvrir une console permettant de passer des commandes système et MicMac (par exemple : mm3d).    
+                      - Ouvrir une console permettant de passer des commandes Python (ex. : afficher une variable.)    
+                      - Insérer de points GCP à partir d'un fichier texte, séparateur espace, format : NomDuPoint X Y Z 'dx dy dz'     
+                        Les valeurs dx dy dz sont des écarts en nombre entier de pixels image, en une seule chaine : exemple : '2 2 2'     
+                        Le caractère # en début de ligne signale un commentaire.    
+                      - Recopier des points GCP à partir d'un autre chantier.    
+                      - Recopier les points homologues à partir d'un autre chantier, seuls les chantiers compatibles sont proposés.    
+                        Utile pour éviter le recalcul pour les nouveaux chantiers composés d'un sous ensemble de photos du chantier initial.    
+                      - Définir plusieurs appareils photos.    
+                        Si le lot de photos provient de plusieurs appareils de même type il faut informer MicMac de cette situation.    
+                        AperoDeDenis propose de modifier le tag 'model' de l'exif des photos :    
+                          - à défaut en utilisant le préfixe des noms de fichiers, que l'utilisateur a préparé de telle sorte    
+                            que chaque préfixe corresponde à un appareil. Certains appareil proposent de modifier ce préfixe.    
+                      - Définir la longueur du préfixe utilisé dans l'item précédent.    
+                      - Lister les appareils photos présents dans le lot de photos.    
+                      - Personnaliser les paramètres optionnels des modules MicMac.    
+                        Permet l'ajout et la surcharge des paramètres nommés des modules MicMac.    
+                        Exemple : Malt est très consommateur de ressources CPU et utilise tous les coeurs du processeur.    
+                        Il admet un paramètre NbProc qui permet de limiter ce nombre, facilitant les autres activités de l'ordinateur.    
+                        Autre exemple : Tapioca MulScale admet NbMinPt=XX indiquant le nombre minimum de points pour conserver les paires.    
+                      - Consulter le fichier de logging MicMac : mm3d-logFile.txt.    
+                      - Navigation GPS : utilisation des données GPS mémorisées par les caméras embarquées sur les drones.    
+                        Les données sont exploitées automatiquement et un repère local WGS84 est créé.    
+                        Si des points GCP sont saisis alors ils sont prioritaires et les données GPS sont ignorées.    
+                        4 items de menus permettent de : .    
+                          - choisir le repère : local (WGS84, équivalent Lambert 93 en France métropolitaine) , ou géocentrique    
+                          - choisir un référentiel EPSG. Le référentiel doit avoir ses coordonnées en mètres. Le module pyproj est nécessaire.    
+                          - ignorer les données GPS des photos.    
+                          - afficher les ccoordonnées (WGS84 et Lambert 93) du point origine du repère local.    
+                      - exporter un nuage de points au format MNT IGN et GRASS. Le ply doit être un nuage de points.''')
 
-        self.aide207 = _("Les outils 'métiers'") + "\n\n"+\
-            _("               Les outils métiers exploitent les nuages de points PLY ou XYZ et les Modèles Numériques de Terrain (MNT).") + "\n"+\
-            _("               L'extension des fichiers MNT est .ASC. Le format est celui de l'IGN.") + "\n\n"+\
-            _("               Les outils métiers sont utilisables sans créer de chantier MicMac.") + "\n\n"+\
-            _("               Les résultats affichés à l'écran sont mémorisés dans les traces.") + "\n\n"+\
-            _("               1 - Ecrire un MNT à partir d'un PLY : Création de MNT à partir d'un nuage de points, ou d'un maillage (mesh) au format PLY") + "\n"+\
-            _("                   Lorsque les nuages PLY ou XYZ représentent le sol ou une surface il est possible de créer des MNT (Modèle Numérique de Terrain, DEM en anglais).") + "\n"+\
-            _("                   Les MNT sont ouverts par les SIG, comme QGIS ou ArcGIS.") + "\n"+\
-            _("                   Les MNT embarquent la localisation et la métrique mais pas le référentiel EPSG qui doit être précisé dans le SIG.") + "\n"+\
-            _("                   Remarques : Les formats Ply acceptés sont : Binary pour les nuages et ASCII pour les Mesh.") + "\n"+\
-            _("                               Le format Binary/ASCII du nuage/mesh peut être modifié par CloudCompare. ") + "\n\n"+\
-            _("               2 - Ecrire un MNT à partir d'un XYZ : Création de MNT à partir d'un nuage de points XYZ") + "\n"+\
-            _("                   Le format XYZ est très fréquent, lisible par tout éditeur de texte et visualisé par Cloud Compare,.") + "\n\n"+\
-            _("               3 - Information sur le calcul des volumes : précise les conditions du calcul") + "\n\n"+\
-            _("               4 - Calculer le volume d'un MNT : calcule le volume entre une altitude de base, donnée par l'utilisateur, et le MNT") + "\n"+\
-            _("                   Les résultats sont présentés en supposant que l'unité de longueur est le mètre.") + "\n\n"+\
-            _("               5 - Calcul du volume entre 2 MNT : ") + "\n"+\
-            _("                   Un besoin fréquent consiste à comparer 2 MNT du même terrain à 2 dates différentes.") + "\n"+\
-            _("                   Il s'agit d'évaluer les transformations du terrain : apport de matériaux, éboulement de falaises.") + "\n"+\
-            _("                   Le calcul du volume entre 2 MNT nécessite quelques précautions :") + "\n\n"+\
-            _("                 *  les photos doivent avoir été correctement géoréférencées par GPS en posant des cibles localisées en x,y,z.") + "\n"+\
-            _("                    La précision des résultats dépend largement de la précisions du géoréférencement des prises de vue.") + "\n"+\
-            _("                    Par exemple une erreur d'altitude très faible de 1 cm correspond à un volume de 100 m3 par hectare.") + "\n"+\
-            _("                 *  Le calcul de volume est paramétré : il est possible de ne tenir compte que des écarts signifiants") + "\n"+\
-            _("                    Ainsi les écarts 'dans l'épaisseur du trait', par exemple inférieur à 2 ou 5 cm, seront ignorés.") + "\n"+\
-            _("                    Cette tolérance est modifiable par menu") + "\n"+\
-            _("                 *  L'outil recherche la zone de recouvrement entre les 2 MNT et le calcul s'effectue sur les surfaces communes.") + "\n"+\
-            _("                    Un fichier XYZ des écarts est constitué, un item de menu permet de le visualiser en 3D.") + "\n"+\
-            _("                 *  Un compte rendu détaillé est affiché en fin de traitement et mémorisé dans un fichier trace.") + "\n\n"+\
-            _("                 *  Ce calcul peut servir à comparer la précision de 2 nuages MicMac ou d'autres provenances :") + "\n"+\
-            _("                     - obtenus par Malt avec différents niveaux de zoom : dans ce cas comparer les nuages intermédiaires Zoom_8, Zoom_4..") + "\n"+\
-            _("                     - Obtenus par Malt et C3DC") + "\n"+\
-            _("                     - Obtenus sans points GCP, ou GPS puis avec des points GCP ou GPS") + "\n"+\
-            _("                     - Obtenus par MicMac et Metashape ou Pix4D ou ...") + "\n\n"+\
-            _("               6 - Visualiser l'écart entre les 2 MNT : ouvre le maillage des écarts entre 2 MNT.") + "\n"+\
-            _("                   Nota : Les écarts inférieurs à la tolérance sont considérés comme nuls. ") + "\n\n"+\
-            _("               7 - Modifier la tolérance utilisée pour calculer le volume :  la tolérance et le nombre de décimales dans les résultats des calculs.") + "\n"+\
-            _("                   Nota : Les écarts inférieurs à la tolérance sont considérés comme nuls. ") + "\n\n"+\
-            _("               8 - Modifier l'arrondi des résultats du calcul des volumes : nombre de décimales dans les résultats des calculs.") + "\n"+\
-            _("                   Suivant les dimensions du MNT le nombre de décimales utiles peut varier. ") + "\n\n"+\
-            _("               9 - Ecrire un fichier XYZ à partir d'un ply :  écrit les fichiers PLY sous forme de liste de points X,Y,Z.") + "\n"+\
-            _("                   Ce format texte, très répandu, permet de lire les valeurs x,y z dans tout éditeur de texte.")+"\n\n"+\
-            _("               10 - Visualiser un fichier XYZ : ouvre le fichier XYZ dans l'outil de visualisation des nuages de points.")
-            
-        self.aide208 = _("menu paramètres :") + "\n\n"+\
-            _("       - Afficher les paramètres : visualise les chemins de micmac\\bin, d'exiftool, du fichier pour visualiser les .ply (Meshlab ou Cloud Compare),") + "\n"+\
-            _("         ainsi que le répertoire où se trouve les fichiers paramètres de l'interface.") + "\n"+\
-            _("         Ces paramètres sont sauvegardés de façon permanente dans le fichier :")+\
-            "         "+self.fichierParamMicmac+"." + "\n\n"+\
-            _("       - Désigner le répertoire MicMac\\bin : répertoire où se trouvent les modules de MicMac ") + "\n"+\
-            _("         Si plusieurs versions sont installées cet item permet de changer facilement la version de MicMac utilisée.") + "\n\n"+\
-            _("       - Désigner l'application exiftool, utile pour modifier les exif (elle se trouve sous micMac\\binaire-aux).") + "\n\n"+\
-            _("       - Désigner l'application convert d'ImageMagick, utile pour convertir les gif, tif et bmp en jpg (elle se trouve sous micMac\\binaire-aux).") + "\n\n"+\
-            _("       - Désigner l'application ouvrant les fichiers .PLY. Ce peut être  Meshlab, CloudCompare ou autre.") + "\n"+\
-            _("         Sous Windows Meshlab se trouve sous un répertoire nommé VCG.") + "\n\n"+\
-            _("       - Activer/désactiver le 'tacky' message de lancement : un message un peu long annonce le lancement de l'interface CEREMA.")+ "\n"+\
-            _("         Par défaut le message est désactivé. Vous pouvez l'activer avec cet item de menu")+ "\n\n"+\
-            _("       - Activer la recherche de nouvelle version sur GitHub : une recherche systématique de nouvelle version sur internet sera effectuée au lancement.")+ "\n"+\
-            _("         Par défaut la recherche est désactivé. Vous pouvez l'activer avec cet item de menu")          
+        self.aide207 =   _('''Les outils 'métiers'           
+                             Les outils métiers exploitent les nuages de points PLY ou XYZ et les Modèles Numériques de Terrain (MNT) .          
+                             L'extension des fichiers MNT est .ASC. Le format est celui de l'IGN.           
+                             Les outils métiers sont utilisables sans créer de chantier MicMac.           
+                             Les résultats affichés à l'écran sont mémorisés dans les traces.           
+                             1 - Ecrire un MNT à partir d'un PLY : Création de MNT à partir d'un nuage de points, ou d'un maillage (mesh  au format PLY          
+                                 Lorsque les nuages PLY ou XYZ représentent le sol ou une surface il est possible de créer des MNT (Modèle Numérique de Terrain, DEM en anglais) .          
+                                 Les MNT sont ouverts par les SIG, comme QGIS ou ArcGIS.          
+                                 Les MNT embarquent la localisation et la métrique mais pas le référentiel EPSG qui doit être précisé dans le SIG.          
+                                 Remarques : Les formats Ply acceptés sont : Binary pour les nuages et ASCII pour les Mesh.          
+                                             Le format Binary/ASCII du nuage/mesh peut être modifié par CloudCompare.            
+                             2 - Ecrire un MNT à partir d'un XYZ : Création de MNT à partir d'un nuage de points XYZ          
+                                 Le format XYZ est très fréquent, lisible par tout éditeur de texte et visualisé par Cloud Compare,.           
+                             3 - Information sur le calcul des volumes : précise les conditions du calcul           
+                             4 - Calculer le volume d'un MNT : calcule le volume entre une altitude de base, donnée par l'utilisateur, et le MNT          
+                                 Les résultats sont présentés en supposant que l'unité de longueur est le mètre.           
+                             5 - Calcul du volume entre 2 MNT :           
+                                 Un besoin fréquent consiste à comparer 2 MNT du même terrain à 2 dates différentes.          
+                                 Il s'agit d'évaluer les transformations du terrain : apport de matériaux, éboulement de falaises.          
+                                 Le calcul du volume entre 2 MNT nécessite quelques précautions :           
+                               *  les photos doivent avoir été correctement géoréférencées par GPS en posant des cibles localisées en x,y,z.          
+                                  La précision des résultats dépend largement de la précisions du géoréférencement des prises de vue.          
+                                  Par exemple une erreur d'altitude très faible de 1 cm correspond à un volume de 100 m3 par hectare.          
+                               *  Le calcul de volume est paramétré : il est possible de ne tenir compte que des écarts signifiants          
+                                  Ainsi les écarts 'dans l'épaisseur du trait', par exemple inférieur à 2 ou 5 cm, seront ignorés.          
+                                  Cette tolérance est modifiable par menu          
+                               *  L'outil recherche la zone de recouvrement entre les 2 MNT et le calcul s'effectue sur les surfaces communes.          
+                                  Un fichier XYZ des écarts est constitué, un item de menu permet de le visualiser en 3D.          
+                               *  Un compte rendu détaillé est affiché en fin de traitement et mémorisé dans un fichier trace.           
+                               *  Ce calcul peut servir à comparer la précision de 2 nuages MicMac ou d'autres provenances :          
+                                   - obtenus par Malt avec différents niveaux de zoom : dans ce cas comparer les nuages intermédiaires Zoom 8, Zoom 4..          
+                                   - Obtenus par Malt et C3DC          
+                                   - Obtenus sans points GCP, ou GPS puis avec des points GCP ou GPS          
+                                   - Obtenus par MicMac et Metashape ou Pix4D ou ...           
+                             6 - Visualiser l'écart entre les 2 MNT : ouvre le maillage des écarts entre 2 MNT.          
+                                 Nota : Les écarts inférieurs à la tolérance sont considérés comme nuls.            
+                             7 - Modifier la tolérance utilisée pour calculer le volume :  la tolérance et le nombre de décimales dans les résultats des calculs.          
+                                 Nota : Les écarts inférieurs à la tolérance sont considérés comme nuls.            
+                             8 - Modifier l'arrondi des résultats du calcul des volumes : nombre de décimales dans les résultats des calculs.          
+                                 Suivant les dimensions du MNT le nombre de décimales utiles peut varier.            
+                             9 - Ecrire un fichier XYZ à partir d'un ply :  écrit les fichiers PLY sous forme de liste de points X,Y,Z.          
+                                 Ce format texte, très répandu, permet de lire les valeurs x,y z dans tout éditeur de texte.         
+                             10 - Visualiser un fichier XYZ : ouvre le fichier XYZ dans l'outil de visualisation des nuages de points.  ''')            
+        self.aide208 = _('''menu paramètres :  
+                   - Afficher les paramètres : visualise les chemins de micmacbin, d'exiftool, du fichier pour visualiser les .ply Meshlab ou Cloud Compare,  
+                     ainsi que le répertoire où se trouve les fichiers paramètres de l'interface.  
+                     Ces paramètres sont sauvegardés de façon permanente dans le fichier :
+                     self.fichierParamMicmac.  
+                   - Désigner le répertoire MicMacbin : répertoire où se trouvent les modules de MicMac   
+                     Si plusieurs versions sont installées cet item permet de changer facilement la version de MicMac utilisée.  
+                   - Désigner l'application exiftool, utile pour modifier les exif elle se trouve sous micMacbinaire-aux.  
+                   - Désigner l'application convert d'ImageMagick, utile pour convertir les gif, tif et bmp en jpg elle se trouve sous micMacbinaire-aux.  
+                   - Désigner l'application ouvrant les fichiers .PLY. Ce peut être  Meshlab, CloudCompare ou autre.  
+                     Sous Windows Meshlab se trouve sous un répertoire nommé VCG.  
+                   - Activer/désactiver le 'tacky' message de lancement : un message un peu long annonce le lancement de l'interface CEREMA. 
+                     Par défaut le message est désactivé. Vous pouvez l'activer avec cet item de menu 
+                   - Activer la recherche de nouvelle version sur GitHub : une recherche systématique de nouvelle version sur internet sera effectuée au lancement. 
+                     Par défaut la recherche est désactivé. Vous pouvez l'activer avec cet item de menu    
+					''')					 
         
-        self.aide209 =             _("menu Aide :") + "\n\n"+\
-            _("       - Pour commencer : à lire lors de la prise en main de l'interface.") + "\n\n"+\
-            _("       - Aide sur les menus : le détail des items de menu, présenté par item du menu principal.") + "\n\n"+\
-            _("       - Quelques conseils sur la prise de vue.") + "\n\n"+\
-            _("       - Quelques conseils sur le choix des options.") + "\n\n"+\
-            _("       - Quelques conseils si MicMac ne trouve pas de points homologues ou d'orientation.") + "\n\n"+\
-            _("       - Quelques conseils si MicMac ne trouve pas de nuage dense.") + "\n\n"+\
-            _("       - Et s'il y a plusieurs focales, plusieurs appareils : comment assurer la réusssite du chantier malgrè cette difficulté.") + "\n\n"+\
-            _("       - Historique : les nouveautés de chaque version.") + "\n\n"+\
-            _("       - A propos")
+        self.aide209 = _('''
+                menu Aide :  
+                   - Pour commencer : à lire lors de la prise en main de l'interface.  
+                   - Aide sur les menus : le détail des items de menu, présenté par item du menu principal.  
+                   - Quelques conseils sur la prise de vue.  
+                   - Quelques conseils sur le choix des options.  
+                   - Quelques conseils si MicMac ne trouve pas de points homologues ou d'orientation.  
+                   - Quelques conseils si MicMac ne trouve pas de nuage dense.  
+                   - Et s'il y a plusieurs focales, plusieurs appareils : comment assurer la réusssite du chantier malgrè cette difficulté.  
+                   - Historique : les nouveautés de chaque version.  
+                   - A propos''')
         
         self.aide21 = self.aideEntete + self.aide201 + self.aideFinDePage   # Fichier
         self.aide22 = self.aideEntete + self.aide202 + self.aideFinDePage   # Edition
@@ -4108,57 +4153,59 @@ class Interface(ttk.Frame):
         
 
     # les prises de vue
-        self.aide2 = _("Interface graphique AperoDeDenis : quelques conseils concernant les prises de vues.") + "\n\n"+\
-                _("Prises de vue  :") + "\n"+\
-                _("                - Le sujet doit être immobile durant toutes la séance de prise de vue.") + "\n"+\
-                _("                - Le sujet doit être unique et d'un seul tenant") + "\n"+\
-                _("                - Le sujet doit être bien éclairé, la prise de vue en plein jour doit être recherchée.") + "\n"+\
-                _("                - Les photos doivent être nettes, attention à la profondeur de champ :") + "\n"+\
-                _("                  utiliser la plus petite ouverture possible (nombre F le plus grand, par exemple 22).") + "\n"+\
-                _("                - Les photos de personnes ou d'objet en mouvement sont déconseillées") + "\n"+\
-                _("                - Les surfaces lisses ou réfléchissantes sont défavorables.") + "\n"+\
-                _("                - Eviter aussi la fonction 'anti tremblement' qui agit en modfiant la position du capteur.") + "\n\n"+\
-                _("                - Si le sujet est central prendre une photo tous les 20°, soit 9 photos pour un 'demi-tour', 18 pour un tour complet.") + "\n"+\
-                _("                - Si le sujet est en 'ligne' le recouvrement entre photos doit être au moins des 2/3.") + "\n"+\
-                _("                  Chaque point du sujet doit se trouver sur au moins 3 photos") + "\n\n"+\
-                _("                - Tester la 'qualité' des photos au sein du chantier (voir les items du menu Outils).") + "\n"+\
-                _("                  les photos ayant un mauvais score (voir le menu Outils/Qualité des photos 'All') doivent être supprimées du chantier : ")+ "\n"+\
-                _("                  une seule mauvaise photo peut faire échouer le traitement.") + "\n"+\
-                _("                - La présence des dimensions du capteur de l'appareil dans DicoCamera.xml améliore le traitement.") + "\n"+\
-                _("                  Cette présence est obligatoire si l'exif ne présente pas la focale équivalente 35mm.") + "\n"+\
-                _("                  Pour ajouter la taille du capteur utiliser le menu 'Outils//mettre à jour DicoCamera'.") + "\n\n"+\
-                "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
-   
+        self.aide2 = _('''  Interface graphique AperoDeDenis : quelques conseils concernant les prises de vues.           
+                  Prises de vue  :          
+                                  - Le sujet doit être immobile durant toutes la séance de prise de vue.          
+                                  - Le sujet doit être unique et d'un seul tenant          
+                                  - Le sujet doit être bien éclairé, la prise de vue en plein jour doit être recherchée.          
+                                  - Les photos doivent être nettes, attention à la profondeur de champ :          
+                                    utiliser la plus petite ouverture possible (nombre F le plus grand, par exemple 22 .          
+                                  - Les photos de personnes ou d'objet en mouvement sont déconseillées          
+                                  - Les surfaces lisses ou réfléchissantes sont défavorables.          
+                                  - Eviter aussi la fonction 'anti tremblement' qui agit en modfiant la position du capteur.           
+                                  - Si le sujet est central prendre une photo tous les 20°, soit 9 photos pour un 'demi-tour', 18 pour un tour complet.          
+                                  - Si le sujet est en 'ligne' le recouvrement entre photos doit être au moins des 2/3.          
+                                    Chaque point du sujet doit se trouver sur au moins 3 photos           
+                                  - Tester la 'qualité' des photos au sein du chantier (voir les items du menu Outils .          
+                                    les photos ayant un mauvais score (voir le menu Outils/Qualité des photos 'All'  doivent être supprimées du chantier :          
+                                    une seule mauvaise photo peut faire échouer le traitement.          
+                                  - La présence des dimensions du capteur de l'appareil dans DicoCamera.xml améliore le traitement.          
+                                    Cette présence est obligatoire si l'exif ne présente pas la focale équivalente 35mm.          
+                                    Pour ajouter la taille du capteur utiliser le menu 'Outils//mettre à jour DicoCamera'.  ''') + self.aideFinDePage        
+ 
     # pour commencer
-        self.aide3 =  \
-                _("   Pour commencer avec l'interface graphique MicMac :") + "\n\n"+\
-                _("   Tout d'abord : installer MicMac. Consulter le wiki MicMac : https://micmac.ensg.eu/index.php") + "\n"+\
-                _("   Ensuite : installer CloudCompare (ou Meshlab) (pour afficher les nuages de points)") + "\n\n"+\
-                _("   Puis :") + "\n\n"+\
-                _("1) Paramètrer l'interface : indiquer ou se trouvent le répertoire de MicMac et l'éxécutable CloudCompare (ou Meshlab).") + "\n"+\
-                _("   Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick (en principe sous MicMac\\binaire-aux).") + "\n"+\
-                _("   Vérifier en affichant les paramètres (menu Paramètres).") + "\n\n"+\
-                _("2) Choisir quelques photos pour commencer (menu MicMac/choisir des photos).") + "\n\n"+\
-                _("   Par exemple : prendre les 4 photos Gravillons du tutoriel, disponibles sur GitHub.") + "\n\n"+\
-                _("3) Lancer MicMac en laissant les paramètres par défaut (menu MicMac/lancer MicMac).") + "\n"+\
-                _("   Si tout va bien une trace du traitement s'affiche et CloudCompare affiche la vue 3D.") + "\n\n"+\
-                _("4) Si tout ne va pas bien, prendre un pastis puis :") + "\n"+\
-                _("   Lire 'quelques conseils' (menu Aide).") + "\n"+\
-                _("   Tester la qualité des photos (menu Outils).") + "\n"+\
-                _("   Examiner les traces (menu Edition),") + "\n"+\
-                _("   Consulter l'aide (menu Aide),") + "\n"+\
-                _("   Consulter le guide d'installation et de prise en main de l'interface.") + "\n"+\
-                _("   Consulter le forum MicMac sur le net, consulter la doc MicMac.") + "\n\n"+\
-                _("5) Si une solution apparaît : modifier les options (menu MicMac/options).") + "\n"+\
-                _("   puis relancer le traitement.") + "\n\n"+\
-                _("6) Si le problème persiste faire appel à l'assistance de l'interface (adresse mail dans Aide/A-propos)")
+        self.aide3 =  _(''' 
+                     Pour commencer avec l'interface graphique MicMac :
+                     
+                     Tout d'abord : installer MicMac. Consulter le wiki MicMac : https://micmac.ensg.eu/index.php          
+                     Ensuite : installer CloudCompare (ou Meshlab  (pour afficher les nuages de points            
+
+                     Puis :           
+                  1  Paramètrer l'interface : indiquer ou se trouvent le répertoire de MicMac et l'éxécutable CloudCompare (ou Meshlab .          
+                     Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick (en principe sous MicMac  binaire-aux .          
+                     Vérifier en affichant les paramètres (menu Paramètres .           
+                  2  Choisir quelques photos pour commencer (menu MicMac/choisir des photos .           
+                     Par exemple : prendre les 4 photos Gravillons du tutoriel, disponibles sur GitHub:
+                     https://github.com/micmacIGN/InterfaceCEREMA/blob/master/InterfaceCEREMA/Tutoriel%20ENSG.zip
+                  3  Lancer MicMac en laissant les paramètres par défaut (menu MicMac/lancer MicMac .          
+                     Si tout va bien une trace du traitement s'affiche et CloudCompare affiche la vue 3D.           
+                  4  Si tout ne va pas bien, prendre un pastis puis :          
+                     Lire 'quelques conseils' (menu Aide .          
+                     Tester la qualité des photos (menu Outils .          
+                     Examiner les traces (menu Edition ,          
+                     Consulter l'aide (menu Aide ,          
+                     Consulter le guide d'installation et de prise en main de l'interface.          
+                     Consulter le forum MicMac sur le net, consulter la doc MicMac.           
+                  5  Si une solution apparaît : modifier les options (menu MicMac/options .          
+                     puis relancer le traitement.           
+                  6  Si le problème persiste faire appel à l'assistance de l'interface (adresse mail dans Aide/A-propos ''')+ self.aideFinDePage  
 
     # Historique
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
               _('''
-Version 5.62 :	 17 février2021
+                Version 5.62 :	 17 février2021
                 - Une nouvelle possibilité de référencement : utiliser le référentiel d'un autre chantier.
                   Si vous disposer de 400 photos vous pouvez ainsi créer 2 chantiers de 200 photos
                   et générer des nuages de points superposables dans le même référentiel.
@@ -4444,194 +4491,189 @@ Version 5.44 et 5.45 :	mai 2019
 		- Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier
 		- Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)
 
-              ''')+\
-                "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
-              
+              ''')+ self.aideFinDePage
+             
                 
     # choix des options
-        self.aide5 = _("Interface graphique AperoDeDenis : quelques conseils concernant le choix des options.") + "\n\n"+\
-                _("Options :") + "\n"+\
-                _("               - Points homologues : ") + "\n"                             +\
-                _("                           L'échelle est la taille en pixels de l'image (ou -1 pour l'image entière) pour la recherche des points homologues.") + "\n" +\
-                _("                           Par défaut la taille retenue est les 2/3 de la largeur des photos (2000 pixels si les photos font 300 de large.") + "\n" +\
-                _("                           L'option ALl recherche les points homologues sur toutes les paires de photos (ce qui peut faire beaucoup !)") + "\n" +\
-                _("                           L'option MulScale recherche les points homologues en 2 temps :") + "\n" +\
-                _("                             1) sur toutes les paires avec une taille de photo réduite (typiquement 300)") + "\n" +\
-                _("                             2) Seules les paires de photos ayant eu au moins 2 points homologues à cette échelle seront") + "\n" +\
-                _("                                retenues pour rechercher les points homologues à la seconde échelle. Gain de temps important possible.") + "\n" +\
-                _("                           Si les photos sont prises 'en ligne' choisir 'line' dans les options de Tapioca, ") + "\n"                    +\
-                _("                             MicMac ne recherchera que les paires de photos se succédant.") + "\n"             +\
-                _("                             Choisir delta en fonction du taux de recouvrement des photos (delta = 2 voire +, si le recouvrement est important.") + "\n\n" +\
-                _("               - Orientation : fraser est souvent le meilleur choix, ") + "\n"+\
-                _("                         si l'appareil photo est un reflex choisir RadialExtended ") + "\n"                    +\
-                _("                         si l'appareil photo est de moyenne gamme choisir RadialStd") + "\n"                               +\
-                _("                         Ces conseils ne sont pas toujours vérifiés : modifier votre choix s'il échoue. ") + "\n"+\
-                _("                         L'arrêt après l'orientation permet de définir un masque 3D sur le nuage, pour la densification par C3DC.") + "\n\n"       +\
-                _("               - Mise à l'échelle : permet de définir un repère et une métrique (axe, plan et distance, tous obligatoires).") + "\n"+\
-                _("                 Si les photos proviennent d'une camera embarquée sur un drone les photos comportent des informations GPS sur la prise de vue :") + "\n"+\
-                _("                 Ces informations sont exploitées par apéroDeDenis pour définir un repere local en coordonnées métriques et orienté comme le WGS84.") + "\n"+\
-                _("                 Ces informations remplacent et supplantent la mise à l'échelle manuelle. Un item du menu expert permet de les ignorer") + "\n\n"+\
-                _("               - Points GCP (ou GPS) : définir au moins 3 points cotés et les placer sur 2 photos. L'état du chantier indique s'ils sont pris en compte") + "\n\n"+\
-                _("               - Densification : Malt (historique) ou C3DC (récent)") + "\n"+\
-                _("                       Malt fournit des nuages parfois exotiques si peu de points homologues") + "\n"+\
-                _("                            Pour éviter cela utiliser l'option geoimage avec masque sur les zones denses en points homologues") + "\n" +\
-                _("                       C3DC fournit des nuages un peu plus précis") + "\n" +\
-                _("                            Masque 3D possible sur le nuage non dense'") + "\n" +\
-                _("                            L'option la plus fructueuse est 'BigMac'") + "\n" +\
-                _("                       Les 2 modules permettent d'obtenir des nuages de points ou des maillages (mesh).'") + "\n" +\
-                _("                       Malt option Ortho génére une orthophoto en plus du nuage.'") + "\n" +\
-                _("                       Aprés C3DC le module Pims2MNT génére, sur demande, une orthophoto.'") + "\n"+\
-                _("               - Densification par Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtres.") + "\n"+\
-                _("                        Seuls les points visibles sur ces images seront conservés dans le nuage de points.") + "\n"+\
-                _("                        Sur ces images maîtres tracer les masque délimitant la partie 'utile' de la photo.") + "\n"+\
-                _("                        Le résultat sera mis en couleur suivant les images maitresses.") + "\n"+\
-                _("                        (éviter trop de recouvrement entre les maîtres !).") + "\n"+\
-                _("                        Le traitement avec masque sera accéléré et le résultat plus 'propre'.") + "\n\n"+\
-                _("               - Densification par C3DC : possibilité de définir un masque 3D sur le nuage non dense.") + "\n"+\
-                _("                        Alternative à Malt, le traitement est parfois plus rapide, plus précis.") + "\n\n"+\
-                "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
+        self.aide5 =   _('''Interface graphique AperoDeDenis : quelques conseils concernant le choix des options.           
+                  Options :          
+                                 - Points homologues :                                        
+                                             L'échelle est la taille en pixels de l'image (ou -1 pour l'image entière  pour la recherche des points homologues.           
+                                             Par défaut la taille retenue est les 2/3 de la largeur des photos (2000 pixels si les photos font 300 de large.           
+                                             L'option ALl recherche les points homologues sur toutes les paires de photos (ce qui peut faire beaucoup !            
+                                             L'option MulScale recherche les points homologues en 2 temps :           
+                                               1  sur toutes les paires avec une taille de photo réduite (typiquement 300            
+                                               2  Seules les paires de photos ayant eu au moins 2 points homologues à cette échelle seront           
+                                                  retenues pour rechercher les points homologues à la seconde échelle. Gain de temps important possible.           
+                                             Si les photos sont prises 'en ligne' choisir 'line' dans les options de Tapioca,                               
+                                               MicMac ne recherchera que les paires de photos se succédant.                       
+                                               Choisir delta en fonction du taux de recouvrement des photos (delta = 2 voire  , si le recouvrement est important.            
+                                 - Orientation : fraser est souvent le meilleur choix,           
+                                           si l'appareil photo est un reflex choisir RadialExtended                               
+                                           si l'appareil photo est de moyenne gamme choisir RadialStd                                         
+                                           Ces conseils ne sont pas toujours vérifiés : modifier votre choix s'il échoue.           
+                                           L'arrêt après l'orientation permet de définir un masque 3D sur le nuage, pour la densification par C3DC.                  
+                                 - Mise à l'échelle : permet de définir un repère et une métrique (axe, plan et distance, tous obligatoires .          
+                                   Si les photos proviennent d'une camera embarquée sur un drone les photos comportent des informations GPS sur la prise de vue :          
+                                   Ces informations sont exploitées par apéroDeDenis pour définir un repere local en coordonnées métriques et orienté comme le WGS84.          
+                                   Ces informations remplacent et supplantent la mise à l'échelle manuelle. Un item du menu expert permet de les ignorer           
+                                 - Points GCP (ou GPS  : définir au moins 3 points cotés et les placer sur 2 photos. L'état du chantier indique s'ils sont pris en compte           
+                                 - Densification : Malt (historique  ou C3DC (récent           
+                                         Malt fournit des nuages parfois exotiques si peu de points homologues          
+                                              Pour éviter cela utiliser l'option geoimage avec masque sur les zones denses en points homologues           
+                                         C3DC fournit des nuages un peu plus précis           
+                                              Masque 3D possible sur le nuage non dense'           
+                                              L'option la plus fructueuse est 'BigMac'           
+                                         Les 2 modules permettent d'obtenir des nuages de points ou des maillages (mesh .'           
+                                         Malt option Ortho génére une orthophoto en plus du nuage.'           
+                                         Aprés C3DC le module Pims2MNT génére, sur demande, une orthophoto.'          
+                                 - Densification par Malt : pour le mode GeomImage indiquer une ou plusieurs images maîtres.          
+                                          Seuls les points visibles sur ces images seront conservés dans le nuage de points.          
+                                          Sur ces images maîtres tracer les masque délimitant la partie 'utile' de la photo.          
+                                          Le résultat sera mis en couleur suivant les images maitresses.          
+                                          (éviter trop de recouvrement entre les maîtres ! .          
+                                          Le traitement avec masque sera accéléré et le résultat plus 'propre'.           
+                                 - Densification par C3DC : possibilité de définir un masque 3D sur le nuage non dense.          
+                                          Alternative à Malt, le traitement est parfois plus rapide, plus précis.''')+ self.aideFinDePage
 
     # pas d'orientation
-        self.aide6 = _("Interface graphique AperoDeDenis : quelques conseils") + "\n\n"+\
-            _("si MicMac ne trouve pas de points homologues.") + "\n"+\
-            _("               - Une cause possible est le trop grand nombre de photos : au dela de 200 sous windows et de 400 sous linux le risque est important.") + "\n"+\
-            _("                 Relancer le traitement aprés avoir découpé le chantier en paquets plus petits.") + "\n"+\
-            _("                 Vous pourrez regrouper les nuages obtenus s'ils sont référencés par des points GCP ou GPS.") + "\n"+\
-            _("               - Une cause possible est la non conformité des photos aux standards minimum de la photogrammétrie :") + "\n"+\
-            _("                 la scéne photographiée doit être 'immobile', une nature morte. Les êtres vivants et la nature ventée sont à proscrire.") + "\n"+ "\n"+\
-            _("Si MicMac trouve des points homologues mais ne trouve pas l'orientation des appareils photos:") + "\n\n"+\
-            _("               - Consulter la trace :") + "\n"+\
-            _("                        1) si erreur dans la trace : 'Radiale distorsion abnormaly high' :") + "\n"+\
-            _("                           modifier le type d'appareil pour l'orientation (fraser, radialstd ou radialbasic ou RadialExtended ou...)") + "\n"+\
-            _("                        2) Eliminer les photos ayant les plus mauvais scores : menu Outils/qualité des photos puis Outils/retirer des photos") + "\n"+\
-            _("                           Si des photos sont trouvées par le module schnaps, les retirer du chantier ") + "\n"+\
-            _("                           Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.")+ "\n"+\
-            _("                        3) choisir 'radial basic', c'est le mode le moins exigeant pour Tapas") + "\n"+\
-            _("                        4) Augmenter l'échelle des photos pour tapioca, mettre -1 au lieu de la valeur par défaut.") + "\n"+\
-            _("                        5) Utiliser la calibration de l'appareil photo sur des photos adaptées") + "\n"+\
-            _("                        6) Si plusieurs appareils photos sont utilisés il faut les distinguer dans l'exif (voir menu expert)") + "\n"+\
-            _("                           et prendre des photos spécifiques pour la calibration de chaque appareil.") + "\n"+\
-            _("                        7) vérifier la taille du capteur dans dicocamera, nécessaire si la focale equivalente 35 mm est absente de l'exif") + "\n"+\
-            _("                        8) examiner la trace synthétique et la trace complète : MicMac donne quelques informations") + "\n"+\
-            _("                           si la trace compléte contient : 'Error: -- Input line too long, increase MAXLINELENGTH'") + "\n"+\
-            _("                           alors tenter, sous windows, de modifier le fichier /binaire-aux/windows/startup/local.mk") + "\n"+\
-            _("                           ou, sous windows, limiter la longueur du chemin menant aux fichiers en recopiant les photos sous la racine du disque.") + "\n"+\
-            _("                           Le nombre maximum de photos d'un chantier sous windows semble être de 250 à 300, si plus utiliser Linux ou Mac") + "\n"+\
-            _("                        9) Si la trace synthétique contient'Not Enouh Equation in ElSeg3D::L2InterFaisceaux' alors choisir 'radialbasic'.") + "\n"+\
-            _("                        10) consulter le wiki micmac (https://micmac.ensg.eu/index.php)") + "\n"+\
-            _("                        11) consulter le forum micmac (http://forum-micmac.forumprod.com)") + "\n"+\
-            _("                        12) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)")+" denis.jouin@gmail.com" + "\n\n"+\
-            "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
+        self.aide6 =   _('''Interface graphique AperoDeDenis : quelques conseils           
+              si MicMac ne trouve pas de points homologues.          
+                             - Une cause possible est le trop grand nombre de photos : au dela de 200 sous windows et de 400 sous linux le risque est important.          
+                               Relancer le traitement aprés avoir découpé le chantier en paquets plus petits.          
+                               Vous pourrez regrouper les nuages obtenus s'ils sont référencés par des points GCP ou GPS.          
+                             - Une cause possible est la non conformité des photos aux standards minimum de la photogrammétrie :          
+                               la scéne photographiée doit être 'immobile', une nature morte. Les êtres vivants et la nature ventée sont à proscrire.               
+              Si MicMac trouve des points homologues mais ne trouve pas l'orientation des appareils photos:           
+                             - Consulter la trace :          
+                                      1  si erreur dans la trace : 'Radiale distorsion abnormaly high' :          
+                                         modifier le type d'appareil pour l'orientation (fraser, radialstd ou radialbasic ou RadialExtended ou...           
+                                      2  Eliminer les photos ayant les plus mauvais scores : menu Outils/qualité des photos puis Outils/retirer des photos          
+                                         Si des photos sont trouvées par le module schnaps, les retirer du chantier           
+                                         Penser que des photos floues ou avec un sujet brillant, lisse, mobile, transparent, vivant sont défavorables.         
+                                      3  choisir 'radial basic', c'est le mode le moins exigeant pour Tapas          
+                                      4  Augmenter l'échelle des photos pour tapioca, mettre -1 au lieu de la valeur par défaut.          
+                                      5  Utiliser la calibration de l'appareil photo sur des photos adaptées          
+                                      6  Si plusieurs appareils photos sont utilisés il faut les distinguer dans l'exif (voir menu expert           
+                                         et prendre des photos spécifiques pour la calibration de chaque appareil.          
+                                      7  vérifier la taille du capteur dans dicocamera, nécessaire si la focale equivalente 35 mm est absente de l'exif          
+                                      8  examiner la trace synthétique et la trace complète : MicMac donne quelques informations          
+                                         si la trace compléte contient : 'Error: -- Input line too long, increase MAXLINELENGTH'          
+                                         alors tenter, sous windows, de modifier le fichier /binaire-aux/windows/startup/local.mk          
+                                         ou, sous windows, limiter la longueur du chemin menant aux fichiers en recopiant les photos sous la racine du disque.          
+                                         Le nombre maximum de photos d'un chantier sous windows semble être de 250 à 300, si plus utiliser Linux ou Mac          
+                                      9  Si la trace synthétique contient'Not Enouh Equation in ElSeg3D::L2InterFaisceaux' alors choisir 'radialbasic'.          
+                                      10  consulter le wiki micmac (https://micmac.ensg.eu/index.php           
+                                      11  consulter le forum micmac (http://forum-micmac.forumprod.com           
+                                      12  faites appel à l'assistance de l'interface (voir adresse dans l'a-propos      denis.jouin@gmail.com''')
 
-        self.aide10 = _("Plusieurs focales, plusieurs dimensions de photos, plusieurs appareils") + "\n\n\n"+\
-                _("                  Parfois le lot de photos du chantier n'est pas homogène : les photos ont été prises avec des focales différentes,") + "\n"+\
-                _("                  ou encore avec des dimensions d'image différentes ou proviennent de plusieurs appareils photos.") + "\n"+\
-                _("                  Le fait que les photos soient en position portrait ou paysage, ou prises aprés un retournement ne pose aucune difficulté.") + "\n"+\
-                _("                  Ce qui importe en photogrammétrie c'est les caractéristiques géométriques et optiques lors de la prise de vue.") + "\n"+\
-                _("                  Ces caractéristiques sont déterminées lors du calcul de la calibration de l'appareil photo.") + "\n\n"+\
-                _("                - Le changement de focale modifie les caractéristiques géométriques et optiques de l'appareil lors de la prise de vue") + "\n"+\
-                _("                  Pour les programmes de photogrammétrie il s'agit d'un nouvel appareil photo !") + "\n"+\
-                _("                  De même si un appareil est capable de prendre des photos avec plusieurs dimensions d'images ") + "\n"+\
-                _("                  alors les caractéristiques géométriques et optiques de la prise de vue changent.") + "\n"+\
-                _("                  Là encore il s'agit d'un nouvel appareil photo.") + "\n\n"+\
-                _("                - Micmac obtient la focale dans les métadonnées de la photo, dans l'exif.") + "\n"+\
-                _("                  Sinon MicMac utilise DicoCamera.xml qui recense les focales et les tailles de capteur des appareils.") + "\n"+\
-                _("                  Micmac connait les dimensions en pixel de la photo") + "\n"+\
-                _("                  Micmac connait le nom de l'appareil car il est écrit dans l'exif.") + "\n"+\
-                _("                  Pour chacune de ces spécifications Micmac crée une catégorie d'appareil et cherche à le 'caliber', c'est à dire à") + "\n"+\
-                _("                  déterminer précisément ses caractéristiques géométrisues et optiques.") + "\n\n"+\
-                _("                - Si les photos proviennent de plusieurs appareils photos de même type, portant le même nom dans l'exif") + "\n"+\
-                _("                  Micmac ne peut pas les différencier et considère qu'il s'agit du même appareil alors que les caractéristiques") + "\n"+\
-                _("                  précises dépendant de chaque appareil.") + "\n"+\
-                _("                  Le programme attribue donc les mêmes caractéristiques à des appareils différents et les calculs") + "\n"+\
-                _("                  vont être difficiles et peuvent conduire à un échec") + "\n"+\
-                _("                  Lorsqu'il y a plusieurs appareils photos de même nom il faut les différentier : AperoDeDenis propose une solution, voir ci-dessosu.") + "\n\n"+\
-                _("                - Dans tous ces cas la calibration des appareils pour chaque situation est préconisée.") + "\n"+\
-                _("                  L'absence de calibration peut être une cause d'échec lors du calcul de l'orientation par Tapas.")+ "\n"+\
-                _("                  Utiliser la calibration des appareils photos (item MicMac/Options/Orientation ).") + "\n"+\
-                _("                  Sélectionner 2 ou 3 photos pour chaque focales, ou chaque appareil. Micmac construira les calibrations.") + "\n\n"+\
-                _("                - S'il y a plusieurs appareils photos de même type il faut les distinguer : chacun a ses caractéristique spécifiques.") + "\n"+\
-                _("                  L'item du menu expert 'Plusieurs appareils photos' peut vous aider :") + "\n"+\
-                _("                  1) Commencer par modifier sur chaque appareil le nom du fichier créé : il est souvent possible de choisir le préfixe") + "\n"+\
-                _("                  2) L'item 'Définir plusieurs appareils photos' permet de modifier l'exif de chaque photo en fonction du préfixe du fichier.") + "\n"+\
-                _("                     Ainsi chaque appareil est repéré par un nom différent dans l'exif : le préfixe est ajouté au nom du modéle.  ") + "\n"+\
-                _("                     La longueur du préfixe utilisé est modifiable par l'item 'Définir la longueur du préfixe'.") + "\n"+\
-                _("                     La liste des appareils du chantier est donné par l'onglet 'Liste des appareils' ") + "\n"+\
-                _("                  3) Utiliser la calibration de l'onglet orientation pour calibrer l'ensemble des appareils en .  ") + "\n"+\
-                _("                     choisissant 3 appareils de chaque type. MicMac construira les calibrations.  ") + "\n"+\
-            "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
+        self.aide10 =   _('''Plusieurs focales, plusieurs dimensions de photos, plusieurs appareils            
+                                    Parfois le lot de photos du chantier n'est pas homogène : les photos ont été prises avec des focales différentes,          
+                                    ou encore avec des dimensions d'image différentes ou proviennent de plusieurs appareils photos.          
+                                    Le fait que les photos soient en position portrait ou paysage, ou prises aprés un retournement ne pose aucune difficulté.          
+                                    Ce qui importe en photogrammétrie c'est les caractéristiques géométriques et optiques lors de la prise de vue.          
+                                    Ces caractéristiques sont déterminées lors du calcul de la calibration de l'appareil photo.           
+                                  - Le changement de focale modifie les caractéristiques géométriques et optiques de l'appareil lors de la prise de vue          
+                                    Pour les programmes de photogrammétrie il s'agit d'un nouvel appareil photo !          
+                                    De même si un appareil est capable de prendre des photos avec plusieurs dimensions d'images           
+                                    alors les caractéristiques géométriques et optiques de la prise de vue changent.          
+                                    Là encore il s'agit d'un nouvel appareil photo.           
+                                  - Micmac obtient la focale dans les métadonnées de la photo, dans l'exif.          
+                                    Sinon MicMac utilise DicoCamera.xml qui recense les focales et les tailles de capteur des appareils.          
+                                    Micmac connait les dimensions en pixel de la photo          
+                                    Micmac connait le nom de l'appareil car il est écrit dans l'exif.          
+                                    Pour chacune de ces spécifications Micmac crée une catégorie d'appareil et cherche à le 'caliber', c'est à dire à          
+                                    déterminer précisément ses caractéristiques géométrisues et optiques.           
+                                  - Si les photos proviennent de plusieurs appareils photos de même type, portant le même nom dans l'exif          
+                                    Micmac ne peut pas les différencier et considère qu'il s'agit du même appareil alors que les caractéristiques          
+                                    précises dépendant de chaque appareil.          
+                                    Le programme attribue donc les mêmes caractéristiques à des appareils différents et les calculs          
+                                    vont être difficiles et peuvent conduire à un échec          
+                                    Lorsqu'il y a plusieurs appareils photos de même nom il faut les différentier : AperoDeDenis propose une solution, voir ci-dessosu.           
+                                  - Dans tous ces cas la calibration des appareils pour chaque situation est préconisée.          
+                                    L'absence de calibration peut être une cause d'échec lors du calcul de l'orientation par Tapas.         
+                                    Utiliser la calibration des appareils photos (item MicMac/Options/Orientation  .          
+                                    Sélectionner 2 ou 3 photos pour chaque focales, ou chaque appareil. Micmac construira les calibrations.           
+                                  - S'il y a plusieurs appareils photos de même type il faut les distinguer : chacun a ses caractéristique spécifiques.          
+                                    L'item du menu expert 'Plusieurs appareils photos' peut vous aider :          
+                                    1  Commencer par modifier sur chaque appareil le nom du fichier créé : il est souvent possible de choisir le préfixe          
+                                    2  L'item 'Définir plusieurs appareils photos' permet de modifier l'exif de chaque photo en fonction du préfixe du fichier.          
+                                       Ainsi chaque appareil est repéré par un nom différent dans l'exif : le préfixe est ajouté au nom du modéle.            
+                                       La longueur du préfixe utilisé est modifiable par l'item 'Définir la longueur du préfixe'.          
+                                       La liste des appareils du chantier est donné par l'onglet 'Liste des appareils'           
+                                    3  Utiliser la calibration de l'onglet orientation pour calibrer l'ensemble des appareils en .            
+                                       choisissant 3 appareils de chaque type. MicMac construira les calibrations.''') + self.aideFinDePage
 
 
     # A propos
     
         self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2022") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
-                                _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr")+ "\n\n" + "mail : denis.jouin@gmail.com"
+                                _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr"+ "\n\n" + "mail : denis.jouin@gmail.com"+
+                                "\n\n"+"GitHub : https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA"+
+                                 "\n\n" + "youtube : https://www.youtube.com/channel/UCvXP6f2g3ppOChasqlnBI6w/videos")
 
 
     # pas de nuage dense
-        self.aide8 = _("Interface graphique AperoDeDenis : quelques conseils si MicMac ne trouve pas de nuage de points dense.") + "\n\n"+\
-            _("               - Examiner la trace (Menu Edition/afficher la trace) et la qualité des photos (menu outils/Qualité des photos): .") + "\n"+\
-            _("                        0) Prenez un pastis, contemplez le nuage de points non dense") + "\n"+\
-            _("                        1) Avec C3DC nous avons constaté des échecs avec le message 'cAppliMICMAC::SauvMemPart File for _compl.xml'.") + "\n"       +\
-            _("                           Le passage au paramètre 'BigMac' ou a 'Malt' a permis l'obtention d'un nuage dense.") + "\n"+\
-            _("                        2) assurez vous que le sujet est immobile (pas de végétation mouvante, de pluie") + "\n"+\
-            _("                        3) assurez vous que le recouvrement des photos est suffisant : chaque point du sujet doit être sur 3 photos au moins") + "\n"+\
-            _("                        4) assurez vous qu'il n'y a pas une photos très maivaise : une seule photo suffit à faire échouer un chantier,") + "\n"+\
-            _("                        5) consulter le forum micmac (http://forum-micmac.forumprod.com)") + "\n"+\
-            _("                        6) faites appel à l'assistance de l'interface (voir adresse dans l'a-propos)") + "\n\n"\
-            "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
+        self.aide8 =   _('''Interface graphique AperoDeDenis : quelques conseils si MicMac ne trouve pas de nuage de points dense.           
+                             - Examiner la trace (Menu Edition/afficher la trace  et la qualité des photos (menu outils/Qualité des photos : .          
+                                      0  Prenez un pastis, contemplez le nuage de points non dense          
+                                      1  Avec C3DC nous avons constaté des échecs avec le message 'cAppliMICMAC::SauvMemPart File for  compl.xml'.                 
+                                         Le passage au paramètre 'BigMac' ou a 'Malt' a permis l'obtention d'un nuage dense.          
+                                      2  assurez vous que le sujet est immobile (pas de végétation mouvante, de pluie          
+                                      3  assurez vous que le recouvrement des photos est suffisant : chaque point du sujet doit être sur 3 photos au moins          
+                                      4  assurez vous qu'il n'y a pas une photos très maivaise : une seule photo suffit à faire échouer un chantier,          
+                                      5  consulter le forum micmac (http://forum-micmac.forumprod.com           
+                                      6  faites appel à l'assistance de l'interface (voir adresse dans l'a-propos''')+ self.aideFinDePage
 
     # La photogrammètrie
-        self.aide9 = _("Deux mots sur la photogrammètrie.") + "\n\n"+\
-                _("La photogrammétire est l'art de tranformer des photos vers des scènes en 3 dimensions") + "\n"+\
-                _("C'est un art, une magie noire : l'émergence de la 3° dimension est un choc dans l'imaginaire : d'ou vient-elle ?") + "\n"                             +\
-                _("Des calculs compliqués, manipulant uniquement des 0 et des 1, font apparaître une dimension cachée.") + "\n" +\
-                _("Magique !") + "\n\n" +\
-                _("Prosaïquement la photogrammétrie comporte 3 grandes étapes :") + "\n" +\
-                _(" - 1 : Rechercher dans chaque paire de photos les 'points homologues'") + "\n" +\
-                _(" - 2 : Orienter les appareils et les photos, par triangulation des points homologues") + "\n" +\
-                _(" - 3 : Obtenir un nuage de points dense") + "\n\n" +\
-                _("Deux éléments importants complètent ce tableau ") + "\n" +\
-                _(" - les caractéristiques optiques de l'appareil photo : c'est la calibration") + "\n"+\
-                _(" - Le référentiel spatial : local, ou géographique par points GPS ou via l'exif des photos") + "\n\n"+\
-                _("Outre les nuages de points, MicMac construit : ") + "\n" +\
-                _(" - une mosaique d'assemblage des photos ") + "\n" +\
-                _(" - une ortho-mosaique ou chaque pixel est replacé dans le référentiel choisi ") + "\n" +\
-                _(" - un maillage triangulé du nuage dense") + "\n\n" +\
-                _("Et l'Interface CEREMA propose quelques fonctions métiers exploitant les résultats de MicMac :: ") + "\n" +\
-                _(" - calcul de modèle numérique de terrain ou d'élévaion (MNT, MNE)") + "\n" +\
-                _(" - calcul du volume d'un MNT") + "\n" +\
-                _(" - calcul du volume entre 2 MNT, permettant de suivre l'évolution d'un terrain") + "\n" +\
-                _(" - calcul du nuage de points représentant l'écart entre 2 MNT") + "\n" +\
-                _(" - fusion de nuages de points et d'orthomosaïques ") + "\n\n" +\
-                _("Toutes ces étapes nécessitent de nombreux paramètres, avec des choix multiples") + "\n" +\
-                _("L'interface CEREMA AperoDeDenis facilite l'usage de l'outil MicMac de l'IGN, qui comporte plus de 100 modules.") + "\n"+\
-            "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
+        self.aide9 =  _(''' Deux mots sur la photogrammètrie.           
+                  La photogrammétire est l'art de tranformer des photos vers des scènes en 3 dimensions          
+                  C'est un art, une magie noire : l'émergence de la 3° dimension est un choc dans l'imaginaire : d'ou vient-elle ?                                       
+                  Des calculs compliqués, manipulant uniquement des 0 et des 1, font apparaître une dimension cachée.           
+                  Magique !            
+                  Prosaïquement la photogrammétrie comporte 3 grandes étapes :           
+                   - 1 : Rechercher dans chaque paire de photos les 'points homologues'           
+                   - 2 : Orienter les appareils et les photos, par triangulation des points homologues           
+                   - 3 : Obtenir un nuage de points dense            
+                  Deux éléments importants complètent ce tableau            
+                   - les caractéristiques optiques de l'appareil photo : c'est la calibration          
+                   - Le référentiel spatial : local, ou géographique par points GPS ou via l'exif des photos           
+                  Outre les nuages de points, MicMac construit :            
+                   - une mosaique d'assemblage des photos            
+                   - une ortho-mosaique ou chaque pixel est replacé dans le référentiel choisi            
+                   - un maillage triangulé du nuage dense            
+                  Et l'Interface CEREMA propose quelques fonctions métiers exploitant les résultats de MicMac ::            
+                   - calcul de modèle numérique de terrain ou d'élévaion (MNT, MNE            
+                   - calcul du volume d'un MNT           
+                   - calcul du volume entre 2 MNT, permettant de suivre l'évolution d'un terrain           
+                   - calcul du nuage de points représentant l'écart entre 2 MNT           
+                   - fusion de nuages de points et d'orthomosaïques             
+                  Toutes ces étapes nécessitent de nombreux paramètres, avec des choix multiples           
+                  L'interface CEREMA AperoDeDenis facilite l'usage de l'outil MicMac de l'IGN, qui comporte plus de 100 modules.''')+ self.aideFinDePage
                 
     # trucs et astuces
-        self.aide11  = _("Quelques trucs et astuces :")+"\n\n"
-        self.aide11 += _("Choisir une photo dans une grande liste : taper le numéro, le curseur se déplace tout seul !.")+"\n\n"
-        self.aide11 += _("Rechercher un texte dans une trace ou une aide :")+"\n"
-        self.aide11 += _("    - 'Ctrl F',  puis F3 (ou Entrée) pour avoir le suivant ")+"\n"        
-        self.aide11 += _("    - 'Ctrl Maj F' pour mettre en évidence toutes les occurences")+"\n"
-        self.aide11 += _("    - dans les traces et les aides la sélection fonctionne ainsi que la fonction copier")+"\n\n"        
-        self.aide11 += _("Aprés le calcul des points homologues vous pouvez :")+"\n"        
-        self.aide11 += _("  Visualiser les points homologues :")+"\n"
-        self.aide11 += _("      1) dans le menu expert demander de visualiser les point homologues")+"\n"
-        self.aide11 += _("      2) ouvrir 'ligne horizontale' dans l'onglet 'Mise à l'échelle' ou saisir des points GPS ').")+"\n"
-        self.aide11 += _("  Localiser les points GPS lors de la saisie : ")+"\n"
-        self.aide11 += _("      saisir un premier emplacement pour chaque point")+"\n"                                        
-        self.aide11 += _("      l'emplacement sur les autres photos est indiqué par un point au milieu d'un cercle rouge.")+"\n"+"\n"                    
-        self.aide11 += _("Donner un nom explicite à un chantier : menu Fichier/renommer le chantier.")+"\n"+"\n"
-        self.aide11 += _("Modifier une option d'un module MicMac ou en ajouter une non prévue par AperoDeDenis :")+"\n"
-        self.aide11 += _("  Utiliser le menu expert : Personnaliser les options de MicMac")+"\n"+"\n"
-        self.aide11 += _("Examiner ou modifier les variables python de l'interface :")+"\n"
-        self.aide11 += _("  menu expert : exécuter une commande python : ")+"\n"
-        self.aide11 += _("      - indiquer le nom de la variable pour la visualiser,")+"\n"
-        self.aide11 += _("      - dir() pour voir toutes les variables du contexte")+"\n"
-        self.aide11 += _("      - modification possible par : variable = valeur")+"\n"+"\n"
-        self.aide11 += _("Consulter le log MicMac 'mm3d-LogFile.txt' : menu expert")+"\n"+"\n"        
-        self.aide11 += "--------------------------------------------- "+self.titreFenetre+" ---------------------------------------------"
+        self.aide11  = _( '''           Quelques trucs et astuces :       
+            Choisir une photo dans une grande liste : taper le numéro, le curseur se déplace tout seul !.       
+            Rechercher un texte dans une trace ou une aide :      
+                - 'Ctrl F',  puis F3 (ou Entrée  pour avoir le suivant               
+                - 'Ctrl Maj F' pour mettre en évidence toutes les occurences      
+                - dans les traces et les aides la sélection fonctionne ainsi que la fonction copier               
+            Aprés le calcul des points homologues vous pouvez :              
+              Visualiser les points homologues :      
+                  1  dans le menu expert demander de visualiser les point homologues      
+                  2  ouvrir 'ligne horizontale' dans l'onglet 'Mise à l'échelle' ou saisir des points GPS ' .      
+              Localiser les points GPS lors de la saisie :       
+                  saisir un premier emplacement pour chaque point                                              
+                  l'emplacement sur les autres photos est indiqué par un point au milieu d'un cercle rouge.                              
+            Donner un nom explicite à un chantier : menu Fichier/renommer le chantier.          
+            Modifier une option d'un module MicMac ou en ajouter une non prévue par AperoDeDenis :      
+              Utiliser le menu expert : Personnaliser les options de MicMac          
+            Examiner ou modifier les variables python de l'interface :      
+              menu expert : exécuter une commande python :       
+                  - indiquer le nom de la variable pour la visualiser,      
+                  - dir(  pour voir toutes les variables du contexte      
+                  - modification possible par : variable = valeur          
+            Consulter le log MicMac 'mm3d-LogFile.txt' : menu expert ''')+ self.aideFinDePage
 
         
     # fichier pour modifier la clé de registre de saisiemasqQT : par défaut l'origine est le centre, ce qui rend invisible les nuages en EPSG.
@@ -5568,7 +5610,7 @@ Version 5.44 et 5.45 :	mai 2019
                 texte = texte+"\n" + _("Chantier en attente d'enregistrement.") + "\n"
             if self.etatDuChantier in (2,3,4,5,35) and self.etatSauvegarde=="":		
                 texte = texte+"\n" + _("Chantier enregistré.") + "\n"
-            if self.etatDuChantier == "2":		
+            if self.etatDuChantier == 2:		
                 texte = texte+_("Options du chantier modifiables.") + "\n"               
             if self.etatDuChantier == 3:		
                 texte = texte+"\n" + _("Chantier interrompu lors de la recherche des points homologues.") + "\n" + _("Modifier les options, relancer micmac.") + "\n"
@@ -5992,7 +6034,9 @@ Version 5.44 et 5.45 :	mai 2019
                 '\n-------------------'+
                 '\n' + "Version python :" + "\n" + sys.version+
                 '\n-------------------'+
-                '\n' + "AperoDeDenis :" + "\n" + executableAperoDeDenis+
+                '\n' + "Version d'AperoDeDenis :" + "\n" + version +
+                '\n-------------------'+
+                '\n' + "Exécutable ou script AperoDeDenis :" + "\n" + executableAperoDeDenis+                
                 '\n-------------------'+
                 '\n' + "Chemin du chantier :" + "\n" + self.repTravail              
                 )       
@@ -7661,30 +7705,26 @@ Version 5.44 et 5.45 :	mai 2019
         
 
     #""""""""""""""""""""""" Options masque 3D pour C3DC
-
-    def affiche3DApericloud(self):          # lance SaisieMasqQT, sur apericloud ou modele3d, attente de saisie/fermeture (subprocess.call)
+    def effaceEtAffiche3DApericloud(self):
+        supprimeFichier(self.masque3DSansChemin)                # suppression définitive des fichiers pour le masque 3D 
+        supprimeFichier(self.masque3DBisSansChemin)
+        self.affiche3DApericloud()
         
+    def affiche3DApericloud(self):          # lance SaisieMasqQT, sur apericloud ou modele3d, attente de saisie/fermeture (subprocess.call)
+        def tueSaisieQt():
+            os.system("tskill SaisieQT")
+            time.sleep(0.05)             
+    # Problème : il est fréquent que SaisieQT marche une ou deux fois, puis se bloque au lancement... J'ai toujours pas compris pourquoi
+    # d'ou les tskill qui parfois, pas toujours, améliore le pb
         if not os.path.exists("AperiCloud.ply"):
             self.encadre(_("Absence de nuage AperiCloud.ply : saisie d'un masque 3D impossible"))
             return
-        
-        nuage = "AperiCloud.ply"
-        self.masque3DSansChemin         =   "AperiCloud_selectionInfo.xml"          # nom du fichier XML du masque 3D, fabriqué par 
-        self.masque3DBisSansChemin      =   "AperiCloud_polyg3d.xml"                # nom du second fichier XML pour le masque 3D
-        verifParametresSaisieMasqQT()                           # modifie si besoin le paramètre de centrage du nuage : au barycentre
-        masque3D = [self.mm3d,"SaisieMasqQT",nuage]             # " SaisieAppuisInitQT AperiCloud.ply"
-        subprocess.Popen("tskill SaisieQT")
-        time.sleep(0.05)
-        subprocess.Popen("tskill mm3d")
-        time.sleep(0.1)        
-        self.lanceCommande (masque3D,
-                            info=(_("Saisie masque 3D pour C3DC sur le nuage dense ou non dense."))
-                           )
-        subprocess.Popen("tskill SaisieQT")
-        subprocess.Popen("tskill mm3d")
-
-    
-##        os.system('cmd /c "mm3d SaisieMasqQT AperiCloud.ply"')
+        verifParametresSaisieMasqQT()                           # modifie si besoin le paramètre de centrage du nuage : au barycentre       
+        masque3D = ["SaisieQT","SaisieMasqQT","AperiCloud.ply"]             # " SaisieAppuisInitQT AperiCloud.ply"
+        m3 = " ".join(masque3D)
+        tueSaisieQt()
+        os.system(m3)   # lance la saisie dans une fenêtre QT
+        tueSaisieQt()
         try:                                                                # marche pas si on est en visu
             if self.existeMasque3D():
                 self.item804.configure(text= _("Masque 3D créé"),foreground='red')
@@ -7693,7 +7733,6 @@ Version 5.44 et 5.45 :	mai 2019
                 self.item804.configure(text= _("Abandon : pas de masque créé."),foreground='red')
                 self.item802.forget()   # bouton "supprimer"
         except: pass
-
 
     def supprimeMasque3D(self):
         supprimeFichier(self.masque3DSansChemin)                # suppression définitive des fichiers pour le masque 3D 
@@ -7780,9 +7819,9 @@ Version 5.44 et 5.45 :	mai 2019
         placeDensification = self.onglets.index("end")-2            # Densification est le dernier onglet
         self.onglets.insert(self.item1100, placeDensification)      # affichage onglet Points GCP en avant dernière position
 
-        # Onglet Référentiel : mise à jour
-        
-        #self.optionsReferentiel()                                   # onglet référentiel : affichage         
+        # Onglet Référentiel : mise à jour de l'affichage
+        if self.choixReferentiel.get()=="GPS": 
+            self.optionsReferentiel()                                   # onglet référentiel : affichage         
 
 		
     def affichePointCalibrationGPS(self,n,x,y,z,ident,incertitude): # affiche un point
@@ -7823,10 +7862,16 @@ Version 5.44 et 5.45 :	mai 2019
             self.infoBulle(_("Agrandissez la fenêtre avant d'ajouter un point GCP !") + "\n" + _("(ou si impossible : supprimer un point)"))
             return
         self.actualiseListePointsGPS()
-        if [ e[0] for e in self.listePointsGPS if e[4]].__len__()>=30:                     
+        lesNoms = [ e[0] for e in self.listePointsGPS]
+        nb = lesNoms.__len__()
+        if nb>=30:                     
             self.infoBulle(_("Soyez raisonnable : pas plus de 30 points GCP !"))
             return
-        nom = chr(65+self.listePointsGPS.__len__())
+        for i in range (0,30):
+            nom = chr(65+i)           
+            if nom in lesNoms:
+                pass
+            else: break
         self.listePointsGPS.append([nom,"","","",True,self.idPointGPS,"1 1 1"])     # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant,incertitude)
         self.idPointGPS += 1						    # identifiant du point suivant
         self.optionsReperes()						    # affichage avec le nouveau point
@@ -8478,11 +8523,11 @@ Version 5.44 et 5.45 :	mai 2019
         if self.etatDuChantier==4:                              # Chantier arrêté après Tapas
             
             retour = self.troisBoutons(  titre=_('Continuer le chantier %s après tapas ?') % (self.chantier),
-                                         question =  _("Le nuage non dense de l'orientation est créé. Vous pouvez :") + "\n "+
-                                                     _("- lancer la densification") + "\n "+
-                                                     _("- débloquer le chantier pour modifier les options des points homologues") + "\n "+
-                                                     _("- conserver les points homologues et modifier les paramètres de l'orientation") + "\n"+
-                                         _("- ne rien faire : cliquer sur la croix de fermeture de la fenêtre") + "\n ",                                         
+                                         question =   _(''' Le nuage non dense de l'orientation est créé. Vous pouvez :          
+         - lancer la densification          
+         - débloquer le chantier pour modifier les options des points homologues          
+         - conserver les points homologues et modifier les paramètres de l'orientation         
+         - ne rien faire : cliquer sur la croix de fermeture de la fenêtre''')      ,                                         
                                          b1=_('Lancer la densification '),
                                          b2=_('débloquer le chantier - effacer les points homologues'),
                                          b3=_('débloquer le chantier - garder les points homologues'))
@@ -8507,19 +8552,26 @@ Version 5.44 et 5.45 :	mai 2019
 
         if self.etatDuChantier==35:                              # Chantier arrété aprés tapioca, points homoloques conservés
             retour = self.troisBoutons(  titre=_('Continuer le chantier %s après recherche des points homologues ?') % (self.chantier),
-                                         question =  _("Le chantier est arrêté après la recherche des points homologues. Vous pouvez :") + "\n "+
-                                                     _("- relancer la recherche des points homologues") + "\n "+
-                                                     _("- rechercher l'orientation des appareils photos") + "\n "+
-                                                     _("- ne rien faire : cliquer sur la croix de fermeture de la fenêtre") + "\n",                                         
+                                         question =  _('''  Le chantier est arrêté après la recherche des points homologues. Vous pouvez :          
+                                                       - relancer la recherche des points homologues          
+                                                       - rechercher l'orientation des appareils photos
+                                                       - lancer la densification (si l'orientation est faite)
+                                                       - ne rien faire : cliquer sur la croix de fermeture de la fenêtre'''),                                         
                                          b1=_('Recherche des points homologues'),
                                          b2=_("Recherche de l'orientation"),
-                                         b3=_('Abandon'))        
-            if retour==-1 or retour==2:                         # 2 ou -1 : abandon ou fermeture de la fenêtre par la croix
+                                         b3=_('lancer la densification'))        
+            if retour==-1:                         # 2 ou -1 : abandon ou fermeture de la fenêtre par la croix
                 return
             if retour==0 :                                      # b1 : recherche des points homologues : on met l'état à 2 (avec photo, enregistré)
                 self.nettoyerChantier()
+                
+            if retour == 2:                                     # b1 : Lancer la densification                  
+                self.ajoutLigne(heure()+" "+_("Reprise du chantier %s arrêté après TAPAS - La trace depuis l'origine sera disponible dans le menu édition.") % (self.chantier))
+                self.cadreVide()                                # début de la trace : fenêtre texte pour affichage des résultats. 
+                self.suiteMicmac()                              # on poursuit par Malt ou C3DC
+                return                
 
-            # poursuite du traitement : remettre les photos de calibration sous le répertoire de travail
+            # poursuite du traitement : par tapioca ou tapas remettre les photos de calibration sous le répertoire de travail
             
             # si retour == 1 : on laisse l'étatduchantier à 35 : Chantier arrêté arrété aprés tapioca, points homoloques conservés, le temps de sauter tapioca
         
@@ -8547,18 +8599,25 @@ Version 5.44 et 5.45 :	mai 2019
         # tapioca n'a pas trouvé des points homologues ?
         
         if  not os.path.exists("Homol") and not os.path.exists("Homol_mini"):   # le répertoire Homol (ou Homol_mini après schnaps) contient les points homologues, si absent, pas de points en correspondancce
-            message = _("Pourquoi MicMac s'arrête : ") + "\n"+_("Aucun point en correspondance sur 2 images n'a été trouvé par Tapioca.") + "\n\n"+\
-                      _("Parmi les raisons de cet échec il peut y avoir :") + "\n"
+            messagePlus = str()
             if self.photosSansChemin.__len__()>200:
-                message += _("Le chantier comporte trop de photos : %s") % (self.photosSansChemin.__len__()) + "\n"+\
+                messagePlus = _("Le chantier comporte trop de photos : %s") % (self.photosSansChemin.__len__()) + "\n"+\
                            _("Les maximum connus sont de l'ordre de 250 sous Windows, 400 sous Linux") + "\n\n"
-            message +=  _("soit les photos ne se recouvrent pas du tout") + "\n+" +\
-                        _("soit l'exif des photos ne comporte pas la focale ou plusieurs focales sont présentes") + "\n+" +\
-                        _("Soit l'appareil photo est inconnu de Micmac") + "\n"+\
-                        _("soit la qualité des photos est en cause.") + "\n\n"+\
-                        _("soit la trace compléte contient : 'Error: -- Input line too long, increase MAXLINELENGTH' .") + "\n\n"+\
-                        _("alors tenter, sans certitude, de modifier le fichier /binaire-aux/windows/startup/local.mk") + "\n\n"+\
-                        _("Utiliser les items du menu 'outils' pour vérifier ces points.") + "\n\n"
+
+            message  =   _('''
+			    Pourquoi MicMac s'arrête :            
+			Aucun point en correspondance sur 2 images n'a été trouvé par Tapioca.
+			
+                        Parmi les raisons de cet échec il peut y avoir :        
+                        Tapioca n'a pas été lancé
+                            %s        
+                          soit les photos ne se recouvrent pas du tout            
+                          soit l'exif des photos ne comporte pas la focale ou plusieurs focales sont présentes            
+                          Soit l'appareil photo est inconnu de Micmac          
+                          soit la qualité des photos est en cause.           
+                          soit la trace compléte contient : 'Error: -- Input line too long, increase MAXLINELENGTH' .           
+                          alors tenter, sans certitude, de modifier le fichier /binaire-aux/windows/startup/local.mk           
+                          Utiliser les items du menu 'outils' pour vérifier ces points.  ''')  % (messagePlus )
             self.ajoutLigne(message)
             self.messageNouveauDepart =  message
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
@@ -8632,10 +8691,6 @@ Version 5.44 et 5.45 :	mai 2019
         if compteurFichiers(homolMini)<len(self.photosSansChemin) and compteurFichiers(homol)<len(self.photosSansChemin) :
             self.encadre("Pas de points homologues après schnaps. Abandon")
             return
-
-        '''# ajout très temporaire le 18/01/22 : on mémorise que Tapioca et Scnaps ont été faits :
-        # passe self.etatDuChantier = 35 et enregistre les param, sans laisser de trace
-        self.nettoyerChantierApresTapioca(trace=False)'''
         
         # points homologues trouvés, corrects, second module : Tapas positionne les prises de vue dans l'espace
         # Tapas prend en compte les photos pour la calibration de l'appareil
@@ -8748,7 +8803,8 @@ Version 5.44 et 5.45 :	mai 2019
         self.modele3DSuivant()
         
         # malt ou D3CD, dans les 2 cas le nuage sera self.modele3DEnCours
-        texte = ""      # info en retour     
+        texte = ""      # info en retour
+        self.maillageOuvert=False
         if self.choixDensification.get()=="C3DC":                                                                   
             self.suiteMicmacC3DC()      # C3DC crée le fichier plys puis le mesh si demandé
         else:
@@ -8764,8 +8820,10 @@ Version 5.44 et 5.45 :	mai 2019
             return            
         
         # Final : affichage du self.modele3DEnCours, sauvegarde, relance la fenêtre qui a pu être dégradée par le traitement externe
-        
-        retour = self.ouvreModele3D()
+        if self.maillageOuvert==False:   # ne pas ouvrir le cloud si le maillage mesh est ouvert
+            retour = self.ouvreModele3D()
+        else:
+            retour=0
         if    retour == -2 :
             texte = _("Programme pour ouvrir les .PLY non trouvé.")        
         elif  retour == -1 :  # échec
@@ -8851,7 +8909,7 @@ Version 5.44 et 5.45 :	mai 2019
     def avantScene(self):   # avant le premier traitement : Tapioca
         
         # nettoie le chantier, supprime les points homologues, les résultats de tapas, de malt...
-        self.nettoyerChantier()
+        # self.nettoyerChantier()
         
         # initialisations 
         # self.ecritureTraceMicMac()                            # fait par nettoyer chantierécriture puis raz de ce qui traîne dans les buffers 
@@ -9285,6 +9343,30 @@ Version 5.44 et 5.45 :	mai 2019
                            info=_("Fixe l'orientation (axe, plan et métrique) suivant les options de 'Mise à l'échelle'"))
         if os.path.isdir("Ori-echelle3"):
             self.orientationCourante = "echelle3"        
+
+    def nuageNonDense(self):    # construire un nuage non dense en dehors de la filière "lancer MicMac"
+        if self.orientationCourante == str():
+            self.encadre(_("L'orientation n'a pas été effectuée.\nMenu MicMac\Lancer Micmac"))
+            return
+        if os.path.exists('AperiCloud.ply'):
+            message = _("Le nuage non dense est déjà présent.")+"\n"
+            message+= _("Pour le modifier : Menu MicMac/Options/Modifier les options des points homologues")+"\n"
+            self.encadre(message)
+            return            
+        if os.path.exists(self.orientationCourante):
+            self.encadre(_("L'orientation %s n'est pas présente . Bizarre !") % (self.orientationCourante))
+            return
+        # tout semble ok pour lancer aperiCloud
+        self.encadre(_("Construction du nuage non dense en cours.\n Patience"))
+        self.lanceApericloud()
+        # Apericloud.ply créé ?
+        if not os.path.exists('AperiCloud.ply'):
+            self.encadre(_("Le nuage non dense n'a pas été créé."))
+            return
+        self.etatDuChantier = 4 # chantier arrété aprés tapas, densification possible
+        message = _("Nuage non dense créé. Vous pouvez définir un masque 3D pour C3DC.")+"\n"
+        message += _("Pour cela Menu Micmac\Options\Densification puis 'lancer MicMac' densification") 
+        self.encadre(message)
         
     # ------------------ APERICLOUD :  -----------------------
     # l'orientation en entrée est soit :
@@ -9340,6 +9422,16 @@ Version 5.44 et 5.45 :	mai 2019
                     ]+self.taramaPerso.get().split(",")+[  # surcharge la suite
                  ]                 
         self.lanceCommande(tarama)
+
+    def lanceTaramaMenu(self):
+        if self.orientationCourante==str():
+            self.encadre(_("L'orientation n'est pas calculée\nDans le menu MicMac : Lancer MicMac"))
+            return
+        self.cadreVide()    # pour ouvrir la trace
+        self.lanceTarama()
+        self.etatDuChantier=4
+        self.encadre(_('''Traitement mosaïque terminé
+                    Consulter la mosaïque : menu édition''')) 
         
     # ------------------ GCPBascule : utilise les points GCP-----------------------    
 
@@ -9662,10 +9754,14 @@ Version 5.44 et 5.45 :	mai 2019
             self.TiPunchTequila()   # création d'un maillage texturé sur demande utilisateur
 
     def TiPunchTequila(self):       # maillage TiPunch avec texture Tequila sur le ply en cours
+        self.maillageTequila()  # remplace le 29 mars 2022
+        return
+    ####################################### ancien code :
         self.maillageTiPunch = "maillageTiPunch_"+str(self.indiceModeleFinal)+"_.ply"        
         self.lanceTiPunch()         # création d'un ply maillé sur modele3DFinal       
         if not os.path.exists(self.maillageTiPunch): # le maillage n'a pas réussi :
-            self.ajoutTraceSynthese("\n"+_("Le maillage n'a pas été créé. Voir la trace ci dessus."))            
+            self.ajoutTraceSynthese("\n"+_("Le maillage n'a pas été créé. Voir la trace ci dessus."))
+            self.encadre(_("Le maillage n'a pas été créé./n Abandon de la création de la texture/n Voir la trace"))
             return
         # création d'une texture sur l'orientation courante et le maillage TiPunch
         self.lanceTequila()
@@ -9685,9 +9781,90 @@ Version 5.44 et 5.45 :	mai 2019
             return           
         self.plyTextureC3DC = shutil.move(textureC3DC,repertoireMaillage)
         self.ajoutTraceSynthese("\n"+_("Copie du maillage texturé sous le répertoire ")+repertoireMaillage)   
+
+# ceci est le maillage appelé par le menu outil : on lance Tipunch puis Tequila sur un sous ensemble des photos
+
+    def maillageTequila(self):  # tente un maillage sur un sous ensemble des photos, hors filière normale
+        def choisirLesPhotosUtiles():
+            nb = 25   # on retient le nb photos utiles, lorsque Tequila sera moodifié on pourra mettre 200
+            nbTotal = self.photosSansChemin.__len__()
+            if nb>nbTotal:
+                utiles = list(self.photosSansChemin)
+                return
+            # choix 1 : au hasard si il y a moins de 3 fois trop de photos:
+            if nbTotal<=3*nb:
+                utiles = sample(self.photosSansChemin,nb)  #choix des photos au hasard
+            # choix 2 : elles se suivent qui se suivent
+            #utiles = self.photosSansChemin[:nb]
+            # choix 3 : 1 photos toutes les nb/total
+            else:
+                utiles = self.photosSansChemin[::int(nbTotal/nb)]
+            if utiles.__len__()>nb:
+                utiles = utiles[:nb]
+            denomme(utiles)
+            print("photos utilisées : ",str(utiles))
+            
+        def denomme(utiles):
+            [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in utiles]            
+        def renomme():
+            [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if (os.path.exists(os.path.splitext(e)[0]) and not (os.path.exists(e)))]
+        # d'abord tiPunch pour le maillage
+        plyIn,i=  self.modeleFinalSansTexture()
+        if not os.path.exists(plyIn):
+            self.encadre(_("Pas de nuage de points 3D.\n Lancer la densification avec C3DC"))
+            return
+        pims=glob.glob("PIM*")
+        if pims.__len__()==0:
+            self.encadre(_("Densification faite avec Malt.\n Ou chantier nettoyé.\nLancer la densification avec C3DC"))
+            return            
+        meshOut = "tipunch.ply"
+        plyTequila = "tipunch_textured.ply" # valeur du ply en sortie de Tequila (défaut)
+        jpgTequila = "tipunch_UVtexture.jpg" # nom du fichier jpg texture créé par Tequila si tout va bien
+        self.cadreVide()
+        supprimeFichier(meshOut)
+        self.lanceTiPunchMaillage(plyIn,meshOut)         # création d'un ply maillé sur modele3DFinal 
+        if not os.path.exists(meshOut): # le maillage n'a pas réussi :
+            message = _("Le maillage demandé n'a pas été créé.\n Voir la trace.")
+            self.encadre(message)
+            self.ajoutTraceSynthese(message)            
+            return
+        # si ok : Tequila
+        # création d'une texture sur l'orientation courante et le maillage TiPunch
+        choisirLesPhotosUtiles()
+        self.lanceTequilaMaillage(meshOut)
+        renomme()        # on remet les jpg renommés avec leur extension
+        if not os.path.exists(jpgTequila): # la texture n'a pas réussie :
+            message = "\n"+_("La texture n'a pas été créée. Voir la trace.")
+            self.ajoutTraceSynthese(message)
+            self.encadre(message)
+            return
+        # tout va bien : copie dans un sous répertoire
+        # déplace les fichiers créés par TiPunch et Tequila sous le répertoire maillageC3DC :  self.maillageTiPunch et maillage_UVtexture.jpg        
+        # raison : l'ajout du fichier JPG UVTexture.jpg sous le répertoire du chantier empêche le lancement de micmac.
+        repertoireMaillage="maillageC3DC"        
+        creeRepertoire(repertoireMaillage)                      # création si absent
+        dest = os.path.join(repertoireMaillage,plyTequila)
+        supprimeFichier(dest)
+        aLancer=shutil.move(plyTequila,repertoireMaillage)    # ply maillé par TiPunch
+        dest = os.path.join(repertoireMaillage,jpgTequila)
+        supprimeFichier(dest)        
+        shutil.move(jpgTequila,repertoireMaillage)        # jpg texture par Tequila
+        self.ajoutTraceSynthese("\n"+_("Copie du maillage texturé, sous le répertoire " + repertoireMaillage))
+        message = "\n"+_("La texture a été créée.\n")
+        self.ajoutTraceSynthese(message)
+        self.encadre(message)
+        meshlab = [self.meshlab, aLancer]        
+        self.lanceCommande(meshlab,
+                           attendre=False)
+        self.maillageOuvert=True
         
     def lanceC3DC(self):
-        supprimeRepertoire("PIMs-MicMac")       # pb si encore présent  
+        supprimeRepertoire("PIMs-Forest")
+        supprimeRepertoire("PIMs-Statue")
+        supprimeRepertoire("PIMs-QuickMac")        
+        supprimeRepertoire("PIMs-MicMac")       # pb si encore présent (en fait : dépend du choix micmac, quickmap, statue..
+        supprimeRepertoire("PIMs-BigMac")
+        
         # calcul du paramètre Offs pour C3DC (Offset de décalage pour éviter les bandes blanches si les x,y sont trop "grands"
         
         self.Offs = construireOffs(self.orientationCourante)
@@ -9741,6 +9918,7 @@ Version 5.44 et 5.45 :	mai 2019
                     "Mode="+self.modeC3DC.get(),
                     'Pattern=.*'+self.extensionChoisie,
                     "Out="+self.maillageTiPunch,
+                    "Rm=1",     # supprime les fichiers temporaires
                     ]+self.tiPunchPerso.get().split(",")+[  # surcharge la suite
                     "Depth=6",]
         self.lanceCommande(tiPunch,
@@ -9764,6 +9942,34 @@ Version 5.44 et 5.45 :	mai 2019
                    ]+self.PIMs2MntPerso.get().split(",")+[  # surcharge la suite                   
                     "DoOrtho=1",
                     ]
+
+# en dehors de la filière normale, appel par menu/outils :
+
+    def lanceTiPunchMaillage(self,plyIn,meshOut):         # création d'un maillage sur le nuage C3DC avec les phootos du pattern
+        profondeur="6"  # détermine la qualité du résultat (4,6,8 la meilleure)
+        poisson = os.path.splitext(plyIn)[0]+"_poisson_depth"+profondeur+".ply"
+        supprimeFichier(poisson)
+        tiPunch = ["mm3d",
+                    "TiPunch",
+                    plyIn,
+                    "Mode="+self.modeC3DC.get(),
+                    'Pattern=.*'+self.extensionChoisie,
+                    "Out="+meshOut,
+                    "Rm=1",     # supprime les fichiers temporaires                   
+                    ]+self.tiPunchPerso.get().split(",")+[  # surcharge la suite
+                    "Depth="+profondeur,]
+        self.lanceCommande(tiPunch,)
+
+    def lanceTequilaMaillage(self,meshOut):     # Drapage du maillage de TiPunch
+        tequila = [self.mm3d,
+                   "Tequila",
+                   ".*"+self.extensionChoisie,
+                   self.orientationCourante,
+                   meshOut,
+                    ]
+        self.lanceCommande(tequila,
+                          )
+                        
         
     # ------------------ NUAGE2PLY -----------------------
     
@@ -9960,7 +10166,7 @@ Version 5.44 et 5.45 :	mai 2019
         
         # PRIORITE 1 : si il existe un fichier XML de points d'appuis GCP  : self.mesureAppuis
         # calibrage de l'orientation suivant des points GCP, un axe ox, un plan déterminé par un masque
-              
+            
         if self.choixReferentiel.get()=="GPS":
             if os.path.exists(self.mesureAppuis):
                 self.orientationCourante = "Arbitrary"
@@ -9993,7 +10199,7 @@ Version 5.44 et 5.45 :	mai 2019
             if self.controleMiseALEchelle():            # mise à l'échelle OK = True   
                 self.orientationCourante = "Arbitrary"
                 self.ajoutLigne(_("Vous avez choisi une mise à l'échelle")+"\n")
-                self.lanceApero()                       # exploite un fichier xml et fabrique l'orientation "echelle3"
+                self.lanceApero()                       # exploite un fichier xml et fabrique l'orientation "echelle3"                    
                 self.lanceCampari()                     # Campari sans points GCP
                 return
             else:
@@ -10015,7 +10221,8 @@ Version 5.44 et 5.45 :	mai 2019
 
         # si aucun référentiel prévu on lance quand même campari pour préciser la position des points
 
-        self.ajoutLigne(_("Le referentiel par défaut de MicMac sera utilisé.")+"\n")        
+        self.ajoutLigne(_("Le referentiel par défaut de MicMac sera utilisé.")+"\n")
+        self.choixReferentiel.set("MicMac")
         self.orientationCourante = "Arbitrary"
         self.lanceCampari()
 
@@ -10158,7 +10365,8 @@ Version 5.44 et 5.45 :	mai 2019
             self.copieRepertoireHomol(sauveRepTravail)
             if sauveEtatDuChantier in (4,5,7,35):                            # conserve le bénéfice des points homologues
                 self.etatDuChantier = 35                
-            else: self.etatDuChantier = 1
+            else:
+                self.etatDuChantier= 1
         self.afficheEtat()
 
     def nbMeilleuresKO(self):
@@ -10538,7 +10746,7 @@ Version 5.44 et 5.45 :	mai 2019
         
         if self.repereChoisi in (self.repereADeterminer,self.repereAbsent,self.repereSupprime):    # s'il n'y a pas encore de reperechoisi on prend un repère local tangent
             self.repereChoisi = self.repereLocalXml
-            self.encadrePlus(_("Repére local"))
+            self.encadrePlus(_("Repére local")+"\n")
             
         # si repére local : il faut créer un xml le décrivant :
             
@@ -10547,7 +10755,7 @@ Version 5.44 et 5.45 :	mai 2019
 
         # création, à partir des données GPS récupérée par ecritureOriTxtInFile, et du référentiel choisi, d'une orientation provisoire par OriConvert (nav-brut)
         # CenterBascule sera appelé pour transformer cette orientation provisoire en orientation définitive, nav,  lorsque Tapas sera fini
-        self.encadrePlus(_("Conversion des exif gps vers une orientation Ori-nav-brut: ")+self.repereChoisi+"\n\n")
+        # self.encadrePlus(_("Conversion des exif gps vers une orientation Ori-nav-brut: ")+self.repereChoisi+"\n\n")
         self.encadrePlus(_("PATIENTEZ")+"\n")
         self.lanceOriconvert()              # appel de oriConvert : Création d'une orientation provisoire et brute, suivant le repère choisi (mot clé ou fichier xml)
         self.encadrePlus("\n\n"+_("Conversion effectuée !")+"\n")            
@@ -10720,12 +10928,6 @@ Version 5.44 et 5.45 :	mai 2019
 
     def repereModifie(self):
         self.referentielOK = False
-        self.choixReferentiel.set("META")
-# en fait ce qui suit nécessite que OriConvert et centerBascule aient été lancé
-##        construireOffs(self.orientationCourante)
-##        message="\n"+self.messageCoordonnees()
-##        self.encadrePlus(message)
-##        self.ajoutLigne(message)
         
 # Affiche les infos sur le repère choisi
 
@@ -10884,6 +11086,7 @@ Version 5.44 et 5.45 :	mai 2019
                           str(roll)                           
                                    ])
                 ori.write(ligne+"\n")
+        self.item1125.pack(side='left')
         return True
 
     def basculeAffichagePointHomologues(self):
@@ -11804,6 +12007,7 @@ Version 5.44 et 5.45 :	mai 2019
     def restaureParamEnCours(self):
         self.restaureParamChantier(self.fichierParamChantierEnCours)       
         self.restaureParamMicMac()
+        self.ajoutLigne("------------\n"+heure()+_("Ouverture du chantier. Version ApéroDeDenis : %s") % (version)+"\n------------\n")
 
     def restaureParamMicMac(self):
         try:
@@ -12998,9 +13202,20 @@ Version 5.44 et 5.45 :	mai 2019
         test = "modele3D.ply"   # pour compatibilité avec les versions antérieures
         if os.path.exists(test):
             self.modele3DFinal = test
-
+            
         # sinon : self.modele3DFinal vaut modele3D_V1.ply, qui n'existe pas
-                
+
+    def modeleFinalSansTexture(self):
+        for i in range(100,0,-1):
+            # sinon le plus grand numéro non texturé :
+            modele3DFinal = "modele3D_V"+str(i)+".ply"
+            if os.path.exists(modele3DFinal):
+                return modele3DFinal,i
+        return modele3DFinal,i     # soit, fichier inexistant : modele3D_V1.ply,1
+            
+        # sinon : self.modele3DFinal vaut modele3D_V1.ply, qui n'existe pas
+
+            
 ########################################## Outils divers (raccourcis clavier, infobulle, afficher un dico de points....)
 
     def lettre(self,event):
@@ -13197,8 +13412,8 @@ Version 5.44 et 5.45 :	mai 2019
                     with open(os.path.join(e,self.paramChantierSav),mode='rb') as sauvegarde1:
                         r = pickle.load(sauvegarde1)
                     photosSansChemin = r[2]
-                    modele3D = r[37]
-                    if not modele3D:
+                    orientation = r[74]
+                    if not orientation:
                         self.fichierProposes.remove(e)
                         continue
                     # 2 photos au moins du chantier en cours doivent être dans le chantier proposé
@@ -14588,17 +14803,6 @@ Version 5.44 et 5.45 :	mai 2019
         else:
             return None
 
-####### Définition des 3 jeux de photos pour la syntaxe des commandes micmac :
-#       - toutes les photos
-#       - les photos pour la calibration de l'appareil
-#       - les photos sans la calibration
-    def les3JeuxDePhotos(self):
-        self.jeuToutesLesPhotos = '".*('+"|".join(self.photosSansChemin)+')"'
-        self.jeuToutesLesPhotos = '".*.(DS105055|DS105056|DS105057).JPG"'
-        self.jeuCalibration = '"('+"|".join(self.photosCalibrationSansChemin)+')"'
-        sansCalibration = [e for e in self.photosSansChemin if e not in self.photosCalibrationSansChemin]
-        self.jeuSansCalibration = '"'+"|".join(sansCalibration)+'"'
-
 # réintégrer dans l'Interface afin d'être éxécuté lors de l'initialisation (12/12/21)
 
     def afficheChemin(self,texte):                               # avant d'afficher un chemin on s'assure que le séparateur est bien le bon suivant l'OS
@@ -14640,6 +14844,7 @@ def copieRepertoire(source,cible): # copie d'une arborescence de répertoire apr
         return _("la copie a échouée : %s.") % (str(e))
 
 def supprimeFichier(fichier):
+    if not os.path.exists(fichier): return
     try:    os.remove(fichier)
     except Exception as e:
         return _("Erreur suppression fichier :")+str(e)
@@ -14649,7 +14854,6 @@ def supprimeRepertoire(repertoire):
         return
     try:
         shutil.rmtree(repertoire)
-        print("Suppression du répertoire : ",repertoire)
     except Exception as e:
         erreur = _("Erreur lors de la suppression du répertoire : %s\n%s") % (repertoire,str(e))
         return erreur
@@ -15256,8 +15460,9 @@ def calculVolumeMnt():
     infoMnt["volumeFond"] = round(infoMnt["sommeFond"]*infoMnt["cellsizeFond"]**2,arrondi)
     infoMnt["hauteurMoyenne"] = round(infoMnt["volumeFond"]/infoMnt["surfaceCouverteFond"],arrondi)
 
-    rapport  = _("Calcul du volume d'un MNT : rapport final.")+"\n\n"
-    rapport += _("Volume entre le MNT et la cote de base %s %s : %s %s3") % (coteDeBase,interface.uniteDistance,infoMnt["volumeFond"],interface.uniteDistance)  +"\n\n"    
+    rapport  = _("Calcul du volume d'un MNT : rapport final.")+"\n\n"   
+    rapport += _("Volume entre le MNT et la cote de base %s %s : %s %s3") % (coteDeBase,interface.uniteDistance,infoMnt["volumeFond"],interface.uniteDistance)  +"\n"    
+    rapport  = _("Tout ce qui se trouve sous la cote de base est ignoré.")+"\n\n" 
     rapport += _("Mnt      :\n %s") % (infoMnt["fichierFond"])+"\n\n"
     rapport += _("Hauteur moyenne: %s %s") % (infoMnt["hauteurMoyenne"],interface.uniteDistance)  +"\n\n"       
     empfond=str(infoMnt['Emprise fond'])
@@ -16054,7 +16259,7 @@ def sauveUnParametre(fichierPickle, numeroParam, valeur):  # permet de sauver un
         print("erreur dump sauveUnParametre : ",str(e))
         return
 
-# vérificatio ndu paramètre de centrage de saisieMasqQT
+# vérification du paramètre de centrage de saisieMasqQT
 
 @decorateTrySilencieux
 def verifParametresSaisieMasqQT():
@@ -16063,7 +16268,7 @@ def verifParametresSaisieMasqQT():
         if len(valeurActuelle):
             if "0x2" in valeurActuelle[0]: # centre de la fenêtre = origine du repère (0,0,0), nuage invisible si les coordonnées sont loin du centre 
                 ecrireRegistre(interface.majCleMasqQT) # centre de la fenêtre = barycentre des points du nuage, qui devient 
-    
+                time.sleep(0.05)    
 
 # Ecrire une clé de registre
 

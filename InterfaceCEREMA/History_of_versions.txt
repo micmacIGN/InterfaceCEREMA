@@ -1,5 +1,12 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
+Version 5.65 : April 05, 2022
+			- Add 3 items in the tools menu, to avoid restarting MicMac processing: 
+				Generate the Tarama mosaic
+				Generate the non dense cloud
+				Generate a textured mesh on the dense cloud
+			- other modifications : see the source
+			
 Version 5.64: March 22,2022
 
 Version 5.62: February 17, 2022

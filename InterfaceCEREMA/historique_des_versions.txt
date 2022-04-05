@@ -1,7 +1,15 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 5.65 : 05 avril 2022
+			- Ajout de 3 items dans le menu outils, pour éviter de relancer le traitement MicMac : 
+				Générer la mosaïque Tarama
+				Générer le nuage non dense
+				Générer un maillage texturé sur le nuage dense
+			- correction d'une erreur sur la mise à l'échelle
+			- autres modifications : voir le source
 			
 			Version 5.64 : 22 mars 2022
+			- voir le source
 			
 			Version 5.62 : 17 février 2022
 			- Une nouvelle possibilité de référencement : utiliser le référentiel d'un autre chantier.
