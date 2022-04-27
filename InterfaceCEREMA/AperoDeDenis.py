@@ -41,6 +41,7 @@
 # lecture/écriture dans les exif des photos (exiftool)
 # persistence par le module pickle
 # affichage d'un fichier texte (trace..) dans une fenêtre, recherche d'un texte par Ctrl F.
+# réponse automatique aprés un temps d'attente (méthode after de tkinter
 
 # Sous windows :
 # lecture et modification de la base de registre windows 
@@ -100,7 +101,7 @@
 # - si des emplacements de points GCP doivent être supprimés alors il y a demande à l'utilisateur
 # - le nettoyage du chantier est moins brutal : les fichiers exp (exports) et ply sont conservés.
 # - le chantier est enregistré avant de rendre la main (si l'utilisateur ne validait pas un enregistrement ultérieur le chantier devenait inaccessible)
-# ajout de import tkinter.messagebox pour le message d'avertissement si AperoDeDenis est dèjà lancé sous windows
+# ajout de import tkinter.messagebox pour le message d'avertissement si AperoDeDenis est déjà lancé sous windows
 # 2.44
 # Accepte les virgules comme séparateur décimal pour les points GCP : remplacement des virgules saisies dans les coordonnées GCP par des points
 # 2.45
@@ -563,7 +564,7 @@
 # correction tapas ligne 8374 : "SH="+SH (remplace , par +)
 # Correction : ajout de la variable dimensionsDesPhotos dans la liste des paramètres suvegardés (oubli)
 # correction : test du nombre de fichiers de points homologues sous homol ou homol_mini
-#   (si scnaps n'a pas été éxécuté ou copie de points homologues depuis un autre chantier)
+#   (si schnaps n'a pas été éxécuté ou copie de points homologues depuis un autre chantier)
 # copie des points homologues depuis un autre chantier : on copie la variable lancerSchnaps et les 2 répertoires hmol et homol_mini
 # (la copie de homol est nécessaie pour apericloud, ce qui est surprenant car absent des paramètres (question à Marc ?)
 # ajout d'un filtre à centerbascule pour limiter la trace
@@ -584,7 +585,7 @@
 # correction bogue ligne 8898 (repertoireMaillage était défini dans la première partie du if, utilisé dans la seconde)
 # diffusée le 30/11/21
 #
-# version 5.62
+# version 5.62 17 février 2022
 # corrigé : "attention micmac considére qu'une ou plusieurs photos doivent être rejetée : limiter le nombre de photos affichées :
 #   NB de lignes limité à 30 ds encadre, message ajouté dans ce cas.
 # modifié : aide si pas d'orientation : utiliser 'radial basic', vérifier les résidus
@@ -602,7 +603,7 @@
 # modifié : copie de la mosaïque tarama par le module expert supprimé
 # ajout : self.etatDuChantier est mis à 35 aprés Tapioca/Schnaps : comme si Tapas avait échoué a controller
 # ajouter la copie du référentiel d'un autre chantier (mofification majeure)
-# version 5.63
+# version 5.63 diffusée le 28 février 2022
 # Vidéo :
 #    - suppression des fonctions selectiongopro et selectionphotos (marchent pas)
 #    - modif de l'aide sur la vidéo
@@ -643,12 +644,31 @@
 # correction de bogues sur l'ajout de points gps, la mise à l'échelle
 # Tequila : on retient le nb photos utiles, lorsque Tequila sera modifié on pourra mettre 200
 
-# Version 5.66
+# Version 5.66 : le 5 avril 2022
+# correction d'une erreur sur l'affichage du colume calculé sur un mnt
 
+# version 5.67
+# menu outil : modif du libellé : modifier les métadonnées des photos remplacé par modifier les focales.
+# fix : si absence de chantier pour copier la calibration, message sans sortie de la saisie, et choix calibration modifié
+# pb copie référentiel si mise à l'échelle sur un autre chantier : bug sur gravillon, on ne propose plus les chantier "MAL"
+# modif de dialog_ok_ko : ajout d'un paramètre "attente" qui permet de poursuivre sans action de l'utilisateur
+# si plusieurs groupes de photos : réponse automatique CONTINUER au bout de 30 secondes d'attente (cela évite de bloquer le chantier)
+# si schnaps découvre des photos à supprimer le message propose de les conserver ou de les supprimer immédiatement.
+#     ce n'est plus à l'utilisateur d'effectuer la suppression s'il fait ce choix
+#     en l'absence de réponse, au bout de 20 secondes, la suppression est lancée (c'est le meilleur choix et cela évite de bloquer le chantier)
+# affichage des points homologues : déplacé du menu experrt au menu edition/visualiser les nuages
+# prise en compte des ply mesh binaire pour conversion en mnt (ancienne version?)
+# Ajout de la taille totale occupée par tous les chantiers  dans la fonction "duMenage";
+# la taille dans duMenage est corrigée : elle était en kiloOctets (KO) alors qu'il s'agit de MegaOctets (Mo)
+# modif concernant les tags : une demande de tag est précédé de l'appel à TousLesTagsUtiles, recalculé si besoin
+# modif nouveauChantier : ajout d'un paramètre : demande de choisir les photos 
+#                         utilisé pour duMenage et sélection des N meilleures photos
+# Vidéo : ajout d'un message d'avertissement sur la caméra utilisée. L'utilisateur peut la modifier si besoin
 
-#problème : faut-il nettoyer le chantier dans avantScène
+# questions :
+# problème : faut-il nettoyer le chantier dans avantScène
 # problème des instance de mm3d restent en activités aprés la fin du traitement micmac (liées à la texture ?)
-#instances non supprimées au lancement d'aperodeDenis...
+# instances non supprimées au lancement d'aperodeDenis...
 
 ####################"
 # le lancement après avoir généré le nuage dense est à simplifier si possible ; 2 boites de dialogues pour positionner l'état du chantier à relancer...
@@ -656,7 +676,6 @@
 # si plusieurs groupes de photos : ne pas relancer Tapioca lorsque l'on a décider de travailler sur un groupe de photos
 #    même si le lancement "avorte"
 # self.orientationCourante dans Tapas : parfois inutile, simplifier
-# afficher les points homologues : bouton sur l'écran de mise à l'échelle, ou écran à part (cf important ci-dessus)
 
 # installer micmac  s'il est livré avec aperodedenis
 
@@ -669,14 +688,10 @@
 
 # revoir l'aide, notamment l'historique
 
-
-# calibration provenant d'un autre chantier : plante s'il n'y a pas d'autres chantiers possible.
-
 # a faire :
 # permettre de ne lancer que l'orientation lorsqu'il faut débloquer le chantier
-# en cas d'orientation non trouvée les points homologues sont supprimées depuis le 5.55 : revenir à l'état antérieur
 # le mode UrbanMNE de Malt n'est pas correctement pris en compte (pas de nuage de points....)
-# le nombre de scènes varient entre les 2 passage de tapioca option Multiscale ! Mal géré actuelement.
+# le nombre de scènes varie entre les 2 passage de tapioca option Multiscale ! Mal géré actuelement.
 # Propager effectivement l'option ExpTxt vers tapas, campari, apericloud...
 ##4) si lors de la comparaison de 2 MNT les territoires ne se recouvrent pas : améliorer le message, tenter un rapprochement
 ##5) la variable self.dicoPerso est enregistrée à la fois dans la sauvegarde des options et du chantier ???
@@ -692,7 +707,6 @@
 # si l'utilisateur modifie le référentiel gps du drone considérer que les options ont été modifiées (ne pas le redemander)
 # traduire la chaine de caractère donnant l'heure (qui reste en français)
 
-# prendre en compte les ply mesh binaire pour conversion en mnt
 # bug en cours :
 # version 5.40 : aprés plantage tapas, puis rechargement des photos, le bouton "plan horizontal" devient inactif (cf rodolphe)
 # reprise de Tapioca aprés avoir généré un nuage dense : les photos de calibrations ne sont pas restaurées.
@@ -759,7 +773,7 @@
 # Tequila
 # Tipunch
 
-# principaux autres modules utilisés :
+# principaux autres modules (python ou autre) utilisés :
 
 # convert de convertmagick
 # exiftool
@@ -769,10 +783,6 @@
 # query (windows)
 # regedit (windows)
 # tskill (windows)
-
-
-
-
 
 from   tkinter import *                     # gestion des fenêtre, des boutons ,des menus, importe les constantes de tkinter
 import tkinter.filedialog                   # boite de dialogue "standards" pour demande fichier, répertoire
@@ -993,7 +1003,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.66"
+numeroVersion = "5.67"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -2197,9 +2207,11 @@ class Interface(ttk.Frame):
         menuEditionAffiche.add_command(label=_("Afficher le nuage non dense"), command=self.afficheApericloud)         
         menuEditionAffiche.add_separator()        
         menuEditionAffiche.add_command(label=_("Afficher la mosaïque Tarama"), command=self.afficheMosaiqueTarama)
-        menuEditionAffiche.add_command(label=_("Afficher les orthos mosaïque"), command=self.afficheLesOrthos)      
-        menuEditionAffiche.add_separator()
-        
+        menuEditionAffiche.add_command(label=_("Afficher les orthos mosaïque"), command=self.afficheLesOrthos)
+        menuEditionAffiche.add_separator()        
+        menuEditionAffiche.add_command(label = _("Afficher les points homologues"),
+                               command=self.affichePointsHomologues)        
+        menuEditionAffiche.add_separator()        
         menuEditionAffiche.add_command(label=_("Lister-Visualiser les images 3D"), command=self.lister3DPly)
         
         menuEdition.add_command(label=_("Afficher l'état du chantier"), command=self.afficheEtat)
@@ -2227,9 +2239,9 @@ class Interface(ttk.Frame):
         # GoPro
                 
         menuGoPro = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
-        menuGoPro.add_command(label=_("Options (GoPro par défaut)"), command=self.optionsGoPro)
+        menuGoPro.add_command(label=_("Appareil Vidéo (GoPro par défaut)"), command=self.optionsGoPro)
         menuGoPro.add_separator()          
-        menuGoPro.add_command(label=_("Nouveau chantier : choisir une vidéo GoPro, ou autre"), command=self.laVideo)   
+        menuGoPro.add_command(label=_("Nouveau chantier vidéo"), command=self.laVideo)   
         menuGoPro.add_command(label=_("Sélection des images"), command=self.selectionGoPro)    ## Sélection de 1 image sur le taux indiqué dans les options vidéo 
 
         # Outils
@@ -2250,7 +2262,7 @@ class Interface(ttk.Frame):
         menuOutils.add_command(label=_("Construire la mosaïque Tarama (utile pour masque Malt/Orho)"), command=self.lanceTaramaMenu) # si oubli
         menuOutils.add_command(label=_("Générer un maillage texturé aprés C3DC"), command=self.maillageTequila)     # si échec sur toutes les photos     
         menuOutils.add_separator()
-        menuOutils.add_command(label=_("Modifier les métadonnées des photos"), command=self.majExif)
+        menuOutils.add_command(label=_("Modifier les focales des photos"), command=self.majExif)
         menuOutils.add_separator()        
         menuOutils.add_command(label=_("Afficher les options par défaut"), command=self.afficheOptionsParDefaut)        
         menuOutils.add_command(label=_("Modifier les options par défaut"), command=self.majOptionsParDefaut)
@@ -2261,15 +2273,8 @@ class Interface(ttk.Frame):
         
         def updatePlusieursAppareilsPhotos(): # si nouvel item changer le premier paramètre = numéro d'ordre dans la liste
             menuPlusieursAppareilsPhotos.entryconfig(1, label=_("Définir la longueur du préfixe des photos ; %s") % (self.nbCaracteresDuPrefixe))
-
-        def updateAffichePointsHomologues(): # si nouvel item changer le premier paramètre = numéro d'ordre dans la liste
-            if self.afficherPointsHomologues:
-                menuExpert.entryconfig(13, label=_("Ne pas afficher les points homologues"))
-            else:
-                menuExpert.entryconfig(13, label=_("Afficher les points homologues"))
-
                 
-        menuExpert = tkinter.Menu(mainMenu,tearoff = 0,postcommand=updateAffichePointsHomologues)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
+        menuExpert = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
         menuExpert.add_command(label=_("Exécuter une ligne de commande système"), command=self.lignesExpert)
         menuExpert.add_command(label=_("Exécuter une commande python"), command=self.lignesPython)        
         menuExpert.add_separator()
@@ -2317,12 +2322,6 @@ class Interface(ttk.Frame):
         self.menuNavigationGPS.add_command(label=_("Référentiel : utiliser un repère géocentrique cartésien"), command=self.choixRepereGeoC)
         
         menuExpert.add_cascade(label = _("Navigation GPS"),menu=self.menuNavigationGPS)
-
-        # affichage des points homologues
-                
-        menuExpert.add_separator()        
-        menuExpert.add_command(label = _("Afficher les points homologues"),
-                               command=self.affichePointsHomologues)
         
         # Mise à jour du libellé du menu expert/navigation GPS/ utiliser les données GPS
         
@@ -2504,10 +2503,11 @@ class Interface(ttk.Frame):
                                            ]
         
         self.nomOriGPS                  =   "OriGPS.TXT"                                        # fichier des positions GPS extraites des photos (drones)
+        self.schnapsPoubelle            =   "Schnaps_poubelle.txt"                              # liste des photos rejetées par Schnaps
 
         # Dimension/position de la boite de dialogue de consultation/visualisation des photos
 
-        self.hauteurMaxListboxChoixPhoto = 12               # nombre de lignes de choix
+        self.hauteurMaxListboxChoixPhoto = 20               # nombre de lignes de choix
         self.largeurMaxListboxChoixPhoto = 250              # largeur boîte
         self.positionBddChoixPhoto       = "400x580+50+50"  # dimension+position à l'écran
         
@@ -4209,7 +4209,19 @@ class Interface(ttk.Frame):
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
               _('''
-                Version 5.62 :	 17 février2021
+Version 5.65 et 5.66 : 05 avril 2022
+                - Ajout de 3 items dans le menu outils, pour éviter de relancer le traitement MicMac : 
+                        Générer la mosaïque Tarama
+                        Générer le nuage non dense
+                        Générer un maillage texturé sur le nuage dense
+                - correction d'une erreur sur la mise à l'échelle
+                - autres modifications : voir le source
+
+Version 5.64 :  22 mars 2022
+
+Version 5.63 :  28 février 2022
+
+Version 5.62 :	17 février 2021
                 - Une nouvelle possibilité de référencement : utiliser le référentiel d'un autre chantier.
                   Si vous disposer de 400 photos vous pouvez ainsi créer 2 chantiers de 200 photos
                   et générer des nuages de points superposables dans le même référentiel.
@@ -4353,6 +4365,21 @@ Version 5.46 :	20 mai 2019
 		- Ajout de l'item Outils/Qualité des points GCP.
 		- Ajout de l'item Expert/Personnaliser les paramètres optionnels de MicMac
 
+Version 5.44 et 5.45 :	mai 2019
+		- Ajout de la fonction recherche (F3) dans les traces et l'aide.
+		- Possibilité de relancer Tapas sans relancer Tapioca
+		- Sécurisation de l'import d'un chantier à partir d'un répertoire
+		- Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier
+		- Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)
+
+Version 5.43 :	18 avril 2019
+		- Propose à l'utilisateur (sous Windows) de lancer plusieurs instance d'AperoDeDenis).
+		- l'aide 'quelques conseils' est répartie sur 3 items
+		- quelques corrections de bugs, voir en tête du script
+
+Version 5.41 :	avril 2019
+		- amélioration ergonomie de la fonction 'du ménage', correction du bug : ménage uniquement fait sur le chantier en cours).
+		- Fichier/renommer le chantier devient fichier/enregistrer sous....
 		
 Historique chronologique depuis la version 1.5 de novembre 2015 
 
@@ -4478,22 +4505,6 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 		- amélioration ergonomie saisie des points gcp (flèches : photo suivante/précédente).
 		- corrections de quelques bugs sur la prise en compte des points gcp (voir entête du code source).
 		- correction du changement de langue si appel depuis un raccourci.
-
-Version 5.41 :	avril 2019
-		- amélioration ergonomie de la fonction 'du ménage', correction du bug : ménage uniquement fait sur le chantier en cours).
-		- Fichier/renommer le chantier devient fichier/enregistrer sous....
-
-Version 5.43 :	18 avril 2019
-		- Propose à l'utilisateur (sous Windows) de lancer plusieurs instance d'AperoDeDenis).
-		- l'aide 'quelques conseils' est répartie sur 3 items
-		- quelques corrections de bugs, voir en tête du script
-
-Version 5.44 et 5.45 :	mai 2019
-		- Ajout de la fonction recherche (F3) dans les traces et l'aide.
-		- Possibilité de relancer Tapas sans relancer Tapioca
-		- Sécurisation de l'import d'un chantier à partir d'un répertoire
-		- Sécurisation de l'import des points GCP (Ground Control Point=GPS) à partir d'un chantier ou d'un fichier
-		- Ajout de la fonction 'renommer un chantier' (fonction supprimée dans la V5.41)
 
               ''')+ self.aideFinDePage
              
@@ -4770,7 +4781,7 @@ Version 5.44 et 5.45 :	mai 2019
         self.mosaiqueTaramaJPG = str()
         self.masqueTarama = str()
         self.choixCalibration.set("sans")
-        self.chantierOrigineCalibration =str()                  # si calibration de l'appareil copiée depuis un autre chantier
+        self.chantierOrigineCalibration = str()              # si calibration de l'appareil copiée depuis un autre chantier
 
     # GoPRO : les options à saisir pour le traitement GoPro : valeurs par défaut (non modifiées lors de la création d'un nouveau chantier)
     
@@ -4920,7 +4931,7 @@ Version 5.44 et 5.45 :	mai 2019
     # appelé lors de changement de photos...
 
 
-    def nouveauChantier(self):                                          # conserve : micMac,meshlab,tousLesRepertoiresDeTravail
+    def nouveauChantier(self,demandePhotos=True):                                          # conserve : micMac,meshlab,tousLesRepertoiresDeTravail
         self.menageEcran()
         texte=""                                                        # réinitialise les paramètres du chantier (initialiseValeursParDefaut)
         if self.etatDuChantier == 1 :
@@ -4943,6 +4954,8 @@ Version 5.44 et 5.45 :	mai 2019
         self.copierParamVersChantier()          # utile
         self.ajoutLigne(heure()+_("Nouveau chantier : %s") % (self.chantier))
         # si b2="" alors pas de second bouton    retour : 0, 1, 2, 3 : numéro du bouton
+        if demandePhotos==False:
+            return
         if self.troisBoutons(_("Choix des photos pour le nouveau chantier"),
                                   _("OK pour choisir les photos du chantier."),
                                   _('OK'),_("Choisir plus tard"))==0:
@@ -6090,7 +6103,9 @@ Version 5.44 et 5.45 :	mai 2019
         
 
         if source[-3:]!="bin":  # pour accepter le répertoire de micmac
-            source=os.path.join(source,"bin")
+            sourcePotentielle=os.path.join(source,"bin")
+        if os.path.exists(sourcePotentielle): # si le répertoire bin existe on le garde
+            source=sourcePotentielle
         
         # mm3d sous Windows :
         
@@ -6448,8 +6463,7 @@ Version 5.44 et 5.45 :	mai 2019
             return
                 
         # Nouvelle sélection valide : du ménage :
-        
-        self.lesTagsExif = dict()                           # réinitialise la mémo des exifs          
+                
         self.supOriNavBrut()                                # suppression des anciennes données de navigation drone
         self.repereChoisi = self.repereADeterminer          # raz le repère choisi : (mis à "repere supprimé par supOriNavBrut)
         self.extensionChoisie = self.lesExtensions[0]       # l'extension est OK
@@ -6479,8 +6493,8 @@ Version 5.44 et 5.45 :	mai 2019
         self.encadrePlus("\n"+_("Controle des photos (dimensions et focales)... Patience"))
         message = str()
         
-        ######### définir le dictionnnaire de tous les tags utiles depuis l'exif des photos :
-        
+        ######### définir le dictionnnaire de tous les tags utiles depuis l'exif des photos :        
+        self.lesTagsExif=dict()     # pour assurer la lecture des tags
         self.tousLesTagsUtiles()
 
         # controles :        
@@ -7355,12 +7369,14 @@ Version 5.44 et 5.45 :	mai 2019
             nuageDistantACopier = os.path.join(self.chantierReferentiel,nuageDistant)
             self.orientationReference = os.path.basename(orientationACopier)+"_"+chantierOrigine
             bilan = copieRepertoire(orientationACopier,self.orientationReference)
+            message = _("bilan copie répertoire du chantier devant servir de référence : %s") % (bilan)            
             if bilan :
-                print("bilan copie répertoire du chantier devant servir de référence : ",bilan)
+                self.ajoutLigne(message)                
                 return bilan
-            try: shutil.copy(nuageDistantACopier,"nuageDistant")
-            except Exception as e:
-                print("bilan copie nuage distant du chantier devant servir de référence : ",str(e))
+            try: shutil.copy(nuageDistantACopier,"nuageDistant.ply")
+            except Exception as e:  # un plus, mais pas essentiel
+                message+=_("erreur copie nuage distant du chantier devant servir de référence : ")+str(e)
+            self.ajoutLigne(message)
           
         # RAZ onglet : efface les widgets dépendants du choix
         self.item650.pack_forget()  # GPS, sans référentiel précisé (responsabilité utilisateur)
@@ -7384,6 +7400,8 @@ Version 5.44 et 5.45 :	mai 2019
                 chantierOrigine = os.path.basename(self.chantierReferentiel) 
                 texte = _("Chantier de référence : ")+chantierOrigine
                 # copie de l'orientation :
+                self.ajoutLigne(_("Copie référentiel du chantier : %s") % (self.chantierReferentiel))
+                self.ecritureTraceMicMac()
                 copieOrientation()
                 if not os.path.exists(self.orientationReference):
                     texte = (_("Erreur : pas d'orientation copiée depuis le chantier de référence"))               
@@ -7424,9 +7442,9 @@ Version 5.44 et 5.45 :	mai 2019
         if repertoireInconnu:
             bilan = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration de l'appareil."),filtre="calib")
             if bilan!=None:
-                message = _("Aucun chantier choisi.") + "\n" + bilan + "\n"
-                self.item572.configure(text=_("Pas de chantier choisi."))
-                self.afficheEtat(message)
+                message = _("Pas de chantier compatible avec calibration.") + "\n" + bilan + "\n"
+                self.item572.configure(text=message)
+                self.choixCalibration.set("sans")    # on remet le choix à "sans" 
                 return message
         origine  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Calib")
         if not os.path.exists(origine):
@@ -8220,7 +8238,7 @@ Version 5.44 et 5.45 :	mai 2019
         ajout(photosAvecDistance,os.path.basename(self.selectionPhotosAvecChemin[0]))
 
         if photosAvecDistance.__len__()>2:
-            self.infoBulle(_("Il y a dèjà 2 images avec des points 'distance'. Supprimer les points sur une des 2 images."))
+            self.infoBulle(_("Il y a déjà 2 images avec des points 'distance'. Supprimer les points sur une des 2 images."))
             time.sleep(3)
         
         self.calibre = CalibrationGPS(fenetre,
@@ -8673,21 +8691,28 @@ Version 5.44 et 5.45 :	mai 2019
             if self.rejetSchnaps:
                 titre = _("Attention : une photo est rejetée")
                 rapport = _("Attention : MicMac considére qu'une ou plusieurs photos doivent être rejetées :\n\n %s"+"\n") % (self.rejetSchnaps)
-                rapport += "\n"+_("Vous pouvez arréter le traitement pour retirer cette photo.")
-                rapport += "\n"+_("Vous pouvez poursuivre le traitement avec un fort risque d'échec")
-                lancer = _("Poursuivre le traitement")
-                arret = _("Arrêt du traitement")
-                if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=arret,b2=lancer).retour:
+                rapport += "\n"+_("Vous pouvez choisir de retirer les photos.")
+                rapport += "\n"+_("Vous pouvez choisir de conserver les photos avec un fort risque d'échec")
+                rapport += "\n"+_("Par défaut les photos seront retirés après 20 secondes d'attente.")                
+                retirer = _("Retirer les photos")
+                conserver = _("Conserver les photos")
+                if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=retirer,b2=conserver,attente=20000).retour==0:
                     if self.nbRejetSchnaps==1:
                         texte=_("Une photo est rejetée par le module schnaps de MicMac :\n\n %s" % (self.rejetSchnaps))
-                        texte +="\n"+_("Retirer cette photo puis relancer le traitement (menu Outils/retirer des photos)")
+                        texte +="\n"+_("Le traitement continue avec cette photo")
                     else:
                         texte=_(f"{self.nbRejetSchnaps} photos sont rejetées par le module schnaps de MicMac :\n\n %s" % (self.rejetSchnaps))
-                        texte +="\n"+_("Retirer ces photos puis relancer le traitement (menu Outils/retirer des photos)")
+                        texte +="\n"+_("Le traitement continue avec ces photos")
                         if self.nbRejetSchnaps>25:
                             texte +="\n"+_("Voir dans la trace la liste complète des photos rejetées")                          
-                    self.encadre(texte,30)
-                    return
+                    self.ajoutLigne(texte)
+                else:       # si pas de réponse utilisateur aprés 20 secondes (attente) 
+                    self.retirerPhotosSchnaps()
+                    if self.nbRejetSchnaps==1:
+                        message = _("La photo rejetée par Schnaps est supprimée du chantier")+"\n"
+                    else:
+                        message = _("Les %s photos rejetées par Schnaps sont supprimées du chantier") % (str(self.nbRejetSchnaps))+"\n"
+                    self.ajoutLigne(message)
         # Vérification qu'il y ait bien des points homologues : soit sous homol_mini, soit sous homol
         homol=os.path.join(self.repTravail,"Homol")
         homolMini = homol+"_mini"
@@ -8763,8 +8788,9 @@ Version 5.44 et 5.45 :	mai 2019
         message =   _("Les photos se répartissent en plusieurs groupes distincts (consulter la trace) :\n\n")+\
                       "\n".join([str(e) for e in self.lesGroupesDePhotos])+\
                     "\n\n"+_("Voulez-vous poursuivre l'éxécution sur le groupe le plus nombreux ?")+\
-                    "\n"+_("Si oui les photos inutilisées seront supprimées et le chantier se poursuivra.")
-        if MyDialog_OK_KO(fenetre,titre=_("Poursuivre sur moins de photos ou abandonner ?"),texte=message,b1="Continuer",b2="Abandon").retour==1:
+                    "\n\n"+_("(réponse OUI automatique après 30 secondes)")+\
+                    "\n"+_("Si OUI les photos inutilisées seront supprimées et le chantier se poursuivra.")
+        if MyDialog_OK_KO(fenetre,titre=_("Poursuivre sur moins de photos ou abandonner ?"),texte=message,b1="OUI",b2="Abandon",attente=30000).retour==1:
             # 2) retirer les groupes sauf le premier, le plus long 
             [self.retirerPhotos(e) for e in self.lesGroupesDePhotos[1:]]
             return True
@@ -10160,6 +10186,8 @@ Version 5.44 et 5.45 :	mai 2019
         # 4) orientation copiée d'un autre chantier         : "Arbitrary"           puis "campari_ori"+Ori_chantier puis "morito"
         # 5) orientation par défaut de MicMac               : "Arbitrary"                                           puis "campari_ori"
 
+        # la variable self.choixreferentiel.get() vaut respectivement : "META", "GPS", "MAL", "CHANTIER", "MicMac"
+
         # l'orientation finale est dans la variable "self.orientationCourante", mémorisée dans les paramètres
 
         if self.referentielOK:      # inutile de relancer le référentiel est déjà choisi et rien n'a été modifié
@@ -10336,7 +10364,7 @@ Version 5.44 et 5.45 :	mai 2019
             sauveEtatDuChantier = self.etatDuChantier
             sauveRepTravail = self.repTravail
             
-            self.nouveauChantier()
+            self.nouveauChantier(demandePhotos=False)
 
             # crée le repertoire de travail, copie les photos et renvoit le nombre de fichiers photos "acceptables",
             # met à 1 l'état du chantier crée self.photosAvecChemin et self.photosSansChemin
@@ -10697,15 +10725,17 @@ Version 5.44 et 5.45 :	mai 2019
     # si pas de photo précise : la première photo (on suppose qu'elles sont identiques pour toutes les photos)
                           
     def tagExif(self,tag,photo=""):
+        self.tousLesTagsUtiles()
         if photo=="":photo=self.photosSansChemin[0]
         photo = os.path.basename(photo)
         if (tag,photo) in self.lesTagsExif:
-            return self.lesTagsExif[tag,photo]
+            return self.lesTagsExif[tag,photo]           
         return str()
 
     # tags dans l'exif : renvoi la valeur du 'tag' dans l'exif de toutes les photos
                           
-    def tagsExif(self,tag):            
+    def tagsExif(self,tag):
+        self.tousLesTagsUtiles()        
         self.tags = list()
         for photo in self.photosSansChemin:
             tagPhoto = self.tagExif(tag,photo)
@@ -10716,6 +10746,8 @@ Version 5.44 et 5.45 :	mai 2019
     # Importe tous les tags utiles pour le programme lors du choix des photos : raz puis abonde self.lesTagsExif[tag,photSansChemin]
 
     def tousLesTagsUtiles(self):
+        if self.lesTagsExif!=dict():    # si déjà calculé : retour
+            return
         self.lesTagsExif = dict()
         self.photoEnCours = str()
         setExif = [self.exiftool,"-s",]+["-"+e for e in self.tagsExifUtiles]+[os.path.join(self.repTravail),"*.JPG"]
@@ -11046,7 +11078,7 @@ Version 5.44 et 5.45 :	mai 2019
     # écriture du fichier des coordonnées gps des photos :
 
     def ecritureOriTxtInFile(self):         # écrire les données GPS de navigation dans un fichier texte
-        if os.path.exists(self.nomOriGPS):  # il y a dèjà un repère (OriGPS.TXT) supprimé si l'utilisateur n'en veut plus
+        if os.path.exists(self.nomOriGPS):  # il y a déjà un repère (OriGPS.TXT) supprimé si l'utilisateur n'en veut plus
             return True
 
         # vérification de l'existence des données GPS puis écriture fichier
@@ -12011,7 +12043,7 @@ Version 5.44 et 5.45 :	mai 2019
     def restaureParamEnCours(self):
         self.restaureParamChantier(self.fichierParamChantierEnCours)       
         self.restaureParamMicMac()
-        self.ajoutLigne("------------\n"+heure()+_("Ouverture du chantier. Version ApéroDeDenis : %s") % (version)+"\n------------\n")
+        self.ajoutLigne("------------\n"+heure()+_(" Ouverture du chantier. Version AperoDeDenis : %s") % (version)+"\n------------\n")
 
     def restaureParamMicMac(self):
         try:
@@ -12147,7 +12179,7 @@ Version 5.44 et 5.45 :	mai 2019
             self.masqueTarama               = r[70] # oubli jusqu'à la version 5.58.2
             self.dimensionsDesPhotos        = r[71] # pour pallier un oubli (utile pour le masque geoimag)
             self.referentielOK              = r[72] # peut être vrai ou faux entre orientation et densification
-            self.choixReferentiel.set        (r[73]) # choix du référentiel
+            self.choixReferentiel.set        (r[73]) # choix du référentiel  
             self.orientationCourante        = r[74] # pour éviter le ""
             self.messageRetourTapas         = r[75] # bilan Tapas
             self.derniereLigneTapas         = r[76] # permet la validation de l'orientation           
@@ -12499,14 +12531,16 @@ Version 5.44 et 5.45 :	mai 2019
         attention = str()
         espaceGagne = int()
         chantierEnCours = self.repTravail
-        chantiersAvectaille = [format2Colonnes(e,": \t"+
-                               str(restaureUnParametre(os.path.join(e,self.paramChantierSav),63)),150)+
-                               " KO" for e in self.tousLesChantiers]
+        taille = [(e,restaureUnParametre(os.path.join(e,self.paramChantierSav),63)) for e in self.tousLesChantiers]
+        tailleTotale=sum([f for e,f in taille if isinstance(f, int)])
+        chantiersAvectaille = [format2Colonnes(e,": \t"+str(f),150)+" Mo" for e,f in taille]     
         self.messageSiPasDeFichier = 0
         self.choisirUnePhoto(chantiersAvectaille,             
                              titre=_('Chantiers à nettoyer ou à supprimer'), 
                              mode='extended',
-                             message=_("Multi sélection possible"),
+                             message=_("Multi sélection possible")+"\n"+
+                                     _("Taille totale : %s Mo") % (tailleTotale)+"\n"+
+                                     _("Nombre de chantiers : %s") % (self.tousLesChantiers.__len__()),
                              boutonDeux=_("Annuler"),
                              objets=_('repertoires'),
                              testPresenceRepertoire=False)      # renvoi  : self.selectionPhotosAvecChemin
@@ -12554,7 +12588,7 @@ Version 5.44 et 5.45 :	mai 2019
                     if self.repTravail==e:
                         self.etatDuChantier = -1
                         texte+=_("Le chantier en cours %s est supprimé. Un nouveau chantier est proposé") % (self.chantier)+ "\n"                    
-                        self.nouveauChantier()
+                        self.nouveauChantier(demandePhotos=False)
                     try:
                         shutil.rmtree(e)   # suppression arborescence sous racine
                     except Exception as err:
@@ -12916,9 +12950,9 @@ Version 5.44 et 5.45 :	mai 2019
         self.dicoInfoBullesAAfficher = bulles                               # pour passer l'info à afficherLesInfosBullesDuDico
         self.fermerVisuPhoto()                                              # pour éviter les fenêtres multiples
         self.listeChoisir = list(set(listeAvecChemin))                      # liste de choix par copie de la liste ou du tuple paramètre, sans doublons
-        self.listeChoisir.sort(key=os.path.basename)                                            # tri alpha
+        self.listeChoisir.sort(key=os.path.basename)                        # tri alpha
         listeSansChemin = [os.path.basename(e) for e in self.listeChoisir]       
-        self.topVisuPhoto = tkinter.Toplevel(fenetre,relief='sunken')               # fenêtre principale de choix de la photo (maitre, ou autre)
+        self.topVisuPhoto = tkinter.Toplevel(fenetre,relief='sunken')       # fenêtre principale de choix de la photo (maitre, ou autre)
         self.topVisuPhoto.title(titre)
         self.topVisuPhoto.geometry(self.positionBddChoixPhoto)
         fenetreIcone(self.topVisuPhoto)           
@@ -13047,6 +13081,23 @@ Version 5.44 et 5.45 :	mai 2019
         repIni = ""                                     # répertoire initial de la boite de dialogue
         if os.path.isdir(self.repertoireDesPhotos):
             repIni = self.repertoireDesPhotos
+
+        # Avertissement : appareil choisi
+        titre = _("Avertissement sur l'appareil ayant servi pour la vidéo")
+        texte = (_('''La vidéo choisie a été faite par :
+                      - un appareil de marque : %s
+                      - de modèle : %s
+                      - dont la focale est de : %s mm
+                      - dont la focale equivalente 35 mm est de : %s mm''')
+                 % (self.goProMaker.get(), self.goProNomCamera.get(), self.goProFocale.get(), self.goProFocale35.get()))
+        texte += "\n\n"+_("Confirmer,\n sinon modifier ces valeurs par : menu/vidéo/Appareil vidéo")
+                                                    
+        if MyDialog_OK_KO(fenetre,titre=titre,texte=texte,b1="OK",b2="Modifier").retour==0:
+            self.encadre(_(''' Modifier les caractéristiques de la caméra Vidéo :
+                        Menu Vidéo/appareil vidéo''')) 
+            return 
+
+        # Choix de la vidéo
         
         video = tkinter.filedialog.askopenfilename(title=_("Choisir la video issue d'un appareil {GoProMaker} {GoProName} (sinon modifier les options)"
                                                            ).format(GoProMaker=self.goProMaker.get(), GoProName= self.goProNomCamera.get()),
@@ -13055,7 +13106,7 @@ Version 5.44 et 5.45 :	mai 2019
                                                   multiple=False)
         
         if len(video)==0:
-            self.encadre(_("Abandon, aucune sélection,\n le chantier res(te inchangé.") + "\n")
+            self.encadre(_("Abandon, aucune sélection,\n le chantier reste inchangé.") + "\n")
             return 
 
         if os.path.splitext(video)[1].upper() not in ".MP4":
@@ -13093,6 +13144,7 @@ Version 5.44 et 5.45 :	mai 2019
 
         # ajout de l'exif :
         self.ajoutExifGoPro()
+        self.lesTagsExif=dict()  # pour assurer la lecture des tags
         self.tousLesTagsUtiles() # récupére les tags des exifs
         self.etatDuChantier = 2  
     # Type de chantier : c'est une liste de string (on pourrait aussi mettre un dictionnaire), avec :
@@ -13387,6 +13439,7 @@ Version 5.44 et 5.45 :	mai 2019
     #      - "homol" avec répertoire Homol pour copier les points homologues,
     #      - "orientation" avec répertoire 'Ori-Arbitrary' pour copier l'orientation
     #      - "referentiel" avec orientation et nuage dense, pour fusionner le référentiel d'un autre chantier
+    #        et référencé par points gps.
     # retour :
     #      - la variable self.selectionRepertoireAvecChemin est la liste du ou des répertoire(s)( si choix multiple possible) choisi(s) par l'utilisateur
     #        cette liste peut être vide
@@ -13413,17 +13466,22 @@ Version 5.44 et 5.45 :	mai 2019
             try:
                 liste = list(self.fichierProposes)
                 for e in liste:
+                    # 2 photos au moins du chantier en cours doivent être dans le chantier proposé
                     with open(os.path.join(e,self.paramChantierSav),mode='rb') as sauvegarde1:
                         r = pickle.load(sauvegarde1)
                     photosSansChemin = r[2]
-                    orientation = r[74]
-                    if not orientation:
+                    intersection = {e for e in photosSansChemin if e in self.photosSansChemin}
+                    if intersection.__len__()<2:    # au moins 2 phtos en commun
+                        self.fichierProposes.remove(e)
+                        continue                    
+                    orientation = r[74]                    
+                    if not orientation:             # orientation existante
                         self.fichierProposes.remove(e)
                         continue
-                    # 2 photos au moins du chantier en cours doivent être dans le chantier proposé
-                    intersection = {e for e in photosSansChemin if e in self.photosSansChemin}
-                    if intersection.__len__()<2:
-                         self.fichierProposes.remove(e)                         
+                    choixReferentiel = r[73]
+                    if "MAL" in choixReferentiel: # la mise à l'échelle ne passe pas avec gravillon
+                        self.fichierProposes.remove(e)
+                        continue
             except:
                 pass
         def controleAppareilPhoto():
@@ -13512,7 +13570,8 @@ Version 5.44 et 5.45 :	mai 2019
             compatibleChantierEnCours() # il faut des points homologues et que les photos du chantier en cours soit un sous ensemble des photos du chantier de départ
             self.fichierProposes = [ e for e in self.fichierProposes if os.path.exists(os.path.join(e,"Ori-Arbitrary"))]
 
-        if filtre == "Referentiel":
+        if filtre == "Referentiel": # chantier compatible pour recopier le référentiel :
+                                    # 2 photos en commun, un nuage dense, référentiel <> "MAL" (car bug avec gravillons)
             referentielPossible()
 
         # Reste-t-il des chantiers proposables après le filtre ?
@@ -14287,7 +14346,7 @@ Version 5.44 et 5.45 :	mai 2019
             liste = [e for e in titles  if "AperoDeDenis V "in e]   # apero déjà ouvert sous WIndows ?
             nb = liste.__len__()
             if nb:
-                titre="AperoDeDenis dèjà lancé !"
+                titre="AperoDeDenis déjà lancé !"
                 if nb==1:
                     texte = _("AperoDeDenis est déjà lancé dans la fenêtre :")+"\n\n"+liste[0]+"\n\n"+\
                             _("'Lancer' pour lancer une seconde instance d'AperoDeDenis.")+"\n"+\
@@ -14389,12 +14448,7 @@ Version 5.44 et 5.45 :	mai 2019
                     erreur = _("Désolé : le fichier %s \nest de type %s. \nFormat non traité dans cette version d'AperoDeDenis.\n\n"+
                                "Utiliser CloudCompare pour l'enregistrer au format mesh ascii ou nuage de point binary.") % (fichierPourMnt,typePly)
                     self.encadre(erreur)
-                    return False                                               # Abandon si pas fichier ply
-##                if typePly=="mesh ": # a écrire pour lire des mesh binaires
-##                    erreur = _("Désolé : le fichier %s \nest de type %s. \nFormat non traité dans cette version d'AperoDeDenis.\n\n"+
-##                               "Utiliser CloudCompare pour l'enregistrer au format mesh ascii ou nuage de point binary.") % (fichierPourMnt,typePly)
-##                    self.encadre(erreur)
-##                    return                
+                    return False                                               # Abandon si pas fichier ply               
             else:
                 erreur = _("Le fichier\n %s \nn'a pas une extension ASC, XYZ,CSV,TXT ou PLY. Abandon") % (fichierPourMnt)
                 self.encadre(erreur)
@@ -14814,7 +14868,18 @@ Version 5.44 et 5.45 :	mai 2019
         texte = str(texte)   
         texte = os.path.normpath(texte)
         return texte.replace(self.separateurAutre,self.separateurChemin)
-    
+
+# retirer les photos détectées comme mauvaises par Schnaps
+    def retirerPhotosSchnaps(self):
+        # lire le fichier schnaps_poubelle.txt
+        if os.path.exists(self.schnapsPoubelle):
+            with open (self.schnapsPoubelle,"r") as f:
+                photos = f.read().splitlines()
+            if photos:
+                print("photos à retirer = ",photos)
+                self.retirerPhotos(photos)
+        else:
+            self.ajoutLigne(_("Fichier % non trouvé") % self.schnapsPoubelle)
 ################################## FIN DE LA CLASSE INTERFACE ###########################################################
     
 ################################## Outils divers et outils POUR DEBUG ###########################################################
@@ -14848,10 +14913,12 @@ def copieRepertoire(source,cible): # copie d'une arborescence de répertoire apr
         return _("la copie a échouée : %s.") % (str(e))
 
 def supprimeFichier(fichier):
+    fichier=fichier.rstrip("\n")
     if not os.path.exists(fichier): return
     try:    os.remove(fichier)
     except Exception as e:
         return _("Erreur suppression fichier :")+str(e)
+
 
 def supprimeRepertoire(repertoire):
     if not os.path.isdir(repertoire):     
@@ -16609,9 +16676,10 @@ class choisirDansUneListe:              # mode="single" ou 'extended'
         self.selectionFinale = list()
 
 ################################## Classe : Dialogue minimum modal : deux boutons OK KO si b2="" alors pas de second bouton ###########################"
- 
+# retour : b1 = 1, b2 = 0
+
 class MyDialog_OK_KO:
-    def __init__(self,parent=None,titre="Question",texte="texte",b1="OK",b2="KO",hauteur=250):
+    def __init__(self,parent=None,titre="Question",texte="texte",b1="OK",b2="KO",hauteur=250,attente=0):
         self.retour = -1
         if parent==None:
             parent = tkinter.Tk()
@@ -16629,7 +16697,10 @@ class MyDialog_OK_KO:
             c = ttk.Button(self.top, text=b2, command=self.ko)
             c.pack(pady=5)
         self.top.grab_set()
+        if attente>0:
+            self.top.after(attente,self.ok,None)    # réponse ok aprés un temps d'attente passé en paramètre      
         parent.wait_window(self.top)
+
 
     def ok(self,event='none'):
         self.retour = 1
