@@ -647,7 +647,7 @@
 # Version 5.66 : le 5 avril 2022
 # correction d'une erreur sur l'affichage du colume calculé sur un mnt
 
-# version 5.67
+# version 5.67 : le 27 avril 2022
 # menu outil : modif du libellé : modifier les métadonnées des photos remplacé par modifier les focales.
 # fix : si absence de chantier pour copier la calibration, message sans sortie de la saisie, et choix calibration modifié
 # pb copie référentiel si mise à l'échelle sur un autre chantier : bug sur gravillon, on ne propose plus les chantier "MAL"
@@ -664,6 +664,10 @@
 # modif nouveauChantier : ajout d'un paramètre : demande de choisir les photos 
 #                         utilisé pour duMenage et sélection des N meilleures photos
 # Vidéo : ajout d'un message d'avertissement sur la caméra utilisée. L'utilisateur peut la modifier si besoin
+
+# Version 5.68
+# valeur par défaut de self.modeCheckedTapas = Fraser (supprimée par erreur dans la version 5.64)
+# Lancement de TiPunch : self.mm3d remplace "mm3d"
 
 # questions :
 # problème : faut-il nettoyer le chantier dans avantScène
@@ -1003,7 +1007,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.67"
+numeroVersion = "5.68"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -4772,6 +4776,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 
         # radialbasic : mode par défaut version 5.62; frazer : mode par défaut depuis la v 5.54 août 2020
                              # mode par défaut depuis la v 5.54 août 2020
+        self.modeCheckedTapas.set('Fraser')                     # mode par défaut depuis la v 5.54 août 2020                             
         self.arretApresTapas.set(0)                             # 1 : on arrête le traitement après Tapas, 0 on poursuit
         self.lancerTarama.set(0)                                # 0 : on ne lance pas Tarama (mosaique des photos après Tapas), 1 on lance       
         self.photosPourCalibrationIntrinseque = list()          # quelques images pour calibrer Tapas
@@ -8962,7 +8967,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.lignePourTrace = ("-------------- " + _("TRACE DETAILLEE") + " --------------\n") # première ligne de la trace détaillée        
         self.ligneFiltre = ("-------------- " + _("TRACE SYNTHETIQUE") +  " --------------\n")  # première ligne de la trace synthétique
         
-        texte = "-------------- " + _("DEBUT DU TRAITEMENT MICMAC à ")+ heure()+" -------------- \n\n"
+        texte = "-------------- " + _("DEBUT DU TRAITEMENT MICMAC ")+ heure()+" -------------- \n\n"
 
         photosPropres=list([os.path.basename(x) for x in self.photosAvecChemin])
         texte = texte+_('Photos choisies :') + " \n\n"+'\n'.join(photosPropres)+'\n\n'           
@@ -9979,7 +9984,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         profondeur="6"  # détermine la qualité du résultat (4,6,8 la meilleure)
         poisson = os.path.splitext(plyIn)[0]+"_poisson_depth"+profondeur+".ply"
         supprimeFichier(poisson)
-        tiPunch = ["mm3d",
+        tiPunch = [self.mm3d,
                     "TiPunch",
                     plyIn,
                     "Mode="+self.modeC3DC.get(),
