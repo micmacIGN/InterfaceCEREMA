@@ -665,9 +665,16 @@
 #                         utilisé pour duMenage et sélection des N meilleures photos
 # Vidéo : ajout d'un message d'avertissement sur la caméra utilisée. L'utilisateur peut la modifier si besoin
 
-# Version 5.68
+# Version 5.68 le 29 avril
 # valeur par défaut de self.modeCheckedTapas = Fraser (supprimée par erreur dans la version 5.64)
-# Lancement de TiPunch : self.mm3d remplace "mm3d"
+# Lancement de TiPunch : self.mm3d remplace "mm3d" (pb possible pour obtenir un maillage)
+
+# Version 5.69
+# modifier : verifierSiExecutable pour éviter de lancer CloudCompare lorsqu'il est choisi
+#            plus tolérant : on fait confiance à l'utilisateur et on évite de l'emmerder !
+# modif lors du choix du répertoire Bin de micmac
+# modif : recherche nouvelle version au démarrage (supprimé)
+# modif : aide "pour commencer"
 
 # questions :
 # problème : faut-il nettoyer le chantier dans avantScène
@@ -1007,7 +1014,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.68"
+numeroVersion = "5.69"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -4186,33 +4193,33 @@ class Interface(ttk.Frame):
                      Pour commencer avec l'interface graphique MicMac :
                      
                      Tout d'abord : installer MicMac. Consulter le wiki MicMac : https://micmac.ensg.eu/index.php          
-                     Ensuite : installer CloudCompare (ou Meshlab  (pour afficher les nuages de points            
+                     Ensuite : installer CloudCompare (ou Meshlab)pour afficher les nuages de points.            
 
                      Puis :           
-                  1  Paramètrer l'interface : indiquer ou se trouvent le répertoire de MicMac et l'éxécutable CloudCompare (ou Meshlab .          
-                     Indiquer éventuellement ou se trouvent exiftool et convert d'ImageMagick (en principe sous MicMac  binaire-aux .          
-                     Vérifier en affichant les paramètres (menu Paramètres .           
-                  2  Choisir quelques photos pour commencer (menu MicMac/choisir des photos .           
+                  1  Vérifier les autres paramètres en les affichant (menu Paramètres/afficher les paramètres).           
+                  2  Choisir quelques photos pour commencer (menu MicMac/choisir des photos).           
                      Par exemple : prendre les 4 photos Gravillons du tutoriel, disponibles sur GitHub:
                      https://github.com/micmacIGN/InterfaceCEREMA/blob/master/InterfaceCEREMA/Tutoriel%20ENSG.zip
-                  3  Lancer MicMac en laissant les paramètres par défaut (menu MicMac/lancer MicMac .          
+                  3  Lancer MicMac en laissant les paramètres par défaut (menu Fichier/Nouveau Chantier).          
                      Si tout va bien une trace du traitement s'affiche et CloudCompare affiche la vue 3D.           
-                  4  Si tout ne va pas bien, prendre un pastis puis :          
-                     Lire 'quelques conseils' (menu Aide .          
-                     Tester la qualité des photos (menu Outils .          
-                     Examiner les traces (menu Edition ,          
-                     Consulter l'aide (menu Aide ,          
-                     Consulter le guide d'installation et de prise en main de l'interface.          
-                     Consulter le forum MicMac sur le net, consulter la doc MicMac.           
-                  5  Si une solution apparaît : modifier les options (menu MicMac/options .          
-                     puis relancer le traitement.           
-                  6  Si le problème persiste faire appel à l'assistance de l'interface (adresse mail dans Aide/A-propos ''')+ self.aideFinDePage  
+                  4  Sinon, prendre un pastis puis :          
+                     Lire 'quelques conseils' (menu Aide)         
+                     Tester la qualité des photos (menu Outils)          
+                     Examiner les traces (menu Edition)          
+                     Consulter l'aide (menu Aide)          
+                  5  Voir sur internet :
+                     https://www.reddit.com/r/MicMac
+                     https://micmac.ensg.eu/index.php/Accueil
+                     http://forum-micmac.forumprod.com/
+                     https://www.youtube.com/channel/UCvXP6f2g3ppOChasqlnBI6w
+                  6  Pour être informé des nouveautés de l'interface envoyer "News AperoDeDenis" à denis.jouin@gmail.com''')+ self.aideFinDePage  
 
     # Historique
         self.aide4 = \
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
               _('''
+Version 5.68 à 5.69 : avril/mai 2022
 Version 5.65 et 5.66 : 05 avril 2022
                 - Ajout de 3 items dans le menu outils, pour éviter de relancer le traitement MicMac : 
                         Générer la mosaïque Tarama
@@ -6106,11 +6113,11 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             texte += _("Abandon, pas de changement.") + "\n"
             self.encadre(texte)            
         
-
+        
         if source[-3:]!="bin":  # pour accepter le répertoire de micmac
             sourcePotentielle=os.path.join(source,"bin")
-        if os.path.exists(sourcePotentielle): # si le répertoire bin existe on le garde
-            source=sourcePotentielle
+            if os.path.exists(sourcePotentielle): # si le répertoire bin existe on le garde
+                source=sourcePotentielle
         
         # mm3d sous Windows :
         
@@ -12073,8 +12080,6 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.mercurialMicMac            =   r2[13]
         except Exception as e: print(_("Avertissement : restauration param généraux : "),str(e))
 
-        threading.Thread(target=self.verifieVersion).start() # supprimé version 5.43 remis en version 5.49
-
         # détermination du chemin pour dicocamera, de la version de mm3d, de la possibilité d'utiliser C3DC
         
         self.CameraXML      = os.path.join(os.path.dirname(self.micMac),self.dicoCameraGlobalRelatif)
@@ -12443,8 +12448,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         if retourVersion[0:3]==" V ":
             self.avertissementNouvelleVersion(retourVersion)
             self.encadre(_("Il existe une version plus récente sur GitHub : "+retourVersion))
-            return
-        # sinon : pas de message
+            # sinon : pas de message
 
 
     def verifVersion(self):     # procédure lancée sur demande utilisateur (menu outils)
@@ -12503,15 +12507,16 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             htmlLu = str(sock.read())
             sock.close
         except Exception as e:
-            print("erreur lecture web : ",url,"\n",e)
+            print("erreur lecture web : ",url,"\n",str(e))
             return "erreur : "+str(e)
         # Y-a-t-il une nouvelle version sur internet ?  Le readme.txt comporte " V N.nn " pour la version en cours
         positionVersion = htmlLu.find(" V ")    # Fragile (la chaîne " V " pourrait se trouver avant....
-        premiereVersion = htmlLu[positionVersion:positionVersion+10] # exemple : " V 5.58.1 "
+        premiereVersion = htmlLu[positionVersion:positionVersion+10] # exemple : " V 5.58 ap"
         if "." not in premiereVersion: # pour éviter les éventuelles confusions avec un autre " V "
             return
-        versionGitHub = premiereVersion.split()[1]
-        if versionGitHub.strip() == numeroVersion.strip():             # version utilisateur sous la forme : " V 5.43 " non trouvée dans version GitHub (espace V majuscule espace numéro espace)
+        # version utilisateur sous la forme : " V 5.43 " non trouvée dans version GitHub (espace V majuscule espace numéro espace)
+        versionGitHub = premiereVersion.split()[1]         
+        if versionGitHub.strip() == numeroVersion.strip():  
             return "OK"
         else:
             return premiereVersion
@@ -12721,7 +12726,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.resul300.destroy()
             return self.bouton
         except Exception as e:
-            print("erreur=",str(e))
+            print("erreur 3 boutons=",str(e))
             return self.bouton      # pour le cas ou Aperodedenis est fermé avec ce module en cours !
         
     def bouton1(self):
@@ -13515,7 +13520,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                     if cameraLocal!=cameraDistant:
                         self.fichierProposes.remove(e)
             except Exception as e:
-                print("erreur=",str(e))
+                print("erreur controleAppareilPhoto =",str(e))
                 pass    # pas grave
                 
         # traitement :z
@@ -15063,15 +15068,13 @@ def mercurialMm3d(mm3D):            # Il faudrait que la version de MicMac autor
 
 
 def verifierSiExecutable(exe):
-    try:
-        subprocess.check_call(exe,shell=True)
-        return True
-    except Exception as e:
-        try:
-            subprocess.check_call([exe,"-h"],shell=True)
-            return True
-        except Exception as f:
-            return False
+    if sys.platform == "win32":
+        if exe[-4:]!=".exe":
+            if MyDialog_OK_KO(fenetre,texte=_("Le fichier choisi \n%s\n est-il exécutable ?") % (exe)).retour!=1:
+                return False
+    # sinon, pour les autres systèmes on fait confiance
+    return True
+    
 @decorateTrySilencieux   
 def open_file(filename):
     if sys.platform == "win32":
@@ -15098,8 +15101,7 @@ def ouvrirPageWEBAperoDeDenis():
     webbrowser.open("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")  
 
 def lireReadMe():
-    webbrowser.open("https://raw.githubusercontent.com/micmacIGN/InterfaceCEREMA/master/InterfaceCEREMA/readme.txt")  
-
+    webbrowser.open("https://raw.githubusercontent.com/micmacIGN/InterfaceCEREMA/master/InterfaceCEREMA/readme.txt")     
 
 def ouvreInterfaceCeremaGItHub():
     threading.Thread(target=ouvrirPageWEBAperoDeDenis).start()  # ouverture de la page WEB dans un thread (join=0 pour désynchroniser si besoin)

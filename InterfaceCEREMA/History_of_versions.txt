@@ -1,5 +1,7 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
+Version 5.69 : May, 2, 2022
+Version 5.68 : april 29, 2022
 Version 5.67 : april 27, 2022
 	
 Version 5.65 et 5.66 : April 05, 2022
