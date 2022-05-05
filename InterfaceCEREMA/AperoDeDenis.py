@@ -669,12 +669,19 @@
 # valeur par défaut de self.modeCheckedTapas = Fraser (supprimée par erreur dans la version 5.64)
 # Lancement de TiPunch : self.mm3d remplace "mm3d" (pb possible pour obtenir un maillage)
 
-# Version 5.69
+# Version 5.69 le 2 mai
 # modifier : verifierSiExecutable pour éviter de lancer CloudCompare lorsqu'il est choisi
 #            plus tolérant : on fait confiance à l'utilisateur et on évite de l'emmerder !
 # modif lors du choix du répertoire Bin de micmac
 # modif : recherche nouvelle version au démarrage (supprimé)
 # modif : aide "pour commencer"
+
+# Version 5.70
+# Modification des maillages texturés : ils sont désormais numérotés et ne s'écrasent plus
+# Copie des points homologues corrigés (seul le répertoire Homol_mini était copié)
+# modif lors du choix des photos : fermeture fenêtre = annuler
+# suppression tentative d'éxécution de la commande si longueur>8000 caractères sous Windows
+# correction d'une régression (depuis la v 5.65) sur la saisie des masques 3D pour C3DC
 
 # questions :
 # problème : faut-il nettoyer le chantier dans avantScène
@@ -1014,7 +1021,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.69"
+numeroVersion = "5.70"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -2299,9 +2306,6 @@ class Interface(ttk.Frame):
         menuExpertImport = tkinter.Menu(menuExpert,tearoff = 0)         
         menuExpertImport.add_command(label=_("Importer les points homologues d'un autre chantier"), command=self.copierPointsHomologues)             
         menuExpertImport.add_command(label=_("Importer la calibration de l'appareil d'un autre chantier"), command=self.chargerCalibrationIntrinsequeDepuisMenu)
-        #menuExpertImport.add_command(label=_("Importer l'orientation d'un autre chantier"), command=self.copierOrientation) version 5.65 : supprimé, compliqué
-        #menuExpertImport.add_separator() # en sommeil dans la version 5.64, il faut ajouter des controles
-        #menuExpertImport.add_command(label=_("Importer les points homologues, la calibration et l'orientation"), command=self.copierHomolOriTarama)
         menuExpertImport.add_separator()
         menuExpertImport.add_command(label=_("Importer les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)        
         menuExpertImport.add_command(label=_("Importer les points GCP à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)
@@ -2461,7 +2465,7 @@ class Interface(ttk.Frame):
         
     #initialise les valeurs par défaut au lancement de l'outil
         
-    def initialiseConstantes(self):         # les constantes, mais pas que (ménage à faire)
+    def initialiseConstantes(self):         # les constantes, mais pas que (ménage à faire) 
 
         # Pour suivre les nouvelles versions
 
@@ -2654,7 +2658,8 @@ class Interface(ttk.Frame):
         # pour C3DC
 
         self.choixDensification = tkinter.StringVar()                      # 
-        self.modeC3DC           = tkinter.StringVar()       
+        self.modeC3DC           = tkinter.StringVar()
+        self.repertoireMaillage = "maillageC3DC"
 
         # Pour TiPunch ! création d'un maillage après C3DC et PIMs2Mnt création d'un MNT aprés C3DC :
 
@@ -6424,7 +6429,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                                 _("Les nuages de points obtenus sont conservés.") + "\n"+                                 
                                 _("Les options compatibles avec les nouvelles photos seront conservées.") + "\n",
                                 _("Abandon"),
-                                _("Réinitialiser le chantier")) == 0:
+                                _("Réinitialiser le chantier")) <= 0:
                 self.encadre(_("Abandon, le chantier n'est pas modifié."))
                 return
             else:
@@ -7753,8 +7758,8 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         if not os.path.exists("AperiCloud.ply"):
             self.encadre(_("Absence de nuage AperiCloud.ply : saisie d'un masque 3D impossible"))
             return
-        verifParametresSaisieMasqQT()                           # modifie si besoin le paramètre de centrage du nuage : au barycentre       
-        masque3D = ["SaisieQT","SaisieMasqQT","AperiCloud.ply"]             # " SaisieAppuisInitQT AperiCloud.ply"
+        verifParametresSaisieMasqQT()                           # modifie si besoin le paramètre de centrage du nuage : au barycentre
+        masque3D = [self.mm3d,"SaisieMasqQT","AperiCloud.ply"]             # " SaisieAppuisInitQT AperiCloud.ply"
         m3 = " ".join(masque3D)
         tueSaisieQt()
         os.system(m3)   # lance la saisie dans une fenêtre QT
@@ -8298,10 +8303,11 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             message = str()
             if self.jpgAjoutVrai:
                 message += _("Des photos ont été ajoutées dans le répertoire du chantier :")+"\n\n"+"\n".join(self.jpgAjoutVrai)+"\n\n"
+                message+="\n\n"+_("solution : retirer ces fichiers du répertoire %s") %(self.repTravail)                
             if self.jpgRetrait:
                 message += _("Des photos ont été retirées dans le répertoire du chantier :")+"\n\n"+"\n".join(self.jpgRetrait)
+                message+="\n\n"+_("solution : renommer ou remettre les photos")
             message=_("Le répertoire du chantier a été modifié par ajout/retrait de photos.")+"\n\n"+message
-            message+="\n\n"+_("solution : Définir un nouveau chantier")
             self.encadre(message)
             return                    
     # controle que les options sont correctes (toutes, même si elles ne doivent pas servir)
@@ -8527,7 +8533,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                                          b1=_('Lancer la densification '),
                                          b2=_('débloquer le chantier - effacer les points homologues'),
                                          b3=_('débloquer le chantier - garder les points homologues'))
-            if retour==-1:              # 1 ou -1 : abandon ou fermeture de la fenêtre par la croix
+            if retour==-1:              # -1 : fermeture de la fenêtre par la croix
                 return
             
             if retour==0:               # choix b1 : densifier
@@ -8594,7 +8600,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                                          b1=_('Recherche des points homologues'),
                                          b2=_("Recherche de l'orientation"),
                                          b3=_('lancer la densification'))        
-            if retour==-1:                         # 2 ou -1 : abandon ou fermeture de la fenêtre par la croix
+            if retour==-1:                         # -1 : fermeture de la fenêtre par la croix
                 return
             if retour==0 :                                      # b1 : recherche des points homologues : on met l'état à 2 (avec photo, enregistré)
                 self.nettoyerChantier()
@@ -8840,9 +8846,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.encadre(ligne)
             return
 
-        # recherche le nom du modele3D a créer
+        # recherche le nom du modele3D non maillé a créer
 
-        self.modele3DSuivant()
+        self.modele3DFinal,self.indiceModeleFinal = self.modele3DNonMailleSuivant()
         
         # malt ou D3CD, dans les 2 cas le nuage sera self.modele3DEnCours
         texte = ""      # info en retour
@@ -9793,40 +9799,12 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         if not os.path.exists(self.modele3DFinal):
             return
         if self.lancerTiPunch.get():# Maillage demandé ? 
-            self.TiPunchTequila()   # création d'un maillage texturé sur demande utilisateur
-
-    def TiPunchTequila(self):       # maillage TiPunch avec texture Tequila sur le ply en cours
-        self.maillageTequila()  # remplace le 29 mars 2022
-        return
-    ####################################### ancien code :
-        self.maillageTiPunch = "maillageTiPunch_"+str(self.indiceModeleFinal)+"_.ply"        
-        self.lanceTiPunch()         # création d'un ply maillé sur modele3DFinal       
-        if not os.path.exists(self.maillageTiPunch): # le maillage n'a pas réussi :
-            self.ajoutTraceSynthese("\n"+_("Le maillage n'a pas été créé. Voir la trace ci dessus."))
-            self.encadre(_("Le maillage n'a pas été créé./n Abandon de la création de la texture/n Voir la trace"))
-            return
-        # création d'une texture sur l'orientation courante et le maillage TiPunch
-        self.lanceTequila()
-        fichierTexture = os.path.splitext(self.maillageTiPunch)[0]+"_UVtexture.jpg" # nom du fichier texture créé par Tequila si tout va bien
-        if not os.path.exists(fichierTexture): # la texture n'a pas réussie :
-            self.ajoutTraceSynthese("\n"+_("La texture UVTexture n'a pas été créée. Voir la trace ci dessus."))            
-            return        
-        # déplace les fichiers créés par TiPunch et Tequila sous le répertoire maillageC3DC :  self.maillageTiPunch et maillage_UVtexture.jpg        
-        # raison : l'ajout du fichier JPG UVTexture.jpg sous le répertoire du chantier empêche le lancement de micmac.
-        repertoireMaillage="maillageC3DC"        
-        creeRepertoire(repertoireMaillage)                      # création si absent
-        shutil.move(self.maillageTiPunch,repertoireMaillage)    # ply maillé par TiPunch
-        shutil.move(fichierTexture,repertoireMaillage)          # jpg texture par Tequila
-        textureC3DC = os.path.splitext(self.maillageTiPunch)[0]+"_textured.ply"     # fichier ply texturé créé par Tequila
-        if not os.path.exists(textureC3DC): # la texture n'a pas réussie :
-            self.ajoutTraceSynthese("\n"+_("Le ply texturé n'a pas été créé. Voir la trace ci dessus."))            
-            return           
-        self.plyTextureC3DC = shutil.move(textureC3DC,repertoireMaillage)
-        self.ajoutTraceSynthese("\n"+_("Copie du maillage texturé sous le répertoire ")+repertoireMaillage)   
+            self.maillageTequila()   # création d'un maillage texturé sur demande utilisateur
 
 # ceci est le maillage appelé par le menu outil : on lance Tipunch puis Tequila sur un sous ensemble des photos
+# deviendra inutile lorsque Tequila prendra en compte la correction de mars 2022
 
-    def maillageTequila(self):  # tente un maillage sur un sous ensemble des photos, hors filière normale
+    def maillageTequila(self):  # tente un maillage sur un sous ensemble des photos, appel par menu outil 
         def choisirLesPhotosUtiles():
             nb = 25   # on retient le nb photos utiles, lorsque Tequila sera moodifié on pourra mettre 200
             nbTotal = self.photosSansChemin.__len__()
@@ -9836,35 +9814,46 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             # choix 1 : au hasard si il y a moins de 3 fois trop de photos:
             if nbTotal<=3*nb:
                 utiles = sample(self.photosSansChemin,nb)  #choix des photos au hasard
-            # choix 2 : elles se suivent qui se suivent
-            #utiles = self.photosSansChemin[:nb]
-            # choix 3 : 1 photos toutes les nb/total
+            # choix 2 : 1 photos toutes les nb/total
             else:
                 utiles = self.photosSansChemin[::int(nbTotal/nb)]
             if utiles.__len__()>nb:
                 utiles = utiles[:nb]
-            denomme(utiles)
+            denomme(utiles)     # supprime l'extension des photos inutiles
             print("photos utilisées : ",str(utiles))
             
-        def denomme(utiles):
+        def C3DCKo():
+            if not os.path.exists(plyIn):
+                message = _("Pas de nuage de points 3D.\n Lancer la densification avec C3DC")
+                return message
+            pims=glob.glob("PIM*")  # exemple : le répertoire PIMs-MicMac indique que C3DC à été utilisé avec l'option MicMac
+            if pims.__len__()==0:
+                message=_("Densification faite avec Malt.\n Ou chantier nettoyé.\nLancer la densification avec C3DC")
+                return message
+
+        def denomme(utiles):    # supprime l'extension des photos inutiles sans modifier self.photosSansChemin
             [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in utiles]            
-        def renomme():
+        def renomme():          # remet l'extension des photos qui sont listées dans self.photosSansChemin
             [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if (os.path.exists(os.path.splitext(e)[0]) and not (os.path.exists(e)))]
-        # d'abord tiPunch pour le maillage
-        plyIn,i=  self.modeleFinalSansTexture()
-        if not os.path.exists(plyIn):
-            self.encadre(_("Pas de nuage de points 3D.\n Lancer la densification avec C3DC"))
-            return
-        pims=glob.glob("PIM*")
-        if pims.__len__()==0:
-            self.encadre(_("Densification faite avec Malt.\n Ou chantier nettoyé.\nLancer la densification avec C3DC"))
-            return            
-        meshOut = "tipunch.ply"
-        plyTequila = "tipunch_textured.ply" # valeur du ply en sortie de Tequila (défaut)
-        jpgTequila = "tipunch_UVtexture.jpg" # nom du fichier jpg texture créé par Tequila si tout va bien
-        self.cadreVide()
-        supprimeFichier(meshOut)
-        self.lanceTiPunchMaillage(plyIn,meshOut)         # création d'un ply maillé sur modele3DFinal 
+        def copieSousRepertoireMaillage():
+            # déplace les fichiers créés par TiPunch et Tequila sous le répertoire maillageC3DC :  self.maillageTiPunch et maillage_UVtexture.jpg        
+            # raison : l'ajout du fichier JPG UVTexture.jpg sous le répertoire du chantier empêche le lancement de micmac.       
+            creeRepertoire(self.repertoireMaillage)                     # création si absent
+            plyTequila,jpgTequila = self.fichiersTexture(i)             # nom des fichiers ply et texture créé par Tequila
+            deplaceFichier(plyTequila,self.repertoireMaillage)
+            deplaceFichier(jpgTequila,self.repertoireMaillage)
+            self.ajoutTraceSynthese("\n"+_("Copie du maillage texturé, sous le répertoire " + self.repertoireMaillage))
+            message = "\n"+_("La texture a été créée.\n")
+            self.ajoutTraceSynthese(message)        
+
+
+        # d'abord vérifier qu'un maillage par C3DC est présent :
+        plyIn,i=  self.modeleFinalNonMaille()   # nom du dernier modéle non maillé, base du maillage demandé
+        if m:=C3DCKo():  # message si C3DC n'a pas effectué de maillage
+            return m
+        # nom du futur ply maillé :
+        meshOut,i = self.modele3DMailleSuivant() # chemin relatif du ply maillé à créer et indice
+        self.lanceTiPunchMaillage(plyIn,meshOut) # création d'un ply maillé sur modele3DFinal 
         if not os.path.exists(meshOut): # le maillage n'a pas réussi :
             message = _("Le maillage demandé n'a pas été créé.\n Voir la trace.")
             self.encadre(message)
@@ -9872,32 +9861,18 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             return
         # si ok : Tequila
         # création d'une texture sur l'orientation courante et le maillage TiPunch
-        choisirLesPhotosUtiles()
+        choisirLesPhotosUtiles()    # en attendant que Tequila fonctionne sur bcp de photos
         self.lanceTequilaMaillage(meshOut)
         renomme()        # on remet les jpg renommés avec leur extension
-        if not os.path.exists(jpgTequila): # la texture n'a pas réussie :
-            message = "\n"+_("La texture n'a pas été créée. Voir la trace.")
+        if not os.path.exists(meshOut): # la texture n'a pas réussie : (en fait le maillage...)
+            message = "\n"+_("Le maillage n'a pas été créée. Voir la trace.")
             self.ajoutTraceSynthese(message)
             self.encadre(message)
             return
         # tout va bien : copie dans un sous répertoire
-        # déplace les fichiers créés par TiPunch et Tequila sous le répertoire maillageC3DC :  self.maillageTiPunch et maillage_UVtexture.jpg        
-        # raison : l'ajout du fichier JPG UVTexture.jpg sous le répertoire du chantier empêche le lancement de micmac.
-        repertoireMaillage="maillageC3DC"        
-        creeRepertoire(repertoireMaillage)                      # création si absent
-        dest = os.path.join(repertoireMaillage,plyTequila)
-        supprimeFichier(dest)
-        aLancer=shutil.move(plyTequila,repertoireMaillage)    # ply maillé par TiPunch
-        dest = os.path.join(repertoireMaillage,jpgTequila)
-        supprimeFichier(dest)        
-        shutil.move(jpgTequila,repertoireMaillage)        # jpg texture par Tequila
-        self.ajoutTraceSynthese("\n"+_("Copie du maillage texturé, sous le répertoire " + repertoireMaillage))
-        message = "\n"+_("La texture a été créée.\n")
-        self.ajoutTraceSynthese(message)
-        self.encadre(message)
-        meshlab = [self.meshlab, aLancer]        
-        self.lanceCommande(meshlab,
-                           attendre=False)
+        copieSousRepertoireMaillage()
+        # ouvre le maillage résultat
+        self.ouvreModele3D()
         self.maillageOuvert=True
         
     def lanceC3DC(self):
@@ -9988,6 +9963,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 # en dehors de la filière normale, appel par menu/outils :
 
     def lanceTiPunchMaillage(self,plyIn,meshOut):         # création d'un maillage sur le nuage C3DC avec les phootos du pattern
+        self.cadreVide()
         profondeur="6"  # détermine la qualité du résultat (4,6,8 la meilleure)
         poisson = os.path.splitext(plyIn)[0]+"_poisson_depth"+profondeur+".ply"
         supprimeFichier(poisson)
@@ -10132,7 +10108,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # ------------------ Meslab ou CloudCompare --------------------------
     
     def ouvreModele3D(self):
-        self.chercheModele3D() 
+        self.modele3DFinal = self.modele3DActuel() 
         aOuvrir = os.path.join(self.repTravail,self.modele3DFinal)
         if not os.path.exists(aOuvrir):
            texte=_("Pas de fichier %s généré.") % (self.modele3DFinal)+ "\n\n" + _("Echec du traitement MICMAC") 
@@ -11574,26 +11550,26 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             message = _("Ouverture du chantier impossible : %s.") % str(e)
             return message         
 
-# Copie des 2 répertoires Homol et Homol_mini
-        if self.lancerSchnaps.get():    #on copie à la fois homol et
-            homolDepart = os.path.join(repDepart,"Homol_mini")
-            homolCible = os.path.join(self.repTravail,"Homol")
-            homolCibleMini  = homolCible+"_mini"            
-            bilan = copieRepertoire(homolDepart,homolCible)            
-            bilan = copieRepertoire(homolDepart,homolCibleMini)            
-        else:
-            homolDepart = os.path.join(repDepart,"Homol")
-            homolCible = os.path.join(self.repTravail,"Homol")            
-            bilan = copieRepertoire(homolDepart,homolCible)
+# Copie des 3 répertoires Homol et Homol_mini et Homol_Sres (multiscale)
+
+        homolDepart = os.path.join(repDepart,"Homol")
+        homolDepartMini = os.path.join(repDepart,"Homol_mini")
+        homolDepartSRes = os.path.join(repDepart,"Homol_SRes")        
+        homolCible = os.path.join(self.repTravail,"Homol")
+        homolCibleMini  = homolCible+"_mini"
+        homolCibleSRes  = homolCible+"_SRes"            
+        copieRepertoire(homolDepart,homolCible)            
+        copieRepertoire(homolDepartMini,homolCibleMini)
+        copieRepertoire(homolDepartSRes,homolCibleSRes)            
+
         self.menageDansHomol()  # fait du ménage dans le répertoire Homol : supprime les points homologues des photos absentes
-        if bilan :
-            return bilan                  
+                 
         if self.etatDuChantier in[1,2,3]:
             self.etatDuChantier = 35
         self.ajoutLigne ("\n"+_('Copie des points homologues depuis : %s') % (repDepart)+"\n")         
-        self.ajoutLigne (_('Paramètres de Tapioca recopiés')+"\n")
+        self.ajoutLigne (_('Paramètres de Tapioca recopiés')+"\n")        
         self.ecritureTraceMicMac()
-        
+                 
     def copierPointsHomologues(self):   # copie des points homologues : dialogue utilisateur
         self.menageEcran()
         self.encadre(_("Patience..."))
@@ -12565,7 +12541,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         # Nettoyage effectif à faire
 
         if len(self.selectionPhotosAvecChemin)==1:
-            self.troisBoutons(_('Suppression du chantier ou nettoyage des répertoires de travail superflus'),
+            self.troisBoutons(_('Suppression du chantier ou nettoyage des répertoires de travail'),
                              _('Le chantier suivant va être supprimé ou nettoyé :') + '\n\n'+'\n'.join(self.selectionPhotosAvecChemin),
                              _('Supprimer totalement le chantier'),
                              _('Nettoyer le chantier, conserver les résultats'),                            
@@ -12575,7 +12551,6 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                 attention=_("ATTENTION : le chantier en cours est dans la liste.") + "\n\n"
             else:
                 attention=""
-
             self.troisBoutons(_('Suppression des chantiers ou nettoyage des répertoires de travail superflus'),
                              attention+_('Les chantiers suivant vont être supprimés ou nettoyés :') + '\n\n'+'\n'.join(self.selectionPhotosAvecChemin),
                              _('Supprimer totalement les chantiers,\ny compris tous les sous-répertoires présents sous la racine'),
@@ -12785,19 +12760,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                          _("Voici les 200 premiers caractères de la commande :") +"\n"+
                          commandeTexte[:200]+"\n"+
                          _("Toute la commande se trouve dans la trace"))
-                self.troisBoutons(titre=_("Problème de longueur de commande"),question=texte,b1='OK')    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1                            
-                d = commande[1:]
-                while 1:
-                    if len(d):
-                        c = commande[0]
-                        chaine=str()
-                        while len(chaine)<8000:
-                            if len(d):
-                                if len(d[0])+len(chaine)<8000:
-                                    c.append(commande[i])   # ajout à la commande
-                                    chaine+=commande[i]     # ajout à la chaine pour controler la longueur
-                                    del d[0]                # pour s'arrêter si tout est épuisé
-                                self.lanceCommande(self,c,filtre,attendre)
+                self.troisBoutons(titre=_("Problème de longueur de commande"),question=texte,b1=_('Continuer'),b2=_("Abandonner"))    # b1 renvoie 0, b2 renvoie 1 ; fermer fenetre = -1                            
             return listeParam
         ########################
         commande = nettoyerLaCommande(commande)
@@ -13244,44 +13207,57 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             return ligne
 
 ########################################## Quel nom pour le modéle qui va être créé ? on renomme le modèle3D pour éviter de l'écraser
+        
     @decorateTry
-    def modele3DSuivant(self): # premier nom disponible pour un nouveau modèle
+    def modele3DNonMailleSuivant(self): # premier nom disponible pour un nouveau modèle non maillé, indice
         for i in range(1,100):
-            new = "modele3D_V"+str(i)+".ply"
-            newMaille = os.path.join("maillageC3DC","maillageTiPunch_"+str(i)+"__textured.ply")
-            if not os.path.exists(new) and not os.path.exists(newMaille):
-                self.modele3DFinal = new    # a priori non maillé C3DC
-                self.indiceModeleFinal = i
-                return
+            cloud,mesh,cheminMesh = self.nomsModele3D(i)
+            if not os.path.exists(cloud) and not os.path.exists(cheminMesh):
+                return cloud,i
+
+    def modele3DMailleSuivant(self): # premier nom disponible pour un nouveau modèle non maillé, indice
+        for i in range(1,100):
+            cloud,mesh,cheminMesh = self.nomsModele3D(i)
+            if not os.path.exists(cloud) and not os.path.exists(cheminMesh):
+                return mesh,i
             
-    # modéle dans  répertoire de travail OU dans répertoire maillageC3DC ; renvoi le plus récent des modeles 3D dans self.modele3DFinal 
-    def chercheModele3D(self,maillage=True):  
-        for i in range(100,0,-1):
-            # si le plus grand numéro correspond à un maillage texturé C3DC on le retient :
-            self.modele3DFinal = os.path.join("maillageC3DC","maillageTiPunch_"+str(self.indiceModeleFinal)+"__textured.ply")
-            if os.path.exists(self.modele3DFinal):
-                return
-            # sinon le plus grand numéro non texturé :
-            self.modele3DFinal = "modele3D_V"+str(i)+".ply"
-            if os.path.exists(self.modele3DFinal):
-                return
-        test = "modele3D.ply"   # pour compatibilité avec les versions antérieures
-        if os.path.exists(test):
-            self.modele3DFinal = test
+    # renvoi le plus récent des modeles 3D, maillé ou pas
+    # si pas de modèle dense : retourne le nom du premier : modele3D_V1.ply
+    def modele3DActuel(self):  
+        for i in range(100,0,-1):       # si le plus grand numéro correspond à un maillage texturé C3DC on le retient :
+            cloud,mesh,cheminMesh = self.nomsModele3D(i)
+            if os.path.exists(cheminMesh): 
+                return cheminMesh                       
+            if os.path.exists(cloud):  # sinon le plus grand numéro non texturé :
+                return cloud
+        return cloud
             
         # sinon : self.modele3DFinal vaut modele3D_V1.ply, qui n'existe pas
 
-    def modeleFinalSansTexture(self):
+    def modeleFinalNonMaille(self):   # retourne le nom et le numéro du dernier modèle 3D non maillé
         for i in range(100,0,-1):
-            # sinon le plus grand numéro non texturé :
-            modele3DFinal = "modele3D_V"+str(i)+".ply"
-            if os.path.exists(modele3DFinal):
-                return modele3DFinal,i
-        return modele3DFinal,i     # soit, fichier inexistant : modele3D_V1.ply,1
+            # sinon le plus grand numéro non maillé :
+            cloud,mesh,cheminMesh = self.nomsModele3D(i)
+            if os.path.exists(cloud):
+                return cloud,i
+        return cloud,i     # soit, si absence de modéle 3D : modele3D_V1.ply,1
             
         # sinon : self.modele3DFinal vaut modele3D_V1.ply, qui n'existe pas
 
-            
+    def nomsModele3D(self,i):    # retourne les chemins relatifs des modéles 3D non maillé et maillé pour l'indice i
+        # le nom mesh est utilisé en sortie de TiPunch et en entrée de Tequila (qui va créér la texture sur le maillage mesh)
+        # ce fichier jpg ne doit pas se mélanger aux photos jpg du chantier
+        cloud = "modele3D_V"+str(i)+".ply"
+        mesh = "tipunch_"+str(i)+".ply" # mesh non texturé
+        meshTexture,texture = self.fichiersTexture(i)    # nom du mesh texturé
+        cheminMesh = os.path.join(self.repertoireMaillage,meshTexture) # et avec le chemin du mesh structuré
+        return cloud,mesh,cheminMesh
+
+    def fichiersTexture(self,i):    # nom du ply et de sa texture créés par Tequila, sans le chemin
+        plyTequila = "tipunch_%s_textured.ply" % (str(i))# valeur du ply en sortie de Tequila (défaut)
+        jpgTequila = "tipunch_%s_UVtexture.jpg" % (str(i)) # nom du fichier jpg texture créé par Tequila si tout va bien
+        return plyTequila,jpgTequila 
+        
 ########################################## Outils divers (raccourcis clavier, infobulle, afficher un dico de points....)
 
     def lettre(self,event):
@@ -13566,7 +13542,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                         self.fichierProposes.remove(e)
             except Exception as e: pass
             if len(self.fichierProposes)==0:
-                return _("Aucun chantier avac points GCP.")
+                return _("Aucun chantier avec points GCP.")
                      
         if filtre in ["homol",]: 
             compatibleChantierEnCours() # il faut des points homologues et que les photos du chantier en cours soit un sous ensemble des photos du chantier de départ
@@ -14915,15 +14891,32 @@ def pv(variable):       # affiche le nom de la variable, sa classe et sa valeur 
 
 def copieRepertoire(source,cible): # copie d'une arborescence de répertoire après suppression 
     retour=supprimeRepertoire(cible)
-    if retour: return retour                                             
+    if retour: return retour
+    if not os.path.isdir(source):
+        return
     try: shutil.copytree(source,cible)
     except Exception as e:
-        #interface.encadre(_("la copie a échouée : %s.") % (str(e)))
         interface.ajoutLigne("erreur copie répertoire : "+str(source)+" vers "+str(cible)+" erreur= "+str(e))
         return _("la copie a échouée : %s.") % (str(e))
 
+def copieFichier(source,cible): # cible est un répertoire ou un fichier
+    if os.path.exists(source)==False:
+        return False
+    if not os.path.isdir(cible):        
+        if os.path.exists(cible):
+            supprimeFichier(cible)
+    try: shutil.copy(source,cible)
+    except exception as e:
+        return False
+    return True
+
+def deplaceFichier(source,cible):
+    if copieFichier(source,cible):
+        supprimeFichier(source)
+    
 def supprimeFichier(fichier):
     fichier=fichier.rstrip("\n")
+    if os.path.isdir(fichier): return
     if not os.path.exists(fichier): return
     try:    os.remove(fichier)
     except Exception as e:
