@@ -1,5 +1,25 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 5.71 20 mars 2023 :
+				- affichage cercle rouge autour du point gps probable : corrigé   
+				- menu expert, ajout de 3 items :
+					- importation d'un fichier de points GPS placés sur les photos
+					- exportation du fichier de points GPS 
+					- exportation d'un fichier de points placés sur les photos       
+				- menu outils métier, ajout de 3 items :
+					- info sur MNT, dans le menu outils métier
+					- calcul du profil dans le menu outils métier
+					- Visualiser la position du profil dans le menu édition       
+				- menu MicMac :
+					- Suppresssion de l'item "choisir des photos"
+					  Faisait confusion avec l'item Fichier/nouveau chantier
+					- options, onglet référentiel :
+						- ajout du référentiel "métadonnées GPS"
+						- suppression de "Autre chantier"           
+				- menu Vidéo :
+					- suppression de l'item "sélecction des images
+					- l'item "nouveau chantier" crée effectivement un nouveau chantier        
+    
 			Version 5.70 : 5 mai 2022
 			Version 5.69 : 2 mai 2022
 			Version 5.68 : 29 avril 2022

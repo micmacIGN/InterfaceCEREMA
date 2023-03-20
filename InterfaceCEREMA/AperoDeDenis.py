@@ -355,7 +355,7 @@
 # 'self.mm3d' au lieu de 'mm3d" ligne 7127
 # 'self.restauPerso' au lieu de self.initPerso ligne 9272
 # les variables suivantes étaient initialisées dans l'initialisation des constantes et non par dans l'initialisation des valeurs par défaut :
-# self.incertitudePixelImage, self.incertitudeCibleGPS et les variables pour la GOPRO
+# self.incertitudePixelImage, self.incertitudeCibleGPS et les variables pour la caméra (gopro)
 # remplacement de campari par Campari lors de l'appel à Campari (l'appel ne fonctionnait pas)
 # - remplacer UrbanMne par UrbanMNE ligne 7371 (lanceCommande Malt plantait)
 
@@ -676,13 +676,62 @@
 # modif : recherche nouvelle version au démarrage (supprimé)
 # modif : aide "pour commencer"
 
-# Version 5.70
+# Version 5.70 5 mai 2022
 # Modification des maillages texturés : ils sont désormais numérotés et ne s'écrasent plus
 # Copie des points homologues corrigés (seul le répertoire Homol_mini était copié)
 # modif lors du choix des photos : fermeture fenêtre = annuler
 # suppression tentative d'éxécution de la commande si longueur>8000 caractères sous Windows
 # correction d'une régression (depuis la v 5.65) sur la saisie des masques 3D pour C3DC
 
+# Version 5.71
+# simplication du menu Vidéo : 2 items seulement : options et nouveau chantier
+# modification du decorateTry : le message bloquant est remplacé par un message non bloquant
+# AfficheEtat, Tapas : si la calibration est faite par un autre chantier, pas d'indication du mode de tapas
+# AfficheEtat, Tapas : "orientation des appareils photos" est remplacé par "Calibration des appareils photos"
+# ajout dans initialisation valeurs par défaut : self.selectionRepertoireAvecChemin
+# ajout de l'heure et de la commande dans le print d'erreur de lecture sur stdout (dans lancecommande)
+# supprimeCalibrationParPhotos et supprimeCalibrationParCopie : suppression du test initial
+# fix visualiser la distance si pas d'unité de longueur
+# fix : annuler sur la bdd modifier les option de la caméra vidéo
+# find201 : remplacer F3 par F dans le message (erreur) 4/3/2023
+# modif item de menu : Afficher l'ortho mosaïque
+# modif affichage cercle rouge autour du point gps probable : corrigé, lirehomoltxt et lirehomoldat renvoie pas le même format
+# ajout de 3 fonctions dans le menu expert :
+# - importation d'un fichier de points GPS placés sur les photos
+# - exportation du fichier de points GPS 
+# - exportation d'un fichier de points placés sur les photos
+# le fichier mm3d-logFile n'est plus ajouté à la trace s'il est consulté
+# convertMagick est modifié si on change la version de MicMac
+# ajout du référentiel META dans l'onglet référentiel des options
+# recopie de la dernière recherche texte dans la bdd MyDialog
+# Ajout d'un item : info sur MNT, dans le menu métier
+# ajout d'un item calcul du profil dans le menu métier
+# ajout d'un item Visualiser la position du profil dans le menu édition
+# ajout d'un item Visualiser le profil dans edition
+# Suppresssion de l'item "choisir des photos" du menu MicMac
+# ajout et utilisation massive du message "self.pasDeChantier"
+# suppression du choix du référentiel (onglet du menu options): autre chantier
+# (trop compliqué er remplacable par la copie des points GPS, mise en commentaire du pack de l'item)
+# refonte aide historique
+
+# a faire bouton pour supprimer masque 2D tarama
+# a faire : adapter l'aide
+# vérifier : maillagetipunch.jpg reste sous le chantier ce qui ajoute un jpg parasite (chantier mauchaussat_8photos, vendredi 10 mars 23 14h)
+#info :
+## sous mec malt Le fichier TA_STD-MALT.xml
+## contient les dimensions du masque en X Y
+## OriginePlani : sans doute le x mini, pour le y c'est pas sur
+# sous TA :
+# le fichier cptTALeChantier.tif compte le nombre de photos pour chaque pixel de la mosaïque 
+# le fichier labelTALeChantier.tif indique quelle photo est retenue en chaque pixel
+
+# a faire : ajouter la possibilité de modifier le référentiel sans recalculer c3dc (lancer Morito)
+# - tentative de créer un masque automatique lorsque les photos turnent autour du sujet.
+#   la position des caméras se trouve dans le répertoire d'orientation, orientation-nomphoto.JPG.xml
+#   balise centre (et rotation) la balise verif ne sert pas
+#   proposition pour polig3d  ; prendre les coordonnées x,y des caméras et la matrice identité. Quid du z ?
+# - Lorsqu'il y a plusieurs scènes en MULSCALE, le calcul suivant ne refait pas la première échelle (à priori)
+# - menu vidéo : créér vraiment un nouveau chantier
 # questions :
 # problème : faut-il nettoyer le chantier dans avantScène
 # problème des instance de mm3d restent en activités aprés la fin du traitement micmac (liées à la texture ?)
@@ -766,7 +815,7 @@
 # la distance dans la mise à l'échelle est jugé correcte s'il y a 4 points, même répartis sur 3 ou 4 photos ! 
 # 2 install non standard python : PIL (pip install pillow) et Scipy,Numpy (pip install scipy)
 
-# liste alphabétique des modules MicMac utilisés dans AperoDeDenis :
+# liste alphabétique des 22 modules MicMac utilisés dans AperoDeDenis :
 
 # Apericloud
 # Apero
@@ -834,16 +883,22 @@ from html.parser import HTMLParser
 import atexit
 import re
 from random import *
+from scipy.interpolate import griddata      # Pour l'interpolesXyzlation
+from numpy import mgrid
+import numpy
+import matplotlib.pyplot as plt
 
 def foreach_window(hwnd, lParam):
     if IsWindowVisible(hwnd):
+
         length = GetWindowTextLength(hwnd)
         buff = ctypes.create_unicode_buffer(length + 1)
         buf1 = ctypes.create_unicode_buffer(length + 1)        
         GetWindowText(hwnd, buff, length + 1)
         titles.append(buff.value)
-        l=GetClassName(hwnd, buf1, length + 1)        
-    
+        l=GetClassName(hwnd, buf1, length + 1)
+
+
 def heure():        #  time.struct_time(tm_year=2015, tm_mon=4, tm_mday=7, tm_hour=22, tm_min=56, tm_sec=23, tm_wday=1, tm_yday=97, tm_isdst=1)
         return ("le %(jour)s/%(mois)s/%(annee)s à %(heure)s:%(minutes)s:%(secondes)s") % {"jour" : str(time.localtime()[2]), "mois" : str(time.localtime()[1]), "annee" : str(time.localtime()[0]), "heure" : str(time.localtime()[3]), "minutes" : str(time.localtime()[4]), "secondes": str(time.localtime()[5])}
 
@@ -876,9 +931,10 @@ def decorateTry(func):
         try:
             response = func(*args, **kwargs)
         except Exception as e:
-            tkinter.messagebox.showerror("Erreur",_("erreur inattendue = "+str(e)+"\n\n"+
-                                                    _("Fichier incorrect. La fonction est abandonnée")))
-            interface.menageEcran()
+            message =  ("erreur inattendue = "+str(e)+"\n\n"+
+                        _("La fonction %s est abandonnée")% (str(func)))
+            interface.ajoutLigne(message)
+            interface.encadre(message+"\n"+_("Patientez, le progamme se poursuit"))
             return
         # Post-traitement
         return response
@@ -1021,7 +1077,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.70"
+numeroVersion = "5.71"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour controler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -1104,6 +1160,8 @@ if os.name=="nt":   # noms des fonctions dans user32.dll sous c:\windows\system3
     titles = []
     EnumWindows(EnumWindowsProc(foreach_window), 0)     # liste des fenetres ouvertes dans titles
     WM_LBUTTONDOWN = 0x0201
+    WM_DESTROY = 0x0002
+    WM_CLOSE = 0x0010
 
 # pour indiquer à pyproj ou se trouve le répertoire des data si installation via msi, la recherche se fait d'abord sur pyproj.datadir.get_data_dir()
 # le même code peut servir avec ou sans l'installateur
@@ -1128,7 +1186,7 @@ class TracePolygone():
         self.root = tkinter.Toplevel()                      #fenêtre spécifique à la saisie du masque
         self.root.title(_("Saisie sur la photo : ")+image)  # titre
         fenetreIcone(self.root)
-        self.root.geometry( "900x900" )                     # Taille
+        self.root.geometry( "1000x600" )                     # Taille
         self.dimMaxiCanvas = 600                            # dimension max du canvas accueillant l'image       
         self.facteurZoom = 2                                # valeur du changement de niveau de zoom lorsque l'utilisateur "zoom" (par la molette de la souris)
         self.maxScale = 100                                 # Nb de zooms maximum autorisé
@@ -1328,7 +1386,7 @@ class TracePolygone():
         self.retailleEtAffiche()
         
     def retailleEtAffiche(self):
-        self.imgi = self.imageFichier.crop((self.xNW,self.yNW,self.xSE,self.ySE))
+        self.imgi = self.imageFichier.crop(())
         self.img = self.imgi.resize((self.largeurCanvas,self.hauteurCanvas))
         self.afficheImage()
         
@@ -1423,12 +1481,13 @@ class TracePolygone():
         try: self.canvas.delete(self.pol)
         except: pass
 
+
 ################# Classe CalibrationGPS : placer des points repérés en XYZ sur des images.
 # création d'un dictionnaire dicoPointsJPG : clé = tuple (nom du point, nom de la photo); valeur = tuple (X,Y)
 
 class CalibrationGPS:   # Paramètres : fenetre maitre,Nom du fichier image, liste des noms des boutons, dictionnaire des points déjà placés
     
-    def __init__(self,fenetre,image,points,dejaPlaces,
+    def __init__(self,fenetre,image,points,dejaPlaces=dict(),
                  position="900x900+50+50",
                  rechercherPosition=False,          # propose la position évaluée du point
                  afficherSuivantPrecedent=True):    # affiche les boutons photo suivante, précedente  
@@ -1640,7 +1699,7 @@ class CalibrationGPS:   # Paramètres : fenetre maitre,Nom du fichier image, lis
         self.xJPG = int(self.xNW + xFrame / self.scale)         # xJPG,yJPG : position du pixel dans l'image initiale :
         self.yJPG = int(self.yNW + yFrame / self.scale)
 
-    def xyJPGVersCanvas(self,xJPG,yJPG):                        # xJPG,yJPG : position dans l'image originale (Jpeg)                              
+    def xyJPGVersCanvas(self,xJPG,yJPG):                        # xJPG,yJPG : position dans l'image originale (Jpeg)
         self.xFrame = (xJPG - self.xNW) * self.scale             # xFrame,yFrame : position dans l'image dans le cadre
         self.yFrame = (yJPG - self.yNW) * self.scale 
 
@@ -1697,8 +1756,8 @@ class CalibrationGPS:   # Paramètres : fenetre maitre,Nom du fichier image, lis
         self.dicoPointsJPG[(self.boutonChoisi,self.file,self.numBoutonChoisi)] = (self.xJPG,self.yJPG)
         self.afficheImage()
 
-    def ajouterPointProbable(self):                                       # clic sur le canvas avec le bouton self.boutonActif : ajoute la position du point sur le canvas et dans le dico local "widget" et global "points"
-        if self.pointProbable!=False:       
+    def ajouterPointProbable(self):                         # clic sur le canvas avec le bouton self.boutonActif : 
+        if self.pointProbable!=False:                       # ajoute la position du point sur le canvas et dans le dico local "widget" et global "points"
             self.xyJPGVersCanvas(self.pointProbable[0],self.pointProbable[1])
             rayon = self.facteurZoom*20
             self.canvas.create_oval(self.xFrame-rayon, self.yFrame-rayon,self.xFrame+rayon, self.yFrame+rayon,outline='red',width=2)
@@ -1794,7 +1853,7 @@ class CalibrationGPS:   # Paramètres : fenetre maitre,Nom du fichier image, lis
         self.pointProbable  = False
         corPP = list()
         for cle,point in self.dicoPointsJPG.items(): # cle[0] = bouton, cle[1] = nom du fichier photo, point = (x,y) du point
-            if cle[0]==self.boutonChoisi and cle[1]!=self.file:
+            if cle[0]==self.boutonChoisi and cle[1]!=self.file: # si le point est présent sur une autre photo
                 corPP.append(lePointEnCorrespondance(cle[1],self.file,point,SH="_mini",ExpTxt=0))               
                 corPP.append(lePointEnCorrespondance(self.file,cle[1],point,SH="_mini",ExpTxt=0,inverse=True))
         # on fait la moyenne des points en correspondance
@@ -1887,7 +1946,7 @@ class AfficheHomologues:   # Paramètres : fenetre maitre,Nom du fichier image, 
         self.boutonValiderSuivant.bind("<Leave>",self.infoClear)
         self.root.protocol("WM_DELETE_WINDOW", self.quitter)    # Fonction a éxécuter lors de la sortie du programme
         self.root.transient(fenetre)                            # 3 commandes pour définir la fenêtre comme modale pour l'application
-        self.root.grab_set()
+        self.root.grab_set()                    
         fenetre.wait_window(self.root)
 
     def affichePhoto(self,photo):        
@@ -2173,7 +2232,6 @@ class Interface(ttk.Frame):
        
         ttk.Frame.__init__(self, fenetre, **kwargs)
         self.pack(fill='both')
-
         self.style = ttk.Style()
         self.style.theme_use('clam')
         fenetreIcone(fenetre)
@@ -2219,16 +2277,20 @@ class Interface(ttk.Frame):
         menuEditionVisu.add_command(label=_("Visualiser la ligne horizontale/verticale"), command=self.afficherLigneHV)
         menuEditionVisu.add_command(label=_("Visualiser la zone plane"), command=self.afficherZonePlane)
         menuEditionVisu.add_command(label=_("Visualiser la distance"), command=self.afficherDistance)
-
+        menuEditionVisu.add_separator()
+        menuEditionVisu.add_command(label=_("Visualiser la position du profil"), command=self.afficherPositionProfil)
+        
         menuEditionAffiche = tkinter.Menu(menuEdition,tearoff = 0)        
         menuEditionAffiche.add_command(label=_("Afficher le nuage dense"), command=self.affiche3DNuage)
         menuEditionAffiche.add_command(label=_("Afficher le nuage non dense"), command=self.afficheApericloud)         
         menuEditionAffiche.add_separator()        
         menuEditionAffiche.add_command(label=_("Afficher la mosaïque Tarama"), command=self.afficheMosaiqueTarama)
-        menuEditionAffiche.add_command(label=_("Afficher les orthos mosaïque"), command=self.afficheLesOrthos)
+        menuEditionAffiche.add_command(label=_("Afficher l'ortho mosaïque"), command=self.afficheLesOrthos)
         menuEditionAffiche.add_separator()        
         menuEditionAffiche.add_command(label = _("Afficher les points homologues"),
                                command=self.affichePointsHomologues)        
+        menuEditionAffiche.add_separator()
+        menuEditionAffiche.add_command(label=_("Afficher le profil"), command=self.afficherLeProfil)
         menuEditionAffiche.add_separator()        
         menuEditionAffiche.add_command(label=_("Lister-Visualiser les images 3D"), command=self.lister3DPly)
         
@@ -2249,18 +2311,18 @@ class Interface(ttk.Frame):
         # MicMac
                 
         menuMicMac = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
-        menuMicMac.add_command(label=_("Choisir des photos"), command=self.lesPhotos)
+        #menuMicMac.add_command(label=_("Choisir des photos"), command=self.lesPhotos)
         menuMicMac.add_command(label=_("Options"), command=self.optionsOnglet)
         menuMicMac.add_separator()     
         menuMicMac.add_command(label=_("Lancer MicMac"), command=self.lanceMicMac)                 ## Ajout d'une option au menu fils menuFile
 
-        # GoPro
+        # Vidéo GoPro
                 
         menuGoPro = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearOff = 1, détachable
-        menuGoPro.add_command(label=_("Appareil Vidéo (GoPro par défaut)"), command=self.optionsGoPro)
+        menuGoPro.add_command(label=_("options caméra"), command=self.optionsGoPro)
         menuGoPro.add_separator()          
         menuGoPro.add_command(label=_("Nouveau chantier vidéo"), command=self.laVideo)   
-        menuGoPro.add_command(label=_("Sélection des images"), command=self.selectionGoPro)    ## Sélection de 1 image sur le taux indiqué dans les options vidéo 
+        #menuGoPro.add_command(label=_("Sélection des photos"), command=self.selectionGoPro)    ## Sélection de 1 image sur le taux indiqué dans les options vidéo 
 
         # Outils
 
@@ -2307,9 +2369,13 @@ class Interface(ttk.Frame):
         menuExpertImport.add_command(label=_("Importer les points homologues d'un autre chantier"), command=self.copierPointsHomologues)             
         menuExpertImport.add_command(label=_("Importer la calibration de l'appareil d'un autre chantier"), command=self.chargerCalibrationIntrinsequeDepuisMenu)
         menuExpertImport.add_separator()
-        menuExpertImport.add_command(label=_("Importer les points GCP d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)        
-        menuExpertImport.add_command(label=_("Importer les points GCP à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)
-
+        menuExpertImport.add_command(label=_("Importer les points GPS d'un autre chantier"), command=self.ajoutPointsGPSAutreChantier)        
+        menuExpertImport.add_command(label=_("Importer les points GPS terrain à partir d'un fichier"), command=self.ajoutPointsGPSDepuisFichier)
+        menuExpertImport.add_command(label=_("Importer les points GPS photos à partir d'un fichier"), command=self.ajoutPointsGPSPhotosDepuisFichier)
+        menuExpertImport.add_separator()        
+        menuExpertImport.add_command(label=_("Exporter les points GPS terrain vers un fichier texte"), command=self.exportPointsGPSTerrainVersFichier)
+        menuExpertImport.add_command(label=_("Exporter les points GPS photos vers un fichier texte"), command=self.exportPointsGPSPhotosVersFichier)
+               
         menuExpert.add_cascade(label = _("Importer points homologues, les points GCP/GPS"),menu=menuExpertImport)
 
         # sous menu du menu expert : Plusieurs appareils photos
@@ -2349,19 +2415,23 @@ class Interface(ttk.Frame):
         menuMetier.add_command(label=_("Ecrire un MNT à partir d'un fichier XYZ"), command=self.xyz2Mnt)
         menuMetier.add_command(label=_("Visualiser un fichier MNT"), command=afficheMNTIGN)        
         menuMetier.add_separator()
-        menuMetier.add_command(label=_("Information sur le calcul des volumes"), command=infoVolume)
         menuMetier.add_command(label=_("Calculer le volume d'un MNT"), command=calculVolumeMnt)        
         menuMetier.add_command(label=_("Calculer le volume entre 2 MNT"), command=calculVolumeEntre2Mnt)           
         menuMetier.add_command(label=_("Visualiser l'écart entre les 2 MNT"), command=self.afficheEcart)
+        menuMetier.add_separator()
+        menuMetier.add_command(label=_("Tracer le profil entre 2 points"), command=tracerProfil)        
         menuMetier.add_separator()        
         menuMetier.add_command(label=_("Modifier la tolérance utilisée pour calculer le volume"), command=self.paramTolerance)
         menuMetier.add_command(label=_("Modifier l'arrondi des résultats du calcul des volumes"), command=self.paramArrondi)        
         menuMetier.add_separator()
         menuMetier.add_command(label=_("Ecrire un fichier XYZ à partir d'un PLY"), command=self.ecrireXYZ)
-        menuMetier.add_command(label=_("Visualiser un fichier XYZ"), command=self.afficheXYZ)        
+        menuMetier.add_command(label=_("Visualiser un fichier XYZ"), command=self.afficheXYZ)
+        menuMetier.add_separator()
+        menuMetier.add_command(label=_("Informations sur un MNT"), command=self.demandeMNTPourInfo)        
         menuMetier.add_separator()         
         menuMetier.add_command(label=_("Aide sur les outils métiers"), command=self.aideOutilsMetiers)
-
+        menuMetier.add_command(label=_("Information sur le calcul des volumes"), command=infoVolume)        
+        
         # paramètres : mise à jour dynamique des menus dépendants du contexte      
 
         def updateParam():
@@ -2447,7 +2517,6 @@ class Interface(ttk.Frame):
         mainMenu.add_cascade(label = _("Outils métier"),menu=menuMetier)              
         mainMenu.add_cascade(label = _("Paramètres"),menu=menuParametres)
         mainMenu.add_cascade(label = _("Aide"),menu=menuAide)
-
         
         # affichage du menu principal dans la fenêtre
 
@@ -2462,7 +2531,8 @@ class Interface(ttk.Frame):
         self.ajoutTraceComplete(heure()+" "+_("lancement d'aperodedenis")+version+".")
 
         # zone de test éventuel :
-        
+
+
     #initialise les valeurs par défaut au lancement de l'outil
         
     def initialiseConstantes(self):         # les constantes, mais pas que (ménage à faire) 
@@ -2493,6 +2563,12 @@ class Interface(ttk.Frame):
         self.mercurialMicMacChantier    =   ""      
         self.convertMagick              =   _("Pas de version Image Magick")                       # pour convertir les formats
         self.noRep = [self.micMac, self.meshlab, self.exiftool, self.mm3d, self.convertMagick,self.ffmpeg] # pour des question de traduction si message et pas si répertoire !!
+
+        # message pour absence de chantier :
+
+        self.pasDeChantier              = '\n'+ _('Pas de chantier en cours')+'\n\n'+\
+                                                _("Démarrer un nouveau chantier : menu 'Fichier/nouveau chantier'")+"\n\n"+\
+                                                _("Ou bien ouvrir un chantier enregistré : menu 'Fichier/ouvrir un chantier")        
                 
         # le controle des photos
 
@@ -2801,7 +2877,7 @@ class Interface(ttk.Frame):
         self.item560 = ttk.Frame(self.item500,height=50,relief='sunken',padding="0.2cm")      # pour le check button, fera un encadrement
         self.item561 = ttk.Frame(self.item560,height=50,relief='sunken',padding="0.2cm")
         self.item562 = ttk.Frame(self.item560)
-        self.item564 = ttk.Radiobutton(self.item561, text=_("Pas de calibration"),
+        self.item564 = ttk.Radiobutton(self.item561, text=_("Calibration par défaut"),
                                        variable=self.choixCalibration, value='sans', command=self.visuOptionsCalibration)
         self.item565 = ttk.Radiobutton(self.item561, text=_("Choisir la calibration d'un autre chantier"),
                                        variable=self.choixCalibration, value='chantier', command=self.visuOptionsCalibration)
@@ -2871,7 +2947,8 @@ class Interface(ttk.Frame):
         self.item1110.pack(side='left')
         self.item1115.pack(side='left')
         self.item1120.pack(side='left')
-        self.item1127.pack(side='left')
+        self.item1125.pack(side='left')        
+        # self.item1127.pack(side='left')
         # item1125 : pack uniquement si il y a des métadonnées : self.item1125.pack(side='left')
 
         # Messages si le choix du référentiel est MicMac (item1130)
@@ -3205,7 +3282,7 @@ class Interface(ttk.Frame):
         self.item2006 = ttk.Entry(self.item2000,
                                   textvariable=self.goProFocale35)
         self.item2007 = ttk.Label(self.item2000,
-                                  text= "--------------\n" + _("Nombre d'images à conserver par seconde (entre 0.1 et 12) :"),
+                                  text= "--------------\n" + _("Nombre d'images à conserver par seconde (entre 0.1 et 25) :"),
                                   justify='center')
         self.item2008 = ttk.Entry(self.item2000,
                                   textvariable=self.goProNbParSec)        
@@ -3850,7 +3927,18 @@ class Interface(ttk.Frame):
                      - Nouveau chantier : constitution d'un 'chantier' comportant les photos, les options d'exécution de Micmac et          
                        les résultats des traitements.         
                        Les paramètres du chantier sont conservés dans le fichier    self.paramChantierSav  .    
-                       Enregistrer le chantier crée une arborescence dont la racine est le répertoire des photos et le nom du chantier.           
+                       Enregistrer le chantier crée une arborescence dont la racine est le répertoire des photos et le nom du chantier.
+                       Remarque sur le choix des photos : choisir des photos JPG, GIF, TIF ou BMP pour le traitement.           
+                       Les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert).          
+                       Un EXIF avec la focale utilisée pour la prise de vue est nécessaire : si besoin l'ajouter (menu Outil/ajout exif.          
+                       Remarques : 1  Si l'exif ne comporte pas la focale équivalente en 35 mm alors          
+                                   le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils            
+                                   la page web http://www.dpreview.com/products fournit beaucoup de tailles de capteurs.           
+                                   2  Si les photos proviennent de plusieurs appareils alors les tags 'model' des exif doivent          
+                                   être différenciés (voir l'aide 'Plusieurs focales... plusieurs appareils et le menu Expert/plusieurs appareils photos           
+                                   3  Les photos géolocalisées par GPS sont automatiquement placées dans le référentiel WGS84          
+                                      Le menu expert/Navigation GPS permet de changer le référentiel.          
+                                      Les photos prises par les drones sont générallement géolocalisées.                                 
                      - Ouvrir un chantier : revenir sur un ancien chantier pour le poursuivre ou consulter les résultats.           
                      - Enregistrer le chantier : enregistre le chantier en cours.          
                        Le chantier est systématiquement enregistré aprés chaque modification. Cet item est conservé pour mémoire.          
@@ -3914,17 +4002,6 @@ class Interface(ttk.Frame):
                           Informations sur un fichier Ply            : mêmes infos pour un ply choisi dans l'arborescence du disque''') +self.aideFinDePage         
 
         self.aide203 =  _('''            Menu MicMac :           
-                     - Choisir les photos : permet choisir les photos JPG, GIF, TIF ou BMP pour le traitement.           
-                       Les photos GIF et BMP seront converties en JPG (nécessite la présence de l'outil convert .          
-                       Un EXIF avec la focale utilisée pour la prise de vue est nécessaire : si besoin l'ajouter (menu Outil/ajout exif .          
-                       Remarques : 1  Si l'exif ne comporte pas la focale équivalente en 35 mm alors          
-                                   le fichier DicoCamera.xml doit comporter la taille du capteur de l'appareil (voir menu Outils            
-                                   la page web http://www.dpreview.com/products fournit beaucoup de tailles de capteurs.           
-                                   2  Si les photos proviennent de plusieurs appareils alors les tags 'model' des exif doivent          
-                                   être différenciés (voir l'aide 'Plusieurs focales... plusieurs appareils et le menu Expert/plusieurs appareils photos           
-                                   3  Les photos géolocalisées par GPS sont automatiquement placées dans le référentiel WGS84          
-                                      Le menu expert/Navigation GPS permet de changer le référentiel.          
-                                      Les photos prises par les drones sont générallement géolocalisées.           
                      - Options : choisir les options des modules Tapioca, Tapas, GCP (nuage non densifié   puis de densification Malt ou C3DC:            
                                  Consulter le wiki MicMac pour obtenir de l'info sur les modules MicMac, par exemple : https://micmac.ensg.eu/index.php/Tapas           
                        Les options suivantes concernent le calcul du nuage de points NON densifié :           
@@ -4202,7 +4279,7 @@ class Interface(ttk.Frame):
 
                      Puis :           
                   1  Vérifier les autres paramètres en les affichant (menu Paramètres/afficher les paramètres).           
-                  2  Choisir quelques photos pour commencer (menu MicMac/choisir des photos).           
+                  2  Choisir quelques photos pour commencer (menu Fichier/Nouveau chantier).           
                      Par exemple : prendre les 4 photos Gravillons du tutoriel, disponibles sur GitHub:
                      https://github.com/micmacIGN/InterfaceCEREMA/blob/master/InterfaceCEREMA/Tutoriel%20ENSG.zip
                   3  Lancer MicMac en laissant les paramètres par défaut (menu Fichier/Nouveau Chantier).          
@@ -4224,7 +4301,36 @@ class Interface(ttk.Frame):
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
               _('''
+
+Version 5.71 20 mars 2023 :
+
+    - affichage cercle rouge autour du point gps probable : corrigé
+    
+    - menu expert, ajout de 3 items :
+        - importation d'un fichier de points GPS placés sur les photos
+        - exportation du fichier de points GPS 
+        - exportation d'un fichier de points placés sur les photos
+        
+    - menu outils métier, ajout de 3 items :
+        - info sur MNT, dans le menu outils métier
+        - calcul du profil dans le menu outils métier
+        - Visualiser la position du profil dans le menu édition
+        
+    - menu MicMac :
+        - Suppresssion de l'item "choisir des photos"
+          Faisait confusion avec l'item Fichier/nouveau chantier
+        - options, onglet référentiel :
+            - ajout du référentiel "métadonnées GPS"
+            - suppression de "Autre chantier"
+            
+    - menu Vidéo :
+        - suppression de l'item "sélecction des images
+        - l'item "nouveau chantier" crée effectivement un nouveau chantier        
+    
+Version 5.70 5 mai 2022 : quelques corrections
+
 Version 5.68 à 5.69 : avril/mai 2022
+
 Version 5.65 et 5.66 : 05 avril 2022
                 - Ajout de 3 items dans le menu outils, pour éviter de relancer le traitement MicMac : 
                         Générer la mosaïque Tarama
@@ -4340,7 +4446,6 @@ Version confinée bis 5.51 :	juin 2020
 		- Calcul du volume entre 2 MNT et génération d'un nuage 3D des écarts
 		- Visualisation des écarts entre 2 MNT
 
-
 Version confinée 5.50 :	4 mai 2020
 		Nouveautés :
 		- Choix du référentiel EPSG pour les données GPS des drones : expert/navigation GPS/référentiel : utiliser EPSG.
@@ -4352,7 +4457,6 @@ Version confinée 5.50 :	4 mai 2020
 		- Copie possible de l'orientation depuis un autre chantier, menu expert/importer ...exporter
 
 		Modifications diverses, corrections d'anomalies : voir en tête du script
-
 
 Version 5.49 :	20 janvier 2020
 		Nouveautés :
@@ -4396,19 +4500,105 @@ Version 5.43 :	18 avril 2019
 Version 5.41 :	avril 2019
 		- amélioration ergonomie de la fonction 'du ménage', correction du bug : ménage uniquement fait sur le chantier en cours).
 		- Fichier/renommer le chantier devient fichier/enregistrer sous....
+
+Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
+		- amélioration ergonomie saisie des points gcp (flèches : photo suivante/précédente).
+		- corrections de quelques bugs sur la prise en compte des points gcp (voir entête du code source).
+		- correction du changement de langue si appel depuis un raccourci.
+
+Version 5.34 :	26 mars 2019, suivant les conseils de Xavier Rolland
+		- l'affichage des coordonnées en pixels des point GCP devient optionnel.
+		- Au retour de saisie des points GCP : fenêtre liste des photos.
+		- remplacement global de GCP par GCP (sauf définition dans l'aide)
+		- zoom plus important possible sur la fenêtre de saisie des points GCP
+Version 5.32 - 5.33 :	25 mars 2019
+		- Possibilité de relancer un chantier non terminé en conservant les points homologues.
+		- ajout d'un item au menu expert : modifier la longueur du préfixe utilisé pour définir plusieurs appareils.
+
+Version 5.31 :	8 mars 2019
+		- Les échelles par défaut de Tapioca sont calculées suivant les photos : 60% de la dimension maxi des photos.
+		- suppresssion des items de menu outils\qualité des photos line et qualité des photos ALL.
+		- Arrêt de Tapioca MulScele aprés le premier passage si la scène n'est pas unique, rendant l'échec certain.
+		- Ajout de 1 item outils/retirer des photos.
+
+Version 5.30 :	21 février 2019
+		- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
+		  Ces photos font 'planter' la recherche de l'orientation.
+		- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
+		  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
+		  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
+		- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
+		- prise en compte de l'issue concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
+		- Ajout d'un item dans Paramètres : recherche d'une nouvelle version GitHub.
+
+Version 5.22 :	11 février 2019
+		- fix 2 issues remontées sur github, numéro de version inchangée : 5.21
+
+Version 5.21 :	février 2019
+		- Argument de Tapas aprés calibration : Figee (au lieu de Autocal)
+		- Ajout dans le menu expert d'un console python
+
+Version 5.2 :	janvier 2019
+		- ajout du modulé CAMPARI après chaque géolocalisation par points GCP (améliore les valeurs des Z).
+		- répartition des photos provenant de plusieurs appareils par modification du 'model' dans l'exif (menu expert)
+		- affichage des noms des appareils photos présents dans le chantier (menu expert)
+		- affichage du log des traitement MicMac : mm3d-logFile.txt (menu expert)
+		- amélioration de la fonction console système (Expert/Exécuter une commande)
+
+Version 5.1 :	décembre 2018
+		- permet d'oublier les photos ayant servies à la calibration de l'appareil pour l'exécution de Tapas.
+		- insertion d'un fichier texte de points GCP par le menu expert (séparateur espace : nom,x,y,z,dx,dy,dz.
+		- affichage des dimensions des photos dans le menu outils/nom de l'appareil photo
+		- Amélioration de libellés de boites de dialogue, suppression du polysème 'calibration'
 		
-Historique chronologique depuis la version 1.5 de novembre 2015 
+Version 5.0 :	Janvier 2018
+		supprime l'item 'indices surfaciques'.
 
-Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
+Version 3.34 :	Janvier 2018
+		- Du ménage! permet de conserver les résultats OU de supprimer tout le chantier.
+		- Affichage de la taille du dossier.
+		- Correction de régressions de la V 3.20.
+		Remarque : la version 4.11 de décembre 2017 ajoute un item métier de calcul d'indice surfacique,
 
-Version 1.55 : sous Windows le fichier paramètre est placé sous le répertoire APPDATA de l'utilisateur,
-		ce qui règle les questions relatives aux droits d'accès en écriture. Mise en ligne le 04/12/2015.
+Version 3.31 :	février 2017
+		- Ajout d'un item du menu 'expert' : recopie les points GCP d'un chantier à un autre.
 
-Version 1.60 : ajout des fonctions :
-		- Qualité des photos lors du dernier traitement
-		- Exporter le chantier en cours
-		- Importer un chantier (permet de recopier le chantier sur un autre répertoire, disque, ordinateur, système d'exploitation)
-		- Les fichiers 'trace' sont enregistrés au format utf-8.
+Version 3.30 :	janvier 2017
+		- Ajout de tarama : création d'une mosaïque après Tapas.
+		- le mode Ortho de Malt utilise la mosaïque tarama, avec masque
+		- drapage du nuage densifié par l'ortho mosaïque obtenue par Tawny
+		- Possibilité d'inverser les masques 2D
+		- Ouverture des mosaïques Tarama et Tawny par menu
+		- Ajout d'un menu 'expert' permettant de saisir une ligne de commande.
+
+Version 3.20 :	janvier 2017
+		- Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche pour vous les maîtres et les photos correspondantes
+		- Item de sélection des meilleures images pour créer un nouveau chantier. janvier 2017
+		- Possibilité de saisir une unité avec la distance.
+		- Lancement de Tapas accéléré : suppression du controle des photos
+		- Les photos autour de la maître pour Malt sont choisies parmi les meilleures en correspondances
+		- Controle affiné des points GCP, message informatif détaillé
+		- Possibilité de supprimer UN seul point GCP sur une photo
+
+Version 3.10 :	- Choix des N meilleures photos pour un nouveau dossier. Novembre 2016
+
+Version 3.00 :	- Version bilingue Français/Anglais. Octobre 2016
+
+Version 2.50 :	- Ajout de Tawny après Malt en mode Ortho, désactivation du message de lancement. Juin 2016
+
+
+Version 2.45 :	- Référentiel GCP calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.
+		- Possiblité d'appliquer le positionnement GCP ou GPS sans relancer malt. Mai 2016
+Version 2.40 :	- Choix de l'option (Statue ou QuickMac) pour C3DC. Avril 2016
+
+Version 2.30 : 	- Modification des options par défaut dans le menu outils.
+
+Version 2.20 :	- Maintien des options compatibles lors du choix de nouvelles photos. Février 2016
+
+Version 2.10	- Ajout d'un item du menu édition fusionnant les images 3D.
+		- Plusieurs images maîtres, plusieurs masques.
+		- Conversion automatique des fichiers PNG, BMP, GIF, TIF en JPG
+		- Ajout d'un item du menu Outils permettant de modifier les exifs. Diffusion restreinte à la DTer NC le 16/02/2016
 
 Version 2.00 : ajout des fonctions :
 		- Choix de photos pour la calibration de l'appareil photo par Tapas.
@@ -4422,105 +4612,16 @@ Version 2.00 : ajout des fonctions :
 		- Ajout de deux contrôles sur le lot des photos : mêmes dimensions, même focale.
 		- Ajout d'un item 'historique' dans le menu Aide.
 
-Version 2.10	- Ajout d'un item du menu édition fusionnant les images 3D.
-		- Plusieurs images maîtres, plusieurs masques.
-		- Conversion automatique des fichiers PNG, BMP, GIF, TIF en JPG
-		- Ajout d'un item du menu Outils permettant de modifier les exifs. Diffusion restreinte à la DTer NC le 16/02/2016
+Version 1.60 : ajout des fonctions :
+		- Qualité des photos lors du dernier traitement
+		- Exporter le chantier en cours
+		- Importer un chantier (permet de recopier le chantier sur un autre répertoire, disque, ordinateur, système d'exploitation)
+		- Les fichiers 'trace' sont enregistrés au format utf-8.
 
-Version 2.20 :	- Maintien des options compatibles lors du choix de nouvelles photos. Février 2016
+Version 1.55 : sous Windows le fichier paramètre est placé sous le répertoire APPDATA de l'utilisateur,
+		ce qui règle les questions relatives aux droits d'accès en écriture. Mise en ligne le 04/12/2015.
 
-Version 2.30 : 	- Modification des options par défaut dans le menu outils.
-
-Version 2.40 :	- Choix de l'option (Statue ou QuickMac) pour C3DC. Avril 2016
-
-Version 2.45 :	- Référentiel GCP calculé après Tapas (et toujours avant Malt). La virgule est un séparateur décimal accepté.
-		- Possiblité d'appliquer le positionnement GCP ou GPS sans relancer malt. Mai 2016
-
-Version 2.50 :	- Ajout de Tawny après Malt en mode Ortho, désactivation du message de lancement. Juin 2016
-
-Version 3.00 :	- Version bilingue Français/Anglais. Octobre 2016
-
-Version 3.10 :	- Choix des N meilleures photos pour un nouveau dossier. Novembre 2016
-
-Version 3.20 :	janvier 2017
-		- Ajout d'un choix pour Malt : AperoDeDenis, l'interface recherche pour vous les maîtres et les photos correspondantes
-		- Item de sélection des meilleures images pour créer un nouveau chantier. janvier 2017
-		- Possibilité de saisir une unité avec la distance.
-		- Lancement de Tapas accéléré : suppression du controle des photos
-		- Les photos autour de la maître pour Malt sont choisies parmi les meilleures en correspondances
-		- Controle affiné des points GCP, message informatif détaillé
-		- Possibilité de supprimer UN seul point GCP sur une photo
-
-Version 3.30 :	janvier 2017
-		- Ajout de tarama : création d'une mosaïque après Tapas.
-		- le mode Ortho de Malt utilise la mosaïque tarama, avec masque
-		- drapage du nuage densifié par l'ortho mosaïque obtenue par Tawny
-		- Possibilité d'inverser les masques 2D
-		- Ouverture des mosaïques Tarama et Tawny par menu
-		- Ajout d'un menu 'expert' permettant de saisir une ligne de commande.
-
-Version 3.31 :	février 2017
-		- Ajout d'un item du menu 'expert' : recopie les points GCP d'un chantier à un autre.
-
-Version 3.34 :	Janvier 2018
-		- Du ménage! permet de conserver les résultats OU de supprimer tout le chantier.
-		- Affichage de la taille du dossier.
-		- Correction de régressions de la V 3.20.
-		Remarque : la version 4.11 de décembre 2017 ajoute un item métier de calcul d'indice surfacique,
-
-Version 5.0 :	Janvier 2018
-		la version suivante 5.0 supprime l'item 'indices surfaciques'.
-
-Version 5.1 :	décembre 2018
-		- permet d'oublier les photos ayant servies à la calibration de l'appareil pour l'exécution de Tapas.
-		- insertion d'un fichier texte de points GCP par le menu expert (séparateur espace : nom,x,y,z,dx,dy,dz.
-		- affichage des dimensions des photos dans le menu outils/nom de l'appareil photo
-		- Amélioration de libellés de boites de dialogue, suppression du polysème 'calibration'
-
-Version 5.2 :	janvier 2019
-		- ajout du modulé CAMPARI après chaque géolocalisation par points GCP (améliore les valeurs des Z).
-		- répartition des photos provenant de plusieurs appareils par modification du 'model' dans l'exif (menu expert)
-		- affichage des noms des appareils photos présents dans le chantier (menu expert)
-		- affichage du log des traitement MicMac : mm3d-logFile.txt (menu expert)
-		- amélioration de la fonction console système (Expert/Exécuter une commande)
-
-Version 5.21 :	février 2019
-		- Argument de Tapas aprés calibration : Figee (au lieu de Autocal)
-		- Ajout dans le menu expert d'un console python
-
-Version 5.22 :	11 février 2019
-		- fix 2 issues remontées sur github, numéro de version inchangée : 5.21
-
-Version 5.30 :	21 février 2019
-		- dans les items 'Outils/Qualité des photos' ajout des photos 'isolées', en disjontion de toutes les autres.
-		  Ces photos font 'planter' la recherche de l'orientation.
-		- Suite à la recherche des points homologues vérification de l'unicité de la scène photographiée.
-		  Plusieurs scènes sans points homologues communs font planter la recherche d'une orientation.
-		  Cette fonction est ajoutée à l'item 'Outils/Qualité des photos'.
-		- Lorsque le message MAXLINELENGTH est émis par Tapioca il est affiché et expliqué dans la trace synthétique.
-		- prise en compte de l'issue concernant la fonction filedialog sous Mac-Os lors des recherche de programmes (exiftool...).
-		- Ajout d'un item dans Paramètres : recherche d'une nouvelle version GitHub.
-
-Version 5.31 :	8 mars 2019
-		- Les échelles par défaut de Tapioca sont calculées suivant les photos : 60% de la dimension maxi des photos.
-		- suppresssion des items de menu outils\qualité des photos line et qualité des photos ALL.
-		- Arrêt de Tapioca MulScele aprés le premier passage si la scène n'est pas unique, rendant l'échec certain.
-		- Ajout de 1 item outils/retirer des photos.
-
-Version 5.32 - 5.33 :	25 mars 2019
-		- Possibilité de relancer un chantier non terminé en conservant les points homologues.
-		- ajout d'un item au menu expert : modifier la longueur du préfixe utilisé pour définir plusieurs appareils.
-
-Version 5.34 :	26 mars 2019, suivant les conseils de Xavier Rolland
-		- l'affichage des coordonnées en pixels des point GCP devient optionnel.
-		- Au retour de saisie des points GCP : fenêtre liste des photos.
-		- remplacement global de GCP par GCP (sauf définition dans l'aide)
-		- zoom plus important possible sur la fenêtre de saisie des points GCP
-
-Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
-		- amélioration ergonomie saisie des points gcp (flèches : photo suivante/précédente).
-		- corrections de quelques bugs sur la prise en compte des points gcp (voir entête du code source).
-		- correction du changement de langue si appel depuis un raccourci.
+Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
               ''')+ self.aideFinDePage
              
@@ -4638,7 +4739,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 
     # A propos
     
-        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2022") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
+        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2023") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
                                 _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr"+ "\n\n" + "mail : denis.jouin@gmail.com"+
                                 "\n\n"+"GitHub : https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA"+
                                  "\n\n" + "youtube : https://www.youtube.com/channel/UCvXP6f2g3ppOChasqlnBI6w/videos")
@@ -4701,8 +4802,8 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
               Utiliser le menu expert : Personnaliser les options de MicMac          
             Examiner ou modifier les variables python de l'interface :      
               menu expert : exécuter une commande python :       
-                  - indiquer le nom de la variable pour la visualiser,      
-                  - dir(  pour voir toutes les variables du contexte      
+le nom de la variable pour la visualiser,      
+                  - dir(  pour voir toutes les iables du contexte      
                   - modification possible par : variable = valeur          
             Consulter le log MicMac 'mm3d-LogFile.txt' : menu expert ''')+ self.aideFinDePage
 
@@ -4866,7 +4967,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # Positionnement par points GCP 
 
         self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
-        self.idPointGPS                 =   0				# identifiant des points, incrémenté de 1 a chaque insertion
+        self.idPointGPS                 =   0				# identifiant des points, incrémenté de 1 a chaque insertion (le nom est modifiable !)
         self.dicoPointsGPSEnPlace       =   dict()                      # dictionnaire des points GCP placés dans les photos (créé par la classe CalibrationGPS)
         self.listeWidgetGPS             =   str()                       # liste des widgets pour la saisie
         self.incertitudePixelImage.set("1")
@@ -4911,6 +5012,8 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.arrondi                    =   2                           # les résultat des calculs seront présentés arrondis (fixe)
         self.limitesHistogrammeDesEcarts=   range(-5,5)                 # (fixe pour l'instant)
         self.ecartXyz                   =   str()                       # le nom du fichier XYZ des écarts entre les 2 mnt
+        self.mnt                        =   dict()                      # dictionnaire des extractions des fichiers ply lu
+        self.dicoProfil                 =   dict()                      #dico des extrémités du profil
         
     # pour la trace :
     
@@ -4938,7 +5041,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.texte101Texte              =   str()
         self.texteLignePython           =   str()                       # texte pour éxécution dans une console python
         self.texteLigneConsole          =   str()                       # texte pour éxécution dans une console système
-        
+        self.selectionRepertoireAvecChemin   =   str()                  # ?? ajout le 25/6/22 suite à erreur 
+        self.chercheTexte               =  tkinter.StringVar()               # valeur recherchée dans zone de texte
+                    
     # si les options par défaut sont personnalisées on les restaure :
         self.restaureOptions() 
   
@@ -4948,9 +5053,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # appelé lors de changement de photos...
 
 
-    def nouveauChantier(self,demandePhotos=True):                                          # conserve : micMac,meshlab,tousLesRepertoiresDeTravail
+    def nouveauChantier(self,demandePhotos=True):               # conserve : micMac,meshlab,tousLesRepertoiresDeTravail
         self.menageEcran()
-        texte=""                                                        # réinitialise les paramètres du chantier (initialiseValeursParDefaut)
+        texte=""                                                # réinitialise les paramètres du chantier (initialiseValeursParDefaut)
         if self.etatDuChantier == 1 :
             if self.troisBoutons(_("Enregistrer le chantier ?"),
                                 _("Chantier non encore enregistré. Voulez-vous l'enregistrer ?"),
@@ -4970,15 +5075,11 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         oschdir(self.repTravail)                # lors de la création d'un chantier il s'agir du répertoire des paramètres d'AperoDeDenis
         self.copierParamVersChantier()          # utile
         self.ajoutLigne(heure()+_("Nouveau chantier : %s") % (self.chantier))
-        # si b2="" alors pas de second bouton    retour : 0, 1, 2, 3 : numéro du bouton
-        if demandePhotos==False:
-            return
-        if self.troisBoutons(_("Choix des photos pour le nouveau chantier"),
-                                  _("OK pour choisir les photos du chantier."),
-                                  _('OK'),_("Choisir plus tard"))==0:
-            self.lesPhotos()          
-        else:
-            self.afficheEtat(texte) 
+
+        if demandePhotos==False:    #ne pas demander les photos (elles sont déjà connues)
+            return        
+        self.lesPhotos()       #choix des photos   
+
                    
     def ouvreChantier(self):
         self.menageEcran()
@@ -5004,7 +5105,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     def enregistreChantier(self):               # Correspond simplement à la copie du fichier paramètre sous le répertoire de travail et à l''apparition du nom
         self.menageEcran()
         if self.etatDuChantier == 0:		# pas de photo : pas d'enregistrement
-            self.encadre(_("Indiquer les photos à traiter avant d'enregistrer le chantier."))
+            self.encadre(self.pasDeChantier)
             return False
         if self.etatDuChantier == 1:		# des photos, pas encore enregistré : on mote l'enregistrement : etat = 2
             self.etatDuChantier = 2
@@ -5067,7 +5168,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 
     def deplacerChantier(self):
         if self.etatDuChantier==0:
-            self.encadre(_("Pas de photos : pas de chantier."))            
+            self.encadre(self.pasDeChantier)            
             return
         message = _("Cette fonction permet de changer le chemin du chantier dans l'arborescence.")
         message += "\n"+"\n"+_("Le chantier sera déplacé sous le répertoire choisi. Il garde son nom")                                                    
@@ -5224,7 +5325,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     def exporteChantier(self):
         self.menageEcran()
         if self.etatDuChantier == 0:
-            self.encadre(_("Pas de chantier en cours"))
+            self.encadre(self.pasDeChantier)
             return
 
         if MyDialog_OK_KO(fenetre,"Création d'une archive export",_("La taille du chantier est de %s MO.\n\n Voulez-vous créer un fichier export ?"
@@ -5402,9 +5503,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                          "\n"+_("Choisir un autre chantier."))
             return
         if len(photosSansChemin)==0:
-                texte = texte+'\n'+_('Nouveau chantier.')+'\n\n'+\
-                _("Sélection des photos : menu 'MicMac/choisir des photos'")+"\n\n"+\
-                _("Puis menu 'MicMac/lancer MicMac")
+                texte += self.pasDeChantier
                 self.ecritureTraceMicMac()
                 self.sauveParam()
                 self.encadre(texte)
@@ -5465,15 +5564,15 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 
 
             # Options pour Tapas :
-            
-            if self.modeCheckedTapas.get()!='':
-                texte = texte+'\n' + _('Orientation des appareils photos : ')+'\n' + _('Mode : ')+self.modeCheckedTapas.get()+'\n'              
-            if self.photosPourCalibrationIntrinseque.__len__()>0 and self.choixCalibration.get()=="photos":
-                texte = texte+_("Nombre de photos pour calibration de l'appareil : ")+str(self.photosPourCalibrationIntrinseque.__len__())+"\n"
-                if self.calibSeule.get():
-                     texte = texte+_('Ces photos servent uniquement à la calibration.') + '\n'
             if self.chantierOrigineCalibration and self.choixCalibration.get()=="chantier":
                 texte = texte+_("Calibration de l'appareil par le chantier %s.") % (self.chantierOrigineCalibration) + '\n'
+            else:
+                if self.modeCheckedTapas.get()!='':
+                    texte = texte+'\n' + _('Calibration des appareils photos : ')+'\n' + _('Mode : ')+self.modeCheckedTapas.get()+'\n'              
+                if self.photosPourCalibrationIntrinseque.__len__()>0 and self.choixCalibration.get()=="photos":
+                    texte = texte+_("Nombre de photos pour calibration de l'appareil : ")+str(self.photosPourCalibrationIntrinseque.__len__())+"\n"
+                    if self.calibSeule.get():
+                         texte = texte+_('Ces photos servent uniquement à la calibration.') + '\n'
             if self.lancerTarama.get()==1:
                 texte = texte+_('Tarama demandé après orientation') + '\n'                     
             if self.arretApresTapas.get()==1:
@@ -5598,8 +5697,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             # 6 terminé, redevenu modifiable (??)
             # 7 : la densification a échoué
 
-            if self.etatDuChantier == 0:                                        # pas encore de chantier
-                texte = texte+"\n" + _("Chantier en cours de définition.") + "\n"
+
 
 
             # un chantier avec des traitements effectués et pas de sous-répertoire : il a été nettoyé !
@@ -5852,8 +5950,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         except:
             self.encadre(_("Distance incorrecte pour ce chantier : %s.") % self.distance.get().split(" ")[0])
             return
-        if len(self.distance.get())>1:
-            self.uniteDistance = self.distance.get().split(" ")[1]        
+        self.uniteDistance = extraireUniteDistance(self.distance.get())            
         photosAvecDistance = list(set([ e[1] for e in self.dicoCalibre.keys() ]))
         self.choisirUnePhoto(photosAvecDistance,
                              titre=_("Visualiser les photos avec distance"),
@@ -5862,9 +5959,27 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                              messageBouton=_("Fermer"),
                              dicoPoints=self.dicoCalibre)           
 
+    def afficherPositionProfil(self):
+        conversionMosaiqueTIFVersJPG()    
+        if not os.path.exists(self.mosaiqueTaramaJPG): 
+            self.encadre(_("La mosaïque TARAMA n'existe pas."))
+            return
+        if len(self.dicoProfil)!=2:
+            self.encadre(_("Pas de profil défini sur la mosaïque TARAMA."))
+            return            
+        self.choisirUnePhoto([self.mosaiqueTaramaJPG,],
+                             titre=_("Visualiser le profil sur la mosaïque TARAMA"),
+                             mode='single',
+                             message=_("Position du profil sur la mosaïque TARAMA"),
+                             messageBouton=_("Fermer"),
+                             dicoPoints=self.dicoProfil)
+
     def afficherCalibIntrinseque(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if self.choixCalibration.get()=='sans':
-            self.encadre(_("Pas de calibration de l'appareil demandée."))    
+            self.encadre(_("Calibration par défaut."))    
             return            
         if self.photosPourCalibrationIntrinseque.__len__()==0:
             self.encadre(_("Pas de photos pour la calibration de l'appareil photo par Tapas."))    
@@ -5876,15 +5991,15 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                              messageBouton=_("Fermer"))
         
     def afficheMosaiqueTarama(self):
-              
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return              
         if not os.path.exists(self.mosaiqueTaramaTIF):
             self.encadre(_("Pas de mosaique. Choisir l'option Tarama de tapas."))    
             return
 
         if not os.path.exists(self.mosaiqueTaramaJPG):
-            self.conversionJPG(liste=[self.mosaiqueTaramaTIF])
-            if not os.path.exists(self.mosaiqueTaramaJPG):
-                self.encadre(_("Echec de la conversion mosaique en JPG."))    
+            if self.conversionJPG(liste=[self.mosaiqueTaramaTIF])==False:  
                 return        
 
         self.choisirUnePhoto([self.mosaiqueTaramaJPG],
@@ -5894,6 +6009,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                              messageBouton=_("Fermer"))
 
     def afficheLesOrthos(self): # les orhos tawny et fusion
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         listeOrthos = []
         orthoMosaiqueTIF = os.path.join(self.repTravail,"Ortho-MEC-Malt",self.orthoMosaiqueTawny) # chemin complet
         if not os.path.exists(orthoMosaiqueTIF):
@@ -5903,7 +6021,8 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                 return
         orthoMosaiqueJPG = os.path.splitext(orthoMosaiqueTIF)[0]+".JPG"
         if not os.path.exists(orthoMosaiqueJPG):
-            self.conversionJPG(liste=[orthoMosaiqueTIF])
+            if self.conversionJPG(liste=[orthoMosaiqueTIF])==False:
+                return
         if os.path.exists(orthoMosaiqueJPG):            
             listeOrthos.append(orthoMosaiqueJPG)
         # ortho fusionnée par GDAL sur demande utilisateur :
@@ -5923,15 +6042,28 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                              mode='single',
                              message=_("fichiers orthomosaïques"),
                              messageBouton=_("Fermer"))
-        
+
+    def afficherLeProfil(self):     
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
+        if os.path.exists("profil.png"):
+            open_file("profil.png")
+        else:
+            self.encadre(_("Pas de fichier profil.png"))
+              
 ############### Affichages des traces
 
     def lectureTraceSynthetiqueMicMac(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         self.lectureTraceMicMac(complete=False)
         
     def lectureTraceMicMac(self,complete=True):
-        if self.etatDuChantier==0:
-            return abandon(_("Pas de chantier, pas de trace"))
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return
             
         self.ecritureTraceMicMac()        
         if complete:
@@ -5963,6 +6095,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 ############### Affichages des nuages de points
         
     def afficheApericloud(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         retour = self.lanceApericloudMeshlab()
         if retour == -1:
             self.encadre(_("Pas de nuage de points non densifié."))
@@ -5970,6 +6105,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.encadre(_("Programme pour ouvrir les .PLY non trouvéé."))
 
     def affiche3DNuage(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         retour = self.ouvreModele3D()
         if  retour == -1 :
              self.encadre(_("Pas de nuage de points densifié."))                
@@ -5977,6 +6115,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.encadre(_("Programme pour ouvrir les .PLY non trouvé."))
 
     def afficheEcart(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if self.ecartXyz==str():
             self.encadre(_("Pas de fichier ecart entre 2 MNT. %s Outils métiers/Calculer le volume entre 2 MNT") %("\n\n"))
             return
@@ -5989,6 +6130,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             return                
                 
     def afficheXYZ(self,xyz=str()):
+        if len(glob.glob(os.path.join(self.repTravail,"*.XYZ")))==0:
+            self.encadre(_("Absence de fichier .XYZ."))
+            return     
         if xyz==str():
             extensions = ("ecart*.asc","*.xyz")
             message = _("Choisir le fichier x,y,z, à visualiser :")                              
@@ -6150,7 +6294,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             else: exiftoolOK = True
             
         # chemin pour convertir les formats de photos            
-            if self.pasDeConvertMagick():
+            if not os.path.exists(self.convertMagick):
                 convertMagick = os.path.join(source+"aire-aux","convert.exe")
                 if os.path.exists(convertMagick):
                     self.convertMagick = convertMagick
@@ -6624,7 +6768,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         return len(listeCopie)                                  # on retourne le nombre de photos
 
     ################# controler les photos dans leur ensemble : même focale, mêmes dimensions, présence d'un exif avec focale :
-    @decorateTry       
+    #@decorateTry       
     def controlePhotos(self):   #[liste = self.photosSansChemin] Vérification globale des focales et des dimensions. en retour nbFocales et dimensionsOk
         # les dimensions :        
         self.dimensionsDesPhotos = [(x,Image.open(x).size) for x in self.photosSansChemin]  # si OK : x = self.dimensionsDesPhotos[0][0] et y=self.densionsDesPhotos[0][1]
@@ -6697,7 +6841,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # 7 : la densification a échoué
 
         if self.etatDuChantier==0:
-            self.encadre(_("Choisir les photos avant de définir les options"))
+            self.encadre(self.pasDeChantier)
             return
     
         if self.etatDuChantier==3:	# En principe ne doit pas arriver : plantage en cours de tapas ou Tapioca, ou erreur photo calibration appareil
@@ -6916,6 +7060,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     def controlePointsGPS(self):            # controle pour affiche etat et afficher tous les points : informer de la situation :
                                             # le message self.etatPointsGPS sera affiché dans l'état du chantier
                                             # finCalibrationGPSOK doit avoir été éxécuté avant
+
         self.etatPointsGPS = str()
         retour = True
        
@@ -7285,6 +7430,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         
         if self.choixCalibration.get()=="sans": 
               self.supprimeCalibrationParPhotos()
+              self.supprimeCalibrationParCopie()
 
         # si les photos de calibration ne servent pas uniquement à la calibration on les remet :
 
@@ -7342,6 +7488,10 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         if self.choixCalibration.get()=='chantier':
             self.item562.pack()
             self.item570.pack()
+        if self.choixCalibration.get()=='sans':
+            self.supprimeCalibrationParCopie()
+            self.supprimeCalibrationParPhotos()
+            
         if self.nbFocales==1:
             self.item528.pack_forget()
             self.item573.pack_forget()
@@ -7442,6 +7592,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     #""""""""""""""""""""""""   Options de Malt
 
     def chargerCalibrationIntrinsequeDepuisMenu(self,repertoireInconnu=True):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         bilan = self.chargerCalibrationIntrinseque(repertoireInconnu=repertoireInconnu)
         if bilan:
             self.encadre(bilan)
@@ -7454,7 +7607,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     def chargerCalibrationIntrinseque(self,repertoireInconnu=True): 
         # controles :
         if self.pasDePhoto(False):
-            self.item572.configure(text=_("Commencer par choisir des photos."),foreground='red')
+            self.item572.configure(text=self.pasDeChantier,foreground='red')
             return
         if repertoireInconnu:
             bilan = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration de l'appareil."),filtre="calib")
@@ -7513,7 +7666,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         
     def supprimeCalibrationParCopie(self):
         # suppression de la calibration de l'appareil par copie de chantier
-        if self.chantierOrigineCalibration:
+        #if self.chantierOrigineCalibration:
             self.chantierOrigineCalibration = str()
             self.item572.configure(text="")
             calibChantier = os.path.join(self.repTravail,"Ori-Calib")
@@ -7522,7 +7675,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         
     def supprimeCalibrationParPhotos(self):
         #suppression de la calibration par photos
-        if self.photosCalibrationSansChemin:
+        #if self.photosCalibrationSansChemin:
             self.photosCalibrationSansChemin = list()
             self.photosPourCalibrationIntrinseque = list()
             self.ajoutLigne("\n"+_("Suppression de la calibration de l'appareil par photos"))
@@ -7732,7 +7885,8 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             return
       
         if not os.path.exists(self.mosaiqueTaramaJPG):
-            self.conversionJPG(liste=[self.mosaiqueTaramaTIF])          
+            if self.conversionJPG(liste=[self.mosaiqueTaramaTIF])==False:
+                return
         if not os.path.exists(self.mosaiqueTaramaJPG):
             return
         # l'utilisateur trace le masque
@@ -7752,6 +7906,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     def affiche3DApericloud(self):          # lance SaisieMasqQT, sur apericloud ou modele3d, attente de saisie/fermeture (subprocess.call)
         def tueSaisieQt():
             os.system("tskill SaisieQT")
+            os.system("tskill mm3d")
             time.sleep(0.05)             
     # Problème : il est fréquent que SaisieQT marche une ou deux fois, puis se bloque au lancement... J'ai toujours pas compris pourquoi
     # d'ou les tskill qui parfois, pas toujours, améliore le pb
@@ -8056,7 +8211,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         return False
         
     def appliquerPointsGPS(self):
-
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return
         try: self.bulle.destroy()
         except: pass     
         if orientationKO():
@@ -8268,6 +8425,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         
        # referentiel modifié :
         self.repereModifie()       
+
        
     ################################## LANCEMENT DE MICMAC ########################################################### 
         
@@ -8605,7 +8763,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             if retour==0 :                                      # b1 : recherche des points homologues : on met l'état à 2 (avec photo, enregistré)
                 self.nettoyerChantier()
                 
-            if retour == 2:                                     # b1 : Lancer la densification                  
+            if retour == 2:                                     # b3 : Lancer la densification                  
                 self.ajoutLigne(heure()+" "+_("Reprise du chantier %s arrêté après TAPAS - La trace depuis l'origine sera disponible dans le menu édition.") % (self.chantier))
                 self.cadreVide()                                # début de la trace : fenêtre texte pour affichage des résultats. 
                 self.suiteMicmac()                              # on poursuit par Malt ou C3DC
@@ -8635,6 +8793,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.etatDuChantier = 3		                    # trés provisoirement (en principe cette valeur est transitoire sauf si avantScène plante)
             
             self.lanceTapioca()
+            if self.MAXLINELENGTH:
+                self.encadre(_("Longueur de ligne trop longue : trop de fichiers ou chemin trop long. Voir la trace."))
+                return
                 
         # tapioca n'a pas trouvé des points homologues ?
         
@@ -8897,7 +9058,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     def suiteMicmacMalt(self):  # pour gérer surtout le cas de geoimage avec plusieurs maitresses : plusieurs nuages à fusionner
 
         if self.etatDuChantier!=4:  	                        # en principe inutile : il faut être juste après tapas 
-            self.ajoutLigne(_("Tapas non effectué, lancer MicMac depuis le menu. Etat du chantier = "),self.etatDuChantier)
+            self.ajoutLigne(_("Tapas non effectué, lancer MicMac depuis le menu. Etat du chantier = %s")% (self.etatDuChantier))
             return
 
         # il faut une image maître si le mode est geoimage
@@ -8991,6 +9152,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     
     
     def lanceTapioca(self):
+        self.MAXLINELENGTH = False
         self.etapeTapioca = 0
         if self.modeTapioca.get()=="All":
             self.echelle1PourMessage = self.echelle1.get()
@@ -9058,6 +9220,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                 return "\n" + heure()+" : " +_("Recherche des points remarquables et des correspondances sur une image de taille %s pixels.") % (self.echelle2PourMessage) + "\n\n"  
             return ligne
         if 'MAXLINELENGTH' in ligne:
+            self.MAXLINELENGTH = True
             return "\n"+ligne+"\n"+_("Trop de photos pour Windows. Consulter l'aide. \nUne idée : Utiliser Linux.")
 
 
@@ -9388,11 +9551,21 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                  "Apero",
                  os.path.basename(self.miseAEchelle)]
         self.lanceCommande(apero,
-                           info=_("Fixe l'orientation (axe, plan et métrique) suivant les options de 'Mise à l'échelle'"))
+                           info=_("Fixe l'orientation (axe, plan et métrique) suivant les options de 'Mise à l'échelle'"),
+                           filtre=self.filtreApero)
         if os.path.isdir("Ori-echelle3"):
             self.orientationCourante = "echelle3"        
 
+    def filtreApero(self,ligne):
+        if "Not enough  points in RobustePlan3D" in ligne:
+            self.erreurApero=ligne
+        if "!" in ligne:
+            return ligne
+
     def nuageNonDense(self):    # construire un nuage non dense en dehors de la filière "lancer MicMac"
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if self.orientationCourante == str():
             self.encadre(_("L'orientation n'a pas été effectuée.\nMenu MicMac\Lancer Micmac"))
             return
@@ -9472,14 +9645,16 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.lanceCommande(tarama)
 
     def lanceTaramaMenu(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if self.orientationCourante==str():
             self.encadre(_("L'orientation n'est pas calculée\nDans le menu MicMac : Lancer MicMac"))
             return
         self.cadreVide()    # pour ouvrir la trace
         self.lanceTarama()
         self.etatDuChantier=4
-        self.encadre(_('''Traitement mosaïque terminé
-                    Consulter la mosaïque : menu édition''')) 
+        self.encadre("\n"+_("Mosaïque TARAMA générée")+"\n")
         
     # ------------------ GCPBascule : utilise les points GCP-----------------------    
 
@@ -9820,7 +9995,6 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             if utiles.__len__()>nb:
                 utiles = utiles[:nb]
             denomme(utiles)     # supprime l'extension des photos inutiles
-            print("photos utilisées : ",str(utiles))
             
         def C3DCKo():
             if not os.path.exists(plyIn):
@@ -10236,8 +10410,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                 self.orientationCourante = "morito"
                 return
             else:
-                self.ajoutLigne(_("Vous avez choisi le référentiel d'un autre chantier, mais celà n'a pas fonctionné")+"\n")
-                
+                self.ajoutLigne(_("Vous avez choisi le référentiel d'un autre chantier, mais celà n'a pas fonctionné")+"\n")              
 
         # si aucun référentiel prévu on lance quand même campari pour préciser la position des points
 
@@ -10267,6 +10440,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 
 
     def retirerPhotos(self,lesPhotosARetirer=None): # photos sans chemin
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if lesPhotosARetirer==None: 
             titre = _("Retirer des photos")
             message = _("Choisir les photos a retirer du chantier")        
@@ -10327,6 +10503,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 ###################### création d'un nouveau chantier avec les meilleurs photos
 
     def outilMeilleuresPhotos(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         self.menageEcran()
         repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
         if os.path.isdir(repertoireHomol)==False:
@@ -10336,6 +10515,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         pass
 
     def nbMeilleuresOK(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         nb=self.item9003.get()
         liste = [os.path.join(self.repTravail,e) for e in self.lesMeilleuresPhotos(int(nb))]
         if self.troisBoutons(titre=_("Nouveau chantier"),question=_("Créer un nouveau chantier avec les photos : ")
@@ -10956,6 +11138,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 # Affiche les infos sur le repère choisi
 
     def afficheMessageRepereLocal(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if self.choixReferentiel.get()=="MAL":
             if self.controleMiseALEchelle()==True:
                 self.encadre(_("Repére choisi : par mise à l'échelle, axe, plan et métrique"))
@@ -11393,11 +11578,14 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         if os.path.exists("Homol_mini"):
             AfficheHomologues(fenetre,self.photosSansChemin[0])
         else:
-            self.encadre(_("Pas de points homologues. Lancer MicMac"))
+            self.encadre(_("Pas de points homologues. lancer menu MicMac : Lancer MicMac"))
         
 ############################# Recopie depuis c'autres chantier : points homologues, points GCP, orientation 
 
     def ajoutPointsGPSAutreChantier(self):  # à revoir : double ouverture du fichier param de l'autre chantier
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         self.menageEcran()
         rapport = str()
         nbAjoutPlace = int()
@@ -11446,11 +11634,15 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.ajoutLigne(_("Suppression des points GCP précédents."))
         
         # 1) Modifier la clé du dico lu : chemin de la photo et identifiant par ajout de la valeur de self.idPointGPS
-        # si la photo existe alors ajout dans le dico du chantier en cours       
+        # si la photo existe alors ajout dans le dico du chantier en cours
+
+        print("dicoPointsGPSEnPlace.keys()=",str(dicoPointsGPSEnPlace.keys()))
         for nom,photo,identifiant in dicoPointsGPSEnPlace.keys():
+            print("nom,photo,identifiant",nom,photo,identifiant)            
             nouvelId        = identifiant + self.idPointGPS
             nouveauNom      = nom
-            nouvellePhoto   = os.path.join(self.repTravail,os.path.basename(self.afficheChemin(photo)))            
+            nouvellePhoto   = os.path.join(self.repTravail,os.path.basename(self.afficheChemin(photo)))
+            print("nouvellePhoto=",nouvellePhoto,os.path.exists(nouvellePhoto))
             if os.path.exists(nouvellePhoto):            
                 self.dicoPointsGPSEnPlace[nouveauNom,nouvellePhoto,nouvelId] = dicoPointsGPSEnPlace[nom,photo,identifiant]  # la photo existe, on ajoute au dico des points en place l'identifiant change
                 nbAjoutPlace += 1
@@ -11482,15 +11674,19 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     def ajoutPointsGPSDepuisFichier(self):
         # Ajout de points GCP à partir d'un fichier de points : format =
         # #F=N X Y Z Ix Iy Iz
-        # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01         
+        # PP_5 3.6341 108.5261 38.8897 0.01 0.01 0.01
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         self.menageEcran()
-        titre = _("Info sur les fichiers de points GCP")
-        rapport = _("Un fichier de points GCP a le format suivant: 7 informations par ligne")+"\n"
-        rapport += _("           Nom_du_point  X  Y  Z  dx  dy  dz ")+"\n"
+        titre = _("Info sur les fichiers de points GPS terrain")
+        rapport = _("Un fichier de points GPS a le format suivant: 7 informations par ligne")+"\n\n"
+        rapport += _("           Nom_du_point  X  Y  Z  dx  dy  dz ")+"\n\n"
         rapport +=_("C'est un fichier texte, séparateur espace")+"\n"
         rapport +=_("dx dy dz sont les précisions de placement en nombre de pixel, mettre 1 au minimum")+"\n"
+        rapport +=_("dx dy dz sont les précisions de placement en nombre de pixel, mettre 1 au minimum")+"\n"
         rapport += _("le caractère '#' en début de ligne signale un commentaire")+"\n"
-        if not MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1="Lancer",b2="Abandon").retour:
+        if not MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1="Choisir le fichier",b2="Abandon").retour:
             return
         fichierPointsGPS=tkinter.filedialog.askopenfilename(title=_('Liste de points GCP : Nom, X,Y,Z, dx,dy,dz (fichier texte séparteur espace) : '),
                                                   filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
@@ -11504,8 +11700,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.ajoutLigne(_("Suppression des points GCP précédents."))
         
         nbAjout = int()
-        rapport = _("Format attendu : Nom X Y Z dx dy dz ")+"\n"
-        rapport += _("le caractère '#' en début de ligne signale un commentaire")+"\n"
+        rapport = heure()+"\n"+_("Lecture d'un fichier de points GPS : \n %s") % (fichierPointsGPS)+"\n\n"
         with open(fichierPointsGPS, "r") as fichier:              
             for ligne in fichier:
                 if ligne[0]!="#":
@@ -11519,15 +11714,115 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                         rapport += _("Ligne lue incorrecte : ")+ligne           
         self.idPointGPS += 1        # Déterminer la nouvelle valeur de self.idPointGPS
         self.optionsReperes()       # mise à jour de la liste des widgets pour saisie :
-        self.finCalibrationGPSOK()  # création des fichiers xml dico-appuis et mesures-appuis       
-        self.enregistreChantier()   # enregistre le chantier :        
-        self.ecritureTraceMicMac()           
+        self.enregistreChantier()   # enregistre le chantier :                   
         if nbAjout>15:
             rapport = str(nbAjout)+" "+_("points GCP ajoutés : c'est beaucoup, sans doute trop.")
-        rapport = str(nbAjout)+" "+_("points GCP ajoutés.")+"\n\n"+rapport
-        self.encadre (rapport)
+        rapport += "\n\n"+str(nbAjout)+" "+_("points GCP ajoutés.")+"\n\n"
+        # Si tout va bien on valide les points GPS, sinon on laisse le choix du référentiel
+        if self.controlePointsGPS(): # les points gps sont complet et ok
+            self.finCalibrationGPSOK()  #on crée les fichiers xml dico-appuis et mesure-appuis
+            rapport += "\n"+_("Points GPS complets")
+            self.choixReferentiel.set("GPS")
+        else:
+            rapport += "\n"+_("Vous pouvez placer les points sur les photos")       
         self.ajoutLigne(heure()+" "+_(": Ajout des %s points GCP du fichier %s.") % (nbAjout,fichierPointsGPS) +"\n\n"+rapport)
+        self.encadreEtTrace (rapport)
+        
+# Importer les points GPS photos depuis un fichier
+    def ajoutPointsGPSPhotosDepuisFichier(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
+        self.menageEcran()
+        titre = _("Info : ")
+        rapport = _("Un fichier de points GPS photos a le format suivant : 4 informations par ligne")+"\n\n"
+        rapport += _(" Nom_du_point  Nom_de_la_photo_avec_extension X  Y ")+"\n\n"
+        rapport +=_("Exemple :")+"\n\n"        
+        rapport +=_("A DJI_0001.JPG 100 250.25 ")+"\n\n"
+        rapport +=_("C'est un fichier texte, séparateur espace, séparateur décimal = point")+"\n"
+        rapport +=_("X Y sont la position du pixel sur la photo le point 0 0 étant en haut à droite")+"\n\n"
+        rapport += _("le caractère '#' en début de ligne signale un commentaire")+"\n"
+        rapport += _("les points doivent être connus")+"\n"        
+        if not MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1="Choisir le fichier",b2="Abandon").retour:
+            return
+        pass
 
+    # quel fichier lire ?
+        fichierPointsGPSPhotos=tkinter.filedialog.askopenfilename(title=_('Liste de points GPS photos :'),
+                                                  filetypes=[(_("Texte"),("*.txt")),(_("Tous"),"*")],
+                                                  multiple=False)
+        
+        if len(fichierPointsGPSPhotos)==0:
+            return
+        rapport = heure()+"\n"+_("Lecture d'un fichier de points GPS placés sur les photos :\n\n %s") % (fichierPointsGPSPhotos)+"\n\n"      
+        dicoPointsGPSPhotoLu = dict()
+        lesPointsConnus = [ (nom,identifiant) for nom,b,c,d,e,identifiant,g in self.listePointsGPS]
+        lesNomsConnus = dict(lesPointsConnus)
+        nbAjout = int()
+    # lecture et controle du fichier
+        with open(fichierPointsGPSPhotos, "r") as fichier:              
+            for ligne in fichier:
+                if ligne[0]!="#":
+                    self.idPointGPS += 1
+                    try:
+                        nom,photo,x,y =ligne.split()
+                        if nom in lesNomsConnus:
+                            # dicoPointsGPSEnPlace key = nom point, photo avec chemin, identifiant, value = x,y
+                            # attention : le nom du point n'est pas un vrai identifiant
+                            identifiant = lesNomsConnus[nom]
+                            photoRep=os.path.join(self.repTravail,photo)
+                            if os.path.exists(photoRep):
+                                key = (nom,photoRep,identifiant)
+                                if float(x)<self.dimensionsDesPhotos[0][1][0] and float(y)<self.dimensionsDesPhotos[0][1][1]:
+                                    value = (float(x),float(y))
+                                    dicoPointsGPSPhotoLu[key] = value
+                                    rapport += _("Point ajouté : ")+ligne
+                                    nbAjout += 1 
+                                else:
+                                    rapport += _("la position %s %s excède la taille de la photo : ligne %s" % (x,y,ligne) )+"\n"                                    
+                            else:
+                                rapport += _("la photo %s n'existe pas : ligne %s" % (photo,ligne) )+"\n"
+                        else:
+                            rapport += _("le point %s n'existe pas : ligne (%s" % (nom,ligne) )+"\n"
+                    except Exception as e:
+                        rapport += _("Ligne lue incorrecte : ")+ligne+"erreur : "+str(e)+"\n"
+        rapport += "\n\n"+_("Nombre de points ajoutés : %s" % (nbAjout))+"\n\n"
+        # mise à jour du dico des cibles, avec écrasement des anciennes si présentes
+        self.dicoPointsGPSEnPlace.update(dicoPointsGPSPhotoLu)
+        # Si tout va bien on valide les points GPS, sinon on laisse le choix du référentiel
+        if self.controlePointsGPS(): # les points gps sont complet et ok
+            self.finCalibrationGPSOK()  #on crée les fichiers xml dico-appuis et mesure-appuis
+            rapport += "\n"+_("Points GPS complets")
+            self.choixReferentiel.set("GPS")
+        else:
+            rapport += "\n"+_("Points GPS incomplets : veuillez vérifier et compléter la saisie")
+        self.sauveParamChantier()
+        # message final
+        self.encadreEtTrace(rapport)
+
+# Exporter les points GPS terrain vers un fichier texte
+    def exportPointsGPSTerrainVersFichier(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
+        # structure interne de la liste self.listePointsGPS : [nom,x,y,z,True,self.idPointGPS,(" ").join([dx,dy,dz]) le tout en texte
+        # structure externe fichier : Nom_du_point  X  Y  Z  dx  dy  dz si True
+        lesPoints = [" ".join([nom,"-" if x=="" else x,"-" if y=="" else y,"-" if z=="" else z,dx]) for nom,x,y,z,true,id,dx in self.listePointsGPS if true==True]
+        with  open("PointsGPSTerrain.txt",mode="w") as outfile:
+            outfile.write(str("\n".join(lesPoints)))
+        self.encadreEtTrace("Fichier PointsGPSTerrain.txt écrit :\n\nNom_du_point  X  Y  Z  dx  dy  dz\n\n"+"\n".join(lesPoints))
+        
+# Exporter les points GPS photos vers un fichier texte
+    def exportPointsGPSPhotosVersFichier(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
+        # dicoPointsGPSEnPlace key = nom point, photo avec chemin, identifiant, value = x,y    
+        lesPoints = [" ".join([a[0],os.path.basename(a[1]),str(b[0]),str(b[1])]) for a,b in self.dicoPointsGPSEnPlace.items()]
+        with  open("PointsGPSPhoto.txt",mode="w") as outfile:
+            outfile.write(str("\n".join(lesPoints)))
+        self.encadreEtTrace("Fichier PointsGPSPhoto.txt écrit :\n\nNom_du_point photo  X  Y"+"\n".join(lesPoints))
+            
 # Copie répertoire Homol d'un chantier à un autre
 
     def copieRepertoireHomol(self,repDepart):   # copie sans interférence utilisateur
@@ -11585,7 +11880,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # - 1 : en cours de suppression      
         # boite de dialogue de sélection du chantier à ouvrir, renvoi : self.selectionRepertoireAvecChemin
         if self.etatDuChantier == 0:
-            message = _("Choisir les photos à traiter avant de copier des points homologues.")
+            message = self.pasDeChantier
             self.encadre(message)
             return message
         # vérification état du chantier
@@ -11652,7 +11947,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.menageEcran()
         message = str()
         if self.etatDuChantier == 0:
-            message = _("Choisir les photos à traiter avant de copier l'orientation.")
+            message = self.pasDeChantier
             self.encadre(message)
             return message
         # choisir le chantier origine de la copie de l'orientation :
@@ -11702,6 +11997,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 #######################################
         
     def consulterEcartsGCP(self): #attention : existe pas sur les vieux chantiers
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if not self.ecartPointsGCPByBascule:
             self.encadre(_("Pas de traitement des points GCP."))
             return
@@ -11721,6 +12019,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.encadre(_("Valeur inchangée : %s") % (self.nbCaracteresDuPrefixe) )              
     
     def plusieursAppareils(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         # y-a-il dans l'exif un numéro de série ?
         nbModif = int()
         nbConserve = int()
@@ -11766,6 +12067,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.ecritureTraceMicMac()
         
     def listeAppareils(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         self.encadre(_("Recherche des noms d'appareil photos. Patience !."))    
         nb = self.nombreDeExifTagDifferents("Model")
         if nb>1:    message = _("Les photos proviennent de ")+str(nb)+" "+_("appareils photos différents : ")+"\n\n"+"\n".join(self.lesTags)
@@ -11776,6 +12080,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.ecritureTraceMicMac()
         
     def logMm3d(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         oschdir(self.repTravail)
         fichier = "mm3d-LogFile.txt"
         if os.path.exists(fichier):
@@ -11788,7 +12095,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                 trace=open(fichier,"r",encoding="latin-1")
                 contenu=trace.read()
             trace.close
-            self.ajoutLigne(contenu)
+            self.affiche(contenu)
             self.texte201.see("1.1")            
         else:
             texte = _("Pas de trace du log !")
@@ -11972,6 +12279,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                          self.metadonneesGpsPresentes,      # GPS dans les photos
                          self.chantierReferentiel,          # le chantier qui définit le référentiel
                          self.orientationReference,         # répertoire orientation de référence, copié d'un autre chantier (chemin complet)
+                         self.dicoProfil,
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -12001,7 +12309,14 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                          versionInternet,               # dernière version lue sur Internet
                                                         # permet de repérer les nouvelles versions et de réactiver le message
                          self.avertirNouvelleVersion,   # bool : si vrai on prévient l'utilisateur qu'il y a une nouvelle version (si pas la même, sinon pas
-                         self.mercurialMicMac,          # version de micmac 
+                         self.mercurialMicMac,          # version de micmac
+                         self.goProMaker.get(),         # les paramètres de la camera vidéo
+                         self.goProFocale35.get(),
+                         self.goProFocale.get(),
+                         self.goProNomCamera.get(),
+                         self.goProNbParSec.get(),      # taux de conservation des photos pour DIV
+                         self.goProEchelle.get(),       # pour tapioca 
+                         self.goProDelta.get(),                         
                          ),     
                         sauvegarde2)
             sauvegarde2.close()
@@ -12054,6 +12369,13 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.versionInternetAncienne    =   r2[11]  # ne sert plus
             self.avertirNouvelleVersion     =   r2[12]
             self.mercurialMicMac            =   r2[13]
+            self.goProMaker.set(r2[14])         # les paramètres de la camera vidéo
+            self.goProFocale35.set(r2[15])
+            self.goProFocale.set(r2[16])
+            self.goProNomCamera.set(r2[17])
+            self.goProNbParSec.set(r2[18])      # taux de conservation des photos pour DIV
+            self.goProEchelle.set(r2[19])       # pour tapioca 
+            self.goProDelta.set(r2[20])             
         except Exception as e: print(_("Avertissement : restauration param généraux : "),str(e))
 
         # détermination du chemin pour dicocamera, de la version de mm3d, de la possibilité d'utiliser C3DC
@@ -12172,6 +12494,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             self.metadonneesGpsPresentes    = r[77] # GPS dans les photos
             self.chantierReferentiel        = r[78] # chantier définissant le référentiel si self.choixreferentiel.get()="CHANTIER"
             self.orientationReference       = r[79] # chemin complet local de l'orientation de référence copiée 
+            self.dicoProfil                 = r[80] # les infos relatives au profil (menu outils métier)
             
         except Exception as e: print(_("Erreur restauration param chantier : "),str(e))
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
@@ -12369,7 +12692,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         try:
             if InitialiserLangue.frame.winfo_manager()=="pack":
                 InitialiserLangue.frame.frame.pack_forget()              
-        except: pass           
+        except: pass
 
     def fermerLaBoiteAOnglets(self):    # palliatif
         # la boite à oglet n'est pas une fenêtre modale mais une frame..
@@ -12799,7 +13122,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                     if self.exe.poll()==None: # le subprocess tourne encore
                         self.exe.communicate(input='\n')                    
             except Exception as e:
-                print("erreur lecture ligne stdout : ",str(e))
+                print(heure(),_("erreur lecture ligne stdout : "),str(e),commande)
                 break                                   # si la lecture ne se fait pas c'est que le processus est "mort", on arrête
         
         self.ajoutLigne("\n"+heure()+" "+_(": fin de ")+commandeTexte+"\n")
@@ -12884,12 +13207,12 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                         titre=_('Choisir une photo'),                          # titre de la fenêtre
                         message=_("Cliquer pour choisir une ou plusieurs photos : "), # entête de la liste 
                         mode='extended',                                    # par défaut sélection multiple, autre mode = "single"
-                        messageBouton=_("OK"),                                 # message sur le premier bouton
+                        messageBouton=_("OK"),                              # message sur le premier bouton
                         boutonDeux=None,                                    # texte d'un second bouton : fermeture, renvoyant une liste vide
                         dicoPoints=None,                                    # dictionnaire de points à afficher :  key = (nom point, photo, identifiant), value = (x,y)
                         objets='photos',                                    # par défaut la liste est une liste de fichiers, alternative : répertoires, ply
-                        bulles=dict(),                                       # dictionnaires d'info bulle : key = photo, value = infobulle
-                        testPresenceRepertoire=True,                                   # ne pas vérifier l'existence du répertoire de travail self.repTravail (cas : ménage)
+                        bulles=dict(),                                      # dictionnaires d'info bulle : key = photo, value = infobulle
+                        testPresenceRepertoire=True,                        # ne pas vérifier l'existence du répertoire de travail self.repTravail (cas : ménage)
                         ouvrirEnGrand=True):
         def ouvrirPhoto():
             try:
@@ -13017,8 +13340,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # après saisie des options de la GoPro :
 
     def optionsGoProOK(self):
-        self.item2000.pack_forget()     # fermer l'item (pour évitr la question par menageEcran)
-        self.encadre(_("Options GoPro modifiées"))
+        self.item2000.pack_forget()     # fermer l'item (pour éviter la question par menageEcran)
+        self.sauveParamMicMac()
+        self.encadre(_("Options camera modifiées"))
 
     def optionsGoProKO(self):   # l'utilisateur abandonne les modifs
         
@@ -13030,7 +13354,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.goProEchelle.set(self.goProEchelleSave)            # pour tapioca 
         self.goProDelta.set(self.goProDeltaSave)
         self.item2000.pack_forget()     # fermer l'item (pour évitr la question par menageEcran)
-        self.encadre(_("Abandon : options GoPro inchangées."))
+        self.encadre(_("Abandon : options camera inchangées."))
 
     def sauveOptionsGoPro(self):  # l'utilisateur valide les modifs
 
@@ -13048,7 +13372,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         
         self.fermerVisuPhoto()                          #  s'il y a une visualisation en cours des photos ou du masque on la ferme             
         if verifierSiExecutable(self.ffmpeg)==False:
-            self.encadre(_("L'outil ffmpeg n'est pas installé sur votre ordinateur. Traitement des vidéo GoPro impossible."))
+            self.encadre(_("L'outil ffmpeg n'est pas installé sur votre ordinateur. Traitement des vidéos impossible."))
             return
         
         repIni = ""                                     # répertoire initial de la boite de dialogue
@@ -13061,14 +13385,16 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                       - un appareil de marque : %s
                       - de modèle : %s
                       - dont la focale est de : %s mm
-                      - dont la focale equivalente 35 mm est de : %s mm''')
-                 % (self.goProMaker.get(), self.goProNomCamera.get(), self.goProFocale.get(), self.goProFocale35.get()))
-        texte += "\n\n"+_("Confirmer,\n sinon modifier ces valeurs par : menu/vidéo/Appareil vidéo")
+                      - dont la focale equivalente 35 mm est de : %s mm
+
+                      - %s image(s) par seconde seront conservées
+                      ''')
+                 % (self.goProMaker.get(), self.goProNomCamera.get(), self.goProFocale.get(), self.goProFocale35.get(),self.goProNbParSec.get()))
+        texte += "\n\n"+_("Confirmer,\n sinon modifier ces valeurs par : menu Vidéo/Options caméra")
                                                     
         if MyDialog_OK_KO(fenetre,titre=titre,texte=texte,b1="OK",b2="Modifier").retour==0:
-            self.encadre(_(''' Modifier les caractéristiques de la caméra Vidéo :
-                        Menu Vidéo/appareil vidéo''')) 
-            return 
+            self.encadre(_("Modifier les options de la caméra par le menu Vidéo/Options caméra"))
+            return
 
         # Choix de la vidéo
         
@@ -13129,19 +13455,23 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 
         # charge les options pour Tapioca : les valeurs d'échelle et de Line sont celles par défaut  
 
-        self.modeTapioca.set('Line')# Mode (All, MulScale, Line)
+        self.modeTapioca.set("MulScale")# Mode (All, MulScale, Line)
       
         # charge les options pour Tapas :
         
-        self.modeCheckedTapas.set('FishEyeBasic')
+        self.modeCheckedTapas.set('RadialBasic')
+
+        # sélection des photos suivant le taux par seconde indiqué en option
+        
+        self.selectionGoPro()
 
         # Message final :
 
         self.encadreEtTrace(_("Les images de la video sont décompactées sous le répertoire :") + "\n\n" + self.repTravail+
                      "\n\n" + _("Il y a %s images décompactées.") % (str(self.photosSansChemin.__len__())) +
-                     "\n\n" + _("Créer un nouveau chantier en sélectionnant environ 1 photo sur 10"))
-
-        return          # fin : on a obtenu les photos avec un exif à partir d'une vidéo
+                     "\n\n" + _("Les images ont été sélectionnées au taux de %s par seconde") % (self.goProNbParSec.get())+
+                     "\n\n" + _("Le chantier est prêt. Utiliser le menu MicMac.")+
+                     "\n\n" + _("Confirmer les options des points homologues (line) et de l'orientation (RadialBasic)"))
 
     def ajoutExifGoPro(self):
 
@@ -13167,26 +13497,25 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         nbParSeconde = float(self.goProNbParSec.get())
         if nbParSeconde <= 0.1:
             self.encadre(_("Modifier le nombre d'images à conserver par seconde : %s")%(nbParSeconde)+"\n"+
-                         _("Ce nombre doit être compris entre 0.1 et 12.")+"\n"+
-                         _("Menu Video/options GoPro"))
+                         _("Ce nombre doit être compris entre 0.1 et 25.")+"\n"+
+                         _("Menu Video/options camera"))
             return
-        if nbParSeconde > 12 :
+        if nbParSeconde > 25 :
             self.encadre(_("Modifier le nombre d'images à conserver par seconde : %s")%(nbParSeconde)+"\n"+
                          _("Ce nombre est trop grand")+"\n"+
                          _("Le nombre de photos par seconde est supposé égal à 25.")+"\n"+
-                         _("Menu Video/options GoPro"))
+                         _("Menu Video/options camera"))
             return        
         # on suppose 25 images secondes
-        taux = int(25/nbParSeconde)
+        taux = max(1,int(25/nbParSeconde))  # si nbparseconde=0.5 alors conserver une image sur 50 = 25/0.5 
         conserver = self.photosSansChemin[::taux]
         supprimer = [e for e in self.photosSansChemin if e not in conserver]
         if supprimer.__len__()<3:
             self.encadre(_("Modifier le nombre d'images à conserver par seconde : %s")%(nbParSeconde)+"\n"+
                          _("le taux actuel ne laisse que %s photos")%(supprimer.__len__())+"\n"+
-                         _("Voir le menu Video/options GoPro"))
+                         _("Voir le menu Video/options camera"))
             return
         self.retirerPhotos(supprimer)
-        self.encadre(_("Suppression de %s photos sous le répertoire courant.") % (supprimer.__len__()))
         
 ########################################## ffmpeg : extraction images d'une video -----------------------
         
@@ -13678,7 +14007,10 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # n'est appelé que par l'item de menu : le paramètre est prévu pour usage ultérieur
 
     def nombrePointsHomologues(self,rep="Homol"):
-        message = ""
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return
+        message = ""        
         nbGroupes = self.regroupementSuivantPointsHomologues(rep)
         if nbGroupes>1 :
             message = _("ATTENTION : Les photos définissent plusieurs scènes disjointes") + "\n"+\
@@ -13801,6 +14133,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 ################## Attention : suppose que les points homologues soient dans des fichiers .dat ( si variable self.exptxt="0") sinon des .txt
         
     def lesMeilleuresPhotos(self,nombre=0): # retourne la liste des N = nombre meilleures photos en nombre de points homologues.
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         self.menageEcran()    
         listeTaille = list()
         repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
@@ -13899,6 +14234,8 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         else:
             self.encadreEtTrace(_("La fusion n'a pu se réaliser.") + "\n" + _("Consulter la trace."))
 
+    ###############  Informations sur les fichiers ply
+    
     def demandePlyChantierPourInfo(self):
         listePly = [e for e in os.listdir() if os.path.splitext(e)[1]==".ply"]
         if listePly==list():
@@ -13956,6 +14293,50 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.encadre(info)
         self.ajoutLigne(info)
 
+    ###############  Informations sur les fichiers MNT de type ASC IGN
+    
+    def demandeMNTPourInfo(self,affiche=True,titre=_("Information sur un MNT"),bouton=_("Rechercher les infos")):
+        listeMNT = [e for e in os.listdir() if os.path.splitext(e)[1]==".ASC"]
+        if listeMNT==list():
+            self.encadre(_("Aucun MNT dans ce chantier."))
+            return
+        self.choisirUnePhoto(listeMNT,
+                             titre=titre,
+                             message=_("Choisir le fichier:"),
+                             messageBouton=_(bouton),                             
+                             boutonDeux=_("Fermer"),
+                             mode='extended',
+                             ouvrirEnGrand=False)
+        if len(self.selectionPhotosAvecChemin)==0: return abandon()
+        mnt = self.selectionPhotosAvecChemin[0]        
+        mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData = self.infoSurMNT(mnt)
+        if affiche:          
+            texte = "MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s\nlargeur = %s\nhauteur %s\nhautGauche = %s" % (mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,hautGauche)
+            self.encadre(texte)
+        else:
+            return mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData
+
+    def infoSurMNT(self,mntIGN):
+        with open(mntIGN) as ign:
+            lignes = ign.readlines()
+        semis = list()
+        noData="-9999"  #valeur par défaut
+        for ligne in lignes:
+            if "ncols" in ligne: ncols = ligne.split()[1]
+            if "nrows" in ligne: nrows = ligne.split()[1]
+            if "xllcorner" in ligne: xllcorner = ligne.split()[1]
+            if "yllcorner" in ligne: yllcorner = ligne.split()[1]
+            if "cellsize" in ligne: cellsize = ligne.split()[1]
+            if "NODATA_value" in ligne: noData = ligne.split()[1]
+            try:
+                if float(ligne.split()[0]):
+                    semis+=ligne.split()
+            except: pass
+        largeur = float(cellsize)*int(ncols)
+        hauteur = float(cellsize)*int(nrows)
+        basGauche = float(yllcorner)-hauteur
+        return mntIGN,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData
+    
     ################### Fusion d'orthomosaïques issues de Tawny
 
     def fusionOrthomosaiques(self):
@@ -14008,8 +14389,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         if liste.__len__()==0:
             return
         if self.pasDeConvertMagick():
-            self.ajoutLigne(_("Le programme de conversion n'est pas présent."))
-            return
+            rapport = _("Le programme de conversion n'est pas présent. \nAjoutez le : Menu paramètres\Associer convert")
+            self.encadreEtTrace(rapport)
+            return False
         if liste==list():
             liste = self.photosSansChemin
         curdir = os.getcwd()
@@ -14026,6 +14408,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # mise à jour de l'exif :
                 
     def majExif(self,liste=list()):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if self.pasDeExiftool():return
         self.menageEcran()        
         self.encadre(_("Recherche des exifs des photos en cours.\nPatience...."))
@@ -14041,6 +14426,9 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     # lancé par item3000 : modification des  exif : modéle, focale
     
     def exifOK(self):
+        if self.etatDuChantier == 0:                                        # pas encore de chantier
+            self.encadre(self.pasDeChantier)
+            return        
         if self.pasDeExiftool():return
         listeTag = [('Make',                    self.exifMaker.get()     ),
                     ('Model',                   self.exifNomCamera.get() ),
@@ -14105,7 +14493,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 
     def pasDePhoto(self,avecMessage=True):
         if self.photosAvecChemin.__len__()==0:
-            if avecMessage: self.encadre(_("Choisir des photos au préalable."))
+            if avecMessage: self.encadre(self.pasDeChantier)
             return True          
              
     def pasDeMm3d(self):
@@ -14362,7 +14750,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.sauveParamMicMac()                         # sauve les param en cours du chantier dans les param généraux (peux mieux faire ?)       
 
     ########################################### Conversion d'un PLY en fichier X Y Z (séparateur espace
-    #@decorateTry
+    @decorateTry
     def ecrireXYZ(self):
         fichierPlyPourXyz =tkinter.filedialog.askopenfilename(title=_('Fichier .PLY à convertir en XYZ : '),
                                                   filetypes=[(_("fichier ply"),("*.ply")),(_("Tous"),"*")],
@@ -14394,7 +14782,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
     def xyz2Mnt(self):
         self.toMnt("xyz")
 
-    @decorateTry   
+    #@decorateTry   
     def toMnt(self,typeFichier):
 ##        
 ##        # cette fonction n'est pas disponible aprés cx-freese : numpy ne peut pas être chargé par cx-freeze 
@@ -14552,16 +14940,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
                 message=_("Pas de fichier ply ou xyz.")
                 self.encadre(message)
                 return True
-            # Si utilisation sous cx-freeze l'importation plante 
-            # pour ne pas imposer scipy à tous...       
-            try:
-                from scipy.interpolate import griddata      # Pour l'interpolation
-                from numpy import mgrid           
-            except Exception as e :
-                message = (_("Cette fonction nécessite la présence du module scipy  : ")+"\nErreur : "+str(e)+"\n")
-                message += (_("Si AperoDeDenis a été installé à partir du fichier msi cette fonction 'MNT' n'est pas fonctionnelle."))
-                self.encadre(message)
-                return True
+            # Si utilisation sous cx-freeze l'importation plante voir version avant 5.71
             if lePas==None:
                 message=_("Abandon")
                 self.encadre(message)
@@ -14621,8 +15000,10 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             return semisDePoints
                 
 ######################## le traitement :
-
+        print(heure()+" : début extraction semis de point à partir du ply") 
         semisDePoints = extraireLesXyz(fichierPourMnt) # récupére le semis de points x y z dans l'asc ou le ply
+        
+        print(heure()+" : semis de point constitué, on demande la pas")        
         if "surface" not in semisDePoints: return      
         lePas = demandeLePas(semisDePoints["surface"],semisDePoints["nb"])
         if prealableKO(): return
@@ -14639,7 +15020,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 ####################### Passage d'un maillage ply au format MNT
 
     def ecrireMNTPlyMesh(self,fichier):
-        import numpy
+        
         def demandeLePas(fichier): # demande la taille de la maille
             lePas = False
             texte  = _("Fichier : %s") % (fichier)
@@ -14782,11 +15163,13 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 ########################################
 ####### recherche dans la zone texte 201
 
+
     def find201(self,event):
         self.find201 = "un"
         self.texte201.tag_delete("search")
-        texte = _("chaine a rechercher, insensible à la casse\nsuivant = F3\nctrl Maj F3 recherche toutes les occurences")
+        texte = _("chaine a rechercher, insensible à la casse\nsuivant = F3\nctrl Maj F recherche toutes les occurences")
         self.cherche = MyDialog(self.texte201,texte).saisie
+        self.chercheTexte.set(self.cherche)       
         self._search_(index=self.texte201.index(tkinter.INSERT))
         
     def suivant201(self,event):
@@ -14824,6 +15207,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
         self.find201 = "tous"
         self.texte201.tag_delete("search")
         self.cherche = MyDialog(self.texte201,"chaine a rechercher dans tout le texte").saisie
+        self.chercheTexte.set(self.cherche)         
         self._search_all_(self.cherche)
         self.suite201 = 0
         if self.listePositions201:
@@ -14846,7 +15230,7 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             return True
         else:
             return None
-
+        
 # réintégrer dans l'Interface afin d'être éxécuté lors de l'initialisation (12/12/21)
 
     def afficheChemin(self,texte):                               # avant d'afficher un chemin on s'assure que le séparateur est bien le bon suivant l'OS
@@ -14862,7 +15246,6 @@ Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
             with open (self.schnapsPoubelle,"r") as f:
                 photos = f.read().splitlines()
             if photos:
-                print("photos à retirer = ",photos)
                 self.retirerPhotos(photos)
         else:
             self.ajoutLigne(_("Fichier % non trouvé") % self.schnapsPoubelle)
@@ -15070,6 +15453,7 @@ def verifierSiExecutable(exe):
     
 @decorateTrySilencieux   
 def open_file(filename):
+    if os.path.exists(filename)==False: return False
     if sys.platform == "win32":
         os.startfile(filename)
     else:
@@ -15154,7 +15538,14 @@ def typeDePly(fichier):              # retour :
     if format=="binary" and nbFaces>0:
         return ("mesh binary")
 @decorateTry  
-def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : liste de float de la forme (x,y,z)  
+def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : liste de float de la forme (x,y,z)
+
+    # si le calcul est mémorisé on le renvoie de suite
+    
+    if fichierPly in interface.mnt:
+        return interface.mnt[fichierPly]
+
+    #début traitement
     endian = "@"                                                    # valeur par défaut : endian du système
     fmt = str()                                                     # format de codage des données dans le ply ce format est utilisé par struct
     i = int()
@@ -15230,8 +15621,9 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
     valeur=tuple([e for e in fmt])
     try:
         # list comprehension extrayant les xyz de la structure décodée :  (X,Y,Z
+        print(heure()+" : début extraction par décodage du ply") 
         lesXyz = [(valeur[1],valeur[0],valeur[2]) for [*valeur] in struct.iter_unpack(fmt,plageData).__iter__() ]
-
+        print(heure()+" : fin extraction par décodage du ply")
         mnt = dict()
         mnt["min_x"]  = min([x for x,y,z in lesXyz])     # bornes
         mnt["max_x"]  = max([x for x,y,z in lesXyz])
@@ -15262,7 +15654,8 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
     except Exception as e:
         print( _("Erreur lors du décodage des triangles du fichier Ply, le ply ne provient pas de micmac. Erreur = ")+str(e))
         return False
-    mnt["lesTriangles"] = lesTriangles    
+    mnt["lesTriangles"] = lesTriangles
+                
     return mnt
 
 def extraireLesXyzDuAsc(fichierASC):# fichier texte semis de points 3D comportant sur chaque ligne X Y Z
@@ -15287,6 +15680,11 @@ def extraireLesXyzDuAsc(fichierASC):# fichier texte semis de points 3D comportan
             separateurDeChamp = ","
             separateurDecimal = "."
         return separateurDecimal,separateurDeChamp
+
+    # si le calcul est mémorisé on le renvoie de suite
+    
+    if fichierASC in interface.mnt:
+        return interface.mnt[fichierASC]
 
     ##### Début traitement
                           
@@ -15323,12 +15721,12 @@ def extraireLesXyzDuAsc(fichierASC):# fichier texte semis de points 3D comportan
     mnt["nb"]     = len(lesXyz)
     mnt["lesXyz"] = lesXyz
     mnt["surface"]= (mnt["max_x"]-mnt["min_x"])*(mnt["max_y"]-mnt["min_y"])
+
+
     return mnt
 
     
-def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; LesXYZ : liste de tuples de la forme ((x,y),z)
-    from scipy.interpolate import griddata      # Pour l'interpolesXyzlation
-    from numpy import mgrid     
+def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; LesXYZ : liste de tuples de la forme ((x,y),z)    
     # création de la grille régulière : générer un maillage avec un pas régulier,
     # au format grid de numpy les couples (x,y) sont éclatés en 2 listes [x] et [y]
     
@@ -15342,17 +15740,21 @@ def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; Les
     maxY = round(semisDePoints["max_y"],4)-deltaY
     
     #################
-    
+    print(heure()+" :  le pas est donné, début mgrid, pour la grille d'accueil , pas : %s" % (lePas))
     grid_x, grid_y = mgrid[minX:maxX+lePas:lePas, #constitue la grille demandée de minx, miny à maxX,maxY, au pas de lePas
                            minY:maxY+lePas:lePas]
-    
+    print("longueur grid_x=",len(grid_x),len(grid_x[0]))
+    print("longueur grid_y=",len(grid_y),len(grid_y[0]))    
+    print("longueur semis = ",len(semisDePoints["lesXyz"]))
+    print(heure()+" : la grille d'accueil est constituée, début du calcul des z par griddata")
     grid  = griddata( [(x-deltaX,y-deltaY) for x,y,z in semisDePoints["lesXyz"]],
                       [z  for x,y,z in semisDePoints["lesXyz"]],
                       (grid_x, grid_y),
                       method='linear',          # alternative : nearest ou linear ou cubic mais nearest ne fonctionne pas !!!!
                       fill_value="-9999")
-                      
+    print(heure()+" : la grille est abondée par griddata")                      
     semisDePoints["mnt"]=grid
+    print(heure()+" semis de point ok")
     return semisDePoints
 ##Pour insérer une image, ou un logo, dans un script, utilisable ensuite par Tkinter : (effctuer les points 2 et 3)
 ##1) Enregistrr l'image au format GIF (sinon il faudra utiliser PIL) voir (les images dans http://tkinter.fdex.eu/doc/sa.html#images)
@@ -15390,8 +15792,11 @@ def infoVolume():
     avertissement += " "+_("- Ces fonctions 'métiers' sont indépendantes de l'utilisation de l'outil MicMac")+"\n"    
     interface.encadre(avertissement)    
 
-#@decorateTry
+@decorateTry
 def calculVolumeMnt():
+    if len(glob.glob(os.path.join(interface.repTravail,"*.ASC")))==0:
+        interface.encadre(_("Absence de MNT."))
+        return     
     interface.menageEcran()
     fond = tkinter.filedialog.askopenfilename( initialdir="",                                                 
                                                 filetypes=[(_("asc"),"*maillage*.asc"),(_("Tous"),"*")],
@@ -15545,6 +15950,9 @@ def calculVolumeMnt():
     traceMetier(rapport,fond,'volume')
 
 def calculVolumeEntre2Mnt():
+    if len(glob.glob(os.path.join(interface.repTravail,"*.ASC")))==0:
+        interface.encadre(_("Absence de MNT."))
+        return     
     def lectureInfoFichiers(fond,dessus):
         
         def controleCompatibles(fond,dessus):
@@ -16107,6 +16515,115 @@ def calculVolumeEntre2Mnt():
     traceMetier(message,fond,'volume')
     interface.encadre(rapport)
 
+################################ profil sur mosaique et MNT
+
+def conversionMosaiqueTIFVersJPG():
+    if not os.path.exists(interface.mosaiqueTaramaJPG):
+        if os.path.exists(interface.mosaiqueTaramaTIF):
+            interface.conversionJPG(liste=[interface.mosaiqueTaramaTIF,])
+
+
+def tracerProfil():              
+    # Controle mosaique TARAMA et 2 points début, fin
+    if len(glob.glob(os.path.join(interface.repTravail,"*.ASC")))==0:
+        interface.encadre(_("Absence de MNT pour tracer le profil."))
+        return
+    conversionMosaiqueTIFVersJPG()
+    mosaique = interface.mosaiqueTaramaJPG
+    if not os.path.exists(mosaique): 
+        interface.encadre(_("La mosaïque TARAMA n'existe pas.\n Elle permet de fixer les extrémités du profil.\nVous pouvez la générer par le menu outils"))
+        return
+    positionRelative,l,h = pointsSurMosaiqueTARAMA() # position des 2 extrémités sur la mosaique TARAMA, en % : (i1,j1),(i2,j2) Origine en haut à gauche
+    if type(positionRelative)==type(int()):
+        interface.encadre(_("Il faut choisir 2 points sur la mosaïque TARAMA. Il y en a %s") % (positionRelative))
+        return
+    # lecture et controle du MNT choisi
+    leMNT = interface.demandeMNTPourInfo(False,titre=_("Choix d'un MNT pour Profil"),bouton=_("Valider"))
+    if leMNT==None:
+        interface.encadre(_("Pas deMNT choisi"))
+        return          
+    # points sur MNT : xllcorner + largeur*i ; bas + (1-j)*hauteur 
+    # leMNT = mnt,ncols,nrows,xllcorner(3),yllcorner(4),cellsize(5),largeur(6),hauteur(7),bas(8),semis
+    # Calcul des coordonnées terrain des points début et fin choisis sur la mosaïque TARAMA :
+    nomMNT = leMNT[0]
+    ncols = float(leMNT[1])
+    nrows = float(leMNT[2])
+    gauche = float(leMNT[3])
+    haut = float(leMNT[4])
+    pas = float(leMNT[5])
+    largeur = float(leMNT[6])
+    hauteur = float(leMNT[7])
+    bas = float(leMNT[8])
+    semis = leMNT[9]
+    noData = float(leMNT[10])
+    # controle que le MNT et la mosaïque soient relativement proportionnés : rapport largeur/hauteur entre 0.88 et 1.12
+    pMos = l/h # proportion mosaique
+    pMnt = ncols/nrows # proportion MNT
+    rapport = pMos/pMnt
+    print("rapport=",rapport)
+    if abs(rapport-1)>=0.12:
+        interface.encadreEtTrace(_("La mosaïque et le MNT ont des proportions trop différentes pour établir un profil correct.")+"\n"+"\n"+
+                          _("rapport largeur sur hauteur de la mosaïque : %.2f, du MNT %s : %.2f") % (pMos,nomMNT,pMnt)+"\n"+"\n"+
+                          _("Ne pas utiliser de masque")+"\n"+
+                          _("Ne pas utiliser de référentiel géographique")+"\n"+
+                          _("Ne pas utiliser de mise à l'échelle contrariant l'orientation par défaut")+"\n"+"\n"+
+                          _("Essayer avec un autre MNT"))
+        return
+                          
+    
+    x1,y1 = gauche+largeur*positionRelative[0][0],bas+hauteur*(1-positionRelative[0][1])
+    x2,y2 = gauche+largeur*positionRelative[1][0],bas+hauteur*(1-positionRelative[1][1])
+    # recherche des points (x,y) sur la ligne du profil :
+    ligneProfil = pointille(x1,y1,x2,y2,pas)
+    pointsZ = interpol(gauche,haut,pas,ncols,semis,ligneProfil,noData)
+    # affichage de la polyligne aprés suppression des noData :
+    pointsZ = [0 if e==noData else e for e in pointsZ]
+    
+    ############## Création par matplotlib du fichier profil.png et affichage par l'outil système par défaut
+
+    plt.plot(pointsZ)
+    plt.ylabel(_('Altitude'))
+    plt.xlabel(_('pas = %s ') % pas)
+    plt.title(_("Profil entre (%.4f;%.4f) et (%.4f;%.4f)\nNom du MNT : %s" % (x1,y1,x2,y2,nomMNT)))
+    plt.savefig("profil.png")
+    plt.close()
+    if os.path.exists("profil.png"):
+        interface.encadreEtTrace(_("Le profil est généré dans le fichier\nprofil.png\nsour le répertoire\n%s)" % interface.repTravail))
+        open_file("profil.png")
+    else:
+        interface.encadre(_("Le profil n'a pas été généré."))
+        
+def interpol(gauche,haut,pas,ncols,semis,points,noData):   # Altitude d'un point
+    # calcul de la position X,Y du point dans le semis :
+    pointsZ=list()
+    for point in points:
+        X = int((point[0]-gauche)/pas)
+        Y = int((haut-point[1])/pas)
+        position = int(X+Y*ncols)
+        if position<len(semis):
+            altitudeXY = semis[position]
+            pointsZ.append(float(altitudeXY))
+    return pointsZ
+        
+def pointsSurMosaiqueTARAMA():
+    mosaique = interface.mosaiqueTaramaJPG
+    if not os.path.exists(mosaique): return 0
+    profil = CalibrationGPS(fenetre,
+                            mosaique,           # image sur laquelle placer les points
+                            [("début",0),("fin",1)],    # liste des identifiants en "string" des points
+                            dict()              # pas de points déjà placés
+                            )                   # Profil key = nom point, photo, identifiant, value = x,y 
+    l,h=Image.open(mosaique).size
+    if len(profil.dicoPointsJPG)!=2: return len(profil.dicoPointsJPG)   # il n'y a pas 2 points
+    interface.dicoProfil=profil.dicoPointsJPG
+    positionRelative =[ (v[0]/l,v[1]/h) for k,v in profil.dicoPointsJPG.items()]    # i,j entre 0 et 1 
+    return positionRelative,l,h
+
+def pointille(x1,y1,x2,y2,pas): # renvoi la liste des pointillés entre les 2 points
+    nombrePoints = 2+math.dist((x1,y1),(x2,y2))/pas
+    vx,vy = (x2-x1)/nombrePoints,(y2-y1)/nombrePoints    # vecteur increment
+    return [((x1+i*vx,y1+i*vy)) for i in range (int(nombrePoints))]
+         
 ################################ lire MNT
 @decorateTry   
 def lireMNTIGN(mntIgn):
@@ -16166,6 +16683,9 @@ def lireMNTIGN(mntIgn):
     return infoMnt
 
 def afficheMNTIGN():
+    if len(glob.glob(os.path.join(interface.repTravail,"*.ASC")))==0:
+        interface.encadre(_("Absence de MNT."))
+        return    
     mntIgn = demandeFichier(types=[("asc","*.ASC"),(_("Tous"),"*")])
     if not mntIgn: return abandon()
     fichierXYZ = MNTIGN2XYZ(mntIgn)
@@ -16402,7 +16922,9 @@ def lireFichierHomolTxt(fichier):
         lignes=f.readlines()    
     liste = [[float(e) for e in l.split()] for l in lignes]
     liste = [tuple(e) for e in liste]
-    return liste
+    origine = os.path.basename(fichier)[:-4]
+    listeFinale = [(a,b,c,d,origine) for a,b,c,d in liste]
+    return listeFinale
 
 def lireFichierHomolDat(fichier):
     ''' http://forum-micmac.forumprod.com/structure-des-fichiers-homol-t949.html
@@ -16456,16 +16978,18 @@ def lireFichierHomolDat(fichier):
         print("erreur struct.iter = ",str(e))
     return liste
 
-# renvoi les coordonnées dans photoDest du pointIni de photoIni. Si impossbile : (-1,-1)
+# renvoi les coordonnées dans photoDest du pointIni de photoIni. Si impossible : (-1,-1)
 
 def lePointEnCorrespondance(photoIni,photoDest,pointIni,SH="",ExpTxt=0,inverse=False):
-    listeHomol = lirePointsHomol(photoIni,photoDest,SH=SH,ExpTxt=ExpTxt)
+    listeHomol = lirePointsHomol(photoIni,photoDest,SH=SH,ExpTxt=ExpTxt) # x1,y1,x2,y2 : position des pixels homologues entre photo1 et photo2
+    if not listeHomol: return 0,0
     if inverse: # lorsque les fichier ini et dest sont inversés
-        listeHomol = [(c,d,a,b) for a,b,c,d in listeHomol]
+        listeHomol = [(c,d,a,b,photo) for a,b,c,d,photo in listeHomol]
     # recherche des points homologues les plus proches :
     les3Indices = pointsLesPlusProches(pointIni,listeHomol)
     if not les3Indices: return 0,0    
     if len(les3Indices)<3: return 0,0
+    # recherche du barycentre des 3 points homologues les plus proches 
     coefBary=barycentre(listeHomol[les3Indices[0]],
                       listeHomol[les3Indices[1]],
                       listeHomol[les3Indices[2]],
@@ -16477,8 +17001,8 @@ def pointsLesPlusProches(pointIni,liste):
     # point 
     # liste = x,y du point origine, a,b point homologue dans la photo cible
     x0 = pointIni[0]
-    y0 = pointIni[1]  
-    listeDistance = [(x-x0)**2+(y-y0)**2 for x,y,a,b in liste]
+    y0 = pointIni[1]
+    listeDistance = [(x-x0)**2+(y-y0)**2 for x,y,a,b,photo in liste]
     return les3PlusPetitsIndice(listeDistance)
 
 def les3PlusPetitsIndice(liste):
@@ -16507,15 +17031,11 @@ def curseurFrame(frame):   # renvoie la chaine de caractère représentant le cu
 def extraireUniteDistance(distance): # distance est la chaine de caractère saisie dans la stringvar self.distance
     # retourne la distance utilisée par la mise à l'échelle, sinon le mètre.
     # par défaut l'unité est le mètre
-    unite = "m"
     if isinstance(distance,str):
         l = distance.split()
-        if len(l)<=1:
-            return unite
-        return l[1]
-    else:
-        return unite
-    return unite
+        if len(l)>1:
+            return l[1]
+    return "m"
 '''################################## Crée un fichier contenant l'icone de l'application et en renvoie le nom conserver pour exemple de fichier temporaire
 
 def iconeGrainSel():
@@ -16541,7 +17061,7 @@ class MyDialog:
         l=ttk.Label(top, text=titre)
         l.pack(pady=10,padx=10)
         top.bind("<Return>",self.ok)
-        self.e = ttk.Entry(top,width=60)
+        self.e = ttk.Entry(top,width=60,textvariable=interface.chercheTexte)
         self.e.pack()
         self.e.focus_set()
         b = ttk.Button(top, text=_("OK"), command=self.ok)
@@ -16622,6 +17142,7 @@ class choisirDansUneListe:              # mode="single" ou 'extended'
         self.topChoix.transient(fenetreParent)
         self.topChoix.title(titre)
         self.topChoix.geometry("400x250+100+100")
+        self.selectionFinale = list()
         fenetreIcone(self.topChoix)   
         f = self.topChoix                          # ttk.Frame(self.topChoix)       
         frameSelectRep = ttk.Frame(self.topChoix)
@@ -16673,7 +17194,6 @@ class choisirDansUneListe:              # mode="single" ou 'extended'
 
     def cancel(self):
         self.topChoix.destroy()
-        self.selectionFinale = list()
 
 ################################## Classe : Dialogue minimum modal : deux boutons OK KO si b2="" alors pas de second bouton ###########################"
 # retour : b1 = 1, b2 = 0

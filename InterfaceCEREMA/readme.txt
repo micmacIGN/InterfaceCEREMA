@@ -1,6 +1,27 @@
 The CEREMA interface provides a user-friendly graphical user interface for 
 MICMAC, the IGN's free photogrammetry tool.
 
+Version V 5.71 March, 20, 2023
+	- Added an interface presentation document: 
+		"presentation interface AperoDeDenis.pdf"
+    - red circle display around the probable gps point : corrected   
+    - expert menu, added 3 items :
+        - import of a GPS points file placed on the photos
+        - export of GPS points file 
+        - export of a point file placed on the photos       
+    - business tools menu, added 3 items :
+        - info on DTM, in the business tools menu
+        - profile calculation in the business tools menu
+        - View profile position in the edit menu       
+    - MicMac menu:
+        - Removal of the item "choose photos".
+          Confused with the item File/new work site
+        - options, tab repository :
+            - addition of the "GPS metadata" repository
+            - deletion of "Other site".           
+    - Video menu :
+        - deletion of the "image selection" item
+        - the "new site" item actually creates a new site        
 Version V 5.70 May, 5, 2022
 Version V 5.69 May, 2, 2022
 Version V 5.68 April 29, 2022
