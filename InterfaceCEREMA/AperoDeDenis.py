@@ -683,7 +683,7 @@
 # suppression tentative d'éxécution de la commande si longueur>8000 caractères sous Windows
 # correction d'une régression (depuis la v 5.65) sur la saisie des masques 3D pour C3DC
 
-# Version 5.71
+# Version 5.71 20 mars 2023
 # simplication du menu Vidéo : 2 items seulement : options et nouveau chantier
 # modification du decorateTry : le message bloquant est remplacé par un message non bloquant
 # AfficheEtat, Tapas : si la calibration est faite par un autre chantier, pas d'indication du mode de tapas
@@ -713,9 +713,17 @@
 # suppression du choix du référentiel (onglet du menu options): autre chantier
 # (trop compliqué er remplacable par la copie des points GPS, mise en commentaire du pack de l'item)
 # refonte aide historique
+# modif du message vidéo sur le nombre d'images à conserver par seconde, suppression des limites
+# vidéo : si pas de ffmpeg on bloque au lieu de laisser la possibilité de continuer
+# menu MicMac Options : mise en commentaire du message si etatDuChantier==5 -aprés malt ou c3dc) on passe l'état à 35 et on affiche les onglets
+# menu MicMac lancer MicMac : si etatDuChantier=4 alors on passe à 35 sans poser de question (mise en commentaire du paragraphe)
+# menu MicMac lancer MicMac : si etatDuChantier=5 alors on passe à 4 sans poser de question (mise en commentaire du paragraphe)
+# menu MicMac Options : si etatDuChantier==3 alors on passe à 35 sans poser de question (mise en commentaire du paragraphe)
+#le message concernant la suppression de la calibration (par photo ou chantier) ne doit être produit qui si le choix change
 
 # a faire bouton pour supprimer masque 2D tarama
 # a faire : adapter l'aide
+
 # vérifier : maillagetipunch.jpg reste sous le chantier ce qui ajoute un jpg parasite (chantier mauchaussat_8photos, vendredi 10 mars 23 14h)
 #info :
 ## sous mec malt Le fichier TA_STD-MALT.xml
@@ -3282,7 +3290,8 @@ class Interface(ttk.Frame):
         self.item2006 = ttk.Entry(self.item2000,
                                   textvariable=self.goProFocale35)
         self.item2007 = ttk.Label(self.item2000,
-                                  text= "--------------\n" + _("Nombre d'images à conserver par seconde (entre 0.1 et 25) :"),
+                                  text= "--------------\n" + _("Nombre d'images à CONSERVER par seconde de vidéo :")+"\n\n"+
+                                  _("par exemple 2.5 pour garder 2.5 images par seconde, soit 1 image sur 10")+"\n",
                                   justify='center')
         self.item2008 = ttk.Entry(self.item2000,
                                   textvariable=self.goProNbParSec)        
@@ -4197,16 +4206,30 @@ class Interface(ttk.Frame):
                                    - obtenus par Malt avec différents niveaux de zoom : dans ce cas comparer les nuages intermédiaires Zoom 8, Zoom 4..          
                                    - Obtenus par Malt et C3DC          
                                    - Obtenus sans points GCP, ou GPS puis avec des points GCP ou GPS          
-                                   - Obtenus par MicMac et Metashape ou Pix4D ou ...           
-                             6 - Visualiser l'écart entre les 2 MNT : ouvre le maillage des écarts entre 2 MNT.          
+                                   - Obtenus par MicMac et Metashape ou Pix4D ou ...
+                             6 - Tracer le profil entre 2 points :
+                                 La position des points début/fin du profil se fait sur la mosaïque TARAMA. Le MNT doit correspondre à la mosaïque :
+                                    ◦ Il convient d’utiliser un nuage de points sans masque, dans un repère local
+                                    ◦ Le positionnement par métadonnée des photos est correct s'il n'y a pas changement de projection
+                                    ◦ Une éventuelle mise à l’échelle doit conserver l’orientation de la scène 
+                                    ◦ Il est parfois préférable de construire le nuage de points avec Malt,
+                                      plus respectueux des proportions de la scène que C3DC
+                                      (par exemple pour le jeu d’essai gravillon dont le coté gauche, trop lacunaire, est ignoré par C3DC)
+                                  Un contrôle est effectué avant le calcul du profil : les dimensions de la mosaïque et du MNT doivent être proportionnées
+                                  le profil est généré dans le fichier « profil.png » sous le répertoire du chantier
+                                  un nouveau calcul écrase le résultat précédent
+                                  le fichier s’ouvre dans l’outil par défaut pour ouvrir les « png »
+                                  le profil est calculé sur la droite reliant les 2 extrémités, avec un pas égal au pas du MNT
+                                  la mosaïque tarama est générée si besoin                                   
+                             7 - Visualiser l'écart entre les 2 MNT : ouvre le maillage des écarts entre 2 MNT.          
                                  Nota : Les écarts inférieurs à la tolérance sont considérés comme nuls.            
-                             7 - Modifier la tolérance utilisée pour calculer le volume :  la tolérance et le nombre de décimales dans les résultats des calculs.          
+                             8 - Modifier la tolérance utilisée pour calculer le volume :  la tolérance et le nombre de décimales dans les résultats des calculs.          
                                  Nota : Les écarts inférieurs à la tolérance sont considérés comme nuls.            
-                             8 - Modifier l'arrondi des résultats du calcul des volumes : nombre de décimales dans les résultats des calculs.          
+                             9 - Modifier l'arrondi des résultats du calcul des volumes : nombre de décimales dans les résultats des calculs.          
                                  Suivant les dimensions du MNT le nombre de décimales utiles peut varier.            
-                             9 - Ecrire un fichier XYZ à partir d'un ply :  écrit les fichiers PLY sous forme de liste de points X,Y,Z.          
+                             10 - Ecrire un fichier XYZ à partir d'un ply :  écrit les fichiers PLY sous forme de liste de points X,Y,Z.          
                                  Ce format texte, très répandu, permet de lire les valeurs x,y z dans tout éditeur de texte.         
-                             10 - Visualiser un fichier XYZ : ouvre le fichier XYZ dans l'outil de visualisation des nuages de points.  ''')            
+                             11 - Visualiser un fichier XYZ : ouvre le fichier XYZ dans l'outil de visualisation des nuages de points.  ''')            
         self.aide208 = _('''menu paramètres :  
                    - Afficher les paramètres : visualise les chemins de micmacbin, d'exiftool, du fichier pour visualiser les .ply Meshlab ou Cloud Compare,  
                      ainsi que le répertoire où se trouve les fichiers paramètres de l'interface.  
@@ -4303,8 +4326,6 @@ class Interface(ttk.Frame):
               _('''
 
 Version 5.71 20 mars 2023 :
-
-    - affichage cercle rouge autour du point gps probable : corrigé
     
     - menu expert, ajout de 3 items :
         - importation d'un fichier de points GPS placés sur les photos
@@ -4324,8 +4345,10 @@ Version 5.71 20 mars 2023 :
             - suppression de "Autre chantier"
             
     - menu Vidéo :
-        - suppression de l'item "sélecction des images
+        - suppression de l'item "sélection des images"
         - l'item "nouveau chantier" crée effectivement un nouveau chantier        
+
+    - affichage cercle rouge autour du point gps probable : corrigé
     
 Version 5.70 5 mai 2022 : quelques corrections
 
@@ -5691,7 +5714,7 @@ le nom de la variable pour la visualiser,
             # 1 : il y a des photos choisies
             # 2 : des photos, enregistré                              
             # 3 en cours d'exécution de Tapioca/Tapas, a sans doute planté pendant
-            # 35 Chantier arrêté aprés tapioca, points homoloques conservés
+            # 35 Chantier arrêté aprés tapas, points homoloques conservés
             # 4 arrêt après tapas,
             # 5 terminé après malt ou c3dc,
             # 6 terminé, redevenu modifiable (??)
@@ -5723,7 +5746,7 @@ le nom de la variable pour la visualiser,
                                                 # 1 : il y a des photos choisies
                                                 # 2 : des photos, enregistré                              
                                                 # 3 en cours d'exécution de Tapioca/Tapas
-                                                # 35 Chantier arrêté aprés tapioca, points homoloques conservés
+                                                # 35 Chantier arrêté aprés tapas, points homoloques conservés
                                                 # 4 arrêt après tapas,
                                                 # 5 terminé après malt ou c3dc,
                                                 # 6 terminé, redevenu modifiable
@@ -5960,8 +5983,8 @@ le nom de la variable pour la visualiser,
                              dicoPoints=self.dicoCalibre)           
 
     def afficherPositionProfil(self):
-        conversionMosaiqueTIFVersJPG()    
-        if not os.path.exists(self.mosaiqueTaramaJPG): 
+        conversionMosaiqueTIFVersJPG()                  # si ce n'est pas déjà fait !     
+        if not os.path.exists(self.mosaiqueTaramaJPG):  # si cela n'a pas marché
             self.encadre(_("La mosaïque TARAMA n'existe pas."))
             return
         if len(self.dicoProfil)!=2:
@@ -6311,9 +6334,14 @@ le nom de la variable pour la visualiser,
                 ffmpeg = os.path.join(source,"ffmpeg.exe")  # vrai dans certaines anciennes versions de micmac
                 if os.path.exists(ffmpeg):
                     self.ffmpeg = ffmpeg
-                    ffmpgegOK = True
- 
-
+                    ffmpegOK = True
+                else:
+                    ffmpeg = os.path.join(source+"aire-aux\\windows","ffmpeg.exe")  # parfois vrai
+                    if os.path.exists(ffmpeg):
+                        self.ffmpeg = ffmpeg
+                        ffmpegOK = True
+            else: ffmpegOK = True
+            
         # mm3D sous linux, mac os :
             
         if self.systeme=="posix":
@@ -6834,7 +6862,7 @@ le nom de la variable pour la visualiser,
     # 1 : il y a des photos choisies
     # 2 : des photos, enregistré                              
     # 3 en cours d'exécution de Tapioca/Tapas, a sans doute planté pendant, ou erreur photo calibration appareil
-    # 35 Chantier arrêté aprés tapioca, points homoloques conservés
+    # 35 Chantier arrêté aprés tapas, points homoloques conservés
     # 4 arrêt après tapas,
     # 5 terminé après malt ou c3dc,
     # 6 terminé, redevenu modifiable (??)
@@ -6845,21 +6873,22 @@ le nom de la variable pour la visualiser,
             return
     
         if self.etatDuChantier==3:	# En principe ne doit pas arriver : plantage en cours de tapas ou Tapioca, ou erreur photo calibration appareil
-            retour = self.troisBoutons(  titre=_("Le chantier %s a été interrompu lors de Tapioca/Tapas.") % (self.chantier),
-                                         question=_("Le chantier est interrompu.") + "\n" + _("Vous pouvez le débloquer,")+
-                                         _( "ce qui permettra de modifier les options et de le relancer.") + "\n",
-                                         b1=_('Débloquer le chantier- effacer les points homologues'),
-                                         b2=_('Débloquer le chantier- conserver les points homologues'),
-                                         b3=_('Abandon'))
-            if retour==-1 or retour==2:                         # 2 ou -1 : abandon ou fermeture de la fenêtre par la croix
-                return
-            if retour==0:
-                self.nettoyerChantier()                          # etat = 2 :  chantier est noté comme de nouveau modifiable, les points homologues sont supprimés
-                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable pour la recherche des points homologues.") % (self.chantier))                
-
-            if retour==1:
-                self.nettoyerChantierApresTapioca()             # etat = 35 le chantier est noté comme de nouveau modifiable, les points homologues sont conservés
-                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable à partir de l'orientation.") % (self.chantier))                
+            self.etatDuChantier=35
+##            retour = self.troisBoutons(  titre=_("Le chantier %s a été interrompu lors de Tapioca/Tapas.") % (self.chantier),
+##                                         question=_("Le chantier est interrompu.") + "\n" + _("Vous pouvez le débloquer,")+
+##                                         _( "ce qui permettra de modifier les options et de le relancer.") + "\n",
+##                                         b1=_('Débloquer le chantier- effacer les points homologues'),  # retour 0
+##                                         b2=_('Débloquer le chantier- conserver les points homologues'),# retour 1
+##                                         b3=_('Abandon'))                                               # retour 2
+##            if retour==-1 or retour==2:                         # 2 ou -1 : abandon ou fermeture de la fenêtre par la croix
+##                return
+##            if retour==0:
+##                self.nettoyerChantier()                          # etat = 2 :  chantier est noté comme de nouveau modifiable, les points homologues sont supprimés
+##                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable pour la recherche des points homologues.") % (self.chantier))                
+##
+##            if retour==1:
+##                self.nettoyerChantierApresTapioca()             # etat = 35 le chantier est noté comme de nouveau modifiable, les points homologues sont conservés
+##                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable à partir de l'orientation.") % (self.chantier))                
 
 
     # Chantier arrété après tapas : l'utilisateur a pu modifier les options et veut continuer ou reprendre au début suivant les résultats
@@ -6868,25 +6897,37 @@ le nom de la variable pour la visualiser,
             
     # Chantier terminé, l'utilisateur peur décider de le débloquer en conservant les résultats de tapas ou supprimer tous les résultats
         toutesOptions = True    
-        if self.etatDuChantier==5:		                # Chantier terminé
 
-            retour = self.troisBoutons(  titre=_('Le chantier %s est terminé.') % (self.chantier),
-                                         question=_("Le chantier est terminé après ")+self.choixDensification.get()+".\n"+
-                                         _("Vous pouvez :") + "\n "+
-                                         _("- Modifier les options 'points homologues' et 'orientation' : supprime les traitements effectués") + "\n "+
-                                         _("- Conserver les points homologues et l'orientation pour relancer la densification") + "\n "+
-                                         _("- Ne rien faire.") + "\n",                                    
-                                         b1=_("Modifier les options des points homologues et d'orientation"),
-                                         b2=_('Modifier les options de la densification'),
-                                         b3=_('Ne rien faire'),)
-            if retour in (-1,2):                                # -1 : fermeture fenêtre ou 2 : b3 ne rien faire
-                self.afficheEtat()
-                return
-            if retour==0:                                       # 1 : on nettoie, on passe à l'état 2  (avec photos, enregistr(b1))
-                self.nettoyerChantierApresTapioca()             # l'etatDuChantier passe à 35 ! points homologues conservés
-            if retour==1:                                       # modifier les options de malt C3DC et points GCP      (b2))
-                self.etatDuChantier = 4
-                toutesOptions = False
+        # EtatDuChantier :
+        # 0 : pas encore de photos
+        # 1 : il y a des photos choisies
+        # 2 : des photos, enregistré                              
+        # 3 en cours d'exécution de Tapioca/Tapas, a sans doute planté pendant
+        # 35 Chantier arrêté aprés tapas, points homoloques conservés
+        # 4 arrêt après tapas,
+        # 5 terminé après malt ou c3dc,
+        # 6 terminé, redevenu modifiable (??)
+        # 7 : la densification a échoué
+        
+        if self.etatDuChantier==5:	# Chantier terminé
+            self.etatDuChantier=35      #chantier terminé masi avec options modifiées    
+##            retour = self.troisBoutons(  titre=_('Le chantier %s est terminé.') % (self.chantier),
+##                                         question=_("Le chantier est terminé après ")+self.choixDensification.get()+".\n"+
+##                                         _("Vous pouvez :") + "\n "+
+##                                         _("- Modifier les options 'points homologues' et 'orientation' : supprime les traitements effectués") + "\n "+
+##                                         _("- Conserver les points homologues et l'orientation pour relancer la densification") + "\n "+
+##                                         _("- Ne rien faire.") + "\n",                                    
+##                                         b1=_("Modifier les options des points homologues et d'orientation"),   # retour = 0
+##                                         b2=_('Modifier les options de la densification'),                      # retour = 1
+##                                         b3=_('Ne rien faire'),)                                                # retour = 2
+##            if retour in (-1,2):                                # -1 : fermeture fenêtre ou 2 : b3 ne rien faire
+##                self.afficheEtat()
+##                return
+##            if retour==0:                                       # 1 : on nettoie, on passe à l'état 2  (avec photos, enregistr(b1))
+##                self.nettoyerChantierApresTapioca()             # l'etatDuChantier passe à 35 ! points homologues conservés
+##            if retour==1:                                       # modifier les options de malt C3DC et points GCP      (b2))
+##                self.etatDuChantier = 4
+##                toutesOptions = False
 
         # L'état du chantier permet de choisir des options :
 
@@ -7666,7 +7707,7 @@ le nom de la variable pour la visualiser,
         
     def supprimeCalibrationParCopie(self):
         # suppression de la calibration de l'appareil par copie de chantier
-        #if self.chantierOrigineCalibration:
+        if self.chantierOrigineCalibration:
             self.chantierOrigineCalibration = str()
             self.item572.configure(text="")
             calibChantier = os.path.join(self.repTravail,"Ori-Calib")
@@ -7675,7 +7716,7 @@ le nom de la variable pour la visualiser,
         
     def supprimeCalibrationParPhotos(self):
         #suppression de la calibration par photos
-        #if self.photosCalibrationSansChemin:
+        if self.photosCalibrationSansChemin:
             self.photosCalibrationSansChemin = list()
             self.photosPourCalibrationIntrinseque = list()
             self.ajoutLigne("\n"+_("Suppression de la calibration de l'appareil par photos"))
@@ -8432,18 +8473,18 @@ le nom de la variable pour la visualiser,
     def lanceMicMac(self):          # controles puis Aiguillage en fonction de l'etatDuChantier
 
         if self.etatDuChantier==5:  # Chantier terminé
-            titre = _("Attention : chantier terminé")
-            rapport = _("Attention : Le chantier %s est terminé après %s"+"\n") % (self.chantier,self.choixDensification.get())
-            rapport += _("Vous pouvez modifier les options avant de relancer MicMac.")+"\n"
-            rapport += _("Vous pouvez lancer le traitement avec les options en cours.")
-            lancer = _("Lancer le traitement")
-            arret = _("Modifier les options")
-            if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=arret,b2=lancer).retour:
-                self.encadre(_("Le chantier %s est terminé après %s") % (self.chantier,self.choixDensification.get()) + ".\n\n"+
-                         _("Modifier les options puis relancer MicMac."))
-                self.nettoyerChantierApresTapioca() # etat = 35 + sauvegarde
-                self.optionsOnglet()
-                return
+##            titre = _("Attention : chantier terminé")
+##            rapport = _("Attention : Le chantier %s est terminé après %s"+"\n") % (self.chantier,self.choixDensification.get())
+##            rapport += _("Vous pouvez modifier les options avant de relancer MicMac.")+"\n"
+##            rapport += _("Vous pouvez lancer le traitement avec les options en cours.")
+##            lancer = _("Lancer le traitement")
+##            arret = _("Modifier les options")
+##            if MyDialog_OK_KO(fenetre,titre=titre,texte=rapport,b1=arret,b2=lancer).retour:
+##                self.encadre(_("Le chantier %s est terminé après %s") % (self.chantier,self.choixDensification.get()) + ".\n\n"+
+##                         _("Modifier les options puis relancer MicMac."))
+##                self.nettoyerChantierApresTapioca() # etat = 35 + sauvegarde
+##                self.optionsOnglet()
+##                return
             self.etatDuChantier = 4 # permet de poser la question : homologue, orientation ou densification
         self.encadre(_("Lance MicMac : controles en cours....")+"\n")   
     # réinitialisation des variables "locales" définies dans le module
@@ -8657,7 +8698,7 @@ le nom de la variable pour la visualiser,
         # 1 : il y a des photos choisies
         # 2 : des photos, enregistré                              
         # 3 en cours d'exécution de Tapioca/Tapas, a sans doute planté pendant
-        # 35 Chantier arrêté aprés tapioca, points homoloques conservés
+        # 35 Chantier arrêté aprés tapas, points homoloques conservés
         # 4 arrêt après tapas,
         # 5 terminé après malt ou c3dc,
         # 6 terminé, redevenu modifiable (??)
@@ -8666,20 +8707,21 @@ le nom de la variable pour la visualiser,
     # anormal : chantier planté lors de la dernière éxécution de tapioca/Tapas : on propose le déblocage mais on sort dans tous les cas
                 
         if self.etatDuChantier==3:	# En principe ne doit pas arriver : plantage en cours de tapas ou Tapioca
-            retour = self.troisBoutons(  titre=_("Le chantier %s a été interrompu lors de Tapioca/Tapas.") % (self.chantier),
-                                         question=_("Le chantier est interrompu.") + "\n" + _("Vous pouvez le débloquer,")+
-                                         _( "ce qui permettra de modifier les options et de le relancer.") + "\n",
-                                         b1=_('Lancer MicMac- effacer les points homologues'),
-                                         b2=_('Lancer MicMac- conserver les points homologues'),
-                                         b3=_('Abandon'))
-            if retour==-1 or retour==2:                         # 2 ou -1 : abandon ou fermeture de la fenêtre par la croix
-                return
-            if retour==0:
-                self.nettoyerChantier()                          # b1 etat = 2 :  chantier est noté comme de nouveau modifiable, les points homologues sont supprimés
-                # self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable pour la recherche des points homologues.") % (self.chantier))                
-            if retour==1:
-                self.nettoyerChantierApresTapioca()             # etat = 35 le chantier est noté comme de nouveau modifiable, les points homologues sont conservés
-                #self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable à partir de l'orientation.") % (self.chantier))                
+            self.etatDuChantier=35
+##            retour = self.troisBoutons(  titre=_("Le chantier %s a été interrompu lors de Tapioca/Tapas.") % (self.chantier),
+##                                         question=_("Le chantier est interrompu.") + "\n" + _("Vous pouvez le débloquer,")+
+##                                         _( "ce qui permettra de modifier les options et de le relancer.") + "\n",
+##                                         b1=_('Lancer MicMac- effacer les points homologues'),
+##                                         b2=_('Lancer MicMac- conserver les points homologues'),
+##                                         b3=_('Abandon'))
+##            if retour==-1 or retour==2:                         # 2 ou -1 : abandon ou fermeture de la fenêtre par la croix
+##                return
+##            if retour==0:
+##                self.nettoyerChantier()                          # b1 etat = 2 :  chantier est noté comme de nouveau modifiable, les points homologues sont supprimés
+##                # self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable pour la recherche des points homologues.") % (self.chantier))                
+##            if retour==1:
+##                self.nettoyerChantierApresTapioca()             # etat = 35 le chantier est noté comme de nouveau modifiable, les points homologues sont conservés
+##                #self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable à partir de l'orientation.") % (self.chantier))                
                 
             
     # anormal : chantier planté lors de la dernière éxécution de Malt/c3dc : on propose le déblocage mais on sort dans tous les cas
@@ -8719,38 +8761,39 @@ le nom de la variable pour la visualiser,
     # poursuite du traitement ou arrêt suivant demande utilisateur
 
         if self.etatDuChantier==4:                              # Chantier arrêté après Tapas
+            self.etatDuChantier=35
             
-            retour = self.troisBoutons(  titre=_('Continuer le chantier %s après tapas ?') % (self.chantier),
-                                         question =   _(''' Le nuage non dense de l'orientation est créé. Vous pouvez :          
-         - lancer la densification          
-         - débloquer le chantier pour modifier les options des points homologues          
-         - conserver les points homologues et modifier les paramètres de l'orientation         
-         - ne rien faire : cliquer sur la croix de fermeture de la fenêtre''')      ,                                         
-                                         b1=_('Lancer la densification '),
-                                         b2=_('débloquer le chantier - effacer les points homologues'),
-                                         b3=_('débloquer le chantier - garder les points homologues'))
-            if retour == -1:                                    # fermeture de la fenêtre
-                self.afficheEtat()
-                return
-            if retour == 0:                                     # b1 : Lancer la densification                  
-                self.ajoutLigne(heure()+" "+_("Reprise du chantier %s arrêté après TAPAS - La trace depuis l'origine sera disponible dans le menu édition.") % (self.chantier))
-                self.cadreVide()                                # début de la trace : fenêtre texte pour affichage des résultats. 
-                self.suiteMicmac()                              # on poursuit par Malt ou C3DC
-                return
-
-            if retour==1:                                       # b2 : débloquer le chantier, effacer les points homologues
-                self.nettoyerChantier()                         # l'état du chantier passe à 2 !
-                self.afficheEtat(_("Chantier réinitialisé. Points homologues effacés."))
-                return
-
-            if retour==2:                                       # b3 : débloquer le chantier, conserver les points homologues
-                self.nettoyerChantierApresTapioca()             # l'etatDuChantier passe à 35 : Chantier arrêté arrété aprés tapioca, points homoloques conservés
-                self.afficheEtat()
-                return 
+##            retour = self.troisBoutons(  titre=_('Continuer le chantier %s après tapas ?') % (self.chantier),
+##                                         question =   _(''' Le nuage non dense de l'orientation est créé. Vous pouvez :          
+##         - lancer la densification          
+##         - débloquer le chantier pour modifier les options des points homologues          
+##         - conserver les points homologues et modifier les paramètres de l'orientation         
+##         - ne rien faire : cliquer sur la croix de fermeture de la fenêtre''')      ,                                         
+##                                         b1=_('Lancer la densification '),
+##                                         b2=_('débloquer le chantier - effacer les points homologues'),
+##                                         b3=_('débloquer le chantier - garder les points homologues'))
+##            if retour == -1:                                    # fermeture de la fenêtre
+##                self.afficheEtat()
+##                return
+##            if retour == 0:                                     # b1 : Lancer la densification                  
+##                self.ajoutLigne(heure()+" "+_("Reprise du chantier %s arrêté après TAPAS - La trace depuis l'origine sera disponible dans le menu édition.") % (self.chantier))
+##                self.cadreVide()                                # début de la trace : fenêtre texte pour affichage des résultats. 
+##                self.suiteMicmac()                              # on poursuit par Malt ou C3DC
+##                return
+##
+##            if retour==1:                                       # b2 : débloquer le chantier, effacer les points homologues
+##                self.nettoyerChantier()                         # l'état du chantier passe à 2 !
+##                self.afficheEtat(_("Chantier réinitialisé. Points homologues effacés."))
+##                return
+##
+##            if retour==2:                                       # b3 : débloquer le chantier, conserver les points homologues
+##                self.nettoyerChantierApresTapioca()             # l'etatDuChantier passe à 35 : Chantier arrêté arrété aprés tapioca, points homoloques conservés
+##                self.afficheEtat()
+##                return 
 
         if self.etatDuChantier==35:                              # Chantier arrété aprés tapioca, points homoloques conservés
             retour = self.troisBoutons(  titre=_('Continuer le chantier %s après recherche des points homologues ?') % (self.chantier),
-                                         question =  _('''  Le chantier est arrêté après la recherche des points homologues. Vous pouvez :          
+                                         question =  _('''  Le chantier est arrêté. Vous pouvez :          
                                                        - relancer la recherche des points homologues          
                                                        - rechercher l'orientation des appareils photos
                                                        - lancer la densification (si l'orientation est faite)
@@ -8993,7 +9036,7 @@ le nom de la variable pour la visualiser,
             ligne = (_("Tapas n'a pas trouvé d'orientation.") + "\n"+
                      _("Le traitement ne peut se poursuivre.") + "\n"+
                      _("Consulter l'aide/quelques conseils.") + "\n"+                     
-                     _("Vérifier la qualité des photos, modifier les paramètres et relancer tapioca-tapas"))
+                     _("Vérifier la qualité des photos, modifier les options et relancer tapioca-tapas"))
             self.ajoutLigne(ligne)
             self.encadre(ligne)
             return
@@ -9057,7 +9100,7 @@ le nom de la variable pour la visualiser,
         
     def suiteMicmacMalt(self):  # pour gérer surtout le cas de geoimage avec plusieurs maitresses : plusieurs nuages à fusionner
 
-        if self.etatDuChantier!=4:  	                        # en principe inutile : il faut être juste après tapas 
+        if self.etatDuChantier not in (35,4):  	                        # en principe inutile : il faut être juste après tapas 
             self.ajoutLigne(_("Tapas non effectué, lancer MicMac depuis le menu. Etat du chantier = %s")% (self.etatDuChantier))
             return
 
@@ -13371,8 +13414,9 @@ le nom de la variable pour la visualiser,
     def laVideo(self):                                  #  choix de la video
         
         self.fermerVisuPhoto()                          #  s'il y a une visualisation en cours des photos ou du masque on la ferme             
-        if verifierSiExecutable(self.ffmpeg)==False:
-            self.encadre(_("L'outil ffmpeg n'est pas installé sur votre ordinateur. Traitement des vidéos impossible."))
+        if os.path.exists(self.ffmpeg)==False:
+            self.encadre("\n"+_("L'outil ffmpeg n'est pas installé sur votre ordinateur.\n\n Traitement des vidéos impossible.")+"\n\n"+
+                         _("Utiliser le menu Paramètre\Associer ffmpeg")+"\n")
             return
         
         repIni = ""                                     # répertoire initial de la boite de dialogue
@@ -13495,17 +13539,17 @@ le nom de la variable pour la visualiser,
 
     def selectionGoPro(self):
         nbParSeconde = float(self.goProNbParSec.get())
-        if nbParSeconde <= 0.1:
-            self.encadre(_("Modifier le nombre d'images à conserver par seconde : %s")%(nbParSeconde)+"\n"+
-                         _("Ce nombre doit être compris entre 0.1 et 25.")+"\n"+
-                         _("Menu Video/options camera"))
-            return
-        if nbParSeconde > 25 :
-            self.encadre(_("Modifier le nombre d'images à conserver par seconde : %s")%(nbParSeconde)+"\n"+
-                         _("Ce nombre est trop grand")+"\n"+
-                         _("Le nombre de photos par seconde est supposé égal à 25.")+"\n"+
-                         _("Menu Video/options camera"))
-            return        
+##        if nbParSeconde <= 0.1:
+##            self.encadre(_("Modifier le nombre d'images à conserver par seconde : %s")%(nbParSeconde)+"\n"+
+##                         _("Ce nombre doit être compris entre 0.1 et 25.")+"\n"+
+##                         _("Menu Video/options camera"))
+##            return
+##        if nbParSeconde > 25 :
+##            self.encadre(_("Modifier le nombre d'images à conserver par seconde : %s")%(nbParSeconde)+"\n"+
+##                         _("Ce nombre est trop grand")+"\n"+
+##                         _("Le nombre de photos par seconde est supposé égal à 25.")+"\n"+
+##                         _("Menu Video/options camera"))
+##            return        
         # on suppose 25 images secondes
         taux = max(1,int(25/nbParSeconde))  # si nbparseconde=0.5 alors conserver une image sur 50 = 25/0.5 
         conserver = self.photosSansChemin[::taux]
@@ -14397,10 +14441,12 @@ le nom de la variable pour la visualiser,
         curdir = os.getcwd()
         oschdir(os.path.dirname(liste[0]))
         for e in liste:
+            print("e=",e)
             if os.path.isfile(e):
                 i=os.path.basename(e)
                 nouveauJPG = os.path.splitext(i)[0]+".JPG"                
                 convert = [self.convertMagick,i,'-quality 100',nouveauJPG]
+                print("convert=",str(convert))
                 os.system(" ".join(convert))
         oschdir(curdir)
 
@@ -16530,17 +16576,24 @@ def tracerProfil():
         return
     conversionMosaiqueTIFVersJPG()
     mosaique = interface.mosaiqueTaramaJPG
-    if not os.path.exists(mosaique): 
+    if not os.path.exists(mosaique):  # si ce n'est pas déjà fait !
+        interface.lanceTarama()
+        time.sleep(2)
+    if not os.path.exists(mosaique):  # si cela n'a pas marché
         interface.encadre(_("La mosaïque TARAMA n'existe pas.\n Elle permet de fixer les extrémités du profil.\nVous pouvez la générer par le menu outils"))
         return
-    positionRelative,l,h = pointsSurMosaiqueTARAMA() # position des 2 extrémités sur la mosaique TARAMA, en % : (i1,j1),(i2,j2) Origine en haut à gauche
+    try:
+        positionRelative,l,h = pointsSurMosaiqueTARAMA() # position des 2 extrémités sur la mosaique TARAMA, en % : (i1,j1),(i2,j2) Origine en haut à gauche
+    except:
+        interface.encadre("\n"+_("Il faut 2 points sur la mosaïque Tarama"+"\n"+"\n"+_("Abandon")))
+        return
     if type(positionRelative)==type(int()):
         interface.encadre(_("Il faut choisir 2 points sur la mosaïque TARAMA. Il y en a %s") % (positionRelative))
         return
     # lecture et controle du MNT choisi
     leMNT = interface.demandeMNTPourInfo(False,titre=_("Choix d'un MNT pour Profil"),bouton=_("Valider"))
     if leMNT==None:
-        interface.encadre(_("Pas deMNT choisi"))
+        interface.encadre("\n"+_("Pas de MNT choisi")+"\n"+"\n"+_("Abandon"))
         return          
     # points sur MNT : xllcorner + largeur*i ; bas + (1-j)*hauteur 
     # leMNT = mnt,ncols,nrows,xllcorner(3),yllcorner(4),cellsize(5),largeur(6),hauteur(7),bas(8),semis
@@ -16556,12 +16609,11 @@ def tracerProfil():
     bas = float(leMNT[8])
     semis = leMNT[9]
     noData = float(leMNT[10])
-    # controle que le MNT et la mosaïque soient relativement proportionnés : rapport largeur/hauteur entre 0.88 et 1.12
+    # controle que le MNT et la mosaïque soient relativement proportionnés : rapport largeur/hauteur entre 0.85 et 1.15
     pMos = l/h # proportion mosaique
     pMnt = ncols/nrows # proportion MNT
     rapport = pMos/pMnt
-    print("rapport=",rapport)
-    if abs(rapport-1)>=0.12:
+    if abs(rapport-1)>=0.15:
         interface.encadreEtTrace(_("La mosaïque et le MNT ont des proportions trop différentes pour établir un profil correct.")+"\n"+"\n"+
                           _("rapport largeur sur hauteur de la mosaïque : %.2f, du MNT %s : %.2f") % (pMos,nomMNT,pMnt)+"\n"+"\n"+
                           _("Ne pas utiliser de masque")+"\n"+
@@ -16611,8 +16663,8 @@ def pointsSurMosaiqueTARAMA():
     profil = CalibrationGPS(fenetre,
                             mosaique,           # image sur laquelle placer les points
                             [("début",0),("fin",1)],    # liste des identifiants en "string" des points
-                            dict()              # pas de points déjà placés
-                            )                   # Profil key = nom point, photo, identifiant, value = x,y 
+                            dict(),              # pas de points déjà placés
+                            afficherSuivantPrecedent=False)                   # Profil key = nom point, photo, identifiant, value = x,y 
     l,h=Image.open(mosaique).size
     if len(profil.dicoPointsJPG)!=2: return len(profil.dicoPointsJPG)   # il n'y a pas 2 points
     interface.dicoProfil=profil.dicoPointsJPG
