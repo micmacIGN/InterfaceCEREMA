@@ -683,7 +683,7 @@
 # suppression tentative d'éxécution de la commande si longueur>8000 caractères sous Windows
 # correction d'une régression (depuis la v 5.65) sur la saisie des masques 3D pour C3DC
 
-# Version 5.71 20 mars 2023
+# Version 5.71 21 mars 2023
 # simplication du menu Vidéo : 2 items seulement : options et nouveau chantier
 # modification du decorateTry : le message bloquant est remplacé par un message non bloquant
 # AfficheEtat, Tapas : si la calibration est faite par un autre chantier, pas d'indication du mode de tapas
@@ -720,6 +720,7 @@
 # menu MicMac lancer MicMac : si etatDuChantier=5 alors on passe à 4 sans poser de question (mise en commentaire du paragraphe)
 # menu MicMac Options : si etatDuChantier==3 alors on passe à 35 sans poser de question (mise en commentaire du paragraphe)
 #le message concernant la suppression de la calibration (par photo ou chantier) ne doit être produit qui si le choix change
+# correction bug dans retailleetaffiche
 
 # a faire bouton pour supprimer masque 2D tarama
 # a faire : adapter l'aide
@@ -1394,7 +1395,7 @@ class TracePolygone():
         self.retailleEtAffiche()
         
     def retailleEtAffiche(self):
-        self.imgi = self.imageFichier.crop(())
+        self.imgi = self.imageFichier.crop((self.xNW,self.yNW,self.xSE,self.ySE))
         self.img = self.imgi.resize((self.largeurCanvas,self.hauteurCanvas))
         self.afficheImage()
         
@@ -8055,7 +8056,7 @@ le nom de la variable pour la visualiser,
         self.onglets.insert(self.item1100, placeDensification)      # affichage onglet Points GCP en avant dernière position
 
         # Onglet Référentiel : mise à jour de l'affichage
-        if self.choixReferentiel.get()=="GPS": 
+        if self.choixReferentiel.get() in ("GPS","MAL"): 
             self.optionsReferentiel()                                   # onglet référentiel : affichage         
 
 		
