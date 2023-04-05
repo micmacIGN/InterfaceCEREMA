@@ -740,12 +740,12 @@
 # supprimer :             self.erreurApero=ligne   #  ???? dans filtreApero
 # modif : ne pas afficher le bouton "metadonnées" dans l'onglet référentiel s'il n'y a pas de métadonnées
 # modif : ouvreChantier : réinitialise les variables (permet de s'affranchir des sauvegardes de paramètres incomplètes lors de nouvelles versions) 
-# Affiche les aides dans une fenêtre maximisée !
+# Affiche les aides dans une fenêtre maximisée ! Quelques fautes d'orthographe supprimées.
 
 # voir ce qu'il faut faire de "META" dans les vieux chantiers (ligne 727)
 # a faire bouton pour supprimer masque 2D tarama
-# bouton pour pims2mnt
-# a faire : adapter l'aide, corriger l'orthographe, vérifier la numérotation des modéles 3D
+# a faire : adapter l'aide, corriger l'orthographe,
+# vérifier la numérotation des modéles 3D : fait, c'est correct, on tient compte des modeles ET des tipunch maillés 
 
 # vérifier : maillagetipunch.jpg reste sous le chantier ce qui ajoute un jpg parasite (chantier mauchaussat_8photos, vendredi 10 mars 23 14h) : pas reproduit
 #info :
@@ -8053,7 +8053,7 @@ le nom de la variable pour la visualiser,
                 if "Outil de sélection" in titles:
                     time.sleep(1)
                     break
-                time.sleep(0.2)
+                time.sleep(1)
             if i>=attendre-1:
                 self.encadre("\n"+_("Chargez le fichier 'apericloud.ply'")+"\n")
                 print(heure(),"trop court",i)
@@ -13318,7 +13318,8 @@ le nom de la variable pour la visualiser,
                                    stderr=subprocess.STDOUT,
                                    stdin=subprocess.PIPE,      # définir stdin : il faut le satisfaire, risque...
                                                                 # mais si AperoDeDenis est lancé depuis une console avec "python AperoDeDenis.py" il faut une réponse
-                                   universal_newlines=True)
+                                   universal_newlines=True,
+                                   )
         except Exception as e:
             self.ajoutLigne("\n"+_("erreur lors de l'éxécution de la commande :") + "\n"+str(e)+"\n")
             self.ajoutLigne("\n"+heure()+" "+_(": fin de ")+commandeTexte+"\n")
