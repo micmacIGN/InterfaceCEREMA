@@ -1,5 +1,8 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
+Version V 5.72 April, 6, 2023
+	- read and execute MicMac pipelines as .bat files
+
 Version V 5.71 March, 20, 2023
     - red circle display around the probable gps point : corrected   
     - expert menu, added 3 items :

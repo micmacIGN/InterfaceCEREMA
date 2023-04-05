@@ -1,5 +1,8 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 5.72 6 avril 2023 :
+				- lecture et exécution des pipelines MicMac sous forme de .bat
+
 			Version 5.71 20 mars 2023 :
 				- affichage cercle rouge autour du point gps probable : corrigé   
 				- menu expert, ajout de 3 items :
