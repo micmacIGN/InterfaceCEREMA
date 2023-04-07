@@ -853,7 +853,7 @@
 # Apero
 # C3DC
 # Campari
-# Centerbascule
+# CenterBascule
 # DIV
 # GCPBascule
 # Malt
@@ -5097,6 +5097,13 @@ le nom de la variable pour la visualiser,
         self.traceMicMacSynthese        =   str()
         self.fichierParamChantier       =   str()                       # fichier paramètre sous le répertoire du chantier
 
+    # pour la lecture du pipeline
+
+        self.dicoPipeline               =   dict()                      # quelques infos sur le pipeline
+        self.dicoPipeline["fichier"]    =   list()                      # lecture d'un .bat
+        self.dicoPipeline["lignes"]     =   list()
+        self.erreurPipeline             =   str()
+        self.arretPipeline              =   False    
         
     # divers 
 
@@ -5117,9 +5124,8 @@ le nom de la variable pour la visualiser,
         self.texteLigneConsole          =   str()                       # texte pour éxécution dans une console système
         self.selectionRepertoireAvecChemin   =   str()                  # ?? ajout le 25/6/22 suite à erreur 
         self.chercheTexte               =  tkinter.StringVar()          # valeur recherchée dans zone de texte
-        self.dicoPipeline               =   dict()                      # quelques infos sur le pipeline
-        self.dicoPipeline["fichier"]    =   list()
-        self.dicoPipeline["lignes"]     =   list()           
+
+        
     # si les options par défaut sont personnalisées on les restaure :
         self.restaureOptions() 
   
@@ -8846,13 +8852,9 @@ le nom de la variable pour la visualiser,
                 return
             
             if retour==0:               # choix b1 : densifier
-                print(heure())
                 self.ajoutLigne(heure()+_("Reprise de la densification, aprés un premier échec de la densification.")+ "\n")
-                print(heure())
                 self.nettoyerChantierApresTapas()
-                print(heure())
                 self.cadreVide()        # début de la trace
-                print(heure())
                 self.suiteMicmac()      # on poursuit par Malt ou C3DC
                 return
             
@@ -9077,7 +9079,6 @@ le nom de la variable pour la visualiser,
         if self.calculNuageNonDense.get():       
             self.lanceApericloud()              # création d'un nuage de points 3D
             self.lanceApericloudMeshlab()       # affiche le nuage 3D si il existe
-            print("pour test : on n'attend pas le retour de cloudcompare")
 
         # Situation stable, orientation trouvée, changement d'état : 4 = Tapioca et Tapas exécutés, sauvegarde des paramètres
 
@@ -10300,7 +10301,6 @@ le nom de la variable pour la visualiser,
                    ]+self.PIMs2MntPerso.get().split(",")+[  # surcharge la suite                   
                     "DoOrtho=1",
                     ]
-        print("PIMs2Mnt=",PIMs2Mnt)
         self.lanceCommande(PIMs2Mnt,
                           )
 # en dehors de la filière normale, appel par menu/outils :
@@ -11698,17 +11698,14 @@ le nom de la variable pour la visualiser,
                 try: resul1=exec(ligne)
                 except Exception as e:
                     e_exec=str(e)
-                    print("erreur exec : ",str(e_exec))
                 try: resul2=eval(ligne,globals(),locals())
                 except Exception as e:
-                    e_eval=str(e)
-                    print("erreur eval : ",str(e_eval))              
+                    e_eval=str(e)              
                 if resul1:
                     r="\n"+_("L'exécution de la commande python retourne la valeur : ")+"\n"                     
                     r+="\n".join(wrap(str(resul1),100))   # on coupe tout les 100 caractères                
                 else:
-                    r="\n"+_("L'éxécution de la commande python %s ne retourne pas de valeur") % (ligne) +"\n"+e_exec
-                    print(r)                    
+                    r="\n"+_("L'éxécution de la commande python %s ne retourne pas de valeur") % (ligne) +"\n"+e_exec                   
                 self.encadrePlus("\n"+r)
                 if resul2:
                     r="\n"+_("L'évaluation de la commande python retourne la valeur : ")+"\n"                     
@@ -11725,55 +11722,135 @@ le nom de la variable pour la visualiser,
 
     def pipeline(self): # lit un .bat et l'éxécute
             
-        def afficheEtTraite():
+        def afficheEntete():
             self.dicoPipeline["fichier"].append(pipeline)
             self.dicoPipeline["lignes"].append("***")            
             self.cadreVide() # pour ouvrir la fenêtre d'affichage de la trace        
             self.ajoutLigne(heure()+_("********** Lancement d'un pipeline via le menu expert")+"\n")
             self.ajoutLigne(_("Fichier : %s")%(pipeline)+"\n")
             self.ajoutLigne(_("Contenu utile :\n %s")%("\n".join(code)))
-            [self.executeLignePipeline(e) for e in code] # traitement ligne par ligne
-            self.ajoutLigne(heure()+_("********** Fin du pipeline")+"\n")
             
-        # début                           
+        # début
+        self.erreurPipeline = str()
+        self.arretPipeline  = False      
         pipeline = tkinter.filedialog.askopenfilename(title=_('Pipeline MicMac'),
                         filetypes=[(("*.bat"),("*.bat")),(_("Tous"),"*")],
                         multiple=False)
         if not pipeline: return
         with open(pipeline) as pipe:
             lignes = pipe.read().splitlines()   # supprime les fins de ligne        
-        code = [l.split("#")[0] for l in lignes if (len(l)>0 and l[0]!="#" and "mm3d" in l)]   # supprime les commentaires et les lignes blanches
+        code = [l.split("#")[0] for l in lignes if (len(l)>1 and l[0]!="#" and "mm3d" in l)]   # supprime les commentaires et les lignes blanches
         if len(code)==0: return abandon(_("Pas de ligne éxécutable :\n %s \n") % ("\n".join(lignes)))
         ## affichage et traitement       
-        afficheEtTraite()
+        afficheEntete()
+        [self.executeLignePipeline(e) for e in code] # traitement ligne par ligne
+        if self.arretPipeline:
+            self.ajoutLigne("\n"+heure()+_(" Arrêt prématuré du pipeline : %s") % (self.erreurPipeline,) +"\n"+"\n")
+        elif self.erreurPipeline:
+            self.ajoutLigne(self.erreurPipeline +"\n"+"\n")            
+        self.ajoutLigne("\n"+heure()+_("********** Fin du pipeline")+"\n")
         
     def executeLignePipeline(self,ligne): #
-        def initVariablesFiltres(methode): #initialise les variables utilisées dans les filtres
-            if "Schnaps" in methode:
+        def initVariablesFiltres(): #initialise les variables utilisées dans les filtres
+            if "Schnaps" in filtre:
                 self.rejetSchnaps = str()
                 self.nbRejetSchnaps = int()
-            if "Tapioca" in methode:
+            if "Tapioca" in filtre:
                 self.etapeTapioca=str()
                 self.echelle1PourMessage=str()
                 self.echelle2PourMessage=str()
-            if ("C3DC" in methode) or ("Malt" in methode):
+            if ("C3DC" in filtre) or ("Malt" in filtre):
                 self.beginStep=str()
-            if "GCPBascule" in methode:
+            if "GCPBascule" in filtre:
                 self.ecartPointsGCPByBascule=str()
-            if "Tapas" in methode:            
-                self.derniereLigneTapas=str()        
+            if "Tapas" in filtre:            
+                self.derniereLigneTapas=str()
+                
+        def controleLigne(): # controle immédiatement avant exécution : le nombre d'argument minimum et la présence des fichiers/répertoires
+            if len(decompose)<=1: return False   # ligne invalide, non traitée, mais n'arrête pas le traitement
+
+            arg0,arg1 = decompose[:2]   # mm3d et nom du module
+            if "mm3d" not in arg0:
+                self.erreurPipeline+="\n"+_("La ligne ne commence pas par mm3d : %s") % ligne +"\n"
+                return False # ligne invalide, non traitée, mais n'arrête pas le traitement
+
+            if "-help" in ligne:
+                self.erreurPipeline+="\n"+_("La ligne demande l'aide, ignorée: %s") % ligne +"\n"                
+                return False # ligne non traitée, mais n'arrête pas le traitement
+            
+            if decompose[1][0]=="v":    # vCommande : l'utilisateur choisira les arguments, ok, ligne traitée
+                return True 
+
+            # fichier en premier argument
+            if arg1 in ["Nuage2Ply","ScaleIm","ScaleNuage","StatIm","TiPunch","To8Bits","XifGps2Txt","XifGps2Xml",]:
+                if (len(decompose)<3 or
+                    not (os.path.isfile(decompose[2]))):
+                    self.arretPipeline = True
+
+            # répertoire en premier argument                    
+            if arg1 in ["Tawny"]:
+                if (len(decompose)<3 or
+                    not (os.path.isdir(decompose[2]))):
+                    self.arretPipeline = True
+                     
+            # orientation en second argument                   
+            if arg1 in ["Campari","AperiCloud","Centerbascule","GCPBascule","Tarama","Tequila","OriConvert","GrShade","SBGlobBascule","XifGps2Xml",]:
+                if (len(decompose)<4 or                    
+                    not (os.path.isdir("Ori-"+decompose[3]))):
+                    self.arretPipeline = True
+
+            # fichier en 3° argument
+            if arg1 in ["GrShade","SBGlobBascule"]:
+                if (len(decompose)<5 or 
+                    not (os.path.isfile(decompose[4]))):
+                    self.arretPipeline = True
+                    
+            # orientation en 3° argument
+            if arg1 in ["C3DC","Centerbascule","Malt","PIMs",]:
+                if (len(decompose)<5 or 
+                    not (os.path.isdir("Ori-"+decompose[4]))):
+                    self.arretPipeline = True
+
+             # fichier en 4° argument
+            if arg1 in ["GCPBascule",]:               
+                if (len(decompose)<6 or
+                    not (os.path.isfile(decompose[5]))):
+                    self.arretPipeline = True
+                    
+            # fichier en 5° argument
+            if arg1 in ["GCPBascule",]:                
+                if (len(decompose)<7 or
+                    not (os.path.isfile(decompose[6]))):
+                    self.arretPipeline = True
+                    
+            # malt geomimage 4° argument = file
+            if arg1 or ["Malt"]:
+                if decompose[2]=="GeomImage":
+                    master=decompose[5].split("=")[0]
+                    image= decompose[5].split("=")[1]                    
+                    if (len(decompose)<6 or
+                        master!="Master" or
+                        not (os.path.isfile(image))):
+                            self.arretPipeline = True
+            
+            if self.arretPipeline:
+                    self.erreurPipeline+= _("Le module %s ne peut s'exécuter ; il manque un élément (fichier, répertoire ou argument) : \n %s") % ( arg1,ligne)+"\n" 
+                    return False                      
+            return True
+                        
+        if self.arretPipeline:return
         ligne=ligne.replace("'","").replace('"','') # les chaines vont être séparées
         decompose = ligne.split()   # liste des composants)
-        if "mm3d" not in decompose[0]: return
+        if controleLigne()==False: return
         decompose[0] = os.path.join(self.micMac,"mm3d") # le bon chemin pour mm3d
         self.dicoPipeline["lignes"].append(ligne)
         if decompose[1][0]=="v":
-            filtreMethode = "filtre"+decompose[1][1:]   #vCommande
+            filtre = "filtre"+decompose[1][1:]   #vCommande : on retire le "v"
         else:
-            filtreMethode = "filtre"+decompose[1]
-        if filtreMethode in dir(self):
-            initVariablesFiltres(filtreMethode)
-            filtre=eval("self."+filtreMethode)
+            filtre = "filtre"+decompose[1]
+        if filtre in dir(self):
+            initVariablesFiltres()
+            filtre = eval("self."+filtre)
             self.lanceCommande(decompose,filtre)
         else:
             self.lanceCommande(decompose)
@@ -11854,7 +11931,6 @@ le nom de la variable pour la visualiser,
         # 1) Modifier la clé du dico lu : chemin de la photo et identifiant par ajout de la valeur de self.idPointGPS
         # si la photo existe alors ajout dans le dico du chantier en cours
 
-        print("dicoPointsGPSEnPlace.keys()=",str(dicoPointsGPSEnPlace.keys()))
         for nom,photo,identifiant in dicoPointsGPSEnPlace.keys():
             print("nom,photo,identifiant",nom,photo,identifiant)            
             nouvelId        = identifiant + self.idPointGPS
@@ -12627,7 +12703,6 @@ le nom de la variable pour la visualiser,
     #      dans ce cas on restaure un fichier dont le nom est passé en paramètre
                         
     def restaureParamChantier(self,fichier):                                        # permet de restaurer les paramètres d'un chantier si besoin
-        
         try:                                                                        # s'il y a une sauvegarde alors on la restaure
             sauvegarde1=open(fichier,mode='rb')
             r=pickle.load(sauvegarde1)
