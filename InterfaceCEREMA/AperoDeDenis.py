@@ -741,6 +741,8 @@
 # modif : ouvreChantier : réinitialise les variables (permet de s'affranchir des sauvegardes de paramètres incomplètes lors de nouvelles versions) 
 # Affiche les aides dans une fenêtre maximisée ! Quelques fautes d'orthographe supprimées (aide1,aide 201 à 209, historique,après).
 # correction création de chantier vidéo : initialisation des variables
+# Ajout d'une sauvegarde après : "retirer des photos" et après "Création d'un MNT"
+# Ajout d'une remarque lors de la création d'un MNT : si référentiel MicMac, l'unité n'est pas le mètre
 
 # voir ce qu'il faut faire de "META" dans les vieux chantiers (ligne 727)
 # à faire bouton pour supprimer masque 2D tarama
@@ -4078,11 +4080,13 @@ class Interface(ttk.Frame):
                                           La densification produit une représentation en 3D de la scène photographiée.          
                                           Cette représentation est dans un repère local ou un référentiel géographique qui peut être :          
                                                 - un repère choisi par MicMac en l'absence d'indication de l'utilisateur          
-                                                - un repère local définit par la 'mise à l'échelle' : axe des x, plan horizontal, métrique. L'origine est fixée par MicMac.          
+                                                - un repère local définit par la 'mise à l'échelle' : axe des x, plan horizontal, métrique.
+                                                  L'origine est fixée par MicMac.          
                                                 - un repère GPS défini par la donnée de points géoréférencés sur le terrain et placés sur les photos.          
                                                 - le référentiel WGS84 lorsque les photos sont géoréférencées dans l'exif en latitude et longitude.          
                                                   Dans ce cas le menu Expert/navigation GPS permet de choisir un référentiel EPSG..          
-                                          Lorsque les coordonnées sont 'grandes' une translation est effectuée sur le nuage pour obtenir des coordonnées inférieures à 100000.           
+                                          Lorsque les coordonnées sont 'grandes' une translation est effectuée sur le nuage pour obtenir des coordonnées
+                                          inférieures à 100000.           
                                     L'utilisateur doit choisir entre 2 modules de densification : MALT ou C3DC.          
                                     Les 2 modules produisent des nuages assez semblables mais ils sont différents sur certains points :          
                                           - Malt Ortho permet d'obtenir une orthomosaïque de la scène          
@@ -4226,7 +4230,8 @@ class Interface(ttk.Frame):
                              Les outils métiers sont utilisables sans créer de chantier MicMac.           
                              Les résultats affichés à l'écran sont mémorisés dans les traces.           
                              1 - Ecrire un MNT à partir d'un PLY : Création de MNT à partir d'un nuage de points, ou d'un maillage (mesh  au format PLY          
-                                 Lorsque les nuages PLY ou XYZ représentent le sol ou une surface il est possible de créer des MNT (Modèle Numérique de Terrain, DEM en anglais) .          
+                                 Lorsque les nuages PLY ou XYZ représentent le sol ou une surface il est possible de créer des MNT
+                                 (Modèle Numérique de Terrain, DEM en anglais) .          
                                  Les MNT sont ouverts par les SIG, comme QGIS ou ArcGIS.          
                                  Les MNT embarquent la localisation et la métrique mais pas le référentiel EPSG qui doit être précisé dans le SIG.          
                                  Remarques : Les formats Ply acceptés sont : Binary pour les nuages et ASCII pour les Mesh.          
@@ -5078,7 +5083,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.savePlanH                  =   "savePlanH"                 # sauvegarde utile si abandon
         self.savePlanV                  =   "savePlanV"
         self.distance.set("")
-        self.uniteDistance = "m"
+        self.uniteDistance              =   "m"                         # peut changer si mise à l'échelle ou référentile MicMac
         self.dicoCalibre                =   dict()                      # les 2 points décrivant un segment de longueur donnée sur 2 photos
 
     # affichage des points GCP ou distance dans la boite de dialogue de visu:saisie des photos
@@ -10689,6 +10694,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.controlePhotos()   # Compte le nombre de focales et les dimensions des photos
             self.repereModifie()    
             self.ecritureTraceMicMac()
+            self.enregistreChantier()
+            photosRetirees = [os.path.basename(x) for x in  self.selectionPhotosAvecChemin]
+            self.encadre(_("Photos retirées du chantier %s") %("\n\n"+"\n".join(photosRetirees)))
             
 ###################### création d'un nouveau chantier avec les meilleurs photos
 
@@ -11766,13 +11774,15 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         ## affichage et traitement       
         afficheEntete()
         [self.executeLignePipeline(e) for e in code] # traitement ligne par ligne
+        message=""
         if self.arretPipeline:
-            self.ajoutLigne("\n"+heure()+_(" Arrêt prématuré du pipeline : %s") % (self.erreurPipeline,) +"\n"+"\n")
+            message = "\n"+heure()+_(" Arrêt prématuré du pipeline : %s") % (self.erreurPipeline,) +"\n"+"\n"
+            self.ajoutLigne(message)
         elif self.erreurPipeline:
             self.ajoutLigne(self.erreurPipeline +"\n"+"\n")            
         self.ajoutLigne("\n"+heure()+_("********** Fin du pipeline")+"\n")
         self.enregistreChantier()
-        self.encadre("\n"+_("Pipeline exécuté \n Voir les détails dans la trace")+"\n")
+        self.encadre("\n"+_("Pipeline exécuté \n Voir les détails dans la trace")+"\n"+"\n"+message)
         
     def executeLignePipeline(self,ligne): #
         def initVariablesFiltres(): #initialise les variables utilisées dans les filtres
@@ -15216,6 +15226,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             texte += "\n\n"+_("Le nombre de points est de %s, la surface couverte est de %s %s2.") % (nb_points,int(surface),self.uniteDistance)
             texte += "\n\n"+_("Il y a %s points au %s2.") % (round(nb_points/surface),self.uniteDistance)
             texte += "\n\n"+_("Une taille de %s %s correspond à 1 point du nuage par maille.") % (round((surface/nb_points)**0.5,2),self.uniteDistance)
+            if self.choixReferentiel.get()=="MicMac":
+                 texte += "\n\n"+_("Remarque : L'unité de distance est fixée par MicMac, ce n'est pas le mètre.")   
             new = MyDialog(fenetre,texte)
             if new.saisie in (False,"",None):
                 return
