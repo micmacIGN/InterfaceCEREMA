@@ -398,7 +398,7 @@
 # version 5.52 diffusée le 8/7/2020
 # ajout de la taille du chantier dans les param sauvés du chantier
 # affichage de la taille du chantier dans la liste des chantiers à ouvrir (faudrait aussi dans la liste du ménage à faire)
-# Du ménage : Ajout d'un mécanisme pour conserver les fichiers résultats qui se trouvent dans l'arborescence, liste : resultatAConserver (Orthomasaique Tawny)
+# Du ménage : Ajout d'un mécanisme pour conserver les fichiers résultats qui se trouvent dans l'arborescence, liste : resultatAConserver (Orthomosaïque Tawny)
 # construction masque 3D : sur le nuage non dense seulement, pas prévu sur modele3D, possible manuellement (correction de la V 5.51)
 # modification du paramètre "centrer la scène sur " de SaisieMasqQT pour y mettre le barycentre si c'est l'origine (dans la base de registre)
 # Ajout "copier la calibration d'un autre chantier dans le menu expert
@@ -454,14 +454,14 @@
 # simplification de la modification du nom du modèle dans l'exif (menu expert\plusieurs appareils photos)
 # suppression d'une anomalie : la demande de modification des exifs (menu outils\modifier l'exif des photos) était suivi d'un message inutile
 # accélération du traitement de la modification des exifs (menu outils et menu expert)
-# suppression de la variable self.maitreSansExtension, allége la variable self.maitreSansChemin
+# suppression de la variable self.maitreSansExtension, allège la variable self.maitreSansChemin
 # lancer MicMac sur un chantier terminé (état = 5) : une boite de dialogue propose de lancer le traitement ou d'arrêter (avant : arrêt obligatoire)
 # ajout de schnaps après Tapioca : propose l'arrêt si une photo est rejetée par schnaps
 # ajout d'une case à cocher dans l'onglet Tapioca : utiliser les points homologues réduits calculés par schnaps (homol_mini)
 # envoi d'un retour chariot lorsque un module micmac demande une entrée utilisateur : self.exe.communicate(input='\n')
 #   cela est parfois utile (lorsque le programme est lancé dans une console par python aperodedenis.py)
 #   la demande d'action utilisateur est liée à la détection d'une erreur par le module
-#   cette fonction existait dans les premières versions d'apérodedenis
+#   cette fonction existait dans les premières versions d'AperoDeDenis
 # Suppression des threads MicMac (mm3d) lorsque l'application est fermée par la croix de fermeture ou par le menu quitter.
 # Ajout d'une aide sur la .. photogrammétrie
 # après retirerPhotos : lance contrôlePhotos pour mettre à jour les flags dimensionsOK et focalesOK.
@@ -1441,7 +1441,7 @@ class TracePolygone():
         self.menagePol()
         self.fermerMasque()                                     # efface le masque affiché en cours
         self.frame.config(cursor="plus")                        # curseur en mode ajout          
-        self.boutonTracer.state(["pressed","!focus",'selected'])# état seléctionné du bouton
+        self.boutonTracer.state(["pressed","!focus",'selected'])# état sélectionné du bouton
 
     def retirerPointPolyligne(self):
         try: self.listePointsJPG.pop()
@@ -4034,7 +4034,7 @@ class Interface(ttk.Frame):
                           Lister/visualiser les images 3D            : propose une liste des .ply du chantier et permet de les ouvrir
                           
                     - Afficher la trace complète du chantier         : visualise la trace complète, standard micmac          
-                    - Afficher la trace synthétique du chantier      : visualise la trace filtrée par aperoDeDenis, moins bavarde           
+                    - Afficher la trace synthétique du chantier      : visualise la trace filtrée par AperoDeDenis, moins bavarde           
                     - Fusionner des orthomosaïques                  : fusion d'orthomosaïques de plusieurs chantiers ou des mosaïques de chaque photo              
                     - Fusionner des images 3D                        : permet de fusionner plusieurs PLY en un seul, sauf les maillages mesh)                         
                     - Informations sur un nuage du chantier          : propose tous les nuages du chantier. Pour le nuage choisi affichage :          
@@ -4096,7 +4096,7 @@ class Interface(ttk.Frame):
                                     - Malt :           
                                           Si le mode est GeomImage :           
                                                 désigner une ou plusieurs images maîtres         
-                                                dessiner sur les photos le ou les masques associés.          
+                                                dessiner sur les photos le ou les masques          
                                                 Seuls les points visibles sur les images maîtresses seront sur l'image 3D finale.          
                                                 Le masque limite la zone utile de l'image 3D finale.          
                                                 La molette permet de zoomer et le clic droit maintenu de déplacer l'image.          
@@ -4206,7 +4206,7 @@ class Interface(ttk.Frame):
                                 Le caractère # en début de ligne signale un commentaire.       
                               - Insérer la position des points sur les photos à partir d'un fichier texte, format : NomDuPoint NomPhoto X Y
                               - Exporter les points GPS vers un fichier texte. Permet la modification puis l'importation
-                              - Exporter vers un fichier texte la position sur les photos des points GPS. Parmet la modification puis l'importation                              
+                              - Exporter vers un fichier texte la position sur les photos des points GPS. Permet la modification puis l'importation                              
                       - Définir plusieurs appareils photos.                          
                                 Si le lot de photos provient de plusieurs appareils de même type il faut informer MicMac de cette situation.    
                                 AperoDeDenis propose de modifier le tag 'model' de l'exif des photos :    
@@ -4386,7 +4386,7 @@ Version 5.72 6 avril 2023 :
       Lit et exécute une procédure cataloguée de commandes mm3d
       L'exécution est mémorisée et interrogeable par le menu édition
       L'état du chantier l'annonce en premier lieu
-    - diverses corrections, voir le source
+    - diverses corrections, voir le script
 
 Version 5.71 20 mars 2023 :
     
@@ -4423,7 +4423,7 @@ Version 5.65 et 5.66 : 05 avril 2022
                         Générer le nuage non dense
                         Générer un maillage texturé sur le nuage dense
                 - correction d'une erreur sur la mise à l'échelle
-                - autres modifications : voir le source
+                - autres modifications : voir le script
 
 Version 5.64 :  22 mars 2022
 
@@ -4439,7 +4439,7 @@ Version 5.62 :	17 février 2021
                         - métadonnées GPS des photos
                         - référentiel d'un autre chantier
                         - référentiel micmac par défaut
-                - autres corrections : voir le source
+                - autres corrections : voir le script
 
                 La photo "rayon vert à Merlimont" a été ajouté dans Github suite à une discussion le 
                 mercredi 1 décembre soir, avec les participants au consortium 3D pour les SHS
@@ -4456,28 +4456,28 @@ Version 5.60 :	 17 novembre 2021
 
 Version 5.59 :	 18 octobre 2021
 
-		- Nombreuses modifications ponctuelles. Voir le source.
+		- Nombreuses modifications ponctuelles. Voir le script.
 
 Version 5.58 :	 18 septembre 2021
 
-		- Maillage après C3DC. Voir le source.
+		- Maillage après C3DC. Voir le script.
 		- Compatible avec la version 3.9 de python.
 
 Version 5.57 :	 18 juin 2021
 
-		- Quelques améliorations/corrections. Voir le source.
+		- Quelques améliorations/corrections. Voir le script.
 
 Version 5.56.2 :	début le 30 décembre 2020
 
-		- Quelques améliorations/corrections. Voir le source.
+		- Quelques améliorations/corrections. Voir le script.
 
 Version 5.56.1 :	29 décembre 2020
 
-		- Quelques améliorations/corrections. Voir le source.
+		- Quelques améliorations/corrections. Voir le script.
 
 Version 5.56 :	3 décembre 2020
 
-		- Correction de 2 bugs et modif de 2 options par défaut. Voir le source.
+		- Correction de 2 bugs et modif de 2 options par défaut. Voir le script.
 
 Version 5.55 :	novembre 2020
 
@@ -4493,7 +4493,7 @@ Version 5.55 :	novembre 2020
 		- Rapidité améliorée pour la recherche des exifs
 		- Ajout dans l'aide d'un item 'trucs et astuces'
 		- recherche dans les traces : insensible à la casse
-		- quelques modifications de vocabulaire : voir le source
+		- quelques modifications de vocabulaire : voir le script
 
 Version 5.54 :	octobre 2020
 
@@ -4553,7 +4553,7 @@ Version 5.49 :	20 janvier 2020
 		- Lorsque les photos forment plusieurs scènes disjointes il est proposé à l'utilisateur de lancer le traitement
 		  sur le groupe de photos le plus nombreux
 		Modifications diverses :
-		- contrôle des photos très amélioré (durée divisée par 10 en moyenne, ajout de certains contrôles, voir le source).
+		- contrôle des photos très amélioré (durée divisée par 10 en moyenne, ajout de certains contrôles, voir le script).
 		- retirer des photos du chantier : fix de certains bugs.
 		- ménage dans les chantiers : ne supprime que les sous-répertoires liés au chantier, pas les autres.
 		- modification des exifs : suppression des fichiers créés par exiftool
@@ -4565,7 +4565,7 @@ Version 5.48 :	21 mai 2019
 
 Version 5.47 :	21 mai 2019
 		- amélioration robustesse
-		- voir détails en tête du source
+		- voir détails en tête du script
 		
 Version 5.46 :	20 mai 2019
 		- Ajout de l'item Outils/Qualité des points GCP.
@@ -4589,7 +4589,7 @@ Version 5.41 :	avril 2019
 
 Version 5.40 :	30 mars 2019, suivant les conseils de Xavier Rolland
 		- amélioration ergonomie saisie des points gcp (flèches : photo suivante/précédente).
-		- corrections de quelques bugs sur la prise en compte des points GCP (voir entête du code source).
+		- corrections de quelques bugs sur la prise en compte des points GCP (voir entête du code script).
 		- correction du changement de langue si appel depuis un raccourci.
 
 Version 5.34 :	26 mars 2019, suivant les conseils de Xavier Rolland
@@ -4718,7 +4718,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                  - Points homologues :                                        
                                              L'échelle est la taille en pixels de l'image (ou -1 pour l'image entière  pour la recherche des points homologues.           
                                              Par défaut, la taille retenue est les 2/3 de la largeur des photos (2000 pixels si les photos font 3000 de large).           
-                                             L'option ALl recherche les points homologues sur toutes les paires de photos (ce qui peut faire beaucoup !            
+                                             L'option All recherche les points homologues sur toutes les paires de photos (ce qui peut faire beaucoup !)            
                                              L'option MulScale recherche les points homologues en 2 temps :           
                                                1  sur toutes les paires avec une taille de photo réduite (typiquement 300            
                                                2  Seules les paires de photos ayant eu au moins 2 points homologues à cette échelle seront           
@@ -4733,7 +4733,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                            L'arrêt après l'orientation permet de définir un masque 3D sur le nuage, pour la densification par C3DC.                  
                                  - Mise à l'échelle : permet de définir un repère et une métrique (axe, plan et distance, tous obligatoires .          
                                    Si les photos proviennent d'une caméra embarquée sur un drone les photos comportent des informations GPS sur la prise de vue :          
-                                   Ces informations sont exploitées par apéroDeDenis pour définir un repère local en coordonnées métriques et orienté comme le WGS84.          
+                                   Ces informations sont exploitées par AperoDeDenis pour définir un repère local en coordonnées métriques et orienté comme le WGS84.          
                                    Ces informations remplacent et supplantent la mise à l'échelle manuelle. Un item du menu expert permet de les ignorer           
                                  - Points GCP (ou GPS  : définir au moins 3 points cotés et les placer sur 2 photos. L'état du chantier indique s'ils sont pris en compte           
                                  - Densification : Malt (historique  ou C3DC (récent           
@@ -4760,7 +4760,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                              - Une cause possible est le trop grand nombre de photos : au delà de 200 sous windows et de 400 sous linux le risque est important.          
                                Relancer le traitement après avoir découpé le chantier en paquets plus petits.          
                                Vous pourrez regrouper les nuages obtenus s'ils sont référencés par des points GCP ou GPS.          
-                             - Une cause possible est la non-conformité des photos aux standards minimum de la photogrammétrie :          
+                             - Une cause possible est la non-conformité des photos aux standards minimums de la photogrammétrie :          
                                la scène photographiée doit être 'immobile', une nature morte. Les êtres vivants et la nature ventée sont à proscrire.               
                              - Si MicMac trouve des points homologues, mais ne trouve pas l'orientation des appareils photos:           
                              - Consulter la trace :          
@@ -4780,7 +4780,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                          alors tenter, sous windows, de modifier le fichier /binaire-aux/windows/startup/local.mk          
                                          ou, sous windows, limiter la longueur du chemin menant aux fichiers en recopiant les photos sous la racine du disque.          
                                          Le nombre maximum de photos d'un chantier sous windows semble être de 250 à 300, si plus utiliser Linux ou Mac          
-                                      9  Si la trace synthétique contient'Not Enough Equation in ElSeg3D::L2InterFaisceaux' alors choisir 'radialbasic'.          
+                                      9  Si la trace synthétique contient : 'Not Enough Equation in ElSeg3D::L2InterFaisceaux' alors choisir 'radialbasic'.          
                                       10  consulter le wiki micmac (https://micmac.ensg.eu/index.php           
                                       11  consulter le forum micmac (http://forum-micmac.forumprod.com           
                                       12  faites appel à l'assistance de l'interface (voir adresse dans l'a-propos      denis.jouin@gmail.com''')
@@ -4798,8 +4798,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                     Là encore il s'agit d'un nouvel appareil photo.           
                                   - Micmac obtient la focale dans les métadonnées de la photo, dans l'exif.          
                                     Sinon MicMac utilise DicoCamera.xml qui recense les focales et les tailles de capteur des appareils.          
-                                    Micmac connait les dimensions en pixel de la photo          
-                                    Micmac connait le nom de l'appareil car il est écrit dans l'exif.          
+                                    Micmac connaît les dimensions en pixel de la photo          
+                                    Micmac connaît le nom de l'appareil car il est écrit dans l'exif.          
                                     Pour chacune de ces spécifications Micmac crée une catégorie d'appareil et cherche à le 'calibrer', c'est à dire à          
                                     déterminer précisément ses caractéristiques géométriques et optiques.           
                                   - Si les photos proviennent de plusieurs appareils photos de même type, portant le même nom dans l'exif          
@@ -4811,7 +4811,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                   - Dans tous ces cas la calibration des appareils pour chaque situation est préconisée.          
                                     L'absence de calibration peut être une cause d'échec lors du calcul de l'orientation par Tapas.         
                                     Utiliser la calibration des appareils photos (item MicMac/Options/Orientation  .          
-                                    Sélectionner 2 ou 3 photos pour chaque focales, ou chaque appareil. Micmac construira les calibrations.           
+                                    Sélectionner 2 ou 3 photos pour chaque focale, ou chaque appareil. Micmac construira les calibrations.           
                                   - S'il y a plusieurs appareils photos de même type il faut les distinguer : chacun a ses caractéristiques spécifiques.          
                                     L'item du menu expert 'Plusieurs appareils photos' peut vous aider :          
                                     1  Commencer par modifier sur chaque appareil le nom du fichier créé : il est souvent possible de choisir le préfixe          
@@ -4839,7 +4839,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                          Le passage au paramètre 'BigMac' ou a 'Malt' a permis l'obtention d'un nuage dense.          
                                       2  assurez-vous que le sujet est immobile (pas de végétation mouvante, de pluie          
                                       3  assurez-vous que le recouvrement des photos est suffisant : chaque point du sujet doit être sur 3 photos au moins          
-                                      4  assurez-vous qu'il n'y a pas une photos très mauvaise : une seule photo suffit à faire échouer un chantier,          
+                                      4  assurez-vous qu'il n'y a pas une photo très mauvaise : une seule photo suffit à faire échouer un chantier,          
                                       5  consulter le forum micmac (http://forum-micmac.forumprod.com           
                                       6  faites appel à l'assistance de l'interface (voir adresse dans l'a-propos''')+ self.aideFinDePage
 
@@ -4858,7 +4858,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                    - Le référentiel spatial : local, ou géographique par points GPS ou via l'exif des photos           
                   Outre les nuages de points, MicMac construit :            
                    - une mosaïque d'assemblage des photos            
-                   - une ortho-mosaïque ou chaque pixel est replacé dans le référentiel choisi            
+                   - une orthomosaïque ou chaque pixel est replacé dans le référentiel choisi            
                    - un maillage triangulé du nuage dense            
                   Et l'Interface CEREMA propose quelques fonctions métiers exploitant les résultats de MicMac ::            
                    - calcul de modèle numérique de terrain ou d'élévation (MNT, MNE            
@@ -4909,7 +4909,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         
     ####################### initialiseValeursParDefaut du défaut : nouveau chantier, On choisira de nouvelles photos : on oublie ce qui précède,
-                          # sauf les paramètres généraux de aperodedenis (param micmac)
+                          # sauf les paramètres généraux de AperoDeDenis (param micmac)
        
     def initialiseValeursParDefaut(self):
         
@@ -5031,8 +5031,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         
     # nuage2Ply
     
-        self.nuage2Mesh.set(True)                                # par défaut maillage et pas nuage
-        self.Offs                       = '[0,0,0]'             # décalage pour recentrer le données, éviter la limite 32 bits,
+        self.nuage2Mesh.set(True)                               # par défaut maillage et pas nuage
+        self.Offs                       = '[0,0,0]'             # décalage pour recentrer les données, éviter la limite 32 bits,
                                                                 # qui crée des bandes blanches dans les nuages
     # DENSIFICATION
     # choix de la densification par défaut : C3DC ou MALT
@@ -5083,7 +5083,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.savePlanH                  =   "savePlanH"                 # sauvegarde utile si abandon
         self.savePlanV                  =   "savePlanV"
         self.distance.set("")
-        self.uniteDistance              =   "m"                         # peut changer si mise à l'échelle ou référentile MicMac
+        self.uniteDistance              =   "m"                         # peut changer si mise à l'échelle ou référentiel MicMac
         self.dicoCalibre                =   dict()                      # les 2 points décrivant un segment de longueur donnée sur 2 photos
 
     # affichage des points GCP ou distance dans la boite de dialogue de visu:saisie des photos
@@ -5588,7 +5588,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         try:
             shutil.copy(paramSource,self.paramCible)
         except Exception as e:
-            print("copierParamSourceVersCible echec : %s vers %s, erreur %s") % (paramSource,paramCible,str(e))
+            print("copierParamSourceVersCible échec : %s vers %s, erreur %s") % (paramSource,paramCible,str(e))
             
     ################################## LE MENU EDITION : afficher l'état, les photos, lire une trace, afficher les nuages de points ############################
                                                 
@@ -5647,7 +5647,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             if self.nbFocales>1:
                 texte = texte+'\n' + _('remarque : plusieurs focales différentes.')
             if self.dimensionsOK==False:
-                texte = texte+'\n' + _('remarque : plusieurs taille de photos différentes.')
+                texte = texte+'\n' + _('remarque : plusieurs dimensions de photos différentes.')
             if self.focaleOK()==False:
                 texte = texte+'\n' + _('Absence de focale eq 35mm et de taille de capteur dans dicoCamera')
                 
@@ -5995,7 +5995,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.topMasque3D = tkinter.Toplevel(relief='sunken')
         fenetreIcone(self.topMasque3D)           
         self.item900 = ttk.Frame(self.topMasque3D,height=5,relief='sunken',padding="0.3cm")        
-        self.item901 = ttk.Button(self.item900,text=_('Visaliser le masque 3D'),command=self.affiche3DApericloud)              
+        self.item901 = ttk.Button(self.item900,text=_('Visualiser le masque 3D'),command=self.affiche3DApericloud)              
         self.item901.pack(ipady=2,pady=10)
         self.item903 = ttk.Button(self.item900,text=_('Fermer'),command=lambda : self.topMasque3D.destroy())              
         self.item903.pack(ipady=2,pady=10)        
@@ -6868,7 +6868,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             texte=  _("erreur lors de la copie du fichier") + "\n" + f + "\n" + _("dans le répertoire ") + "\n" + self.repTravail + "\n" + _("libellé de l\'erreur :") + "\n" + str(e) + "\n" + _("Causes possibles : manque d\'espace disque ou droits insuffisants.")
             return texte
         self.photosAvecChemin =  list(listeCopie)                                   # on oublie les photos initiales
-        self.photosSansChemin = list([os.path.basename(x) for x in listeCopie]) # liste des noms de photos copiès, sans le chemin.
+        self.photosSansChemin = list([os.path.basename(x) for x in listeCopie]) # liste des noms de photos copiées, sans le chemin.
         # on conserve les options déjà saisies, mais pas les résultats de traitement qui n'ont plus de sens
         # suppression de tous sous le répertoire actuel : sauf photos sélectionnées et paramètres saisis
         aConserver = list(self.photosSansChemin)
@@ -6887,9 +6887,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     # [2] = 'original' ou "importé" ou "ajouté" 
         # définit les fichiers trace vides, débuter la trace à vide (tout nouveau choix de photos efface la trace précédente
         self.typeDuChantier =   ['photos','initial','original']
-        self.definirFichiersTrace()                             # affecte leur noms auc fichiers trace, existant ou pas, sous le répertoire de travail
+        self.definirFichiersTrace()                             # affecte leurs noms aux fichiers trace sous le répertoire de travail
         self.initialisationFichiersTrace()                      # Efface les anciens et initialisation de nouveaux fichiers trace
-        self.copierParamVersChantier()                          #enregistre le ficheir param du chantier
+        self.copierParamVersChantier()                          # enregistre le fichier param du chantier
         return len(listeCopie)                                  # on retourne le nombre de photos
 
     ################# contrôler les photos dans leur ensemble : même focale, mêmes dimensions, présence d'un exif avec focale :
@@ -6904,7 +6904,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.nbFocales = lesFocales.__len__()
         
     def controleCoherenceFichiers(self):    # retourne false si incohérent et self.jpgAjout et jpgRetrait
-        # contrôle que toutes les photos présentes sous le répertoires sont bien enregistrées dans le chantier et réciproquement
+        # contrôle que toutes les photos présentes sous le répertoire sont bien enregistrées dans le chantier et réciproquement
         #tous les JPG
         tousLesJpg = glob.glob(os.path.join(self.repTravail,"*.JPG"))
         # les JPG "ajoutés" : pas dans la liste photosAvecChemin
@@ -6949,7 +6949,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     ################################## LE SOUS MENU OPTIONS : TAPIOCA, TAPAS,APERICLOUD, MALT, C3DC : accès par onglets ###########################################################
     # les onglets permettent de modifier les options localement.
-    # si l'utilisateur valide alors les options modifiées sont controlées et si OK elles sont sauvegardées
+    # si l'utilisateur valide alors les options modifiées sont contrôlées et si OK elles sont sauvegardées
     # si l'utilisateur abandonne alors il y a restauration des options à partir du fichier de sauvegarde
     # anormal : chantier planté lors de la dernière exécution de tapioca/Tapas : on propose le déblocage mais on sort dans tous les cas
 
@@ -6981,18 +6981,18 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 ##                return
 ##            if retour==0:
 ##                self.nettoyerChantier()                          # état = 2 :  chantier est noté comme de nouveau modifiable, les points homologues sont supprimés
-##                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable pour la recherche des points homologues.") % (self.chantier))                
+##                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramétrable et exécutable pour la recherche des points homologues.") % (self.chantier))                
 ##
 ##            if retour==1:
 ##                self.nettoyerChantierApresTapioca()             # état = 35 le chantier est noté comme de nouveau modifiable, les points homologues sont conservés
-##                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable à partir de l'orientation.") % (self.chantier))                
+##                self.afficheEtat(_("Chantier %s de nouveau modifiable, paramétrable et exécutable à partir de l'orientation.") % (self.chantier))                
 
 
     # Chantier arrêté après tapas : l'utilisateur a pu modifier les options et veut continuer ou reprendre au début suivant les résultats
     # poursuite du traitement ou arrêt suivant demande utilisateur
 
             
-    # Chantier terminé, l'utilisateur peur décider de le débloquer en conservant les résultats de tapas ou supprimer tous les résultats
+    # Chantier terminé, l'utilisateur peut décider de le débloquer en conservant les résultats de tapas ou supprimer tous les résultats
         toutesOptions = True    
 
         # EtatDuChantier :
@@ -7007,24 +7007,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         # 7 : la densification a échoué
         
         if self.etatDuChantier==5:	# Chantier terminé
-            self.etatDuChantier=35      #chantier terminé masi avec options modifiées    
-##            retour = self.troisBoutons(  titre=_('Le chantier %s est terminé.') % (self.chantier),
-##                                         question=_("Le chantier est terminé après ")+self.choixDensification.get()+".\n"+
-##                                         _("Vous pouvez :") + "\n "+
-##                                         _("- Modifier les options 'points homologues' et 'orientation' : supprime les traitements effectués") + "\n "+
-##                                         _("- Conserver les points homologues et l'orientation pour relancer la densification") + "\n "+
-##                                         _("- Ne rien faire.") + "\n",                                    
-##                                         b1=_("Modifier les options des points homologues et d'orientation"),   # retour = 0
-##                                         b2=_('Modifier les options de la densification'),                      # retour = 1
-##                                         b3=_('Ne rien faire'),)                                                # retour = 2
-##            if retour in (-1,2):                                # -1 : fermeture fenêtre ou 2 : b3 ne rien faire
-##                self.afficheEtat()
-##                return
-##            if retour==0:                                       # 1 : on nettoie, on passe à l'état 2  (avec photos, enregistr(b1))
-##                self.nettoyerChantierApresTapioca()             # l'etatDuChantier passe à 35 ! points homologues conservés
-##            if retour==1:                                       # modifier les options de malt C3DC et points GCP      (b2))
-##                self.etatDuChantier = 4
-##                toutesOptions = False
+            self.etatDuChantier=35      #chantier terminé mais avec options modifiées    
 
         # L'état du chantier permet de choisir des options :
 
@@ -7034,7 +7017,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.menageEcran()
   
         #if self.etatDuChantier in (0,1,2,7,35):                    # sinon self.etatDuChantier vaut 4 et on va direct à Malt ou C3DC
-        if toutesOptions:                                           # modif du 5 juin 2020 : on affiche touj 
+        if toutesOptions:                                           # modif du 5 juin 2020 : on affiche tout 
             self.onglets.add(self.item400)                          # tapioca
             self.onglets.add(self.item500)                          # tapas
             self.onglets.add(self.item1100)                         # Referentiel           
@@ -7106,7 +7089,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.miseAJourItem701_703()
         self.masqueProvisoire = str()   # utile pour tracemasque
         
-        # dernier onglet (qui se régénére, forcément le dernier)
+        # dernier onglet (qui se régénère, forcément le dernier)
 
         self.optionsReperes()                                       # points GCP, en nombre variable # points de repères calés dans la scène
 
@@ -7415,7 +7398,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             supprimeFichier(self.miseAEchelle)      
             
     def controleOptions(self):                  # contrôle que les valeurs numériques echelle1, echelle2 et delta sont bien :
-                                                # des nombres entiers positif sauf échelle2qui peut = -1
+                                                # des nombres entiers positif sauf échelle2 qui peut être égal à -1
                                                 # et que echelle1 < echelle2
                                                 # et enfin que echelle 1 et 2 sont au max = taille la plus grande de l'image
                                                 # ce contrôle peut-être appelé avant de lancer micMac
@@ -7693,7 +7676,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.item1150.pack_forget() # Choix d'un autre chantier
         self.repereChoisi=str()     # par défaut : pas de repère
         self.nomEpsg=str()          # et pas d'epsg
-        # Affichage des items corresponddant au choix effectué :
+        # Affichage des items correspondant au choix effectué :
         if self.choixReferentiel.get()=="GPS":           
             self.item650.pack(pady=15)        
         if self.choixReferentiel.get()=="MAL":
@@ -7722,12 +7705,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 self.repereChoisi=self.repereWGS84
                 self.nomEpsg="WGS84"
                 self.item1140.pack(pady=15)
-##        elif self.choixReferentiel :
-# en cas d'erreur (vieux chantier) 
-##            self.repereChoisi=self.repereAbsent
-##            self.choixReferentiel.set("MicMac")
-##            self.item1130.pack(pady=15)
-        # on indique que le référentiel a été modifié :
+
         self.referentielOK = False
             
     #""""""""""""""""""""""""   Options de Malt
@@ -7789,7 +7767,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         bulles = dict([(e,"") for e in self.photosPourCalibrationIntrinseque])
         self.choisirUnePhoto(self.photosAvecChemin,
                              _("Pour calibrer l'appareil photo"),
-                             _("Quelques photos, convergentes, d'angles écartés") + "\n" + _("en jaune photos déjà choisies"),
+                             _("Quelques photos, convergentes, d'angles écartés") + "\n" + _("les photos déjà choisies sont surlignées enn jaune"),
                              boutonDeux=_("Supprimer"),
                              bulles=bulles)
         if self.fermerVisu:                                             # sortie par second bouton
@@ -8001,7 +7979,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         masque = os.path.splitext(self.maitreSansChemin)[0]+"_masque.tif"
 
-        # On vérifie l'existencce du "masque" :
+        # On vérifie l'existence du "masque" :
         if os.path.exists(masque)==False:
             supprimeFichier(self.fichierMasqueXML)              # suppression ancien xml
             return            
@@ -8260,7 +8238,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.choisirUnePhoto([ f[0] for f in listeIdentifiants],
                                                  titre=_('Points à supprimer'),
                                                  mode='extended',
-                                                 message=_("Multiselection possible."),
+                                                 message=_("Sélection multiple possible."),
                                                  objets='points',
                                                  boutonDeux=_("Annuler"))
         self.messageSiPasDeFichier = 1
@@ -8306,7 +8284,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
                     if e[2]==i[5] and i[0]!=e[0]:           # l'identifiant du point placé = identifiant du point GCP mais le nom du point est différent
                                                             # cela signifie que l'utilisateur à modifié le nom
-                        self.dicoPointsGPSEnPlace[(i[0],e[1],e[2])] = v  # ajout d'une entrée quicorrige cette anomalie (on devrait utiliser l'identifiant...)
+                        self.dicoPointsGPSEnPlace[(i[0],e[1],e[2])] = v  # ajout d'une entrée qui corrige cette anomalie (on devrait utiliser l'identifiant...)
                         try:
                             del self.dicoPointsGPSEnPlace[e]# suppression de l'ancienne entrée
                         except: pass
@@ -8364,7 +8342,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                       self.selectionPhotosAvecChemin,                                   # image sur laquelle placer les points
                                       liste,                                                            # liste des identifiants en "string" des points
                                       self.dicoPointsGPSEnPlace,                                        # les points déjà placés key = nom point, photo avec chemin, identifiant
-                                      rechercherPosition=True)      # pour évaluer la position du points à partir des points homologues   # value = x,y
+                                      rechercherPosition=True)      # pour évaluer la position du point à partir des points homologues   # value = x,y
         if self.calibre:
             self.dicoPointsGPSEnPlace = self.calibre.dicoPointsJPG                                     # si pas de retour !
             
@@ -8498,7 +8476,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.calibre = CalibrationGPS(fenetre,
                                       self.selectionPhotosAvecChemin,                                   # image sur laquelle placer les points
                                       liste,                                                            # liste des identifiants en "string" des points
-                                      horizonVierge,                                                    # aucun points déjà placé 
+                                      horizonVierge,                                                    # aucun point déjà placé 
                                       afficherSuivantPrecedent=False,)                                                                 # value = x,y
         # il doit y avoir 2 points placés, sinon erreur :)
         try:
@@ -8621,7 +8599,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 ##                self.optionsOnglet()
 ##                return
             self.etatDuChantier = 4 # permet de poser la question : homologue, orientation ou densification
-        self.encadre(_("Lance MicMac : contrles en cours....")+"\n")   
+        self.encadre(_("Lance MicMac : contrôles en cours....")+"\n")   
     # réinitialisation des variables "locales" définies dans le module
 
         self.zoomI = ""     # pour Malt, inutilisé pour l'instant (voir ZoomIPerso)
@@ -8669,7 +8647,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     message = _("Nombre de photos insuffisant après retrait des photos pour la calibration : ")+str(nbPhotosPourTapas)
                     self.encadre(message,)
                 
-    # les photos de calibration retirées ne doivent pas servir après : mise à l'échelle, points gps, maiîtresses
+    # les photos de calibration retirées ne doivent pas servir après : mise à l'échelle, points gps, maîtresses
     
         if self.calibSeule.get() and self.photosPourCalibrationIntrinseque: # les photos de calibration sont uniquement pour calibration
             calibSansChemin =       set([os.path.basename(e) for e in self.photosPourCalibrationIntrinseque])
@@ -8779,7 +8757,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     # pas enregistré : on enregistre on poursuit
     
         if self.etatDuChantier==1:                              # Des photos mais fichier paramètre non encore enregistré, on enregistre et on poursuit
-            self.enregistreChantier()                           # sauvegarde du fichier paramètre sous le répertoire du chantier : modif etatduchantier = 2
+            self.enregistreChantier()                           # sauvegarde du fichier paramètre sous le répertoire du chantier : modif etatDuChantier = 2
 
     # Les photos sont-elles correctes ?
 
@@ -8853,7 +8831,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 ##                return
 ##            if retour==0:
 ##                self.nettoyerChantier()                          # b1 état = 2 :  chantier est noté comme de nouveau modifiable, les points homologues sont supprimés
-##                # self.afficheEtat(_("Chantier %s de nouveau modifiable, paramètrable et exécutable pour la recherche des points homologues.") % (self.chantier))                
+##                # self.afficheEtat(_("Chantier %s de nouveau modifiable, paramétrable et exécutable pour la recherche des points homologues.") % (self.chantier))                
 ##            if retour==1:
 ##                self.nettoyerChantierApresTapioca()             # état = 35 le chantier est noté comme de nouveau modifiable, les points homologues sont conservés
 ##                #self.afficheEtat(_("Chantier %s de nouveau modifiable, paramétrable et exécutable à partir de l'orientation.") % (self.chantier))                
@@ -8964,7 +8942,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
             # Prêt : modification de l'état, lancement du premier module Tapioca (recherche des points homologues) arrêt si pas de points homologues
            
-            self.etatDuChantier = 3		                    # trés provisoirement (en principe cette valeur est transitoire sauf si avantScène plante)
+            self.etatDuChantier = 3		                    # très provisoirement (en principe cette valeur est transitoire sauf si avantScène plante)
             
             self.lanceTapioca()
             if self.MAXLINELENGTH:
@@ -8974,11 +8952,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         # tapioca n'a pas trouvé des points homologues ?
         
         if  not os.path.exists("Homol") and not os.path.exists("Homol_mini"):   # le répertoire Homol (ou Homol_mini après schnaps) contient les points homologues,
-                                                                                # s'il est absent, pas de points en correspondancce
+                                                                                # s'il est absent, pas de points en correspondance
             messagePlus = str()
             if self.photosSansChemin.__len__()>200:
                 messagePlus = _("Le chantier comporte trop de photos : %s") % (self.photosSansChemin.__len__()) + "\n"+\
-                           _("Les maximum connus sont de l'ordre de 250 sous Windows, 400 sous Linux") + "\n\n"
+                           _("Les maximums connus sont de l'ordre de 250 sous Windows, 400 sous Linux") + "\n\n"
 
             message  =   _('''
 			    Pourquoi MicMac s'arrête :            
@@ -8999,7 +8977,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.nouveauDepart()                                # lance une fenêtre nouvelle sous windows (l'actuelle peut-être polluée par le traitement) Ecrit la trace  
             return
 
-        # Tapioca a bien trouvé des points homologues : concernant-ils une seule scène ?
+        # Tapioca a bien trouvé des points homologues : concernent-ils une seule scène ?
         # rep="Homol_SRes" if self.modeTapioca.get()=="MulScale" else "Homol" supprimé le 15/7/2020 :
         # il se peut qu'il n'y ait qu'une scène dans homol_res et 2 dans Homol !! (voir Zoe et François)
         if self.plusieursScenes("Homol_SRes"):
@@ -9041,7 +9019,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             
         # contrôle qualité des photos et réduction des points homologues par schnaps
         if self.etatDuChantier==3:   # uniquement si on vient de Tapioca (ajout v5.60)
-            self.lanceSchnaps()     # ajout schnaps le10/11/2020
+            self.lanceSchnaps()     # ajout schnaps le 10/11/2020
             if self.rejetSchnaps:
                 titre = _("Attention : une photo est rejetée")
                 rapport = _("Attention : MicMac considère qu'une ou plusieurs photos doivent être rejetées :\n\n %s"+"\n") % (self.rejetSchnaps)
@@ -9121,7 +9099,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.nouveauDepart()                # sauvegarde les paramètres, écrit la trace, relance "interface" si on est sous nt
             return
         else:
-            self.suiteMicmac()                  # PoursSuite : Malt ou C3DC, pouvant être appelé directement
+            self.suiteMicmac()                  # Suite : Malt ou C3DC, pouvant être appelé directement
             
     # contrôle si les points homologues définissent plusieurs scènes : si oui : message dans la trace et retour True.
     # le répertoire des points homologues est Homol par défaut ; lors de l'appel après Tapioca MulScale première étape le répertoire est homol_SRes
@@ -9185,11 +9163,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         self.modele3DFinal,self.indiceModeleFinal = self.modele3DNonMailleSuivant()
         
-        # malt ou D3CD, dans les 2 cas le nuage sera self.modele3DEnCours
+        # malt ou C3DC, dans les 2 cas le nuage sera self.modele3DEnCours
         texte = ""      # info en retour
         self.maillageOuvert=False
         if self.choixDensification.get()=="C3DC":                                                                   
-            self.suiteMicmacC3DC()      # C3DC crée le fichier plys puis le mesh si demandé
+            self.suiteMicmacC3DC()      # C3DC crée le fichier ply puis le mesh si demandé
         else:
             retourMalt = self.suiteMicmacMalt()
             if retourMalt==-1: # erreur dans Malt, gérée par Malt
@@ -9227,7 +9205,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         onAFini()   # message final, relance sous windows
         
-    # Que faire après Tapioca et Tapas ? Densification : malt ou D3DC
+    # Que faire après Tapioca et Tapas ? Densification : malt ou C3DC
         
     def suiteMicmacMalt(self):  # pour gérer surtout le cas de geoimage avec plusieurs maîtresses : plusieurs nuages à fusionner
 
@@ -9285,7 +9263,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 try: self.fusionnerPly(self.nuagesDenses,self.modele3DEnCours)     
                 except Exception as e: print(_("erreur malt GeomImage fusion des nuages en modele3D : "),str(e)," "+_("pour : "),"\n".join(self.nuagesDenses[0]))
                 
-    ################################## LES DIFFENTES PROCEDURES MICMAC ###########################################################       
+    ################################## LANCEMENT des PROCEDURES MICMAC : Tapioca, tapas... ###########################################################       
 
     # ------------------ PREAMBULE --------------------
 
@@ -9457,7 +9435,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     # - calcule une calibration sur certaines photos, photos qui servent ensuite,ou non, au chantier
     # - ou utilise une calibration venue d'un autre chantier (Ori-Calib)
     def lanceTapas(self):        
-        # Schnaps modifie le nom du répertoire "points homologuues" :
+        # Schnaps modifie le nom du répertoire "points homologues" :
         if self.lancerSchnaps.get():    
             SH = "_mini"
         else:
@@ -9496,7 +9474,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                     self.repTravail+"\n"+
                                     _("Seules les photos de calibration doivent avoir l'extension .JPG")+"\n"+
                                     _("Les autres photos du chantier doivent être sans extension.")+"\n"+
-                                    _("Arrêt du taitement.")                                
+                                    _("Arrêt du traitement.")                                
                                     )
                     return True
 
@@ -9555,7 +9533,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 self.photosAvecChemin = [f for f in self.photosAvecChemin if os.path.basename(f) not in self.photosCalibrationSansChemin]
                 self.photosSansChemin = [os.path.basename(g) for g in self.photosAvecChemin]
                 self.photosPourCalibrationIntrinseque = [os.path.join(self.repTravail,self.repCalibSeule,e) for e in self.photosCalibrationSansChemin]
-                # Vérification que le nombre de photos présentessous les répertoires est correct :
+                # Vérification que le nombre de photos présentent sous les répertoires est correct :
                 photosSansCalib = glob.glob(os.path.join(self.repTravail,"*.JPG"))
                 if photosSansCalib.__len__()!=self.photosSansChemin.__len__():
                     self.messageRetourTapas = _("Problème de nombre de photos après calibration de l'appareil.")
@@ -9765,7 +9743,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         
     # ------------------ APERICLOUD :  -----------------------
     # l'orientation en entrée est soit :
-    #  - Arbitrary (pas de positonnement)
+    #  - Arbitrary 
     #  - echelle3 (mise à l'échelle par axe plan et métrique
     #  - bascul (positionnement par points GCP)
     #  - campari_ori ou campari_gps
@@ -9856,7 +9834,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         
     def filtreGCPBascule(self,ligne):
-        if "MAX" in ligne or "ErrMax" in ligne or "||" in ligne: # dans la version xxxx il y a ERRROR !
+        if "MAX" in ligne or "ErrMax" in ligne or "||" in ligne: # dans la version xxxx il y a ERROR !
             self.ecartPointsGCPByBascule += ligne+"\n"
             return ligne
 
@@ -10013,7 +9991,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 return ligne.strip(" -")          
         if 'BEGIN BLOC' in ligne:
             return " - "+ligne.strip(" -")
-        if 'cAppliMICMAC::VerifSzFile' in ligne: #boque la suite, il faut un retour chariot
+        if 'cAppliMICMAC::VerifSzFile' in ligne: # bloque la suite, il faut un retour chariot
             if self.exe.poll()==None: # le subprocess tourne encore
                 self.exe.communicate(input='\n')
         print("fin filtre malt")
@@ -10027,7 +10005,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.monImage_MaitrePlan        =   str()                                               # Nom de l'image maître du plan repère (sans extension)
         self.monImage_PlanTif           =   str()                                               # nom du masque correspondant
         self.listeDesMaitresses         =   list()                                              # liste des images maîtresses
-        self.listeDesMasques            =   list()                                              # liste Des Masques associès aux maîtres
+        self.listeDesMasques            =   list()                                              # liste Des Masques associés aux maîtres
         self.miseAJourItem701_703()
         
     def reinitialiseMaitreEtMasqueDisparus(self):                                               # on conserve les options si la photo appartient au nouveau lot (photos = liste avec chemins)
@@ -10088,7 +10066,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         # masques et maîtresses
           
         self.listeDesMaitresses         =   [e for e in self.listeDesMaitresses if e in photos] # liste des images maîtresses avec chemin
-        # liste Des Masques associès aux maîtres : chemin complet de la maîtresse + extension spécifique : _masque.tif
+        # liste Des Masques associés aux maîtres : chemin complet de la maîtresse + extension spécifique : _masque.tif
         self.listeDesMasques            =   [e for e in self.listeDesMasques if e.replace('_masque.tif',self.extensionChoisie) in photos]
 
 
@@ -10165,7 +10143,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if self.lancerTiPunch.get():    # Maillage demandé ? 
             self.maillageTequila()      # création d'un maillage texturé sur demande utilisateur
         
-        if self.lancerPIMs2Mnt.get():   # génération d'orthomoqaïque demandée
+        if self.lancerPIMs2Mnt.get():   # génération d'orthomosaïque demandée
             self.lancePIMs2Mnt()        # carte de profondeur
             self.lanceTawnyC3DC()
             
@@ -10175,12 +10153,13 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     def maillageTequila(self):  # tente un maillage sur un sous ensemble des photos, appel par menu outil 
         def choisirLesPhotosUtiles():
-            nb = 25   # on retient le nb photos utiles, lorsque Tequila sera moodifié on pourra mettre 200
+            nb = 25   # on retient le nb photos utiles pour Tequile (s'il y en trop alors cela plante)
+                    
             nbTotal = self.photosSansChemin.__len__()
             if nb>nbTotal:
                 utiles = list(self.photosSansChemin)
                 return
-            # choix 1 : au hasard si il y a moins de 3 fois trop de photos:
+            # choix 1 : au hasard si il y a moins de 3 fois trop de photos :
             if nbTotal<=3*nb:
                 utiles = sample(self.photosSansChemin,nb)  #choix des photos au hasard
             # choix 2 : 1 photos toutes les nb/total
@@ -10431,7 +10410,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     # exemple après UrbanMNE : mm3d Nuage2Ply "MEC-Malt/NuageImProf_STD-MALT_Etape_8.xml" Scale=8 Attr="MEC-Malt/Z_Num8_DeZoom1_STD-MALT.tif" Out="self.modele3DEnCours"
     # si tawny : ajouter l'attribut : 
     def lanceNuage2PlyUrban(self):
-        if int(self.zoomNuage)>32:          # le mode UrbanMNE ne génère apparemment des nuages que pour les zoom de 32 à 1, soit les étapes 3 à 8
+        if int(self.zoomNuage)>32:          # le mode UrbanMNE ne génère apparemment des nuages que pour les zooms de 32 à 1, soit les étapes 3 à 8
             return
         arg1 = "MEC-Malt/NuageImProf_STD-MALT_Etape_"+self.etapeNuage+".xml"
         if os.path.exists(arg1)==False:
@@ -10498,7 +10477,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.remettrePhotosCalibration()
         listeAConserver  = os.listdir(self.repTravail)
         listeAConserver = [e for e in listeAConserver if not os.path.isdir(e)]
-        listeAConserver.append("Ori-nav-Brut")  # contient les coordonnées gps extaites des exifs des photos
+        listeAConserver.append("Ori-nav-Brut")  # contient les coordonnées gps extraites des exifs des photos
         listeAConserver.append("Ori-Calib")     # calibration venue d'ailleurs
         if orientationReference := os.path.basename(self.orientationReference): # référentiel par copie d'un autre chantier
               listeAConserver.append(orientationReference)          
@@ -10531,7 +10510,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                 # self.referentielOK est Fausse lorsque :
                                 # - le type de référentiel est modifié (MicMac, GPS, autre chantier..)
                                 # - des photos sont retirées (peut-être pas nécessaire : variables réinitialisées ?)
-                                # - des points gcp sont modifiés (retirés ou placés; ajouter =inutile, si coordonénes modifiées : à faire...)
+                                # - des points gcp sont modifiés (retirés ou placés; ajouter = inutile, si coordonnées modifiées : à faire...)
                                 # - la mise à l'échelle est modifiée (fait sauf si modif de la distance)
                                 # - on ferme AperoDeDenis
                                 
@@ -10605,7 +10584,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 self.orientationCourante = "morito"
                 return
             else:
-                self.ajoutLigne(_("Vous avez choisi le référentiel d'un autre chantier, mais celà n'a pas fonctionné")+"\n")              
+                self.ajoutLigne(_("Vous avez choisi le référentiel d'un autre chantier, mais cela n'a pas fonctionné")+"\n")              
 
         # si aucun référentiel prévu on lance quand même campari pour préciser la position des points
 
@@ -10666,7 +10645,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             [self.dicoPointsGPSEnPlace.pop(key,None) for key in dico if key[1] not in self.photosAvecChemin]
             # on met dans la liste des maîtresses avec chemin celles qui sont dans la liste des photos
             self.listeDesMaitresses = [e for e in self.listeDesMaitresses if e in self.photosAvecChemin]
-            # liste des masques : liste de noms avec chemin mais les masques ont un nom spécifique, suppression des masquesdevenus inutiles
+            # liste des masques : liste de noms avec chemin mais les masques ont un nom spécifique, suppression des masques devenus inutiles
             listeDesMasques = list()
             for e in self.photosSansChemin:
                 ajouter = [f for f in self.listeDesMasques if os.path.splitext(e)[0] in f]
@@ -10735,7 +10714,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.nouveauChantier(demandePhotos=False)
 
             # crée le repertoire de travail, copie les photos et renvoie le nombre de fichiers photos "acceptables",
-            # met à 1 l'état du chantier crée self.photosAvecChemin et self.photosSansChemin
+            # met à 1 l'état du chantier crée self.photosAvecChemin et self.photosSansChemin (fin orthographe)
             # ATTENTION : Supprime l'arborescence et certains résultats.
 
             self.nombreDExtensionDifferentes(liste)
@@ -13053,7 +13032,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.fermetureOptionsGoProEnCours = False        
 
 
-######################### recherche de la dernière version d'aperodedenis sur le net
+######################### recherche de la dernière version d'Aperodedenis sur le net
 
     def verifieVersion(self):   # Procédure exécutée lors de la restauration des paramètres de Micmac
                                 # va lire la version dans la page GitHub : doit être au début du fichier readme.txt
@@ -14702,7 +14681,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         supprimeFichier(out)        
         self.encadre(_("Fusion des orthomosaïques en cours.... Patience...."))
         print("tif=",tif)
-        gdal_merge.main(tif)            # création de l'orthomoqaique         
+        gdal_merge.main(tif)            # création de l'orthomosaique         
         if os.path.exists(out):         # Correct ?
             supprimeFichier(fusion)     # oui : on renomme l'out en fusion
             os.rename(out,fusion)
