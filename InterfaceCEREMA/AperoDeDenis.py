@@ -740,9 +740,10 @@
 # modif : ne pas afficher le bouton "métadonnées" dans l'onglet référentiel s'il n'y a pas de métadonnées
 # modif : ouvreChantier : réinitialise les variables (permet de s'affranchir des sauvegardes de paramètres incomplètes lors de nouvelles versions) 
 # Affiche les aides dans une fenêtre maximisée ! Quelques fautes d'orthographe supprimées (aide1,aide 201 à 209, historique,après).
-# correction création de chantier vidéo : initialisation des variables
+# correction création de chantier vidéo : initialisation des variables, nouveau nom de l'item : nouveau chantier vidéo
 # Ajout d'une sauvegarde après : "retirer des photos" et après "Création d'un MNT"
 # Ajout d'une remarque lors de la création d'un MNT : si référentiel MicMac, l'unité n'est pas le mètre
+# Ajout d'une aide en cas de problème lors de la saisie du masque 3D
 
 # voir ce qu'il faut faire de "META" dans les vieux chantiers (ligne 727)
 # à faire bouton pour supprimer masque 2D tarama
@@ -5631,6 +5632,14 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 self.sauveParam()
                 self.encadre(texte)
                 return
+
+        # s'il y a pipeline et pas delancement de MicMac (self.etatDuChantier == 2)
+        # alors on n'affiche que les pipelines
+        if self.dicoPipeline["fichier"] and self.etatDuChantier == 2:
+            entete = _("Un pipeline remplace le traitement habituel par l'interface : ")+"\n\n"
+            self.afficherPipeline(entete)
+            return
+        
         if self.dicoPipeline["fichier"]:
             texte += _("Le(s) pipeline(s) \n %s \n")%"\n".join(self.dicoPipeline["fichier"])
             texte += "\n\n"
@@ -6100,13 +6109,13 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                              messageBouton=_("Fermer"),
                              dicoPoints=self.dicoProfil)
 
-    def afficherPipeline(self):    
+    def afficherPipeline(self,texte=""):    
         if self.dicoPipeline["fichier"]==list():  # absence
             self.encadre(_("Pas de pipeline."))
             return
         lesFichiers = "\n".join(self.dicoPipeline["fichier"])
         lesLignes = "\n".join(self.dicoPipeline["lignes"])
-        texte = "\n"+_("Les fichiers pipeline : ")+"\n"+"\n"+lesFichiers
+        texte += "\n"+_("Les fichiers pipeline : ")+"\n"+"\n"+lesFichiers
         texte += "\n"+"\n"+_("les commandes : ")+"\n"+"\n"+lesLignes
         texte += "\n"+"\n"+_("Pour plus d'infos consulter les traces et le log de MicMac")+"\n"+"\n"
         self.encadre(texte)
@@ -11762,7 +11771,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.erreurPipeline = str()
         self.arretPipeline  = False      
         pipeline = tkinter.filedialog.askopenfilename(title=_('Pipeline MicMac'),
-                        filetypes=[(("*.bat"),("*.bat")),(_("Tous"),"*")],
+                        filetypes=[(("*.bat *.sh"),("*.bat","*.sh")),(_("Tous"),"*")],
                         multiple=False)
         if not pipeline: return
         with open(pipeline) as pipe:
@@ -11813,19 +11822,19 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             if decompose[1][0]=="v":    # vCommande : l'utilisateur choisira les arguments, ok, ligne traitée
                 return True 
 
-            # fichier en premier argument
+            # le fichier en premier argument doit exister, sinon plantage
             if arg1 in ["Nuage2Ply","ScaleIm","ScaleNuage","StatIm","TiPunch","To8Bits","XifGps2Txt","XifGps2Xml",]:
                 if (len(decompose)<3 or
                     not (os.path.isfile(decompose[2]))):
                     self.arretPipeline = True
 
-            # répertoire en premier argument                    
+            # le répertoire en premier argument doit exister                   
             if arg1 in ["Tawny"]:
                 if (len(decompose)<3 or
                     not (os.path.isdir(decompose[2]))):
                     self.arretPipeline = True
                      
-            # orientation en second argument                   
+            # l'orientation en second argument doit être présente               
             if arg1 in ["Campari","AperiCloud","Centerbascule","GCPBascule","Tarama","Tequila","OriConvert","GrShade","SBGlobBascule","XifGps2Xml",]:
                 if (len(decompose)<4 or                    
                     not (os.path.isdir("Ori-"+decompose[3]))):
@@ -11856,7 +11865,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     self.arretPipeline = True
                     
             # malt geomimage 4° argument = file
-            if arg1 or ["Malt"]:
+            if arg1 in ["Malt"]:
                 if decompose[2]=="GeomImage":
                     master=decompose[5].split("=")[0]
                     image= decompose[5].split("=")[1]                    
@@ -11864,6 +11873,17 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                         master!="Master" or
                         not (os.path.isfile(image))):
                             self.arretPipeline = True
+
+            # Tapas et Tapioca : au moins 2 arguments            
+            if arg1 in ["Tapas,Tapioca"]:
+                if len(decompose)<4:
+                    self.arretPipeline = True                             
+
+            # Tapas : le répertoire Homol doit être présent
+            if arg1 in ["Tapas"]: 
+                if not (os.path.isdir("Homol")):
+                    self.arretPipeline = True                
+
             
             if self.arretPipeline:
                     self.erreurPipeline+= _("Le module %s ne peut s'exécuter ; il manque un élément (fichier, répertoire ou argument) : \n %s") % ( arg1,ligne)+"\n" 
