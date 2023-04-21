@@ -731,7 +731,7 @@
 #   ceci en contrôlant le subprocess par envoi de message par le module pyautogui qui cause à l'appli qui a le focus
 # Suppression du code de la fonction périmée d'avertissement sur la bascule des points homologues : basculeAffichagePointHomologues
 # ************* lire un pipeline dans un fichier .bat et l'exécuter sur les photos du chantier
-#               modif etatDuChantier, menu édition, aide
+#               modif etatDuChantier, menu édition, aide, afficheEtat
 # supprimé : listeparamnommes = dans lanceCommande (inutilisé)
 # self.etapeTapioca, self.echelle1PourMessage et self.echelle2PourMessage ajoutés dans l'initialisation des valeurs par défaut (car : raz après pipeline)
 # ajout puis suppression du choix de faire une ortho après c3dc (qui avait été supprimé)  pims2mnt et ajout tawnyc3dc : marche pas item825
@@ -11864,15 +11864,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     not (os.path.isfile(decompose[6]))):
                     self.arretPipeline = True
                     
-            # malt geomimage 4° argument = file
+            # malt "geomimage" 4° argument = file
             if arg1 in ["Malt"]:
                 if decompose[2]=="GeomImage":
-                    master=decompose[5].split("=")[0]
-                    image= decompose[5].split("=")[1]                    
-                    if (len(decompose)<6 or
-                        master!="Master" or
-                        not (os.path.isfile(image))):
-                            self.arretPipeline = True
+                    if len(decompose)<6:
+                        self.arretPipeline = True
 
             # Tapas et Tapioca : au moins 2 arguments            
             if arg1 in ["Tapas,Tapioca"]:
