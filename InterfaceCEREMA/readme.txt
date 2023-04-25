@@ -1,6 +1,9 @@
 The CEREMA interface provides a user-friendly graphical user interface for 
 MICMAC, the IGN's free photogrammetry tool.
 
+Version V 5.73 April, 26, 2023
+	- add shortcut key for main functions
+	
 Version V 5.72 April, 6, 2023
 	- read and execute MicMac pipelines as .bat file
 	

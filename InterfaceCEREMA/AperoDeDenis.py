@@ -745,6 +745,10 @@
 # Ajout d'une remarque lors de la création d'un MNT : si référentiel MicMac, l'unité n'est pas le mètre
 # Ajout d'une aide en cas de problème lors de la saisie du masque 3D
 
+# version 5.73
+# Ajout de touches "raccourci" pour les principales fonctions de l'interface
+# fix de 2 bugs dans le menu outils métiers : si le mnt lu est incorrect il y avait plantage
+
 # voir ce qu'il faut faire de "META" dans les vieux chantiers (ligne 727)
 # à faire bouton pour supprimer masque 2D tarama
 # à faire : adapter l'aide, corriger l'orthographe,
@@ -1112,7 +1116,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales
 
-numeroVersion = "5.72"
+numeroVersion = "5.73"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour contrôler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -2280,13 +2284,13 @@ class Interface(ttk.Frame):
         # Fichier
         
         menuFichier = tkinter.Menu(mainMenu,tearoff = 0)                                        ## menu fils : menuFichier, par défaut tearoff = 1, détachable 
-        menuFichier.add_command(label=_("Nouveau chantier"), command=self.nouveauChantier)           
-        menuFichier.add_command(label=_("Ouvrir un chantier"), command=self.ouvreChantier)
+        menuFichier.add_command(label=_("Nouveau chantier").format(" "), accelerator= "Ctrl+N",command=self.nouveauChantier)           
+        menuFichier.add_command(label=_("Ouvrir un chantier").format(" "), accelerator= "Ctrl+O",command=self.ouvreChantier)
         menuFichier.add_separator()        
         menuFichier.add_command(label=_("Enregistrer"), command=self.enregistreChantierAvecMessage)
         menuFichier.add_command(label=_("Enregistrer sous..."), command=self.deplacerChantier)          
         menuFichier.add_separator()        
-        menuFichier.add_command(label=_("Renommer le chantier"), command=self.renommeChantier)       
+        menuFichier.add_command(label=_("Renommer le chantier"), accelerator= "Ctrl+R",command=self.renommeChantier)       
         menuFichier.add_separator()
         menuFichier.add_command(label=_("Exporter le chantier en cours"), command=self.exporteChantier)
         menuFichier.add_command(label=_("Importer un chantier"), command=self.importeChantier)         
@@ -2295,7 +2299,7 @@ class Interface(ttk.Frame):
         menuFichier.add_separator()        
         menuFichier.add_command(label=_("Du ménage !"), command=self.duMenage)               
         menuFichier.add_separator()        
-        menuFichier.add_command(label=_("Quitter"), command=self.quitter)
+        menuFichier.add_command(label=_("Quitter"), accelerator= "Alt+F4",command=self.quitter)
 
         # Edition
 
@@ -2318,8 +2322,8 @@ class Interface(ttk.Frame):
         menuEditionVisu.add_command(label=_("Visualiser le pipeline"), command=self.afficherPipeline)
         
         menuEditionAffiche = tkinter.Menu(menuEdition,tearoff = 0)        
-        menuEditionAffiche.add_command(label=_("Afficher le nuage dense"), command=self.affiche3DNuage)
-        menuEditionAffiche.add_command(label=_("Afficher le nuage non dense"), command=self.afficheApericloud)         
+        menuEditionAffiche.add_command(label=_("Afficher le nuage dense"), accelerator= "Ctrl+Alt+D",command=self.affiche3DNuage)
+        menuEditionAffiche.add_command(label=_("Afficher le nuage non dense"), accelerator= "Ctrl+Alt+N",command=self.afficheApericloud)         
         menuEditionAffiche.add_separator()        
         menuEditionAffiche.add_command(label=_("Afficher la mosaïque Tarama"), command=self.afficheMosaiqueTarama)
         menuEditionAffiche.add_command(label=_("Afficher l'ortho mosaïque"), command=self.afficheLesOrthos)
@@ -2331,13 +2335,13 @@ class Interface(ttk.Frame):
         menuEditionAffiche.add_separator()        
         menuEditionAffiche.add_command(label=_("Lister-Visualiser les images 3D"), command=self.lister3DPly)
         
-        menuEdition.add_command(label=_("Afficher l'état du chantier"), command=self.afficheEtat)
+        menuEdition.add_command(label=_("Afficher l'état du chantier"), accelerator= "Ctrl+E", command=self.afficheEtat)
         menuEdition.add_separator()
         menuEdition.add_cascade(label=_("Visualiser les photos et les options"),menu=menuEditionVisu)
         menuEdition.add_cascade(label=_("Visualiser les nuages et les mosaïques"),menu=menuEditionAffiche)        
         menuEdition.add_separator()
-        menuEdition.add_command(label=_("Afficher la trace synthétique du chantier"), command=self.lectureTraceSynthetiqueMicMac)
-        menuEdition.add_command(label=_("Afficher la trace complète du chantier"), command=self.lectureTraceMicMac)
+        menuEdition.add_command(label=_("Afficher la trace synthétique du chantier"), accelerator= "Ctrl+T",command=self.lectureTraceSynthetiqueMicMac)
+        menuEdition.add_command(label=_("Afficher la trace complète du chantier"), accelerator= "Ctrl+Maj+T",command=self.lectureTraceMicMac)
         menuEdition.add_separator()     
         menuEdition.add_command(label=_("Fusionner des orthomosaïques"), command=self.fusionOrthomosaiques) # mise en commentaire mars 2023 V5.72
         menuEdition.add_command(label=_("Fusionner des nuages 3D (maillages exclus)"), command=self.choisirPuisFusionnerPlyDuChantier)
@@ -2349,9 +2353,9 @@ class Interface(ttk.Frame):
                 
         menuMicMac = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearoff = 1, détachable
         #menuMicMac.add_command(label=_("Choisir des photos"), command=self.lesPhotos)
-        menuMicMac.add_command(label=_("Options"), command=self.optionsOnglet)
+        menuMicMac.add_command(label=_("Options"), accelerator="Ctrl+P", command=self.optionsOnglet)
         menuMicMac.add_separator()     
-        menuMicMac.add_command(label=_("Lancer MicMac"), command=self.lanceMicMac)                 ## Ajout d'une option au menu fils menuFile
+        menuMicMac.add_command(label=_("Lancer MicMac"), accelerator="Ctrl+M", command=self.lanceMicMac)                 ## Ajout d'une option au menu fils menuFile
 
         # Vidéo GoPro
                 
@@ -2384,7 +2388,7 @@ class Interface(ttk.Frame):
         menuOutils.add_command(label=_("Afficher les options par défaut"), command=self.afficheOptionsParDefaut)        
         menuOutils.add_command(label=_("Modifier les options par défaut"), command=self.majOptionsParDefaut)
         menuOutils.add_separator()
-        menuOutils.add_command(label=_("Vérifie la présence d'une nouvelle version sur GitHub"),command=self.verifVersion)    ## meshlab
+        menuOutils.add_command(label=_("Vérifie la présence d'une nouvelle version sur GitHub"), accelerator="Ctrl+G", command=self.verifVersion)    ## meshlab
 
         # mode Expert
         
@@ -2392,14 +2396,14 @@ class Interface(ttk.Frame):
             menuPlusieursAppareilsPhotos.entryconfig(1, label=_("Définir la longueur du préfixe des photos ; %s") % (self.nbCaracteresDuPrefixe))
                 
         menuExpert = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearoff = 1, détachable
-        menuExpert.add_command(label=_("Exécuter une ligne de commande système"), command=self.lignesExpert)
-        menuExpert.add_command(label=_("Exécuter une commande python"), command=self.lignesPython)        
+        menuExpert.add_command(label=_("Exécuter une ligne de commande système"), accelerator="Ctrl+Alt+S", command=self.lignesExpert)
+        menuExpert.add_command(label=_("Exécuter une commande python"), accelerator="Ctrl+Alt+P", command=self.lignesPython)        
         menuExpert.add_separator()
-        menuExpert.add_command(label=_("Exécuter un pipeline MicMac"), command=self.pipeline)        
+        menuExpert.add_command(label=_("Exécuter un pipeline MicMac"), accelerator="Ctrl+Alt+M", command=self.pipeline)        
         menuExpert.add_separator()
         menuExpert.add_command(label=_("Personnaliser les paramètres optionnels des modules Micmac"), command=self.personnaliseOptions)
         menuExpert.add_separator()
-        menuExpert.add_command(label=_("Consulter le fichier mm3d-LogFile.txt"), command=self.logMm3d)        
+        menuExpert.add_command(label=_("Consulter le fichier mm3d-LogFile.txt"), accelerator="Ctrl+Alt+L", command=self.logMm3d)        
         menuExpert.add_separator()
 
         # Sous-menu du menu expert : Import
@@ -2450,15 +2454,15 @@ class Interface(ttk.Frame):
         # menu métiers
 
         menuMetier = tkinter.Menu(mainMenu,tearoff = 0)         ## menu fils : menuFichier, par défaut tearoff = 1, détachable
-        menuMetier.add_command(label=_("Ecrire un MNT à partir d'un PLY"), command=self.ply2Mnt)
+        menuMetier.add_command(label=_("Ecrire un MNT à partir d'un PLY"), accelerator="Ctrl+1", command=self.ply2Mnt)
         menuMetier.add_command(label=_("Ecrire un MNT à partir d'un fichier XYZ"), command=self.xyz2Mnt)
         menuMetier.add_command(label=_("Visualiser un fichier MNT"), command=afficheMNTIGN)        
         menuMetier.add_separator()
-        menuMetier.add_command(label=_("Calculer le volume d'un MNT"), command=calculVolumeMnt)        
+        menuMetier.add_command(label=_("Calculer le volume d'un MNT"),  accelerator="Ctrl+2", command=calculVolumeMnt)        
         menuMetier.add_command(label=_("Calculer le volume entre 2 MNT"), command=calculVolumeEntre2Mnt)           
         menuMetier.add_command(label=_("Visualiser l'écart entre les 2 MNT"), command=self.afficheEcart)
         menuMetier.add_separator()
-        menuMetier.add_command(label=_("Tracer le profil entre 2 points"), command=tracerProfil)        
+        menuMetier.add_command(label=_("Tracer le profil entre 2 points"),  accelerator="Ctrl+3", command=tracerProfil)        
         menuMetier.add_separator()        
         menuMetier.add_command(label=_("Modifier la tolérance utilisée pour calculer le volume"), command=self.paramTolerance)
         menuMetier.add_command(label=_("Modifier l'arrondi des résultats du calcul des volumes"), command=self.paramArrondi)        
@@ -2485,7 +2489,7 @@ class Interface(ttk.Frame):
                 
                 
         menuParametres = tkinter.Menu(mainMenu,tearoff = 0,postcommand=updateParam)
-        menuParametres.add_command(label=_("Afficher les paramètres"), command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
+        menuParametres.add_command(label=_("Afficher les paramètres"), accelerator="Ctrl+4", command=self.afficheParam)              ## Ajout d'une option au menu fils menuFile
         menuParametres.add_separator()        
         menuParametres.add_command(label=_("Associer le répertoire de MicMac"), command=self.repMicmac)    ## Ajout d'une option au menu fils menuFile
         menuParametres.add_command(label=_("Associer 'exiftool'"), command=self.repExiftool)                   ## Exiftool : sous MicMac\binaire-aux si Windows, mais sinon ???   
@@ -2516,7 +2520,7 @@ class Interface(ttk.Frame):
         menuAideMenus.add_command(label=_("Fichier"), command=self.aideFichier)           
         menuAideMenus.add_command(label=_("Edition"), command=self.aideEdition)           
         menuAideMenus.add_command(label=_("MicMac"), command=self.aideMicMac)           
-        menuAideMenus.add_command(label=_("vidéo"), command=self.aideVideo)
+        menuAideMenus.add_command(label=_("Vidéo"), command=self.aideVideo)
         menuAideMenus.add_command(label=_("Outils"), command=self.aideOutils)           
         menuAideMenus.add_command(label=_("Expert"), command=self.aideExpert)           
         menuAideMenus.add_command(label=_("Outils métier"), command=self.aideOutilsMetiers)           
@@ -2571,9 +2575,133 @@ class Interface(ttk.Frame):
         self.ajoutTraceComplete(heure()+" "+_("lancement d'aperodedenis")+version+".")
 
         # zone de test éventuel :
-     
 
-    #initialise les valeurs par défaut au lancement de l'outil
+    # Les raccourcis claviers : bind et fonctions avec le paramètre event
+        # raccourcis clavier
+        #la touche Alt suivie de la première lettre d'un menu ouvre le menu (si pas de confusion possible))
+        #le mot clé bind_all indique un ensemble d'évèenments successifs nécessaire pour activer le lien
+        # bind_all("<Control-E><Control-F>", ... impose le ctrl e puis le ctrl f !
+##Voici une liste de raccourcis clavier standard sous Windows:
+##
+##Ctrl + C : Copier
+##Ctrl + X : Couper
+##Ctrl + V : Coller
+##Ctrl + Z : Annuler la dernière action
+##Ctrl + A : Sélectionner tout
+##Ctrl + F : Rechercher
+##Ctrl + S : Enregistrer
+##Ctrl + N : Nouveau document/fenêtre
+##Alt + Tab : Basculer entre les applications ouvertes
+##Alt + F4 : Fermer l'application en cours
+##Windows + E : Ouvrir l'Explorateur de fichiers
+##Windows + D : Afficher le bureau
+##Windows + R : Ouvrir la boîte de dialogue Exécuter
+##Windows + L : Verrouiller l'ordinateur
+##Windows + Tab : Afficher les bureaux virtuels et les applications ouvertes
+##Ctrl + Alt + Suppr : Afficher le gestionnaire de tâches ou l'écran de verrouillage en fonction de la version de Windows.
+
+##<Button-1>	The user pressed the first mouse button.
+##<KeyPress-H>	The user pressed the H key.
+##<Control-Shift-KeyPress-H>	The user pressed control-shift-H.
+
+
+        fenetre.bind("<Control-Alt-s>",self.raccourciLignesExpert)     
+        fenetre.bind("<Control-Alt-p>",self.raccourciLignesPython)
+        fenetre.bind("<Control-Alt-m>",self.raccourciPipeline)
+        fenetre.bind("<Control-Alt-l>",self.raccourciLogMm3d)
+        fenetre.bind("<Control-Alt-d>",self.raccourciAffiche3DNuage)
+        fenetre.bind("<Control-Alt-n>",self.raccourciAfficheApericloud)
+        
+        fenetre.bind("<Control-E>",self.raccourciAfficheEtat)
+        fenetre.bind("<Control-e>",self.raccourciAfficheEtat)
+        fenetre.bind("<Control-G>",self.raccourciVerifVersion)
+        fenetre.bind("<Control-g>",self.raccourciVerifVersion)        
+        fenetre.bind("<Control-M>",self.raccourciLanceMicMac)
+        fenetre.bind("<Control-m>",self.raccourciLanceMicMac)        
+        fenetre.bind("<Control-n>",self.raccourciNouveauChantier)
+        fenetre.bind("<Control-N>",self.raccourciNouveauChantier)    
+        fenetre.bind("<Control-o>",self.raccourciOuvreChantier)
+        fenetre.bind("<Control-O>",self.raccourciOuvreChantier)
+        fenetre.bind("<Control-P>",self.raccourciOptionsOnglet)
+        fenetre.bind("<Control-p>",self.raccourciOptionsOnglet)       
+        fenetre.bind("<Control-r>",self.raccourciRenommeChantier)
+        fenetre.bind("<Control-R>",self.raccourciRenommeChantier)
+        fenetre.bind("<Control-t>",self.raccourciLectureTraceSynthetiqueMicMac)
+        fenetre.bind("<Control-T>",self.raccourciLectureTraceMicMac)
+
+        fenetre.bind("<Alt-F4>",self.raccourciQuitter)
+        fenetre.bind("<Control-KeyPress-1>",self.raccourciPly2Mnt)
+        fenetre.bind("<Control-KeyPress-2>",self.raccourciCalculVolumeMnt)         
+        fenetre.bind("<Control-KeyPress-3>",self.raccourciTracerProfil)
+        fenetre.bind("<Control-KeyPress-4>",self.raccourciAfficheParam)
+
+
+        
+        print("tous les liens de la fenetre : ",fenetre.bindtags())
+        
+    def raccourciAfficheEtat(self,event):       # ctrl E
+        self.afficheEtat()
+
+    def raccourciVerifVersion(self,event):      # ctrl+G
+        self.verifVersion()
+
+    def raccourciLanceMicMac(self,event):       # ctrl M
+        self.lanceMicMac()
+        
+    def raccourciNouveauChantier(self,event):   # ctrl N
+        self.nouveauChantier()
+
+    def raccourciOuvreChantier(self,event):     # ctrl O
+        self.ouvreChantier()
+
+    def raccourciOptionsOnglet(self,event):     # Ctrl P
+        self.optionsOnglet()
+        
+    def raccourciRenommeChantier(self,event):   # ctrl R
+        self.renommeChantier()
+
+    def raccourciLectureTraceSynthetiqueMicMac(self,event): # ctrl t
+        self.lectureTraceSynthetiqueMicMac()
+
+    def raccourciLectureTraceMicMac(self,event):# ctrl T
+        self.lectureTraceMicMac()
+
+
+
+    def raccourciQuitter(self,event):           # Alt F4
+        self.quitter()
+        
+    def raccourciPly2Mnt(self,event):           # Ctrl 1
+        self.ply2Mnt()
+
+    def raccourciCalculVolumeMnt(self,event):   # Ctrl 2
+        calculVolumeMnt()
+        
+    def raccourciTracerProfil(self,event):      # Ctrl 3
+        tracerProfil()
+
+    def raccourciAfficheParam(self,event):      # Ctrl 4
+        self.afficheParam()
+
+    def raccourciLignesExpert(self,event):      # Ctrl+Alt+s
+        self.lignesExpert()
+
+    def raccourciLignesPython(self,event):      # Ctrl+Alt+p
+        self.lignesPython()
+
+    def raccourciPipeline(self,event):          # Ctrl+Alt+m (micmac)
+        self.pipeline()        
+
+    def raccourciLogMm3d(self,event):           # Ctrl+Alt+l
+        self.logMm3d()
+
+    def raccourciAffiche3DNuage(self,event):    # Ctrl+Alt+d
+        self.affiche3DNuage()
+
+    def raccourciAfficheApericloud(self,event): # Ctrl+Alt+n
+        self.afficheApericloud()
+        
+    # initialise les valeurs par défaut au lancement de l'outil
         
     def initialiseConstantes(self):         # les constantes, mais pas que (ménage à faire) 
 
@@ -4383,11 +4511,11 @@ class Interface(ttk.Frame):
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
               _('''
-Version 5.72 6 avril 2023 :
+Version 5.73 24 avril 2023
+    - Ajout de touches 'raccourcis' pour les principales fonctions de l'interface
+    
+Version 5.72 6-20 avril 2023 :
     - exécuter un pipeline dans le menu expert
-      Lit et exécute une procédure cataloguée de commandes mm3d
-      L'exécution est mémorisée et interrogeable par le menu édition
-      L'état du chantier l'annonce en premier lieu
     - diverses corrections, voir le script
 
 Version 5.71 20 mars 2023 :
@@ -11875,7 +12003,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 if len(decompose)<4:
                     self.arretPipeline = True                             
 
-            # Tapas : le répertoire Homol doit être présent
+            # Tapas : le répertoire Homol doit être présent 
             if arg1 in ["Tapas"]: 
                 if not (os.path.isdir("Homol")):
                     self.arretPipeline = True                
@@ -14312,9 +14440,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.selectionRepertoire.xview_moveto(args[1])            
 
     def validRepertoire(self):
-        self.repertoireEnCours = self.selectionRepertoire.curselection()
-        self.topRepertoire.destroy()
-        self.selectionRepertoireAvecChemin = str(self.fichierProposes[self.repertoireEnCours[0]])
+        try:
+            self.repertoireEnCours = self.selectionRepertoire.curselection()
+            self.topRepertoire.destroy()
+            self.selectionRepertoireAvecChemin = str(self.fichierProposes[self.repertoireEnCours[0]])
+        except: pass
         self.retourChoixRepertoire=None
 
     def cancelRepertoire(self):
@@ -15334,7 +15464,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         def extraireLesXyz(fichierPourMnt):
             self.encadre(_("Lecture du fichier\n %s \nen cours.\nPatientez.") % (fichierPourMnt))
-            semisDePoints = dict()
+            semisDePoints = list()
             if fichierPourMnt[-4:].upper()==".PLY":
                 semisDePoints = extraireLesXyzDuPly(fichierPourMnt)
             elif fichierPourMnt[-4:].upper() in (".ASC",".XYZ",".TXT",".CSV") :
@@ -15347,7 +15477,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 ######################## le traitement :
         print(heure()+" : début extraction semis de point à partir du ply") 
         semisDePoints = extraireLesXyz(fichierPourMnt) # récupère le semis de points x y z dans l e fichier asc ou ply
-        
+        if not isinstance(semisDePoints,dict): return abandon(_("Fichier ply incorrect"))
         print(heure()+" : semis de point constitué, on demande le pas")        
         if "surface" not in semisDePoints: return      
         lePas = demandeLePas(semisDePoints["surface"],semisDePoints["nb"])
@@ -16055,7 +16185,7 @@ def extraireLesXyzDuAsc(fichierASC):# fichier texte semis de points 3D comportan
                 point = (float(ligneXyz[1]),float(ligneXyz[0]),float(ligneXyz[2])) # pour tromper l'ennemi : transposition y,x
                 lesXyz.append(point)
             except Exception as e:
-                erreur = (" erreur ligne"+ligneXyz+" : "+str(e))
+                erreur = (" erreur ligne"+str(ligneXyz)+" : "+str(e))
                 return erreur
     if not lesXyz: return _("erreur dans la lecture du fichier")
     mnt = dict()    

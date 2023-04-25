@@ -1,5 +1,8 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 5.73 26 avril 2023 :
+				- ajout de raccoucis clavier pour les principales focntions
+				
 			Version 5.72 6 avril 2023 :
 				- lecture et exécution des pipelines MicMac sous forme de .bat
 
