@@ -9873,7 +9873,6 @@ msgid "copie de l'orientation en cours"
 msgstr "Kopie der aktuellen Ausrichtung"
 
 #: AperoDeDenis.py:10217
-#, python-format
 msgid "bilan %s"
 msgstr "Fazit %s"
 
@@ -10754,12 +10753,10 @@ msgid "Le contenu de ce fichier n'est pas du type Ply"
 msgstr "Der Inhalt dieser Datei ist nicht vom Typ Ply"
 
 #: AperoDeDenis.py:12348
-#, python-format
 msgid "Abandon : %s"
 msgstr "Verzicht %s"
 
 #: AperoDeDenis.py:12350
-#, python-format
 msgid "Nom du fichier : %s"
 msgstr "Name der Datei: %s"
 
@@ -10768,7 +10765,6 @@ msgid "Nombre de points dans le nuage : %s"
 msgstr "Anzahl der Punkte in der Wolke: %s"
 
 #: AperoDeDenis.py:12352
-#, python-format
 msgid "Surface couverte : %s"
 msgstr "Erfasste Fläche: %s"
 
@@ -10801,7 +10797,6 @@ msgid "Z maximum : %s"
 msgstr "Z Maximum: %s"
 
 #: AperoDeDenis.py:12360
-#, python-format
 msgid "Volume : %s"
 msgstr "Volumen: %s"
 
@@ -10984,7 +10979,6 @@ msgstr ""
 "Fotoformat ist jedoch %s. Entschuldigung, Verlassenheit."
 
 #: AperoDeDenis.py:12498
-#, python-format
 msgid "Le fichier %s n'existe pas. Abandon"
 msgstr "Datei nicht vorhanden %s"
 
@@ -11239,7 +11233,6 @@ msgid "Pas de fichier écrit"
 msgstr "Keine Datei geschrieben"
 
 #: AperoDeDenis.py:12920 AperoDeDenis.py:13056
-#, python-format
 msgid "Fichier : %s"
 msgstr "Datei : %s"
 
@@ -11276,7 +11269,6 @@ msgid "Taille de la maille négative ou nulle : "
 msgstr "Größe des Negativs oder der Nullmasche:"
 
 #: AperoDeDenis.py:12937 AperoDeDenis.py:13071
-#, python-format
 msgid "Taille de la maille : %s."
 msgstr "Maschengröße: %s"
 

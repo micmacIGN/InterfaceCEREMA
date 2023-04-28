@@ -9997,7 +9997,6 @@ msgid "Abandon : %s"
 msgstr "التخلي: %s"
 
 #: AperoDeDenis.py:12349
-#, python-format
 msgid "Nom du fichier : %s"
 msgstr "إسم الملف%s"
 

@@ -748,6 +748,10 @@
 # version 5.73
 # Ajout de touches "raccourci" pour les principales fonctions de l'interface
 # fix de 2 bugs dans le menu outils métiers : si le mnt lu est incorrect il y avait plantage
+# fix un bug lorsque le renommage ne peut avoir lieu : remet le répertoire de travail comme répertoire courant
+# fix une absence de réponse si on demande des infos sur un fichier ply qui n'est pas un ply
+# fix : demandeMNTPourInfo du menu métier : remplace hautGauche par basGauche (plantait)
+# mise à jour de la traduction en anglais
 
 # voir ce qu'il faut faire de "META" dans les vieux chantiers (ligne 727)
 # à faire bouton pour supprimer masque 2D tarama
@@ -2634,10 +2638,6 @@ class Interface(ttk.Frame):
         fenetre.bind("<Control-KeyPress-2>",self.raccourciCalculVolumeMnt)         
         fenetre.bind("<Control-KeyPress-3>",self.raccourciTracerProfil)
         fenetre.bind("<Control-KeyPress-4>",self.raccourciAfficheParam)
-
-
-        
-        print("tous les liens de la fenetre : ",fenetre.bindtags())
         
     def raccourciAfficheEtat(self,event):       # ctrl E
         self.afficheEtat()
@@ -2665,8 +2665,6 @@ class Interface(ttk.Frame):
 
     def raccourciLectureTraceMicMac(self,event):# ctrl T
         self.lectureTraceMicMac()
-
-
 
     def raccourciQuitter(self,event):           # Alt F4
         self.quitter()
@@ -5326,9 +5324,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.copierParamVersChantier()          # utile
         self.ajoutLigne(heure()+_("Nouveau chantier : %s") % (self.chantier))
 
-        if demandePhotos==False:    #ne pas demander les photos (elles sont déjà connues)
+        if demandePhotos==False:    # ne pas demander les photos (elles sont déjà connues)
             return        
-        self.lesPhotos()       #choix des photos   
+        self.lesPhotos()            # choix des photos   
 
                    
     def ouvreChantier(self):
@@ -5479,6 +5477,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                              str(e))
                 self.ajoutLigne(message)
                 self.encadre(message)
+                oschdir(self.repTravail)
                 return
         #il faut changer de support disque : recopie des fichiers, peut-être long !
         else:                
@@ -6844,22 +6843,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.fermerVisuPhoto()                          #  s'il y a une visualisation en cours des photos ou du masque on la ferme             
         self.menageEcran()
         repIni = self.repertoireDesPhotos if os.path.isdir(self.repertoireDesPhotos) else ""
-           
-        # Nouvelles photos sur le chantier en cours ???
         messageReinit = ""
-        if self.etatDuChantier>2:                       # 1 = avec photo ; 2 = enregistré, plus = traitement effectué
-            if self.troisBoutons(_("Nouvelles photos pour le même chantier"),
-                                 _("Choisir de nouvelles photos réinitialisera le chantier." ) + "\n"+
-                                _("Les traces et l'arborescence des calculs seront effacées.") + "\n"+
-                                _("Les nuages de points obtenus sont conservés.") + "\n"+                                 
-                                _("Les options compatibles avec les nouvelles photos seront conservées.") + "\n",
-                                _("Abandon"),
-                                _("Réinitialiser le chantier")) <= 0:
-                self.encadre(_("Abandon, le chantier n'est pas modifié."))
-                return
-            else:
-                self.initialiseValeursParDefaut()       # valeurs par défaut pour un nouveau chantier (utile si pas encore de chantier)
-                messageReinit ="\n"+_("Nouvelles photos choisies. Certains résultats seront conservés.")+"\n"
+
+        ###########  CHOIX DES PHOTOS
                 
         photos=tkinter.filedialog.askopenfilename(title=_('Choisir des photos'),
                                                   initialdir=repIni,
@@ -6869,9 +6855,15 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if len(photos)==0:
             self.restaureParamChantier(self.fichierParamChantierEnCours) # on remet le chantier 
             self.sauveParam()
-            self.encadre(_("Abandon, aucune sélection de fichier image,") + "\n" + _("le répertoire et les photos restent inchangés.") + "\n")
+            self.encadre(_("Abandon, aucune sélection de fichier image,") + "\n" + "\n")
             return 
 
+        if len(photos)==1:
+            self.restaureParamChantier(self.fichierParamChantierEnCours) # on remet le chantier 
+            self.sauveParam()
+            self.encadre(_("Abandon, il faut sélectionner au moins 2 photos,") + "\n" + "\n")
+            return
+        
         if self.nombreDExtensionDifferentes(photos)==0:
             self.encadre(_("Aucune extension acceptable pour des images. Abandon."))
             return
@@ -14741,12 +14733,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         typePly = typeDePly(ply)
         if typePly in ("nuage de points ascii","mesh ascii","mesh binary","nuage de points binaire"):
             info += _("Type du fichier ply :\n %s") % (typePly)
-        if typePly == None:
+        elif typePly == None:
             info += _("Le contenu de ce fichier n'est pas du type Ply")
-        if typePly in ("nuage de points binaire","mesh binary"):
+        elif typePly in ("nuage de points binaire","mesh binary"):
             mnt = extraireLesXyzDuPly(ply)
             if type(mnt) != type(dict()):
-                self.encadre(_("Abandon : %s") % (ply))
+                self.encadre(_("Abandon : \n%s\n%s ") % (ply,mnt))
                 return
 
             info +=  "\n\n"+_("Nombre de points dans le nuage : %s") % (mnt["nb"])
@@ -14762,7 +14754,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             info +=  "\n\n"+_("Volume : %s") % (round(mnt["volume"],2))
             if mnt["volume"]>0:
                 info +=  "\n\n"+_("Nombre de points par unité de volume : %s") % (int(mnt["nb"]/mnt["volume"]))
-                      
+        else:
+            info+=_("Ce n'est pas un fichier de type ply. Abandon")
+            
         self.encadre(info)
         self.ajoutLigne(info)
 
@@ -14784,7 +14778,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         mnt = self.selectionPhotosAvecChemin[0]        
         mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData = self.infoSurMNT(mnt)
         if affiche:          
-            texte = "MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s\nlargeur = %s\nhauteur %s\nhautGauche = %s" % (mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,hautGauche)
+            texte = ("MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s\nlargeur = %s\nhauteur %s" %
+            (mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur))
             self.encadre(texte)
         else:
             return mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData
@@ -16026,7 +16021,7 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
     i = int()
     taille = int(os.path.getsize(fichierPly)/1000000)
     
-    if taille>=50:
+    if taille>=150:
         if not tkinter.messagebox.askokcancel(
                     _("Gros fichier, traitement long.Continuer ?"),
                     _("Le fichier\n%s\nest très gros, le traitement sera LONG... : %s MO.\nFaut-il continuer ?") % (fichierPly,int(taille))
@@ -16095,10 +16090,8 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
     # extraction des Y,X,Z du ply :
     valeur=tuple([e for e in fmt])
     try:
-        # list comprehension extrayant les xyz de la structure décodée :  (X,Y,Z
-        print(heure()+" : début extraction par décodage du ply") 
+        # list comprehension extrayant les xyz de la structure décodée :  (X,Y,Z 
         lesXyz = [(valeur[1],valeur[0],valeur[2]) for [*valeur] in struct.iter_unpack(fmt,plageData).__iter__() ]
-        print(heure()+" : fin extraction par décodage du ply")
         mnt = dict()
         mnt["min_x"]  = min([x for x,y,z in lesXyz])     # bornes
         mnt["max_x"]  = max([x for x,y,z in lesXyz])
@@ -16115,8 +16108,8 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
         mnt["max_z"]  = max(lesZ)
         mnt["volume"] = mnt["surface"]*(mnt["max_z"]-mnt["min_z"])
     except Exception as e:
-        print( _("Erreur lors du décodage des données du fichier Ply, le ply ne provient pas de micmac. Erreur = ")+str(e))
-        return False
+        erreur=( _("Erreur lors du décodage des données du fichier Ply, le ply ne provient pas de micmac. Erreur = ")+str(e))
+        return erreur
 
     # extraction des triangles
     fmtTriangles = endian+"BIII" # un entier pour pour le nombre de points (=3 pour un triangle) et 2 long pour les numéros des sommets du triangle
@@ -16127,8 +16120,8 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
     try:       
         lesTriangles = [(valeur[1],valeur[2],valeur[3]) for [*valeur] in struct.iter_unpack(fmtTriangles,plageDataTriangles).__iter__() ]
     except Exception as e:
-        print( _("Erreur lors du décodage des triangles du fichier Ply, le ply ne provient pas de micmac. Erreur = ")+str(e))
-        return False
+        erreur=( _("Erreur lors du décodage des triangles du fichier Ply, le ply ne provient pas de micmac. Erreur = ")+str(e))
+        return erreur
     mnt["lesTriangles"] = lesTriangles
                 
     return mnt
