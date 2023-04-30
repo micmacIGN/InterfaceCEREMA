@@ -557,7 +557,7 @@
 # Version 5.60 publiée le 17/11/21
 # Modification du message lorsque internet n'est pas accessible
 # On ne lance schnaps que si Tapioca vient d'être exécuté
-# Messages "répertoires bin de MicMac" remplacés par "répertoire de MicMac"
+# Message "répertoires bin de MicMac" remplacé par "répertoire de MicMac"
 # Modification du menu édition afficher les nuages
 # correction tapas ligne 8351 : nom du répertoire calib incorrect (remplace , par +)
 # correction tapas ligne 8374 : "SH="+SH (remplace , par +)
@@ -753,6 +753,9 @@
 # fix : demandeMNTPourInfo du menu métier : remplace hautGauche par basGauche (plantait)
 # mise à jour de la traduction en anglais
 
+# a faire il reste 7 fois le mot maitresse dans les chaînes à traduire. Remplacer image maitresse par photo maitre
+#     (expression régulière pour recherche : \u005F.*tresse.*")
+# le pb est la traduction par ; femme amoureuse d'un homme marié (en chinois)  
 # voir ce qu'il faut faire de "META" dans les vieux chantiers (ligne 727)
 # à faire bouton pour supprimer masque 2D tarama
 # à faire : adapter l'aide, corriger l'orthographe,
@@ -2583,7 +2586,7 @@ class Interface(ttk.Frame):
     # Les raccourcis claviers : bind et fonctions avec le paramètre event
         # raccourcis clavier
         #la touche Alt suivie de la première lettre d'un menu ouvre le menu (si pas de confusion possible))
-        #le mot clé bind_all indique un ensemble d'évèenments successifs nécessaire pour activer le lien
+        #le mot clé bind_all indique un ensemble d'évènements successifs nécessaires pour activer le lien
         # bind_all("<Control-E><Control-F>", ... impose le ctrl e puis le ctrl f !
 ##Voici une liste de raccourcis clavier standard sous Windows:
 ##
@@ -3819,7 +3822,7 @@ class Interface(ttk.Frame):
         "distance
         "-->'''
        
-        self.miseAEchelleXml = _('''<Global> 
+        self.miseAEchelleXml = '''<Global> 
             <ParamApero> 
                <DicoLoc> 
                   <Symb>  AeroIn=-Arbitrary  </Symb> 
@@ -3985,7 +3988,7 @@ class Interface(ttk.Frame):
          	      </EtapeCompensation> 
          	</SectionCompensation> 
             </ParamApero> 
-         </Global>''' )            
+         </Global>'''            
 
     # Contenu Fichier xml DicoCamera
     
@@ -4509,11 +4512,13 @@ class Interface(ttk.Frame):
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
               _('''
+
 Version 5.73 24 avril 2023
-    - Ajout de touches 'raccourcis' pour les principales fonctions de l'interface
-    
-Version 5.72 6-20 avril 2023 :
-    - exécuter un pipeline dans le menu expert
+    - Ajout de touches 'raccourcis' pour les principales fonctions de l'interface''')+\
+              _('''
+
+Version 5.72 6 avril 2023 :
+    - exécuter un pipeline dans le menu expert    
     - diverses corrections, voir le script
 
 Version 5.71 20 mars 2023 :
@@ -5760,7 +5765,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 self.encadre(texte)
                 return
 
-        # s'il y a pipeline et pas delancement de MicMac (self.etatDuChantier == 2)
+        # s'il y a pipeline et que MicMac n'a pas été lancé (self.etatDuChantier == 2)
         # alors on n'affiche que les pipelines
         if self.dicoPipeline["fichier"] and self.etatDuChantier == 2:
             entete = _("Un pipeline remplace le traitement habituel par l'interface : ")+"\n\n"
@@ -6985,7 +6990,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                             # photosAvecChemin photosSansChemin
                                             # attention : self.extensionChoisie doit être positionné
 
-        liste=[x for x in photos if x[-3:].upper() in 'JPGJPEGPNGRAWBMPTIFTIFFGIF']        # on restreint aux seul format d'images accepté : JPG, PNG, BMP, TIF, RAW, GIF 
+        liste=[x for x in photos if x[-3:].upper() in 'JPGJPEGPNGRAWBMPTIFTIFFGIF']        # on restreint aux seuls formats d'images accepté : JPG, PNG, BMP, TIF, RAW, GIF 
         if len(liste)==0: return 0
         
         # Quel répertoire pour le chantier ?
@@ -7257,7 +7262,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.finCalibrationGPSOK()                                      # mise à jour des coordonnées des Points GPS
         self.finRepereOK()                                              # mise à jour des options de repérage (axe Ox, plan horizontal, distance
 
-        # contrôle puis Sauvegarde des nouvelles info :
+        # contrôle puis Sauvegarde des nouvelles informations :
 
         retour = self.controleOptions()
         
@@ -7708,7 +7713,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if not self.calibSeule.get():
             self.remettrePhotosCalibration()
 
-        # contrôle que les incertitudes sur les pointss GPS répondent bien à une suite de 3 nombre entiers
+        # contrôle que les incertitudes sur les points GPS répondent bien à une suite de 3 nombre entiers
 
         for Nom,X,Y,Z,actif,ident,incertitude in self.listePointsGPS:   # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
             if actif and not re.match("\d+\s+\d+\s+\d+\s*$",incertitude): # si actif et incertitude incorrecte :
@@ -7915,7 +7920,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         bulles = dict([(e,"") for e in self.photosPourCalibrationIntrinseque])
         self.choisirUnePhoto(self.photosAvecChemin,
                              _("Pour calibrer l'appareil photo"),
-                             _("Quelques photos, convergentes, d'angles écartés") + "\n" + _("les photos déjà choisies sont surlignées enn jaune"),
+                             _("Quelques photos, convergentes, d'angles écartés") + "\n" + _("les photos déjà choisies sont surlignées en jaune"),
                              boutonDeux=_("Supprimer"),
                              bulles=bulles)
         if self.fermerVisu:                                             # sortie par second bouton
@@ -9287,7 +9292,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         self.referentiel()  # va relancer Campari même si les paramètres sont les mêmes, amélioration possible, délicate.
         
-        # on ne peut poursuivre que si l'orientation a été trouvée, et si malt 'geomimage' possède une imge maître
+        # on ne peut poursuivre que si l'orientation a été trouvée, et si malt 'geomimage' possède une image maître
 
         if self.orientationKO():
             ligne = (_("Tapas n'a pas trouvé d'orientation.") + "\n"+
@@ -10226,7 +10231,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         # reconstitution des xml 
 
-        self.finOptionsOK(affiche=False)                                                             # mise à jours des fichiers xml liès aux options
+        self.finOptionsOK(affiche=False)                                                        # mise à jour des fichiers xml liès aux options
         self.miseAJourItem701_703()                                                             # met à jour les windgets de l'onglet Malt
 
     # ------------------ Tawny : après Malt, si self.modeCheckedMalt.get() = Ortho et self.tawny.get() = Vrai -----------------------
@@ -10301,7 +10306,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     def maillageTequila(self):  # tente un maillage sur un sous ensemble des photos, appel par menu outil 
         def choisirLesPhotosUtiles():
-            nb = 25   # on retient le nb photos utiles pour Tequile (s'il y en trop alors cela plante)
+            nb = 25   # on retient le nb photos utiles pour Tequila (s'il y en trop alors cela plante)
                     
             nbTotal = self.photosSansChemin.__len__()
             if nb>nbTotal:
@@ -17059,7 +17064,7 @@ def tracerProfil():
     plt.savefig("profil.png")
     plt.close()
     if os.path.exists("profil.png"):
-        interface.encadreEtTrace(_("Le profil est généré dans le fichier\nprofil.png\nsour le répertoire\n%s)" % interface.repTravail))
+        interface.encadreEtTrace(_("Le profil est généré dans le fichier\nprofil.png\nsous le répertoire\n%s)" % interface.repTravail))
         open_file("profil.png")
     else:
         interface.encadre(_("Le profil n'a pas été généré."))
