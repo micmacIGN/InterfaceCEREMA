@@ -2282,7 +2282,7 @@ class Interface(ttk.Frame):
         self.style.theme_use('clam')
         fenetreIcone(fenetre)
         fenetre.title(self.titreFenetre)                                                        # Nom de la fenêtre
-        fenetre.geometry("800x700+100+200")                                                     # fenetre.geometry("%dx%d%+d%+d" % (L,H,X,Y))
+        fenetre.geometry("800x700+50+100")                                                     # fenetre.geometry("%dx%d%+d%+d" % (L,H,X,Y))
 
         # construction des item du menu
 
@@ -2376,7 +2376,7 @@ class Interface(ttk.Frame):
 
         menuOutils = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearoff = 1, détachable
 
-        menuOutils.add_command(label=_("Nom et focale de l'appareil photo, dimension des photos"), command=self.outilAppareilPhoto)
+        menuOutils.add_command(label=_("Nom et focale de l'appareil photo, dimension des photos"), accelerator="Ctrl+5", command=self.outilAppareilPhoto)
         menuOutils.add_command(label=_("Toutes les focales et les noms des appareils photos"), command=self.toutesLesFocales)          
         menuOutils.add_command(label=_("Mettre à jour DicoCamera.xml"), command=self.miseAJourDicoCamera)        
         menuOutils.add_separator()
@@ -2504,12 +2504,14 @@ class Interface(ttk.Frame):
         menuParametres.add_command(label=_("Associer 'ffmpeg (décompacte les vidéos)"), command=self.repFfmpeg)                        ## ffmpeg : sous MicMac\binaire-aux si Windows, mais sinon ???
         menuParametres.add_command(label=_("Associer 'Meshlab' ou 'CloudCompare'"), command=self.repmeshlab)    ## meshlab
         menuParametres.add_separator()
-        menuParametres.add_command(label=_("Changer la langue")+" / change active language", command = self.modifierLangue)
+        menuParametres.add_command(label=_("Changer la langue")+" / change active language", command = self.modifierLangue)        
         menuParametres.add_separator() 
         menuParametres.add_command(label=_("Désactive/Active le tacky message de lancement..."),command=self.modifierTacky)    # supprime le logo cerema au lancement
         # supprime le contrôle de la présence d'une nouvelle version au lancement
         menuParametres.add_separator() 
         menuParametres.add_command(label=_("Désactive/Active la recherche d'une nouvelle version au lancement"),command=self.modifierGitHub)
+        menuParametres.add_separator()          
+        menuParametres.add_command(label=_("Raccourcis clavier"), command = self.raccourcisClavier)      
 
      
         # Aide
@@ -2517,6 +2519,7 @@ class Interface(ttk.Frame):
         menuAide = tkinter.Menu(mainMenu,tearoff = 0)                                           ## menu fils : menuFichier, par défaut tearoff = 1, détachable
         menuAide.add_command(label=_("Pour commencer..."), command=self.commencer)
         menuAide.add_command(label=_("2 mots sur la photogrammétrie..."), command=self.aidePhotogrammetrie)
+        
 
 
         menuAide.add_separator()
@@ -2555,7 +2558,7 @@ class Interface(ttk.Frame):
         menuAide.add_separator()                
         menuAide.add_command(label=_("Historique"), command=self.historiqueDesVersions)
         menuAide.add_separator()        
-        menuAide.add_command(label=_("A Propos"), command=self.aPropos) 
+        menuAide.add_command(label=_("A Propos"),  accelerator= "F1",command=self.aPropos) 
 
         # ajout des items dans le menu principal :
         
@@ -2637,10 +2640,12 @@ class Interface(ttk.Frame):
         fenetre.bind("<Control-T>",self.raccourciLectureTraceMicMac)
 
         fenetre.bind("<Alt-F4>",self.raccourciQuitter)
+        fenetre.bind("<F1>",self.raccourciAPropos)        
         fenetre.bind("<Control-KeyPress-1>",self.raccourciPly2Mnt)
         fenetre.bind("<Control-KeyPress-2>",self.raccourciCalculVolumeMnt)         
         fenetre.bind("<Control-KeyPress-3>",self.raccourciTracerProfil)
         fenetre.bind("<Control-KeyPress-4>",self.raccourciAfficheParam)
+        fenetre.bind("<Control-KeyPress-5>",self.raccourciOutilAppareilPhoto)
         
     def raccourciAfficheEtat(self,event):       # ctrl E
         self.afficheEtat()
@@ -2701,7 +2706,13 @@ class Interface(ttk.Frame):
 
     def raccourciAfficheApericloud(self,event): # Ctrl+Alt+n
         self.afficheApericloud()
-        
+
+    def raccourciAPropos(self,event):           # F1
+        self.aPropos()
+
+    def raccourciOutilAppareilPhoto(self,event):
+        self.outilAppareilPhoto()
+
     # initialise les valeurs par défaut au lancement de l'outil
         
     def initialiseConstantes(self):         # les constantes, mais pas que (ménage à faire) 
@@ -4132,7 +4143,7 @@ class Interface(ttk.Frame):
                        La suppression supprime tout le chantier sans mise à la corbeille.          
                        Un message demande confirmation avant la suppression définitive, sans récupération possible :          
                        Toute l'arborescence est supprimée, même les archives exportées.           
-                     - Quitter : quitte l'application, le chantier en cours est conservé et sera ouvert lors du prochain lancement.       ''') +self.aideFinDePage 
+                     - Quitter : quitte l'application, le chantier en cours est conservé et sera ouvert lors du prochain lancement.       ''')
 
 
         self.aide202 =_('''               Menu Edition :           
@@ -4171,7 +4182,7 @@ class Interface(ttk.Frame):
                     - Informations sur un nuage du chantier          : propose tous les nuages du chantier. Pour le nuage choisi affichage :          
                                                                        les limites du nuage en xyz, la surface et le volume,
                                                                        la densité de points en surface et en volume          
-                    - Informations sur un fichier Ply                : mêmes infos pour un ply choisi dans l'arborescence du disque''') +self.aideFinDePage         
+                    - Informations sur un fichier Ply                : mêmes infos pour un ply choisi dans l'arborescence du disque''')        
 
         self.aide203 =  _('''            Menu MicMac :           
                      - Options : choisir les options des modules Tapioca, Tapas, GCP (nuage non densifié   puis de densification Malt ou C3DC:            
@@ -4455,9 +4466,9 @@ class Interface(ttk.Frame):
         self.aide26 = self.aideEntete + self.aide206 + self.aideFinDePage   # Expert
         self.aide27 = self.aideEntete + self.aide207 + self.aideFinDePage   # Outils métiers
         self.aide28 = self.aideEntete + self.aide208 + self.aideFinDePage   # Paramètres
-        self.aide29 = self.aideEntete + self.aide209 + self.aideFinDePage   # Aide        
-        self.aide1  = self.aideEntete+self.aide201+self.aide202+self.aide203+self.aide204+self.aide205+\
-                      self.aide206+self.aide207+self.aide205+self.aide208+self.aide209+self.aideFinDePage
+        self.aide29 = self.aideEntete + self.aide209 + self.aideFinDePage   # Aide      
+        self.aide1  = self.aideEntete+self.aide201+"\n"+self.aide202+"\n"+self.aide203+"\n"+self.aide204+"\n"+self.aide205+"\n"+\
+                      self.aide206+"\n"+self.aide207+"\n"+self.aide205+"\n"+self.aide208+"\n"+self.aide209+"\n"+self.aideFinDePage
         
 
     # les prises de vue
@@ -5047,6 +5058,50 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             Le gestionnaire des tâches de Windows offre la possibilité de forcer la "fin de tâche".
 
             ''')+ self.aideFinDePage
+
+    # raccourcis clavier, # Ne pas ajouter de lignes : 40
+
+        self.aide30 = '''                -------------    \tLes raccourcis clavier
+                            
+                Ctrl E           \tAffiche l'état du chantier
+                Ctrl M           \tLance Micmac
+                Ctrl N           \tNouveau Chantier
+                Ctrl O           \tOuvrir un chantier
+                Ctrl P           \tModifie les options de lancement de MicMac
+                Ctrl R           \tRenomme le chantier en cours
+                Ctrl T           \tAffiche la trace synthétique
+                Ctrl Maj T       \tAffiche la trace complète
+                
+                Ctrl 1           \tCréation d'un MNT à partir d'un nuage PLY
+                Ctrl 2           \tCalcul le volume d'un MNT
+                Ctrl 3           \tAffiche le profil d'un MNT entre 2 points
+                Ctrl 4           \tAffiche les paramètres d'AperoDeDenis
+                Ctrl 5           \tNom de l'appareil, focale et dimensions des photos
+                
+                Ctrl Alt D       \tOuvre le nuage Dense
+                Ctrl Alt G       \tVérifie la présence d'une nouvelle version sur GitHub
+                Ctrl Alt L       \tConsulter le Log de MicMac : mm3D-LogFile.txt               
+                Ctrl Alt M       \tLance un pipeline MicMac
+                Ctrl Alt N       \tOuvre le nuage Non dense                
+                Ctrl Alt P       \tExécute une ligne Python
+                Ctrl Alt S       \tExécute une commande Système
+                
+                F1               \tA propos
+                Alt F4           \tQuitter l'application
+
+                -------------    \tDans les Traces et les Aides
+
+                Alt F            \tRecherche une chaîne de caractères
+                Alt Maj F        \tSurligne toutes les occurences d'une chaîne
+                F3               \tOccurence suivante de la chaîne
+                Ctrl A           \tTout sélectionner
+                Ctrl C           \tCopier la sélection
+
+                -------------    \tDans une liste déroulante de photos à choisir
+
+                Saisir le numéro de la photo au clavier; touche retour arrière pour annuler
+		
+            '''	# Ne pas ajouter de lignes : 40
         
     # fichier pour modifier la clé de registre de saisiemasqQT : par défaut, l'origine est le centre, ce qui rend invisible les nuages en EPSG.
     # ce fichier remet le centre au barycentre, il permettrait de modifier l'épaisseur des traits, la taille des points par défaut
@@ -12650,6 +12705,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     def aideTrucsEtAstuces(self):
         self.encadre (self.aide11,50,aligne='left')
+
+    def raccourcisClavier(self):
+        self.encadre(self.aide30,aligne='left')
                 
     ################################## Le menu FICHIER : nouveau, Ouverture, SAUVEGARDE ET RESTAURATION, PARAMETRES, outils divers ###########################################################       
 
@@ -17741,7 +17799,120 @@ def parseFichierHtml(fichier,tag):
     parser=MyHTMLParser(tag)
     parser.feed(str(html))
     return parser.valeur
-   
+
+################################## Barre de progression
+
+# Progress bar widget
+##progress = Progressbar(root, orient = HORIZONTAL,
+##              length = 100, mode = 'determinate')
+##  
+### Function responsible for the updation
+### of the progress bar value
+##def bar():
+##    import time
+##    progress['value'] = 20
+##    root.update_idletasks()
+##    time.sleep(1)
+##  
+##    progress['value'] = 40
+##    root.update_idletasks()
+##    time.sleep(1)
+##  
+##    progress['value'] = 50
+##    root.update_idletasks()
+##    time.sleep(1)
+##  
+##    progress['value'] = 60
+##    root.update_idletasks()
+##    time.sleep(1)
+##  
+##    progress['value'] = 80
+##    root.update_idletasks()
+##    time.sleep(1)
+##    progress['value'] = 100
+##  
+##progress.pack(pady = 10)
+##  
+# This button will initialize
+# the progress bar
+##Button(root, text = 'Start', command = bar).pack(pady = 10)
+##  
+### infinite loop
+##mainloop()
+##Production:
+
+ 
+# progresssbar mode indéterminé
+
+# creating tkinter window
+def barre():
+    # Function responsible for the updation
+# of the progress bar value
+    def bar():
+        #global progress,root
+        while True:
+            progress['value'] = 20
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 40
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 50
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 60
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 80
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 100
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 80
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 60
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 50
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 40
+            root.update_idletasks()
+            time.sleep(0.5)
+          
+            progress['value'] = 20
+            root.update_idletasks()
+            time.sleep(0.5)
+            progress['value'] = 0
+      
+    # Progress bar widget
+    root = Tk()
+
+    progress = ttk.Progressbar(root, orient = HORIZONTAL,
+                length = 100, mode = 'indeterminate')
+
+    progress.pack(pady = 10)
+    bar()
+    # This button will initialize
+    # the progress bar
+    Button(root, text = 'Start', command = bar).pack(pady = 10)
+      
+    # infinite loop
+    mainloop()    
+  
+
+      
 
 ################################## construire le paramètre Offs pour Nuage2Ply à partir de l'orientation courante:
 
