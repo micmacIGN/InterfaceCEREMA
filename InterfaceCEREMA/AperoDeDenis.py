@@ -752,6 +752,8 @@
 # fix une absence de réponse si on demande des infos sur un fichier ply qui n'est pas un ply
 # fix : demandeMNTPourInfo du menu métier : remplace hautGauche par basGauche (plantait)
 # mise à jour de la traduction en anglais
+# réduction de 25% de la taille du msi : suppression de cv2, d'un bout de scipy
+# question au lieu d'arrêt brutal si la mosaïque tarama ne correspond pas au nuage de point pour tracer un profil
 
 # a faire il reste 7 fois le mot maitresse dans les chaînes à traduire. Remplacer image maitresse par photo maitre
 #     (expression régulière pour recherche : \u005F.*tresse.*")
@@ -930,10 +932,9 @@ import atexit
 import re
 from random import *
 from scipy.interpolate import griddata      # Pour l'interpolation sur une grille
-from numpy import mgrid
-import numpy
 import matplotlib.pyplot as plt
 import pyautogui
+from numpy import mgrid #ne pas supprimer (bien que mgrid ne soit plus appelé, numpy sert à scipy)
 
 def foreach_window(hwnd, lParam):
     if IsWindowVisible(hwnd):
@@ -955,7 +956,7 @@ def killMm3d(): # https://stackoverflow.com/questions/19447603/how-to-kill-a-pyt
             p = subprocess.Popen("tskill mm3d /V", # tasklist pour avoir la liste des processus
                                   stdin=subprocess.PIPE,
                                   shell=True, #pour ne pas ouvrir la console si exe
-                                 universal_newlines=True) # pour communiquer en string et pas en binaire
+                                  universal_newlines=True) # pour communiquer en string et pas en binaire
             p.communicate(input='\n') # pour débloquer si besoin
         except Exception as e:
             print("erreur tskill mm3d: ",str(e))            
@@ -1098,15 +1099,15 @@ def DMS2DD(dms):       # conversion degré minute seconde en degrés décimaux. 
 def conversionWGS84enRGF93(latitude,longitude):  
     pi = math.pi
     # définition des constantes
-    c= 11754255.426096  #constante de la projection
-    e= 0.0818191910428158  #première excentricité de l'ellipsoïde
-    n= 0.725607765053267  #exposant de la projection
-    xs= 700000  # coordonnées en projection du pôle
-    ys= 12655612.049876  #coordonnées en projection du pôle
+    c= 11754255.426096      # constante de la projection
+    e= 0.0818191910428158   # première excentricité de l'ellipsoïde
+    n= 0.725607765053267    # exposant de la projection
+    xs= 700000              # coordonnées en projection du pôle
+    ys= 12655612.049876     # coordonnées en projection du pôle
 
     # pré-calculs
-    lat_rad= (latitude/180)*pi  #latitude en rad
-    lat_iso= math.atanh(math.sin(lat_rad))-e*math.atanh(e*math.sin(lat_rad))  #latitude isométrique
+    lat_rad= (latitude/180)*pi  # latitude en rad
+    lat_iso= math.atanh(math.sin(lat_rad))-e*math.atanh(e*math.sin(lat_rad))  # latitude isométrique
 
     #calcul
     x= ((c*math.exp(-n*(lat_iso)))*math.sin(n*(longitude-3)/180*pi)+xs)
@@ -2282,7 +2283,7 @@ class Interface(ttk.Frame):
         self.style.theme_use('clam')
         fenetreIcone(fenetre)
         fenetre.title(self.titreFenetre)                                                        # Nom de la fenêtre
-        fenetre.geometry("800x700+50+100")                                                     # fenetre.geometry("%dx%d%+d%+d" % (L,H,X,Y))
+        fenetre.geometry("800x700+20+20")                                                     # fenetre.geometry("%dx%d%+d%+d" % (L,H,X,Y))
 
         # construction des item du menu
 
@@ -2511,7 +2512,7 @@ class Interface(ttk.Frame):
         menuParametres.add_separator() 
         menuParametres.add_command(label=_("Désactive/Active la recherche d'une nouvelle version au lancement"),command=self.modifierGitHub)
         menuParametres.add_separator()          
-        menuParametres.add_command(label=_("Raccourcis clavier"), command = self.raccourcisClavier)      
+        menuParametres.add_command(label=_("Raccourcis clavier"), accelerator="Ctrl+6", command = self.raccourcisClavier)      
 
      
         # Aide
@@ -2646,6 +2647,7 @@ class Interface(ttk.Frame):
         fenetre.bind("<Control-KeyPress-3>",self.raccourciTracerProfil)
         fenetre.bind("<Control-KeyPress-4>",self.raccourciAfficheParam)
         fenetre.bind("<Control-KeyPress-5>",self.raccourciOutilAppareilPhoto)
+        fenetre.bind("<Control-KeyPress-6>",self.raccourciRaccourcisClavier)
         
     def raccourciAfficheEtat(self,event):       # ctrl E
         self.afficheEtat()
@@ -2712,6 +2714,9 @@ class Interface(ttk.Frame):
 
     def raccourciOutilAppareilPhoto(self,event):
         self.outilAppareilPhoto()
+
+    def raccourciRaccourcisClavier(self,event):
+        self.raccourcisClavier()
 
     # initialise les valeurs par défaut au lancement de l'outil
         
@@ -5077,6 +5082,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 Ctrl 3           \tAffiche le profil d'un MNT entre 2 points
                 Ctrl 4           \tAffiche les paramètres d'AperoDeDenis
                 Ctrl 5           \tNom de l'appareil, focale et dimensions des photos
+                Ctrl 6           \tNom de l'appareil, focale et dimensions des photos
                 
                 Ctrl Alt D       \tOuvre le nuage Dense
                 Ctrl Alt G       \tVérifie la présence d'une nouvelle version sur GitHub
@@ -5100,8 +5106,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 -------------    \tDans une liste déroulante de photos à choisir
 
                 Saisir le numéro de la photo au clavier; touche retour arrière pour annuler
-		
-            '''	# Ne pas ajouter de lignes : 40
+                '''	# Ne pas ajouter de lignes : 40
         
     # fichier pour modifier la clé de registre de saisiemasqQT : par défaut, l'origine est le centre, ce qui rend invisible les nuages en EPSG.
     # ce fichier remet le centre au barycentre, il permettrait de modifier l'épaisseur des traits, la taille des points par défaut
@@ -14841,7 +14846,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         mnt = self.selectionPhotosAvecChemin[0]        
         mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData = self.infoSurMNT(mnt)
         if affiche:          
-            texte = ("MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s\nlargeur = %s\nhauteur %s" %
+            texte = ("MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s\nlargeur = %s\nlongueur = %s" %
             (mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur))
             self.encadre(texte)
         else:
@@ -15315,12 +15320,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     #@decorateTry   
     def toMnt(self,typeFichier):
-##        
-##        # cette fonction n'est pas disponible après cx-freese : numpy ne peut pas être chargé par cx-freeze 
-##
-##        if ".exe" in sys.argv[0]:
-##            self.encadre(_("La construction des MNT doit être effectuée à partir du script python, impossible à partir de l'exécutable."))
-##            return
+
         def controleFichier():
             if len(fichierPourMnt)==0:
                 return False
@@ -15394,19 +15394,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     ####### Ecrire un mnt
     #@decorateTry
     def ecrireMNTPlyNuage(self,fichierPourMnt):
-        
-##        def mggrille(min_x,max_x,lePas, min_y,max_y): # ne sert pas : pour remplacer mgrid de numpy, afin de se passer de numpy
-##            nb_x=int((max_x-min_x)/lePas)+1
-##            ix = range(nb_x)
-##            gx=[min_x+e*lePas for e in ix]
-##            nb_y=int((max_y-min_y)/lePas)+1
-##            iy = range(nb_y)
-##            gy=[min_y+e*lePas for e in iy]
-##            grid_x = [ [e]*nb_y for e in gx]
-##            grid_y = [gy]*nb_x
-##            return grid_x,grid_y
-
-
         def messageFin():
 
             message = "\n\n "+self.debutEcrireMnt
@@ -15533,10 +15520,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return semisDePoints
                 
 ######################## le traitement :
-        print(heure()+" : début extraction semis de point à partir du ply") 
         semisDePoints = extraireLesXyz(fichierPourMnt) # récupère le semis de points x y z dans l e fichier asc ou ply
-        if not isinstance(semisDePoints,dict): return abandon(_("Fichier ply incorrect"))
-        print(heure()+" : semis de point constitué, on demande le pas")        
+        if not isinstance(semisDePoints,dict): return abandon(_("Fichier ply incorrect"))        
         if "surface" not in semisDePoints: return      
         lePas = demandeLePas(semisDePoints["surface"],semisDePoints["nb"])
         if prealableKO(): return
@@ -15623,7 +15608,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return "\n".join(tableArrondie) # ajout des sauts de ligne        
 
         def calculDesZ(mesh):
-            # création tableau vide Numpy initialisé à -9999 :
+            # création tableau vide de type Numpy initialisé à -9999 :
             z=  numpy.full((mesh["jMax"],mesh["iMax"]), -9999, dtype=float)
             pool = cycle(mesh["lesTriangles"])
             t = next(pool)
@@ -16252,10 +16237,18 @@ def extraireLesXyzDuAsc(fichierASC):# fichier texte semis de points 3D comportan
     mnt["nb"]     = len(lesXyz)
     mnt["lesXyz"] = lesXyz
     mnt["surface"]= (mnt["max_x"]-mnt["min_x"])*(mnt["max_y"]-mnt["min_y"])
-
-
     return mnt
 
+def mgrille(min_x,max_x,lePas, min_y,max_y): # pour remplacer mgrid de numpy, afin de se passer de numpy !!!!    
+    nb_x=int((max_x-min_x)/lePas)+1
+    ix = range(nb_x)
+    gx=[min_x+e*lePas for e in ix]
+    nb_y=int((max_y-min_y)/lePas)+1
+    iy = range(nb_y)
+    gy=[min_y+e*lePas for e in iy]
+    grid_x = [ [e]*nb_y for e in gx]
+    grid_y = [gy]*nb_x
+    return grid_x,grid_y
     
 def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; LesXYZ : liste de tuples de la forme ((x,y),z)    
     # création de la grille régulière : générer un maillage avec un pas régulier,
@@ -16270,19 +16263,15 @@ def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; Les
     minY = round(semisDePoints["min_y"],4)-deltaY
     maxY = round(semisDePoints["max_y"],4)-deltaY
     
-    #################
-    print(heure()+" :  le pas est donné, début mgrid, pour la grille d'accueil , pas : %s" % (lePas))
-    grid_x, grid_y = mgrid[minX:maxX+lePas:lePas, #constitue la grille demandée de minx, miny à maxX,maxY, au pas de lePas
-                           minY:maxY+lePas:lePas]
-    print(heure()+" : la grille d'accueil est constituée, début du calcul des z par griddata")
+    #################    utilisation de mgrille au lieu de numpy.mgrid
+    grid_x, grid_y = mgrille(minX,maxX,lePas, # constitue la grille demandée de minx, miny à maxX,maxY, au pas de lePas
+                           minY,maxY)
     grid  = griddata( [(x-deltaX,y-deltaY) for x,y,z in semisDePoints["lesXyz"]],
                       [z  for x,y,z in semisDePoints["lesXyz"]],
                       (grid_x, grid_y),
                       method='linear',          # alternative : nearest ou linear ou cubic mais nearest ne fonctionne pas !!!!
-                      fill_value="-9999")
-    print(heure()+" : la grille est abondée par griddata")                      
+                      fill_value="-9999")                      
     semisDePoints["mnt"]=grid
-    print(heure()+" semis de point ok")
     return semisDePoints
 ## Pour insérer une image, ou un logo, dans un script, utilisable ensuite par Tkinter : (effectuer les points 2 et 3)
 ## 1) Enregistrer l'image au format GIF (sinon il faudra utiliser PIL) voir (les images dans http://tkinter.fdex.eu/doc/sa.html#images)
@@ -16323,7 +16312,7 @@ def infoVolume():
 @decorateTry
 def calculVolumeMnt():
     if len(glob.glob(os.path.join(interface.repTravail,"*.ASC")))==0:
-        interface.encadre(_("Absence de MNT."))
+        interface.encadre(_("Absence de MNT sous le répertoire du chantier."))
         return     
     interface.menageEcran()
     fond = tkinter.filedialog.askopenfilename( initialdir="",                                                 
@@ -16479,7 +16468,7 @@ def calculVolumeMnt():
 
 def calculVolumeEntre2Mnt():
     if len(glob.glob(os.path.join(interface.repTravail,"*.ASC")))==0:
-        interface.encadre(_("Absence de MNT."))
+        interface.encadre(_("Absence de MNT sous le répertoire du chantier."))
         return     
     def lectureInfoFichiers(fond,dessus):
         
@@ -17054,7 +17043,7 @@ def conversionMosaiqueTIFVersJPG():
 def tracerProfil():              
     # contrôle mosaïque TARAMA et 2 points début, fin
     if len(glob.glob(os.path.join(interface.repTravail,"*.ASC")))==0:
-        interface.encadre(_("Absence de MNT pour tracer le profil."))
+        interface.encadre(_("Absence de MNT sous le répertoire du chantier."))
         return
     conversionMosaiqueTIFVersJPG()
     mosaique = interface.mosaiqueTaramaJPG
@@ -17096,15 +17085,16 @@ def tracerProfil():
     pMnt = ncols/nrows # proportion MNT
     rapport = pMos/pMnt
     if abs(rapport-1)>=0.15:
-        interface.encadreEtTrace(_("La mosaïque et le MNT ont des proportions trop différentes pour établir un profil correct.")+"\n"+"\n"+
+        message =(_("La mosaïque et le MNT ont des proportions trop différentes pour établir un profil correct.")+"\n"+"\n"+
                           _("rapport largeur sur hauteur de la mosaïque : %.2f, du MNT %s : %.2f") % (pMos,nomMNT,pMnt)+"\n"+"\n"+
                           _("Ne pas utiliser de masque")+"\n"+
                           _("Ne pas utiliser de référentiel géographique")+"\n"+
                           _("Ne pas utiliser de mise à l'échelle contrariant l'orientation par défaut")+"\n"+"\n"+
                           _("Essayer avec un autre MNT"))
-        return
-                          
-    
+        titre=_("Avertissement mosaïque et nuage différents : Continuer ou renoncer")
+        if MyDialog_OK_KO(fenetre,titre=titre,texte=message,b1="Continuer",b2="Renoncer").retour==False:
+            return
+                             
     x1,y1 = gauche+largeur*positionRelative[0][0],bas+hauteur*(1-positionRelative[0][1])
     x2,y2 = gauche+largeur*positionRelative[1][0],bas+hauteur*(1-positionRelative[1][1])
     # recherche des points (x,y) sur la ligne du profil :
@@ -17218,7 +17208,7 @@ def lireMNTIGN(mntIgn):
 
 def afficheMNTIGN():
     if len(glob.glob(os.path.join(interface.repTravail,"*.ASC")))==0:
-        interface.encadre(_("Absence de MNT."))
+        interface.encadre(_("Absence de MNT sous le répertoire du chantier."))
         return    
     mntIgn = demandeFichier(types=[("asc","*.ASC"),(_("Tous"),"*")])
     if not mntIgn: return abandon()
