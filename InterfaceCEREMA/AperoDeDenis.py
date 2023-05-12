@@ -754,7 +754,9 @@
 # mise à jour de la traduction en anglais
 # réduction de 25% de la taille du msi : suppression de cv2, d'un bout de scipy
 # question au lieu d'arrêt brutal si la mosaïque tarama ne correspond pas au nuage de point pour tracer un profil
+# ajout d'une barre d'outil
 
+# éviter les doublons "def infobulle"
 # a faire il reste 7 fois le mot maitresse dans les chaînes à traduire. Remplacer image maitresse par photo maitre
 #     (expression régulière pour recherche : \u005F.*tresse.*")
 # le pb est la traduction par ; femme amoureuse d'un homme marié (en chinois)  
@@ -1146,6 +1148,7 @@ flecheDroite = 'R0lGODlhJAAkAIcAMSxWjKS2zFSCtDxurNze3FR2pHyStER6tCxipMTGzExunGSS
 
 repertoire_script = os.path.dirname(sys.argv[0])
 executableAperoDeDenis = sys.argv[0]
+repertoireApero=os.path.dirname(executableAperoDeDenis) # pour retrouver le fichier icône (sera plus tard intégré au script)
 if not os.path.isdir(os.path.join(repertoire_script,"locale")):    
     repertoire_script=os.path.realpath(os.path.abspath(os.path.split(inspect.getfile( inspect.currentframe() ))[0]))
 if not os.path.isdir(os.path.join(repertoire_script,"locale")):
@@ -2397,7 +2400,7 @@ class Interface(ttk.Frame):
         menuOutils.add_command(label=_("Modifier les options par défaut"), command=self.majOptionsParDefaut)
         menuOutils.add_separator()
         menuOutils.add_command(label=_("Vérifie la présence d'une nouvelle version sur GitHub"), accelerator="Ctrl+G", command=self.verifVersion)    ## meshlab
-
+        
         # mode Expert
         
         def updatePlusieursAppareilsPhotos(): # si nouvel item changer le premier paramètre = numéro d'ordre dans la liste
@@ -2513,7 +2516,7 @@ class Interface(ttk.Frame):
         menuParametres.add_command(label=_("Désactive/Active la recherche d'une nouvelle version au lancement"),command=self.modifierGitHub)
         menuParametres.add_separator()          
         menuParametres.add_command(label=_("Raccourcis clavier"), accelerator="Ctrl+6", command = self.raccourcisClavier)      
-
+        menuParametres.add_command(label=_("Afficher la barre d'outils"), command = self.afficherBarreOutil)      
      
         # Aide
         
@@ -2521,8 +2524,6 @@ class Interface(ttk.Frame):
         menuAide.add_command(label=_("Pour commencer..."), command=self.commencer)
         menuAide.add_command(label=_("2 mots sur la photogrammétrie..."), command=self.aidePhotogrammetrie)
         
-
-
         menuAide.add_separator()
 
         # sous menu du menu Aide : aide sur les menus :
@@ -2544,7 +2545,7 @@ class Interface(ttk.Frame):
         menuAide.add_separator()
         
 
-        #menuAide.add_command(label=_("Aide sur les menus"), command=self.aide)
+        # menuAide.add_command(label=_("Aide sur les menus"), command=self.aide)
         menuAideConseils = tkinter.Menu(menuAide,tearoff = 0)
         menuAideConseils.add_command(label=_("Quelques conseils sur les prises de vue"), command=self.conseilsPhotos)
         menuAideConseils.add_command(label=_("Quelques conseils sur le choix des options de MicMac"), command=self.conseilsOptions)
@@ -2555,7 +2556,7 @@ class Interface(ttk.Frame):
         
         menuAide.add_cascade(label = _("Quelques conseils ou en cas de problème"),menu=menuAideConseils)
         menuAide.add_separator()
-        menuAide.add_cascade(label = _("Trucs et Astuces"),command=self.aideTrucsEtAstuces)
+        menuAide.add_command(label = _("Trucs et Astuces"),command=self.aideTrucsEtAstuces)
         menuAide.add_separator()                
         menuAide.add_command(label=_("Historique"), command=self.historiqueDesVersions)
         menuAide.add_separator()        
@@ -2576,6 +2577,11 @@ class Interface(ttk.Frame):
         # affichage du menu principal dans la fenêtre
 
         fenetre.config(menu = mainMenu)       
+
+        # affichage des icônes des barres d'outils, le menu doit être accessible
+        
+        self.mainMenu=mainMenu
+        self.afficherBarreOutil(choixAFaire=False) # affiche les barres habituelles
 
         # Fonction à exécuter lors de la sortie du programme
 
@@ -2718,10 +2724,226 @@ class Interface(ttk.Frame):
     def raccourciRaccourcisClavier(self,event):
         self.raccourcisClavier()
 
-    # initialise les valeurs par défaut au lancement de l'outil
+    ########### définir la barre d'outils
+
+    def afficherBarreOutil(self,choixAFaire=True):  # choixAFaire=False au lancement de l'appli 
+
+        def initialisationsBarre(self):
+
+            self.lesOutils=list()       # liste vide des items de menu
+            self.icone = list()         # les icones associées en format png
+            self.python_image = list()  # la version tkinter des icones  
+            self.toolbarFichier = list()# les barres d'outil
+            self.indexBarre = -1        # index de la barre
+            self.xMax=2                 # pour la prochaine barre
+            self.iconeSize = 34         # coté de l'icone en pixels
+            # titres des barres d'outils = item du menu principal (que je ne reussis pas à extraire du menu !!!) 
+            self.lesTitres=[_("Fichier"),_("Edition"),"MicMac",_("Vidéo"),_("Outils"),_("Expert"), _("Outils métier"),_("Paramètres"),_("Aide")]
+
+        def on_resize(event):
+            # Calculer la nouvelle taille des icônes en fonction de la largeur de la barre d'outils
+            barre=event.widget        
+            if barre.winfo_class()=="Toplevel":
+                g=barre.winfo_geometry()
+                id=barre.title()
+                self.barreGeometry[id]=g
+        
+        def nouvelleBarre(self):    # une barre d'outils par item de menu principal
+            self.indexBarre+=1          
+            if self.lesTitres[self.indexBarre] in self.barresSelection:
+                self.toolbarFichier.append( tkinter.Toplevel(fenetre,relief='sunken',bd=1))
+                self.toolbarFichier[-1].title(self.lesTitres[self.indexBarre])
+                self.toolbarFichier[-1].transient(fenetre)
+                self.toolbarFichier[-1].bind('<Configure>', on_resize)
+                fenetreIcone(self.toolbarFichier[-1])
+                self.xMax=2   # pour la prochaine barre
+                return True
+            return False
+
+        def on_button_press(event):
+            # Stocke les coordonnées du point de départ de la souris
+            button=event.widget
+            button._drag_start_x = event.x
+            button._drag_start_y = event.y
+
+        def on_button_release(event):
+            button=event.widget            
+            # Réinitialise les coordonnées de départ de la souris
+            button._drag_start_x = None
+            button._drag_start_y = None
+            
+        def on_motion(event):
+            button=event.widget
+            # Calcule les nouvelles coordonnées du bouton
+            if button._drag_start_x is not None and button._drag_start_y is not None:
+                x = button.winfo_x() - button._drag_start_x + event.x
+                y = button.winfo_y() - button._drag_start_y + event.y
+                button.place(x=x, y=y)
+                id=button.cget("text")
+                self.iconePlace[id]=(x,y)   # identifiant : texte du bouton
+                
+                
+##        # Calculer la nouvelle taille des icônes en fonction de la largeur de la barre d'outils
+##            toolbar_width = self.toolbar.winfo_width()
+##            icon_size = toolbar_width // len(self.icons)
+##
+##        # Adapter la taille de chaque icône
+##        for icon in self.icons:
+##            icon.configure(width=icon_size, height=icon_size)            
+            
+        def detruireLesBarres(self):
+            for e in self.lesOutils:
+                try: e[5].destroy()  # suppression des boutons
+                except: pass
+            for e in self.toolbarFichier:
+                try: e.destroy()
+                except: pass
+        
+        def ajoutMenuPremierNiveau(self,menu):  # crée la liste de tous les items de menu de premier niveau
+            for e in menu.winfo_children():     # on balaie les commandes du menu principal ! Fichier, édition,...
+                self.j=0                        # on commence une nouvelle barre d'outils position verticale, inutie
+                self.k=0                        # position horizontale (x)
+                for self.i in range(e.index("end")+1):   # item de menu, i : position verticale, y compris separator, cascade                   
+                    if e.type(self.i)=="command":
+                        ajoutItem(self,e)
+
+
+        def ajoutMenuSecondNiveau(self,menu):   # crée la liste de tous les items de menu de premier niveau
+            for e in menu.winfo_children():     # on balaie les commandes du menu principal
+                self.j=0                        # on commence une nouvelle barre d'outils
+                self.k=0                        # position horizontale (x)
+                for self.m in range(e.index("end")+1):   # item de menu déroulant (nouveau, ouvrir..) i : m  = position verticale, y compris separator, cascade                                          
+                    if e.type(self.m)=="cascade":
+                        nom = e.entrycget(self.m,"label").title()    # libellé de l'item
+                        self.lesTitres.append(nom)
+                        for e1 in e.winfo_children():       # e1 : un élément du menu déroulant
+                            rang=1+e1.index("end")
+                            self.k=0
+                            for self.i in range(rang):   # item de menu, i : position verticale, y compris separator, cascade
+                                if e1.type(self.i)=="command":
+                                    ajoutItem(self,e1)
+                                
+        def ajoutItem(self,e):
+            command=str(e.entrycget(self.i,"command"))
+            label=e.entrycget(self.i,"label")
+            commande=command[13:]                  
+            if commande in dir(Interface):      #   methode de l'interface ? Si oui on ajoute self.
+                    commande="self."+commande
+            elif commande not in globals():     # si absent de l'espace de nom global on saute.
+                return                          # si commande globale on conserve le nom
+            if commande in [f[2] for f in self.lesOutils] : return      # pour éviter les doublons
+            item=[_(label),"search.gif",commande,self.k,self.j] # label, icone, fonction, position horizontale, position verticale
+            self.lesOutils.append(item)
+            self.k+=1
+
+        def creationDesBarres(self):
+            numero = 0
+            for i,e in enumerate(self.lesOutils):
+                if e[3]==0 and e[4]==0:             # l'item correspond à une nouvelle barre 'sinon : bouton)
+                    if nouvelleBarre(self)==False:  # la barre est-elle sélectionnée par l'utilisateur ? Non, on saute à la barre suivante
+                        attendreBarreSuivante = True
+                        continue
+                    else:                           # barre sélectionnée : on va la créer
+                        fenetre.state('zoomed')     # aggrandissement de la fenêtre : faut de la place pour les barres
+                        numero+=1                   # numéro suivant
+                        attendreBarreSuivante = False
+                if attendreBarreSuivante: continue  # c'est un bouton d'une barre non sélectionnée
+                
+                icone=os.path.join(repertoireApero,e[1])
+                self.icone.append(Image.open(icone))
+                self.python_image.append(ImageTk.PhotoImage(self.icone[-1]))    # remarque : l'icône n'apparaît que tant que cette variable existe
+                # création du bouton icone et de ses attributs
+                b=ttk.Button(self.toolbarFichier[-1], text=e[0], command = eval(e[2]),image = self.python_image[-1])
+                b.place(x=34*e[3],y=34*e[4])
+                b.bind("<ButtonPress-3>", on_button_press)
+                b.bind("<ButtonRelease-3>", on_button_release)
+                b.bind("<B3-Motion>", on_motion)
+                b.bind("<Enter>",self.infoBulleBarre) # self.infoBulle(_("valide + photo suivante")))
+                b.bind("<Leave>",self.infoClear)
+                e.append(b)
+                # on allonge la barre d'outil pour que le bouton y trouve place
+                self.xMax=max(self.xMax,e[3])
+                geometry="%dx%d+%d+%d" %(40+(self.xMax*self.iconeSize),40,0,70*numero)  # (L,H,X,Y)
+                self.toolbarFichier[-1].geometry(geometry)                
+
+        def choisirBarresOutils(self):
+            def show_selected_options():
+                self.barresSelection = [option for i, option in enumerate(self.lesTitres) if self.outilsSelection[i].get()]
+                self.choix.destroy()
+            def quitterChoix():
+                self.barresSelection=list()
+                self.choix.destroy()
+            self.choix= tkinter.Toplevel(fenetre,relief='sunken',bd=1)
+            self.choix.title("Choisir les barres d'outils à afficher")
+            self.choix.transient(fenetre)
+            fenetreIcone(self.choix)
+            self.outilsSelection = [tkinter.IntVar() for option in self.lesTitres]
+            m=_("Choisir les barres à afficher\nVous pourrez les personnaliser : voir l'aide")
+            message = ttk.Label(self.choix,text=m)                  # message entête
+            message.grid()
+            
+            # Ajouter une case à cocher pour chaque option
+            for i, option in enumerate(self.lesTitres):
+                checkbox = tkinter.Checkbutton(self.choix, text=option, variable=self.outilsSelection[i])
+                checkbox.grid(row=i+3, column=0, sticky="w")
+
+            # Ajouter un bouton pour afficher les options sélectionnées
+            show_button = tkinter.Button(self.choix, text="Valider", command=show_selected_options)
+            show_button.grid(row=len(self.lesTitres)+3,column=0)
+            show_buttonA = tkinter.Button(self.choix, text="Abandon",command=quitterChoix)        
+            show_buttonA.grid(row=4+len(self.lesTitres), column=0)
+            show_buttonB = tkinter.Button(self.choix, text="Aide",command=self.aideBarresOutils)        
+            show_buttonB.grid(row=5+len(self.lesTitres), column=0)
+            fenetre.wait_window(self.choix)
+
+        def positionnerLesWidgets(self,b,i):
+            self.barreGeometry=dict()
+            self.iconePlace=dict()            
+            try:
+                for barre in b:
+                    geometrie = b[barre]
+                    for e in self.toolbarFichier:
+                        if e.winfo_class()=="Toplevel": # c'est un toplevel
+                            if e.title()==barre:        # qui a le bon titre
+                                 e.geometry(geometrie)  # affectation de la géométrie
+                                 self.barreGeometry[barre]=geometrie
+                for icone in i:
+                    place = i[icone]
+                    for e in self.lesOutils:
+                        
+                        if e[0]==icone:
+                            print("e=",e,"icone=",icone)
+                            x,y=place
+                            if type(e[-1])!=type(0):
+                                e[-1].place(x=x,y=y)         # affectation de la position
+                                print (e[-1])
+                                self.iconePlace[icone]=(x,y)   # identifiant : texte du bouton
+            except Exception as e:
+                print("erreur dans le positionnement des widgets",str(e))
+
+            
+        # self.lesOutils : liste créée à partir du menu principal par extraction des libellés et des commandes
+        # liste de listes (libellé, icône, fonction,position relative x,y, bouton ajouté plus tard)
+
+        detruireLesBarres(self)
+        initialisationsBarre(self)        
+        ajoutMenuPremierNiveau(self,self.mainMenu)     # création d'une liste de tous les items de menu  de premier niveau                 
+        ajoutMenuSecondNiveau(self,self.mainMenu)
+        
+        # les barres d'outils avec les boutons
+        if choixAFaire:
+            choisirBarresOutils(self)
+            creationDesBarres(self)
+        else:
+            b,i=dict(self.barreGeometry),dict(self.iconePlace)
+            creationDesBarres(self)
+            positionnerLesWidgets(self,b,i)
+        
+        
+    # initialise les valeurs par défaut au lancement de l'interface
         
     def initialiseConstantes(self):         # les constantes, mais pas que (ménage à faire) 
-
+ 
         # Pour suivre les nouvelles versions
 
         self.versionInternetAncienne    =   str()       # Dernière version lue sur GitHub (ne sert plus)
@@ -2856,7 +3078,7 @@ class Interface(ttk.Frame):
         self.ending_index = "1.0"
         self.suite201 = -1
         self.texte201.pack()
-
+        
         # Les variables, Widgets et options de la boite à onglet :
 
         # Pour tapioca
@@ -4320,7 +4542,9 @@ class Interface(ttk.Frame):
                        Les paramètres concernés sont ceux des onglets du menu MicMac/options.
                        Les valeurs du chantier en cours deviennent les valeurs par défaut.
                      - Vérifie la présence d'une nouvelle version sur GitHub : vérifie et informe d'une nouvelle version
-                       Propose d'accéder directement à la page GitHub de téléchargement ''')
+                       Propose d'accéder directement à la page GitHub de téléchargement
+                     - afficher les raccourcis clavier : liste de tous les raccourcis disponibles
+                     ''')
         
         self.aide206 = _(''' menu Expert :
                       Le menu expert comporte des sous menus dédiés :
@@ -4462,6 +4686,16 @@ class Interface(ttk.Frame):
                    - Trucs et astuces : pour découvrir quelques possibilités cachées de l'interface 
                    - Historique : les nouveautés de chaque version.  
                    - A propos''')
+
+        self.aide210 = _('''
+                Afficher les barres d'outil :  
+                - Choisir les barres d'outils à afficher : une barre par menu ou sous menu
+                - les barres sont créées horizontalement à gauche de l'écran
+                - Vous pouvez les déformer puis déplacer les icones en cliquant avec le bouton droit
+                - Glisser une icone à l'extérieur de la barre la rend inactive
+                - agrandir la barre pour récupérer l'icone
+                - la disposition obtenue sera mémorisée et reproduite au prochain lancement
+                ''')
         
         self.aide21 = self.aideEntete + self.aide201 + self.aideFinDePage   # Fichier
         self.aide22 = self.aideEntete + self.aide202 + self.aideFinDePage   # Edition
@@ -4470,7 +4704,7 @@ class Interface(ttk.Frame):
         self.aide25 = self.aideEntete + self.aide205 + self.aideFinDePage   # Outils
         self.aide26 = self.aideEntete + self.aide206 + self.aideFinDePage   # Expert
         self.aide27 = self.aideEntete + self.aide207 + self.aideFinDePage   # Outils métiers
-        self.aide28 = self.aideEntete + self.aide208 + self.aideFinDePage   # Paramètres
+        self.aide28 = self.aideEntete + self.aide208 + self.aide210 +self.aideFinDePage   # Paramètres
         self.aide29 = self.aideEntete + self.aide209 + self.aideFinDePage   # Aide      
         self.aide1  = self.aideEntete+self.aide201+"\n"+self.aide202+"\n"+self.aide203+"\n"+self.aide204+"\n"+self.aide205+"\n"+\
                       self.aide206+"\n"+self.aide207+"\n"+self.aide205+"\n"+self.aide208+"\n"+self.aide209+"\n"+self.aideFinDePage
@@ -4532,6 +4766,7 @@ class Interface(ttk.Frame):
 Version 5.73 24 avril 2023
     - Ajout de touches 'raccourcis' pour les principales fonctions de l'interface''')+\
               _('''
+    - ajout d'une barre d'outils
 
 Version 5.72 6 avril 2023 :
     - exécuter un pipeline dans le menu expert    
@@ -5098,8 +5333,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 -------------    \tDans les Traces et les Aides
 
                 Alt F            \tRecherche une chaîne de caractères
-                Alt Maj F        \tSurligne toutes les occurences d'une chaîne
-                F3               \tOccurence suivante de la chaîne
+                Alt Maj F        \tSurligne toutes les occurrences d'une chaîne
+                F3               \tOccurrence suivante de la chaîne
                 Ctrl A           \tTout sélectionner
                 Ctrl C           \tCopier la sélection
 
@@ -5118,7 +5353,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                 '"SceneCenterType"=REG_DWORD 0\n'
                              )
 
-        
+
+
     ####################### initialiseValeursParDefaut du défaut : nouveau chantier, On choisira de nouvelles photos : on oublie ce qui précède,
                           # sauf les paramètres généraux de AperoDeDenis (param micmac)
        
@@ -5335,6 +5571,22 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.dicoPipeline["lignes"]     =   list()
         self.erreurPipeline             =   str()
         self.arretPipeline              =   False    
+
+    # pour les barres d'outils, valeurs initiales
+
+        self.lesOutils=list()       # liste vide des items de menu
+        self.icone = list()         # les icones associées en format png
+        self.python_image = list()  # la version tkinter des icones  
+        self.toolbarFichier = list()# les boutons des barres d'd'outil
+        self.indexBarre = -1        # index de la barre en cours de création
+        self.xMax=2                 # longueur x de la prochaine barre
+        self.barresSelection=list() # la liste des barres d'outils sélectionnés par l'utilisateur
+        self.barreGeometry = dict() # position des barres d'outils
+        self.iconePlace = dict()    # place des icones dans les barres d'outil
+        
+        # titres des barres d'outils = item du menu principal (que je ne reussis pas à extraire du menu !!!) 
+        self.lesTitres=[_("Fichier"),_("Edition"),"MicMac",_("Vidéo"),_("Outils"),_("Expert"), _("Outils métier"),_("Paramètres"),_("Aide")]
+    
         
     # divers 
 
@@ -5805,6 +6057,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     ################################## LE MENU EDITION : afficher l'état, les photos, lire une trace, afficher les nuages de points ############################
                                                 
     def afficheEtat(self,entete="",finale=""):
+        print("self.toolbarFichier affiche etat =",self.toolbarFichier)
         # initialisations locales
         nbPly = 0
         texte = str()        
@@ -6431,6 +6684,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.texte201.see("1.1")
         self.texte201.focus_set()
         self.texte201.config(state=DISABLED)
+        for e in self.toolbarFichier:
+            e.state("withdrawn")
         
 ############### Affichages des nuages de points
         
@@ -9482,13 +9737,10 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     def avantScene(self):   # avant le premier traitement : Tapioca
         
-        # nettoie le chantier, supprime les points homologues, les résultats de tapas, de malt...
-        # self.nettoyerChantier()
-        
         # initialisations 
-        # self.ecritureTraceMicMac()                            # fait par nettoyer chantierécriture puis raz de ce qui traîne dans les buffers 
+
         self.menageEcran()                                      # ménage écran        
-        self.cadreVide()                                         # fenêtre texte pour affichage des résultats.
+        self.cadreVide()                                        # fenêtre texte pour affichage des résultats.
 
         # vérification nécessaires :
         
@@ -10291,7 +10543,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         # reconstitution des xml 
 
-        self.finOptionsOK(affiche=False)                                                        # mise à jour des fichiers xml liès aux options
+        self.finOptionsOK(affiche=False)                                                        # mise à jour des fichiers xml liés aux options
         self.miseAJourItem701_703()                                                             # met à jour les windgets de l'onglet Malt
 
     # ------------------ Tawny : après Malt, si self.modeCheckedMalt.get() = Ortho et self.tawny.get() = Vrai -----------------------
@@ -12713,6 +12965,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     def raccourcisClavier(self):
         self.encadre(self.aide30,aligne='left')
+
+    def aideBarresOutils(self):
+        self.encadre(self.aide210,aligne='left')
                 
     ################################## Le menu FICHIER : nouveau, Ouverture, SAUVEGARDE ET RESTAURATION, PARAMETRES, outils divers ###########################################################       
 
@@ -12847,7 +13102,10 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                          self.goProNomCamera.get(),
                          self.goProNbParSec.get(),      # taux de conservation des photos pour DIV
                          self.goProEchelle.get(),       # pour tapioca 
-                         self.goProDelta.get(),                         
+                         self.goProDelta.get(),
+                         self.barresSelection,          # les barres d'outils sélectionnées
+                         self.barreGeometry,            # la position des barres
+                         self.iconePlace,               # la position des icone
                          ),     
                         sauvegarde2)
             sauvegarde2.close()
@@ -12906,7 +13164,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.goProNomCamera.set(r2[17])
             self.goProNbParSec.set(r2[18])      # taux de conservation des photos pour DIV
             self.goProEchelle.set(r2[19])       # pour tapioca 
-            self.goProDelta.set(r2[20])             
+            self.goProDelta.set(r2[20])
+            self.barresSelection            =   r2[21] # barres d'outils sélectionnées
+            self.barreGeometry              =   r2[22]
+            self.iconePlace                 =   r2[23]
+
         except Exception as e: print(_("Avertissement : restauration param généraux : "),str(e))
 
         # détermination du chemin pour dicocamera, de la version de mm3d, de la possibilité d'utiliser C3DC
@@ -12914,6 +13176,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.CameraXML      = os.path.join(os.path.dirname(self.micMac),self.dicoCameraGlobalRelatif)
         self.mercurialMicMac= mercurialMm3d(self.mm3d)          # voir si cela va durer !
         self.mm3dOK         = verifMm3d(self.mm3d)              # Booléen indiquant si la version de MicMac permet la saisie de masque 3D
+
+        
 
         # après plantage durant Malt ou fusion des photos ou ply peuvent manquer : on tente une restauration
         try:
@@ -13025,7 +13289,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.chantierReferentiel        = r[78] # chantier définissant le référentiel si self.choixreferentiel.get()="CHANTIER"
             self.orientationReference       = r[79] # chemin complet local de l'orientation de référence copiée 
             self.dicoProfil                 = r[80] # les infos relatives au profil (menu outils métier)
-            self.dicoPipeline               = r[81] # nom du fichier pipeline,            
+            self.dicoPipeline               = r[81] # nom du fichier pipeline,
         except Exception as e:
             print(_("Erreur restauration param chantier : "),str(e))
             
@@ -13203,7 +13467,10 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if self.resul100.winfo_manager()=="pack":
            self.resul100.pack_forget()
         if self.resul200.winfo_manager()=="pack":
-           self.resul200.pack_forget()           
+           self.resul200.pack_forget()
+           for e in self.toolbarFichier:
+                e.state("normal")
+           
         if self.onglets.winfo_manager()=="pack":
            self.onglets.pack_forget()
            
@@ -13551,7 +13818,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.resul300.transient(fenetre)                                    # 3 commandes pour définir la fenêtre comme modale pour l'application
             self.resul300.grab_set()
             self.resul300.focus_force()
-            fenetre.wait_window(self.resul300)
+            
             self.resul300.destroy()
             return self.bouton
         except Exception as e:
@@ -14160,8 +14427,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                         self.infoBulle(_("Pas de fichier pour ")+os.path.basename(self.listeChoisir[selection[0]]))  # message si pas de photo
             except: pass
             self.selectionPhotos.see(self.current)
+
+################## les infos bulles de l'interface
             
     def infoBulle(self,texte=""):                                                   # affiche une infobulle sous le curseur.
+
         try: self.bulle.destroy()
         except: pass
         try:
@@ -14177,6 +14447,18 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.bulle.update()
         except Exception as e:
             print(_("erreur infobulle : "),str(e))
+
+    def infoClear(self,event):
+        try: self.bulle.destroy()
+        except: pass
+        
+    def infoBulleBarre(self,event):
+        try:
+            message = [e[0] for e in self.lesOutils if event.widget in e][0]
+            self.infoBulle(message)
+        except: pass
+
+################## les infos bulles : fin
         
     def yview(self, *args):
         if args[0] == 'scroll':
