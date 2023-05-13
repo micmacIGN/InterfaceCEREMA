@@ -1124,7 +1124,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 ################################## INITIALISATION DU PROGRAMME ###########################################################
 
-# Variables globales
+# Variables globales et certaines constantes
 
 numeroVersion = "5.73"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour contrôler
@@ -1142,7 +1142,7 @@ logoIGN = 'R0lGODlhlQCjAIIAMXV4eo69Qs/OxtzotZqcmLa4s7TQffv9+iwAAAAAlQCjAAID/ni63
 logoCerema = 'R0lGODlhLgFIAIcAMQQDBDeDUZyZlKvFUPTOXNXjoOOCaMoGEtrlxOukaVytYZzLpNzy3ERERZyanNTO1ISEhKratKyvsOulkdTatOGMd9xKVHyHnPvi0sPExGRkZfv4wey1kPTUr5SrXrS0tLjSYiUkJfzkeZOYoL/Ez+tuTuR4XPb08vKZUPD0sGxtbcLQ4dzi5frl3fa0nvfUzJylxOuVfbTNVRwkaux3V6Cw1X2YzHSqhKKkpfG1fVNUVfv86twuNMzenJSq1JGmV9TenPSlj9fZ3bS3zPTkpFGYZ4C/h+ySlO6EZuACB8PUgKyqq/SjW/PEtY+QkMzQ0xweZLPD3lBosPOTXNTs3O95ZJ+nt/PMvhUUFZywW/nbve3t7PS9ruHy5YmQofr62bm8v/Gbg4+k0sHi0azMTmS2ZjU0Nfzqfnd+lPCLaaS1dKy2wu7tyOqzp8zKzPbc1LTKZi0zdKy83E9VjPz+/PTSXl94t9fqy/RyXPz0oXh5eOTe3OMOGt7qs6HVqYyJi6iwvZTNnHyukEFGeE6SZPTDj/TaiZSWlMnVoXyOpMQSHF+lbLzqxHC4d8znz11eXY/Gj0SOY7DMuOwuPPSsfOyCdGSeeG+Gwrzfw+yutK7UtMzci1txtOn76bzWxLTcuuTW1Mzhzw0MDU1NTS0sLvy+hPWtpRwcHDw8PlZbjPnccvrMouR9cSctbOTmtKy21OysdfS8mPztpPysaKG5Vay+fHmSyUSKXGSyZdXV04ydzMS+zPzSpOmrmdQ6QOqeje6eX+y8sjQ7dn+3ieTm1Ozz0vzTwcTWcOTk5VxqpOTr7PzNv/zs4+zy8vzq0OTuwczGxNQWJMzixO+NdczW5fz2ssza7Oy8kKzDYtzmr/njj/STePzCtCQeJISKiJSersPK0etyU8DW5KCq0KS23Nve4HS+dvztj7TixDyKXFyyY52en/z+vON+ZPSeVHNyc+x+W4Sez26ydKSqq7a+0ITGjOMKFLnOa3x+feAWIERKdIOGjfTTw7S2vrzTbZKYrywAAAAALgFIAAcI/gDpCBxIsKDBgwgTKlzIsKHDhxAjSpxIsaLFixjp7MjIsaPHjyBDihxJ0uCJkihTqlzJsqXLlzBjypxJ0+LJmjhz6twZcyPPn0CDCh1KtKjRoxFvIl3KtClNZFCjSmWBjGCLN2+uZsX6RqlTizt2fDkR9svGE8zQfl070atBfa3iyJ0rtxUMpawO8NnLx95eRVzYVtyhjUCdOgQSG/oCCxgTYFoES2boE+GguHTroikYLJq9z6DtAZ4skXBixIgXX0PBBEUs0rAjXs48l1rBE76S9P3cV1Gw2BDPnTZMYPEqYO7cJXAGHLjbgrPntpoOpUbBFrn3+v08unlDWahP/ov44gw5MBQ5vKs3GD1Oq0GpkqVKdPuX3tCif69P+CUPatQibLADBygkB0wH+wn2HEHRtSJMKjCMA8MHBh1xX1+96ZdgQTs4U40hxBGgigiy0KFFgQZisOFXlR3UnjDCjPPPHBlscdMJJ1igG36KZLJiQRucU01hxKlyxjlmwZKcgZH9CBtc0s2Ryhww/AOIQG/wMEk+fHXpm5MC7XDGGUEadpgIY+ZhonkGFsJcQi2COdOCAwkDxQx4zgDjIHP8cxMX+SQh6KAHCHpAG5KZ9VAeaFZTzWEijnmkQKst6Q5rlMSyijEdYICjFrC8JidRYAwxRD+mDvFKP1UR9EYm/qaYAmussWbSgmBfHJnHFwvtwOiYsmwggmFoSroBHYy5g9ySBaKAHi+FMIEEHgbQOSpL1l6L0K9oCilgZWFVc46kY1Yji4jjSnrORs4kwJqyyaEwSwe8AFMFDXjQYAI/2soU50OtmjRQtkhtQO6YxR55zsJnJCxpCsIe3LCadGCw7JKFEEEJEjTcSwMN4fTSL1K5kILDjzvIcnC6ErcsJMvkIikQG+4qy0sHaXyc78cfV8DMyC9li6NSOH7gxI04DrTFwCcNTZBXXjXzQMB0EB2m0yURgwCy4iLcssvV7LCBNi7zSgczOcCiRSHw8Oz2x+EYA/ROpIgiSgO50OHG/ilYnHLKFh9gYfcjJwQuRNXdOEHHKHY3cPg6WJQj0AmnQCDQPqIAAEADkoMjChhVk/IOHSrYDYAeJO2gxg+1EKNRf3nALPHCG5i9g+ySljiQMznA/TbPJUzQVgsYvJHW3BBlK4oOYGCBCh0ZAABBBqDjAMAISwDgxAcA5L2FKJaTYgYYAOhAhwAAHE5HMwCM/gcAKjyBgyik0AENABSegIUGdOhwCvXqEwkFfuCBH7DOFQMRywY24KgGLvBfQfpaNcKUAxRMgWP4wlc4QIaHNDQBIszgQgyQ4LEqpCEMy/gZ8nqlEFGMzgwhsB8AcHCCZtDBek/YQvu49wQ6fG8f/nQgBSrAgYXROSB9kwMAPuiwvIFETwK5wF/VTsE/HZBiC0sbiep+kIUuFrAWPSgGRL6AiGf8SmIiyMMOYoEcJsTLglOIIyWcsQMWZHEhJ3BBFcJRgnztjI8lQMIHV0iRU2gOCxKAXuYA8Igbag4AIWCBBLrnQ1H8gQ6oeKQA6HBE9ekQHzo8RNV8KL0o9mOK/NMAADKXN5EggoseiGUsCTgAEBTgGdl6Rg/IUMsIriyNHbiYpS6VA+ZYQwyXWAFDMFCJDXbMYx2LJh9joEJC3qaFGlABAKoSvXWUY2nZG8EDwEnJE4jCG0FEBTLeIYoTrAMALBAI+yCwAwDwTyAP/phhFEFHh/31LwTIiKdITrA6WRo0lrQYABlk4I9NFKAPEO1DAY4BAjJYVAYD2AQ7YjaxaiRgmEs6kA9rYAtb2GAcC3lBO5wJMkD2sQRuC8c0qmnNhogCdd0wg94AsI4tSM56raTDE063hUNIUYhbUOUW3vmBXAjhBO2jwzsA4ABkuMEMf0MGI7eQPVHqAKDIuONHXinLLJR1lllQqEXVqtaLLtSiZMhGNSRWjUqBlAmRKUc8TGoDG+hCGQlpgQFYWgJ4BIEb/FgGF8KAB2dWIXg1fZpCsKACOpDvEE9YJBa2MEk3aEQgengk4TB5SMW9M3PPU6IPVfnIEQjEqJob/sXSVJm50YUkG9gw60HPmlYZwPWtv/WtcMmQgjOmkQggNdCtWGADvjb3rwjZQQzCsTM8BIGmAsHAdBv7i1tFNkwK2UMWkSGEHZRDCEJAxg5O8NSC5AIHnhUIMkDxzcnl4ryuE+9AciEBCZjBhRmggxBwEGCBbEEIexCCWD+ygwLAQbe7leUAhvtWCrv1HsWVVDVigSJ4AQMY/FLGXuPRXBuQwFpXMMHH9iiqg5wgDCZwAUJO8AJuuIALTXjDQ1rwAh0XhBlXsDE3roBdDg2kBU248TLc8gYbc+EK2WLGC7jgAm40wbs7+VdCtqACLFzSX324By0MCuFYTtitbpXB/nAxqoT+nCEPRPjwMNEjEHI41xa2gdN04Sa86J7Nx7dxARJcCtMYvODHYYjBNmJwlWm0FMstmMBjS0BpmE4Au9qdxjTC8AZTEFqQWNrGpwf54wkgodKUxkMMAJ0QgoXE1T9hQw9yu1uzVvjWvl2oQo/hkzxsoBAoulgC2ECHctz5FQt5g4qrQC0sgzAGJdjgvapwrw2SumIm4CMNwkADmO5xDwJZBjxg6rZ7BZLVVwgHH/Fw6hXDrQRcWAbIVkxtdV+bDsZgRbSn7bENXsEiOkAFKsyQiw8InHkE0QMqljCQRzTgAQLRAOqg1wBR7A/cemvAaOmwhAYs7Q92U0FY/gNuBsfB5Auu2MSDzUpALq75twqVwSZS8GNYvMtAdKYDSfvaXMkphAsge2yfI8KMaZCbuiTcIB6qYIJ/C6QFrOhYY1esbh0bwwT9rsK0pB0OA1RTpdGEW2OrG9OpZ9AEKsJStqvdWHVTW19pn3ELzQABPWwBAqfLJMaFgNrJhWBzAhEiHXYByUOE1raspRAd3neCoULgEFh4glZRAQEIUI0lO8gGBVLAhmxs4h7YoIXoFapWNR/jGA/VhCcKciJhJgdBWyBxX22hiwUbpBfhqPa9HYL7Z5rCGcxgBjcwKNObYKAdMQ0HPDjWghNUYIPhqAQ3gs8MU8w7ZAO5eky3/uGCIGCw3GEwRRDg8UeRTc7T+QrCMjBgjDA4swS/UIiWB3LTgUBAFNADAD8h4GUAePYEIUAK2hNEo4BJIXAT9fU972AGBUgHTgAAJ0ACACBK8iUKikMT2UAGcOBQz/AMbOAKEfVQ2dAHCMAInhAIjaAAjVAQFRRSyZEAJ0ENzuVXgKUQv4B1+iI3EYEBBtAxJYAoBMEPPBMOTocBUQc325BCJ3ArTSBtVcBqdOAC0IcEKgR287YMA8EM3/cxWPh0aaBiNBADXnEFBnBtOzABzkSFFCE4WNAAdIB3qIAFZpBF3dBIlCUQp/AOGiAKyMCATFRZXnFEJ+AAfOiAAKAM/ifwCJDEcELAhuYzE8XgDwMQcyAAAv5QAAPhCPLQCLigAAqgDp3oCAkUC7PgRpfiLBywESRwZ7ogUAnxCyVgAnjQDocWEVwAU+EQAweBhntkfoIFN2HgFTsAi3sEhE/zfEzndC+QbR9zb02IL1WgIQLBBdBnAHd0FuCVXRnUDlAoWQmBBaPwAaBzf6p0geRDPwDwN/2kAuY0Cn54Co9IEA0AAKSABRO4eACQRRmQSTUiCo8ABvE1EztwDHDFVs8wEEagAGVQBriwkArgB9YgB/QQBSSwArkACh2wCqXABKsgEHLAV7pQUnn2isxoAjoIEb8AfdPQBFbGDdzABdyw/mfh0GcY0DYdA4W/CDIT4JIs6ZLcUAn4YgKDtIzP5BZW2A7ORgdE2WwKwQwtwAU2SQPd6BD1JxD3J1WikDeP4GUQMFXz0E/8807lI1UAkEgngA/9IASM5A1OID6GuAXKsA50oFVOoEMXmBObMGHDtQk+8QkKWQbqwJAKAAkrcAkldZg2EA/kEAXjJBA1cAl7NXv0sBC9QG40EBjJ83zAw0fqpm4ZRAO/sBFv0IMbBIXKNoScGW3Rhi/wIJQCwQ8q1nXY9QYrRQPcWBBv4EwGkJQ70GRBsA1AyVLwMJWT00KASAehZSOnYAblEFUCEQLP40+LAwAFuAWjAABmYI8O/jBVNkQH75QLIwCB3BMCfJNemYMFIRBUNJGXbgUHYqQRwwCKDQmY8jAGssdzs1dS8SAH1mANdmZSITkO2dIEywZ/SdGDYqeaeFBp6gZZdNACQHmTBbGMzPhSqUloQ6li7LZgtPlMl3ea1FJNO9AEzURpnelMS0ecn5UQHwBxAiEE/XAS5bAE/OU6J/EAFAIGLooMEhCQ76QBeZMBBVY1ElAOeyABJ+EGeqAHeXMC/dBfS2B7PeEPFTYAmCgQfqCQ81kGChABPjCD+JmfMLAC1PAKJdVcl3cdyPcxJtAkDuF8KhkEcjqndPoLRYigUlkQoKChVRAGdPqnQdALrUKU/rI5oVEXDrfpKrrpXTsQBPumbkuXBtvgNiraEofghrHxBblmUccwEAywCAvJkFwaCFEApmGamJfACTZApmJQUlGwECkJNzEwf0+nIScQA3BjjAthhDyDk2BIA7XIEEtZLbi5UtRimrr5JsFgmdvADW+AATsAob3aatjiHQWglxr4nnRQDwrQkKCoDvWwAnfGc3xlUqmaDJwgBtYQBX6VLbA5hBNAJy1gdL+gQpUJMmlQZAfBgysGhc7HZyuqEO9KA0jAoWuaqAORmx+DlFUzDdBnCtdhk8P5XR2xA3BwUQNAbBuhCX+5kLggD+LQV/eJn7TXXJxgB5zACZcgB9Sg/guvqhC86IMx0IVZSKK4OA2HtoxLFw66OhBNII0tsKZ5mkBRSG77YhJtEKz4BobwgF1gN4vICjJedzY4aAKHVhnPSG0qCmsGdgJSOkr9kpdqNgAIJBChoKW4IJ/osFeHCaB+5Vwom7Ipq6700J0zZnSbOQ1BYAouEAZ4CzzCswPuBzdB4Ck48gZBwEdBYHxHOLRWsab3wgUtsF4nsAzbEIuYubRSy2S1ibBYsqg+VJvYNzncAIalCScL8QB/sDRPII4CkwFp6iSuwFZ9MBCdIA8NOZ+LEAErQA5yIAc1IAbNdabPlapxm7K2sAJfe2R4my/Mlmp95DbwdxO0+X4E/rsNabCgHzO9FYMEsviEB9EEllkCVTAN28BsSlcC+rGUlTCb7ZAvnksHp0kDu6kRKcls2yZ+DutYNKAitKoQEnBJYJAL64APyAAGGfABGeAAOFAOFKgtbICxtTsQnBiqo3obW0ANchCScCu3cptMDMEMvzBvPIO/b0e+ptAixgAPKIovzgsySFCER4h2CNEGnil1LAUy1LQRREm/RtmDxzqhWNd13tXDIBNtjfV2+bK1C7G6i/cBDgABf+AEu6ACYPAHYOAEctkvxXCxGFW2AgEJWuqQ9dBq1kBSthAPqerBKQvCvdIE09B2ztSgNLANSntkjLWandlYYQBpcBMO/iq6DCXqmdSVey6gFLDpmRxqAtFGw66imgwrEE3wWJCqbjHADSz8MZWqEE/wDq37BxLApHoAkD2lAtDwDlyrHl3sW9igrXTAsaIKmEagEVSACZ+gCZ8QCl0wECyAxnF7vCc7kvL3Ai6AvcuHBGHgAnGHEJ22DSSEBNtgCm46OS/AD8bwAkKzDEGQBkiwfGEQC0l5Atd8zQYhZS9wzW5hzvzwAi3SAsGwDfAcBMawEcZgzdhMrQnxABkADluQCwe8A0KQC8QQVm6wBWCQyt7BBhdLBvdgNgKBCWjLpY2ADuYAip/YrWVgBJ+wy3SwArqwxpyQDMd7CT73EGQRERsR/hYekdJH8b9K49JA0wdq5Q9EOwbdGpi4QAiLgA4Mmbah2okquAC7vAXjAMwomwwoRbEtwV44cHm5kAH+bGABNCrXilFAUBBnWwaNsAiRkA5FMAaimruguJDqoADyEAF1Jrd2gK7IptQfQTAf8A5ukAtJUzQSABWgAw3qCSY7IIkW5cp0QAUKqQDpEAmRUASf0AhjjQtbGtaDucuvILfJ8LJuzRI4cAhzLcXl8A5gsARgcAgfoAduoAJTDSbF8Fb3AC6B3YmGbdiE8AkVHarfytgeK9G7TA5SwAnKhEccgdBv+ts5ITTvgAwP0A8QAA6HgA9g4ABggAMC8AHrcNDa/gIEpJcNBnEHClAErh0Jr20OjK2Q5mAE9WAO5vCJgcmQjcAAOlfaB/EEVmAF5QUOAhHV63AS9T2X/1A1gGAlWbQFVjCZAwEO//APVGEFQ0AHufANJFA1VgAISxNgbjDgebME45BIzRBg4GAFAYYM3xBg5TAPB/6iVgADAbYF8/AKN+HfVnBKdAAIVmAjVmDfNiQE3yAQOdQM9z2kB/G/RgMGH/ABEDAPfyAADvABSwANfwANh6DjYPIFXgwHDj0QVMDVrW3YsK2QEeAInWC7jhAIadsIEl2DC+HfNRRWV0IHJPAEJ5AIr0ACaGBD9GAFVUHmA1EO/10Q/SDf4CDd/iQADoCADMqQ5wvu4C3eQ0Og5wd9JUPwBIBwArmwBifxAScW4BlwAoBAFYT+opBOAgs+D0vTDGgQBUNwAXC+DlUxBOXQDBcwBM3wlRSBIwbtBEuwCwYB0wlyrRbVAwfhCNpd5a/dCI3A0QdBBdzKpUZgtwohBEO6BSGeAakeBfPw30szAmtwJSfATzZ+AeBA106UN7ngBcoEDhdwJcrwD14AWP1gQwPc4llkBc2wBnRADxcA70LgBfJNB+MA4HpjG+VQI16w4ALBAgF2AvD+D2vQDM0wBFYwD/RgI98wBFdCAiygDCQABuAQ4nLXEAoWsANDEDbS8fvh5BYF5QcR/gq30NqEwN2fYATCnhALMJgm/eIB1QwvjubUsAWQbuknkOEZvjSNPhA4oAxeYAUEAQY9lAGTvs9rsAUsQA9PMJmE3g89VPEReGJXQg/UIAHN8PTy1QwjcBPgQA/IYAVUAekDIQQODgjy7e7rAwgbAQjN4Ofg8A0nQA/loAyNPvQW8QAjsAuu4/EIkQt7IKM9tB89cGZXahCeUNiGffKEgAlU4BBjEBFoDwiS0w8OXg7qVfg9BA42RA1VUfgvCgj0cO/zXRUsAAgBJgTKgAxqnjcksAPUcBK5UIP0AAjwvvUIzl4TbwULLgS+X+e4bxvvPgQ30QyA8AoFRg9rUBW7/t35NpRDd994CI7tLrYQEgABQgDFB5wBS+AAe7AE3g8GnZ0LUm95h7DXwPEFakXyB6EJ6ZDyjV8Ed1AUvt0Q918TLv0HHwAN6/AHAJEBn4RDYEbgcPAngx49/Zx8WPfhDzI6FS1exJhR40aOHT1+xLjjWQElCDguCEAoUiRCtywpAxlT5kyaNW3exFkTmoqKTsq90/NBDxh8yA4pW/JnHQ4J+CRmyBlV6tSLggKkWxnp1o1OVL1+BRv25omObjKc2JHrhJtc5dycyLBFCJ1yuZAJYfb2STmxff1WlCTIEqF0twI0+ptY8WLGjR0vPqEs1IJhnh5fxpyYbGbOnT1/MAaNc0do0qVNn0adWvVq1qs3t4YdW/Zs2rVt3576Gvdu3r1njvYdXPhw4sWN7z4REAA7'
 flecheGauche = 'R0lGODlhJAAkAIcAMSRSlJyuxEx+tDxqpNTa5HSGrFRypGSOvER2rLzGzOzu7GSCrExupHSezDxytFSGvMzS3DRenLS+1DxqrOTm5Pz6/IyevDRmpFx+tFR6rGyWxEx2rKyyxOTi5HSStGyOvMzO3PT29NTS1FR+tERqnNzi7MTO3GSKvFyGtDxinERurJSmxFx6pEx6rISWtKSyxNza3GSSxMTK1PTy9ExypISatERyrDRinLzCzDxurOzq7IyivDxmnNTW5FSCvERupFyKvJyuzFR2pGSOxER2tOzu9GyGtMzW5LTC1OTm7Pz+/FyCtFR6tEx2tKy2vHySvGySxPT2/NTW1FR+vERqpGSKxFyGvFx6rEx6tISWvNze3MTK3ExyrISavERytDRipDxutIyixDxmpAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAJAAkAAcI/gCVCFQyQ4GCgiEGCix48KBCgg0dPhQYcUZChRUVPAxRkOHEhREvDuxocMZDhg0/QmxY4WRJiSM76jD5kaPNEBVy5rQ4wyJOnRVC3JwBVKWSChE1KgwDwaDBlgpRGkXakKbAFRG2KChSEOrAqlMZdlUS5cmHETJIegUJcyLSGToczjCyoIEQGQriEnVZcGrJuEkWQLFiBcsWtS7b9mx4sSUBIYMdAOECQufKkmu/khRpQogGH02IWMGQggGJ06gZiNlxdKJYiRIyQJlCBIvtA7iHDDlRBQiQKkOyqJTZU0mQDVAE2MZSGwERIs6fE2kiwEqX1ifjGgyxQjaWJsxb/tgGT148FgRTfFz/2LN9lhFQmn8n0oK+febnqfuwgP1jEg9LxADecgQWSKAPPoSRF1cfWcAFFBfkIGEOA0hY4QQUZljhADYQEQZcBn0URRhUMHHDFzdcgOIXK57I4otfXODFDnm19VAAPwhwwY489ugjjw58GFcRUwVAAhYDxLijkj/uKCGNJSlkU084IUFCEzkwqaKWPGJoQQVR5BRVVTQdQcMGOaQYow0O2OCFAyo4MCEYNQwX0kAlsGBDDirmwAMJQghhgKAM0GAAAwH0N9JLaxXBggoqfJFmD2NK9VFVMx1VAVEdLCCGhDeYUMFMM1Cgg6khsudUV4spoIUWigVEgMANOCjQgakdaHGrDjoYNdCmFFCQKwwd3FpDBDdwAAMEUsBAwUEWjZrScDoUqwUMp3agwwsAcKCFCDBI8SyVIYCl0qi4PpsXBRW8kEAHMOh60E9KvOSXQbwGJRRRp/aL05g2KvSWUw9R1VFmMgkc1MI4/eQwwzhFy/Cm//pq8cUYZ6zxxhsHBAA7'
 flecheDroite = 'R0lGODlhJAAkAIcAMSxWjKS2zFSCtDxurNze3FR2pHyStER6tCxipMTGzExunGSSxPTy9MzS3DxinGyGrFyKvER2rOTq9GR+pERupFR+tHyizMTO3Nza3CxelDRqpEx2pNTa5DxqpGSCrOTm5Fx6pPT6/NTS1ERytLTC1FR6tEx6rDRmpMTK3ExyrGSOvOzq7ERypIyivDRelERqnKy6zFSGvOTi5FR6rHyavMTK1ExypHSezMzOzPz6/NTW5Ex+tOzu7JSqxDRalKS61FSCvDxyrNze5FR2rCxmpMTG1ExupGySxPT29MzW3DxmnHSOtFyOvER2tERurFx+rCxenDRqrEx2rDxqrGSCtOTm7NTW1Ex6tDRmrGSOxERyrIymvDRenERqpISexMzO3Pz+/Ozu9AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACwAAAAAJAAkAAcI/gDBCBTIgAePgkgGEjRYkIFCMA0ZPhx4kGFChRUrPkQSkcfEhQV5XBzY0aHCkBo/hiyY4+HKgy4brjA5sSKDmQ9t4jyZkeZGBhyR5BhKNChQoURzIAnKkejHgTkMSlXYIoxUgy15enwKJmpDnz6oCAnTMCvFgly79lQo5UaBCzd5mAWZNmpGhTZuqLBB4ubEkHUPzlyhsECWCkdswJCbE+3JiA5btkTZZUGTHVlS/PgK86PNBlxs2DAymoIRCi8oqGhyZYcKClviOv7LYwWPIhUsZDmygHeW3yqAXDkwPIsTAzys+uRZsEgJCEEONIkwXUoT1sOvDIdw5YHtrbRn/hYxAYF49vPmzTeBAASEEAZzSTasIQUCa+L4h0s5kH84ECAzcJCWQDpIkQV22iWooII7XBFDBTOgMNtEOmhxRRQDZIjhABtqyGEQA0yhwRVaFNDZRzp0MQICLCJABIsvwujiCS4iIOIQSRjElQ4DaIHACUAGKWSQRAA5gAYTSNAQVxxMEcGPRUZ5QpEz/njCACcsEQIYUynEEQMMfEFBED9CGeSMQWIxBRQ0gAnfUC4lx0ARAwCx3xXXNTFCE1pMUSYWHWTQgmxPRZREF0NIUYCiohlhRAZYIhBFFFwEwJCOKkkVxkgLGaREECdMMYAScH03IUaQFcWADDIQ8IEDlByeQCoYH6xQxQo70Sbbl7VhYAUGGDgA6gsNMFBFqzLU+sGAXTHwQasEYPAsATI4gIUCCWCAg7S2AZVDt2k5O620z34AwAQ4cCDCrx8cdFRKT337wbwyGIRrD61iQAC1By01mW2B3YSrUv4iMe8KtQqFKngf2QWYQg5jFedyQwllMcEVK6VxwRpvrDCzIIcs8shgBAQAOw=='
-
+searchGif = 'R0lGODlhGAAYAIUAMQAAAAQEBAgICAwMDBAQEBQUFBgYGBwcHCAgICQkJCgoKCwsLDAwMDQ0NDg4ODw8PEBAQEREREhISExMTFBQUFVVVVlZWV1dXWFhYWVlZWlpaW1tbXFxcXV1dXl5eX19fYGBgYWFhYmJiY2NjZGRkZWVlZmZmZ2dnaGhoaWlpaqqqq6urrKysra2trq6ur6+vsLCwsbGxsrKys7OztLS0tbW1tra2t7e3uLi4ubm5urq6u7u7vLy8vb29vr6+v///ywAAAAAGAAYAAUGfcCfcEgsGo/IpHLJhFkOgIMFxhz6NICsFqDxVbGAjown62Q1zeyr+MpSlZXw0VxZGgCyowxgWAYAO0c7AAF2eHp8S3EdcwB1SjBqbG5MYGJkZo5VV1tacQc3VU5QBhVUUAihVUY3CACpq6yusLFEra+qtUKttLq7ub7BwrVBADs='
 
 # recherche du répertoire d'installation de "aperodedenis" (différent suivant les systèmes et les versions de système)
 
@@ -2731,8 +2731,6 @@ class Interface(ttk.Frame):
         def initialisationsBarre(self):
 
             self.lesOutils=list()       # liste vide des items de menu
-            self.icone = list()         # les icones associées en format png
-            self.python_image = list()  # la version tkinter des icones  
             self.toolbarFichier = list()# les barres d'outil
             self.indexBarre = -1        # index de la barre
             self.xMax=2                 # pour la prochaine barre
@@ -2748,7 +2746,7 @@ class Interface(ttk.Frame):
                 id=barre.title()
                 self.barreGeometry[id]=g
         
-        def nouvelleBarre(self):    # une barre d'outils par item de menu principal
+        def nouvelleBarre(self):    # si la  barre est sélectionnée on mémorise les infos
             self.indexBarre+=1          
             if self.lesTitres[self.indexBarre] in self.barresSelection:
                 self.toolbarFichier.append( tkinter.Toplevel(fenetre,relief='sunken',bd=1))
@@ -2832,7 +2830,7 @@ class Interface(ttk.Frame):
             elif commande not in globals():     # si absent de l'espace de nom global on saute.
                 return                          # si commande globale on conserve le nom
             if commande in [f[2] for f in self.lesOutils] : return      # pour éviter les doublons
-            item=[_(label),"search.gif",commande,self.k,self.j] # label, icone, fonction, position horizontale, position verticale
+            item=[_(label),dataSearchGif,commande,self.k,self.j] # label, icone, fonction, position horizontale, position verticale
             self.lesOutils.append(item)
             self.k+=1
 
@@ -2848,12 +2846,9 @@ class Interface(ttk.Frame):
                         numero+=1                   # numéro suivant
                         attendreBarreSuivante = False
                 if attendreBarreSuivante: continue  # c'est un bouton d'une barre non sélectionnée
-                
-                icone=os.path.join(repertoireApero,e[1])
-                self.icone.append(Image.open(icone))
-                self.python_image.append(ImageTk.PhotoImage(self.icone[-1]))    # remarque : l'icône n'apparaît que tant que cette variable existe
+                # remarque : l'icône n'apparaît que tant que cette variable existe
                 # création du bouton icone et de ses attributs
-                b=ttk.Button(self.toolbarFichier[-1], text=e[0], command = eval(e[2]),image = self.python_image[-1])
+                b=ttk.Button(self.toolbarFichier[-1], text=e[0], command = eval(e[2]),image = e[1])                
                 b.place(x=34*e[3],y=34*e[4])
                 b.bind("<ButtonPress-3>", on_button_press)
                 b.bind("<ButtonRelease-3>", on_button_release)
@@ -2875,6 +2870,7 @@ class Interface(ttk.Frame):
                 self.choix.destroy()
             self.choix= tkinter.Toplevel(fenetre,relief='sunken',bd=1)
             self.choix.title("Choisir les barres d'outils à afficher")
+            self.choix.geometry("+50+50")
             self.choix.transient(fenetre)
             fenetreIcone(self.choix)
             self.outilsSelection = [tkinter.IntVar() for option in self.lesTitres]
@@ -4347,9 +4343,9 @@ class Interface(ttk.Frame):
                                       Le menu expert/Navigation GPS permet de changer le référentiel.          
                                       Les photos prises par les drones sont généralement géolocalisées.                                 
                      - Ouvrir un chantier : revenir sur un ancien chantier pour le poursuivre ou consulter les résultats.           
-                     - Enregistrer le chantier : enregistre le chantier en cours.          
-                       Le chantier est systématiquement enregistré après chaque modification. Cet item est conservé pour mémoire.          
-                       Le chantier en cours est enregistré lors de la fermeture de l'application.           
+                     - Enregistrer le chantier : enregistre le chantier en cours.                  
+                       Le chantier en cours est toujours enregistré lors de la fermeture de l'application.
+                       Enregistrer le chantier est une précaution contre une coupure de courant ou un plantage.
                      - Renommer le chantier : personnalise le nom du chantier.           
                        Le chantier est déplacé dans l'arborescence en indiquant un chemin absolu ou relatif.          
                        Par exemple : 'D:  MonPremierChantier' nomme 'MonPremierChantier' sous la racine du disque D.          
@@ -5575,8 +5571,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     # pour les barres d'outils, valeurs initiales
 
         self.lesOutils=list()       # liste vide des items de menu
-        self.icone = list()         # les icones associées en format png
-        self.python_image = list()  # la version tkinter des icones  
         self.toolbarFichier = list()# les boutons des barres d'd'outil
         self.indexBarre = -1        # index de la barre en cours de création
         self.xMax=2                 # longueur x de la prochaine barre
@@ -9052,7 +9046,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     ################################## LANCEMENT DE MICMAC ########################################################### 
         
     def lanceMicMac(self):          # contrôles puis Aiguillage en fonction de l'etatDuChantier
-
+        print(heure(),'lancement micmac etat =',self.etatDuChantier)
         if self.etatDuChantier==5:  # Chantier terminé
 ##            titre = _("Attention : chantier terminé")
 ##            rapport = _("Attention : Le chantier %s est terminé après %s"+"\n") % (self.chantier,self.choixDensification.get())
@@ -9090,14 +9084,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             message=_("Le répertoire du chantier a été modifié par ajout/retrait de photos.")+"\n\n"+message
             self.encadre(message)
             return                    
-    # contrôle que les options sont correctes (toutes, même si elles ne doivent pas servir)
-    
+    # contrôle que les options sont correctes (toutes, même si elles ne doivent pas servir)   
         retour = self.controleOptions()
         if retour!=True:
             self.encadre(_("Options incorrectes : corriger") + "\n\n"+retour)
             return            
-    #  pas assez de photos choisies :
-    
+    #  pas assez de photos choisies :   
         if self.photosAvecChemin.__len__()==2:
             message = _("Avec 2 photos MicMac construira difficilement un nuage de point dense.") + "\n" + _("Utiliser l'échelle -1 dans Tapioca pour obtenir un nuage optimal.") + "\n"   
             retour = self.troisBoutons(titre=_('Avertissement : 2 photos seulement'),
@@ -9106,15 +9098,13 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             if retour != 0:
                 self.afficheEtat()
                 return         
-
     # pas assez de photos si on retire les photos pour calibration (pour tapas):
         if self.etatDuChantier<=2:
             if self.calibSeule.get():
                 nbPhotosPourTapas = self.photosAvecChemin.__len__() - self.photosPourCalibrationIntrinseque.__len__()
                 if nbPhotosPourTapas<2:
                     message = _("Nombre de photos insuffisant après retrait des photos pour la calibration : ")+str(nbPhotosPourTapas)
-                    self.encadre(message,)
-                
+                    self.encadre(message,)             
     # les photos de calibration retirées ne doivent pas servir après : mise à l'échelle, points gps, maîtresses
     
         if self.calibSeule.get() and self.photosPourCalibrationIntrinseque: # les photos de calibration sont uniquement pour calibration
@@ -9223,7 +9213,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     self.ajoutLigne(message)
                 
     # pas enregistré : on enregistre on poursuit
-    
         if self.etatDuChantier==1:                              # Des photos mais fichier paramètre non encore enregistré, on enregistre et on poursuit
             self.enregistreChantier()                           # sauvegarde du fichier paramètre sous le répertoire du chantier : modif etatDuChantier = 2
 
@@ -13818,7 +13807,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.resul300.transient(fenetre)                                    # 3 commandes pour définir la fenêtre comme modale pour l'application
             self.resul300.grab_set()
             self.resul300.focus_force()
-            
+            fenetre.wait_window(self.resul300)
             self.resul300.destroy()
             return self.bouton
         except Exception as e:
@@ -16566,6 +16555,8 @@ def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; Les
 ## imgTk_id = canvasLogo.create_image(0,0,image = imageLogo,anchor="nw") 
 ## (le passage par une variable imageLogo est obligatoire)
 
+#import base64 (déjà fait)
+#import os
 def gif2txt(fichier):
     with open(fichier, 'rb') as image_file: 
         encoded_string = base64.b64encode(image_file.read())
@@ -18264,7 +18255,8 @@ if __name__ == "__main__":
         dataFlecheDroite = tkinter.PhotoImage(data=flecheDroite)
         dataFlecheGauche = tkinter.PhotoImage(data=flecheGauche)        
         dataLogoCerema   = tkinter.PhotoImage(data=logoCerema)
-        dataLogoIGN      = tkinter.PhotoImage(data=logoIGN)        
+        dataLogoIGN      = tkinter.PhotoImage(data=logoIGN)
+        dataSearchGif    = tkinter.PhotoImage(data=searchGif)
         # création de l'interface : menu, widgets...        
         interface = Interface(fenetre)
         # Zone de test éventuel :
