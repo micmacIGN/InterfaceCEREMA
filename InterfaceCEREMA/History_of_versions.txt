@@ -1,17 +1,17 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
-Version 5.74 5 novembre 2023 :
-	- Diminution de la taille de l'installateur msi (de 201 MO à 38 LO)
-	- Calcul des MNT (menu outil métiers) accéléré (d'un facteur 20)
+Version 5.74 November 5, 2023 :
+	- msi installer size reduced (from 201 MO to 38 LO)
+	- DTM calculation (trade tool menu) accelerated (by a factor of 20)
 
-Version 5.73 26 avril 2023 :
-	- ajout de raccourcis clavier pour les principales focntions
-	- Mise à jour de la traduction en anglais
+Version 5.73 April 26, 2023 :
+	- keyboard shortcuts added for main functions
+	- English translation updated
 				
-Version V 5.72 April, 6, 2023
+Version 5.72 April, 6, 2023
 	- read and execute MicMac pipelines as .bat files
 
-Version V 5.71 March, 20, 2023
+Version 5.71 March, 20, 2023
     - red circle display around the probable gps point : corrected   
     - expert menu, added 3 items :
         - import of a GPS points file placed on the photos
