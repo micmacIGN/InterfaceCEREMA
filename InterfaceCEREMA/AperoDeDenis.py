@@ -756,6 +756,22 @@
 # question au lieu d'arrêt brutal si la mosaïque tarama ne correspond pas au nuage de point pour tracer un profil
 # ajout d'une barre d'outil
 
+# version 5.74
+# - suppression de scipy griddata,  remplacer par un programme perso : creermnt, et suppression de matplotlib remplacé par pygal
+#     - gain de plus de 100 MO,
+#     - suppresssion de problèmes multiples de compatibilité avec et après cx_freeze (utilisation de zip_include_packages)
+# - numpy reste utilisé (plus gros module restant, avant osgeo)
+# - simplifie nombreDeExifTagDifferents, renvoie un dictionnaire en plus du nombre, plusieurs modifs s'ensuivent
+# - ajout du npmbre de photos pour chaque appareil dans la liste des appareils
+# - correction de la lecture du nombre de vertex dans un ply, parfois erroné (nombre_points = int(re.sub(r"\D", "", s))
+# - avant le calcul du volume on vérifie la présence d'un .ASC (est-ce une bonne chose ??)
+# - avant le calcul d'un profil on vérifie la présence d'un .ASC
+# - tousLesTagsUtiles : ajout du suffixe *.JPG pour éviter les confusions avec les .GIF...
+# - ajout de : self.resul100.lift()  dans encadre : à vérifier
+# - modification de l'aide sur expert/navigation gps
+
+# !!!!!!!!! attention : *.JPG est aussi présent en *.jpg et confusionnent avec la variable self.extensionChoisie
+
 # éviter les doublons "def infobulle"
 # a faire il reste 7 fois le mot maitresse dans les chaînes à traduire. Remplacer image maitresse par photo maitre
 #     (expression régulière pour recherche : \u005F.*tresse.*")
@@ -766,7 +782,7 @@
 # vérifier la numérotation des modèles 3D : fait, c'est correct, on tient compte des modèles ET des tipunch maillés 
 
 # vérifier : maillagetipunch.jpg reste sous le chantier ce qui ajoute un jpg parasite (chantier mauchaussat_8photos, vendredi 10 mars 23 14h) : pas reproduit
-#info :
+# info :
 ## sous mec malt Le fichier TA_STD-MALT.xml
 ## contient les dimensions du masque en X Y
 ## OriginePlani : sans doute le x mini, pour le y c'est pas sur
@@ -933,10 +949,12 @@ from html.parser import HTMLParser
 import atexit
 import re
 from random import *
-from scipy.interpolate import griddata      # Pour l'interpolation sur une grille
-import matplotlib.pyplot as plt
 import pyautogui
-from numpy import mgrid #ne pas supprimer (bien que mgrid ne soit plus appelé, numpy sert à scipy)
+import numpy    # uniquement pour définir un array dans creer Mnt
+import collections
+import pygal
+from pyproj import CRS
+from pyproj import _datadir, datadir
 
 def foreach_window(hwnd, lParam):
     if IsWindowVisible(hwnd):
@@ -1126,7 +1144,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales et certaines constantes
 
-numeroVersion = "5.73"
+numeroVersion = "5.74"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour contrôler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -4591,6 +4609,14 @@ class Interface(ttk.Frame):
                                 - ignorer les données GPS des photos.        
                         ''')
 
+        self.aide2061 =   _('''
+                            Aprés avoir choisi un code EPSG lancer la densification pour obtenir un nuage de points dans le référentiel choisi.
+                            Les coordonnées utilisées, en mètres, sont translatées d'une valeur indiquée dans la commande C3DC :
+                            par exemple : OffsetPly=[320000, 7680000, 0]
+                            Cette information est affichée par l'item 'afficher les inforamtions sur le référentiel choisi' (après densification)
+                            Ceci afin de conserver la précision des mesures.''')
+                            
+
         self.aide207 =   _('''Les outils 'métiers'           
                              Les outils métiers exploitent les nuages de points PLY ou XYZ et les Modèles Numériques de Terrain (MNT) .          
                              L'extension des fichiers MNT est .ASC. Le format est celui de l'IGN.           
@@ -4698,12 +4724,12 @@ class Interface(ttk.Frame):
         self.aide23 = self.aideEntete + self.aide203 + self.aideFinDePage   # MicMac
         self.aide24 = self.aideEntete + self.aide204 + self.aideFinDePage   # vidéo
         self.aide25 = self.aideEntete + self.aide205 + self.aideFinDePage   # Outils
-        self.aide26 = self.aideEntete + self.aide206 + self.aideFinDePage   # Expert
+        self.aide26 = self.aideEntete + self.aide206 +self.aide2061+"\n"+self.aideFinDePage   # Expert, avec ajout
         self.aide27 = self.aideEntete + self.aide207 + self.aideFinDePage   # Outils métiers
         self.aide28 = self.aideEntete + self.aide208 + self.aide210 +self.aideFinDePage   # Paramètres
         self.aide29 = self.aideEntete + self.aide209 + self.aideFinDePage   # Aide      
         self.aide1  = self.aideEntete+self.aide201+"\n"+self.aide202+"\n"+self.aide203+"\n"+self.aide204+"\n"+self.aide205+"\n"+\
-                      self.aide206+"\n"+self.aide207+"\n"+self.aide205+"\n"+self.aide208+"\n"+self.aide209+"\n"+self.aideFinDePage
+                      self.aide206+self.aide2061+"\n"+self.aide207+"\n"+self.aide205+"\n"+self.aide208+"\n"+self.aide209+"\n"+self.aideFinDePage
         
 
     # les prises de vue
@@ -6051,7 +6077,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     ################################## LE MENU EDITION : afficher l'état, les photos, lire une trace, afficher les nuages de points ############################
                                                 
     def afficheEtat(self,entete="",finale=""):
-        print("self.toolbarFichier affiche etat =",self.toolbarFichier)
         # initialisations locales
         nbPly = 0
         texte = str()        
@@ -6632,10 +6657,10 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if self.etatDuChantier == 0:                                        # pas encore de chantier
             self.encadre(self.pasDeChantier)
             return        
-        if os.path.exists("profil.png"):
-            open_file("profil.png")
+        if os.path.exists("profil.svg"):
+            open_file("profil.svg")
         else:
-            self.encadre(_("Pas de fichier profil.png"))
+            self.encadre(_("Pas de fichier profil.svg"))
               
 ############### Affichages des traces
 
@@ -9175,14 +9200,14 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             _("Modifier la liste des photos pour calibration.")
             self.encadre(message)
             return
-        nbAppareils = self.nombreDeExifTagDifferents("Model")
+        nbAppareils,liste = self.nombreDeExifTagDifferents("Model")
         # si un seul appareil : pas de message initial, message final si pas de résultat
       
-        if nbAppareils>1:     # plusieurs appareils photos, calibration nécessaire, liste des appareils dans self.lesTags        
+        if nbAppareils>1:     # plusieurs appareils photos, calibration nécessaire, liste des appareils dans liste        
             if self.photosPourCalibrationIntrinseque:
                 nb = dict()
                 message = str()           
-                for appareil in self.lesTags:
+                for appareil in liste:
                     nb[appareil] = 0
                 for photo in self.photosCalibrationSansChemin:
                     appareil = self.tagExif("Model",photo)
@@ -9194,9 +9219,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                         message += _("Aucune photo pour la calibration de l'appareil ")+a+" "+_("c'est insuffisant.\n")
                 if message:
                     message += "\n\n "+_("Modifier la liste des photos pour calibration.")
-                    message += "\n\n "+_("Le menu 'expert/liste des appareils' fournit le nom de l'appareil pour chaque photo.")                    
+                    message += "\n\n "+_("Le menu\n 'Outils/Toutes les focales et les noms'\n fournit le nom de l'appareil pour chaque photo.")                    
                     self.encadre(message)
-                    return                
+                    return
             else:     # Plusieurs appareils et Aucune photo pour calibration les appareils photos
                  if len(self.photosPourCalibrationIntrinseque)==0 and self.choixCalibration.get()!="chantier":
                     message = _("Aucune photo pour la calibration des ")+str(nbAppareils)+" "+_("appareils photos.")+\
@@ -11515,7 +11540,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if silence=="oui": return        
         self.encadre(texte)
 
-        if self.nombreDeExifTagDifferents("Model")>1:
+        if self.nombreDeExifTagDifferents("Model")[0]>1:
             message = "\n\n"+_("Attention : les photos proviennent de plusieurs appareils différents.\n Voir l'item 'toutes les focales...' et le menu expert.")
             self.ajoutLigne(message)
             self.encadrePlus(message)
@@ -11976,6 +12001,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     def miseAJourDicoCamera(self):
         
+        
         if self.pasDePhoto():return
         if self.pasDeMm3d():return
         if self.pasDeExiftool():return
@@ -11984,12 +12010,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
           return
         message = str()
         self.encadre("Patience... recherche les noms de tous les appareils photos du chantier...")
-        nb = self.nombreDeExifTagDifferents("Model")
+        nb,l = self.nombreDeExifTagDifferents("Model")
         self.menageEcran()
         if nb == 0:
             self.encadre(-("Pas de modèle d'appareil photo dans les exif."))
             return
-        self.nomCamera = self.lesTags[0]
+        self.nomCamera = list(l.keys())[0]
         if self.nomCamera=="": # pas de nom d'appareil photo dans les exifs
             message=_("\Pas de nom d'appareil photo dans l'exif")
             self.encadre(message)
@@ -12008,7 +12034,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         if nb > 1:
             self.choisirUnePhoto(
-                            self.lesTags,
+                            l.keys(),
                             titre=_("Choisir le ou les appareils à mettre à jour"),
                             message=_("Liste des appareils du chantier : \n"),
                             mode='extended',
@@ -12018,7 +12044,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 self.lesAppareilsPourDicocamera = self.selectionPhotosAvecChemin                
                 self.item1001.configure(text=_("Pour les appareils choisis :\n")+"\n".join(self.lesAppareilsPourDicocamera))
                 self.item1000.pack()    
-     # ne rien ajouter ici qui puisse fermer les boîtes de dialogue
+    # ne rien ajouter ici qui puisse fermer les boîtes de dialogue
 
     # écriture des dimensions du capteur dans dicocamera.xml
         
@@ -12835,10 +12861,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if self.etatDuChantier == 0:                                        # pas encore de chantier
             self.encadre(self.pasDeChantier)
             return        
-        self.encadre(_("Recherche des noms d'appareil photos. Patience !."))    
-        nb = self.nombreDeExifTagDifferents("Model")
-        if nb>1:    message = _("Les photos proviennent de ")+str(nb)+" "+_("appareils photos différents : ")+"\n\n"+"\n".join(self.lesTags)
-        elif nb==1: message = _("Les photos proviennent d'un seul appareil : ")+"\n\n"+"\n".join(self.lesTags)
+        self.encadre(_("Recherche des noms d'appareil photos. Patience !."))  
+        nb,l = self.nombreDeExifTagDifferents("Model")
+        if nb>1:    message = _("Les photos proviennent de ")+str(nb)+" "+_("appareils photos différents : ")+"\n\n"+"\n".join([e+" : "+str(l[e])+" photos" for e in l])        
+        #if nb>1:    message = _("Les photos proviennent de ")+str(nb)+" "+_("appareils photos différents : ")+"\n\n"+"\n".join([e+" : "+str(l[e]) for e in l])
+        elif nb==1: message = _("Les photos proviennent d'un seul appareil : ")+"\n\n"+self.lesTags[0]
         else:       message = _("L'exif des photos ne contient pas le nom de l'appareil photo.")
         self.encadre(message)
         self.ajoutLigne("Les appareils photos : \n"+message)
@@ -13345,6 +13372,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.texte101.configure(text=texte,justify=aligne)
         self.texte101Texte = texte  # pour encadrePlus
         self.resul100.pack()
+        self.resul100.lift()  
         fenetre.title(self.etatSauvegarde+self.chantier+" - "+self.titreFenetre)
         fenetre.focus_force()       # force le focus
         fenetre.update()
@@ -13712,7 +13740,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     texte = texte+'\n\n' + _('Il reste un chantier impossible à supprimer maintenant : ') + '\n\n'+'\n'.join(conserve)
             else:
                     texte = texte+'\n\n' + _('Il reste des chantiers impossibles à supprimer maintenant : ') + '\n\n'+'\n'.join(conserve)
-            texte+="\n\n"+_("Espace disque récupéré : ")+str(espaceGagne)+_(" MO") 
+            texte+="\n\n"+_("Espace disque récupéré : ")+str(espaceGagne)+_(" MO")
+            self.tailleDuChantierEnMO = sizeDirectoryMO(self.repTravail)             
             self.sauveParam()                                   # mémorisation de la suppression
             self.encadre(texte)
             return
@@ -15342,10 +15371,10 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         return len(self.lesPrefixes)
 
     def nombreDeExifTagDifferents(self,tag="SerialNumber"):     # on vérifie l'unicité des valeurs pour un tag (numéros de série par défaut)
-        lesTags = [[self.encadrePlus("."),self.tagExif(tag,photo)] for photo in self.photosSansChemin]
-        lesTags = set([e1 for e0,e1 in lesTags])
-        self.lesTags=[ tag for tag in lesTags if tag !=""]      # abonde la liste des valeurs trouvées dans self.lesTags    
-        return len (self.lesTags)                               # renvoie le nombre de valeurs différentes : 0, 1 , plus
+        self.lesTags = [self.tagExif(tag,photo) for photo in self.photosSansChemin if self.tagExif(tag,photo)] # toutes les valeurs du tag, != ""  
+        c = collections.Counter(self.lesTags)                   # les valeurs sans doublon
+        return len(c),c                                         # renvoie le nombre de valeurs différentes et le dictionnaire : tag : nb occurences
+                                                                # renvoie le nombre de valeurs différentes : 0, 1 , plus
 
     def afficheTexte(self,texte):
         self.cadreVide()
@@ -16297,7 +16326,7 @@ def isNumber(s):       # https://stackoverflow.com/questions/354038/how-do-i-che
     # 0) détermine le type de ply : mesh ou nuage, binary ou ascii
     # 1) extraireLesXyzDuPly,  : décode les fichiers PLY en mode binaire
     # 2) lireFichierXYZ 
-    # 3) creerMnt : appel de la fonction scipy mgrid qui construit le maillage
+    # 3) creerMnt : programme perso
 
 
 def typeDePly(fichier):              # retour :
@@ -16374,7 +16403,7 @@ def extraireLesXyzDuPly(fichierPly):    # retour : lesXyz ou False : LesXYZ : li
         if "big_endian" in s:
             endian=">"
         if "element vertex" in s:                                   # nombre de points
-            nombre_points = int(s.split(" ")[-1][0:-1])
+            nombre_points = int(re.sub(r"\D", "", s))               # corrigé le 5/7/23
         if "element face" in s:                                     # nombre de faces, cela termine la lecture : on ignore les faces
             nombre_faces = int(s.split(" ")[-1][0:-1])
             break
@@ -16510,7 +16539,7 @@ def extraireLesXyzDuAsc(fichierASC):# fichier texte semis de points 3D comportan
     mnt["surface"]= (mnt["max_x"]-mnt["min_x"])*(mnt["max_y"]-mnt["min_y"])
     return mnt
 
-def mgrille(min_x,max_x,lePas, min_y,max_y): # pour remplacer mgrid de numpy, afin de se passer de numpy !!!!    
+def mgrille(min_x,max_x,lePas, min_y,max_y): # pour remplacer mgrid de numpy !    
     nb_x=int((max_x-min_x)/lePas)+1
     ix = range(nb_x)
     gx=[min_x+e*lePas for e in ix]
@@ -16520,30 +16549,37 @@ def mgrille(min_x,max_x,lePas, min_y,max_y): # pour remplacer mgrid de numpy, af
     grid_x = [ [e]*nb_y for e in gx]
     grid_y = [gy]*nb_x
     return grid_x,grid_y
-    
-def creerMnt(semisDePoints,lePas): # méthode linéaire, remplissage -9999 ; LesXYZ : liste de tuples de la forme ((x,y),z)    
+
+
+# nouvelle version perso, sans scipy, plus rapide
+def creerMnt(semisDePoints,lePas):
     # création de la grille régulière : générer un maillage avec un pas régulier,
     # au format grid de numpy les couples (x,y) sont éclatés en 2 listes [x] et [y]
     
     ################ ATTENTION : si les valeurs de x ou y sont trop grandes alors la précision du résultat est faible (voir pb mauchassat mnt TN1 471 687)
     # il faut donc tranlater les valeurs pour améliorer la précision : on limite localement à 4 chiffres au dessus de la virgule, sans toucher au mnt initial
-    deltaX = round(semisDePoints["max_x"],-4)
-    deltaY = round(semisDePoints["max_y"],-4)
-    minX = round(semisDePoints["min_x"],4)-deltaX
-    maxX = round(semisDePoints["max_x"],4)-deltaX
-    minY = round(semisDePoints["min_y"],4)-deltaY
-    maxY = round(semisDePoints["max_y"],4)-deltaY
-    
-    #################    utilisation de mgrille au lieu de numpy.mgrid
-    grid_x, grid_y = mgrille(minX,maxX,lePas, # constitue la grille demandée de minx, miny à maxX,maxY, au pas de lePas
-                           minY,maxY)
-    grid  = griddata( [(x-deltaX,y-deltaY) for x,y,z in semisDePoints["lesXyz"]],
-                      [z  for x,y,z in semisDePoints["lesXyz"]],
-                      (grid_x, grid_y),
-                      method='linear',          # alternative : nearest ou linear ou cubic mais nearest ne fonctionne pas !!!!
-                      fill_value="-9999")                      
+    minX = semisDePoints["min_x"]
+    minY = semisDePoints["min_y"]
+    maxX = semisDePoints["max_x"]
+    maxY = semisDePoints["max_y"]
+    largeur = 1+int((maxX-minX)/lePas)
+    hauteur = 1+int((maxY-minY)/lePas)
+    hauteur = 1+int((maxX-minX)/lePas)
+    largeur = 1+int((maxY-minY)/lePas)    
+    grid = numpy.zeros((hauteur,largeur), dtype=float)
+    nbgrid = numpy.zeros((hauteur,largeur), dtype=float)
+    for x,y,z in semisDePoints["lesXyz"]:
+        # indices point de la grille le plus proche en x (au SO):
+        Ypp = int((x-minX)/lePas)
+        Xpp = int((y-minY)/lePas)
+        grid[Ypp,Xpp] += z
+        nbgrid[Ypp,Xpp] += 1
+     
+    grid= grid/nbgrid
+    numpy.nan_to_num(grid, copy=False, nan=-9999)
     semisDePoints["mnt"]=grid
     return semisDePoints
+
 ## Pour insérer une image, ou un logo, dans un script, utilisable ensuite par Tkinter : (effectuer les points 2 et 3)
 ## 1) Enregistrer l'image au format GIF (sinon il faudra utiliser PIL) voir (les images dans http://tkinter.fdex.eu/doc/sa.html#images)
 ## 2) Convertir le binaire GIF en texte encodé en 64 bits par le bout de code suivant :
@@ -16563,6 +16599,38 @@ def gif2txt(fichier):
         with open(os.path.basename(fichier)+'.txt', 'w') as image_txt: 
              image_txt.write(str(encoded_string))
 
+# cette solution ne permet pas de redimensionner l'image par PIL resize
+# pour cela voir la solution en commentaire ci-après
+########## Comment insérer le contenu d'un fichier dans le code et le traiter avec PIL comme s'il était un fichier 
+##import base64
+##import os
+##def gif2txt(fichier):   # lecture du fichier, recopier dans une variable,
+##                        # y compris le 'b' initial
+##                        # la variable porra être équivalente à un fichier avec io :
+##                        # io.BytesIO(searchGifNonEncode)
+##                        # qui sera lu par PIL.Image
+##    with open(fichier, 'rb') as image_file: 
+##        encoded_string = image_file.read()
+##        with open(os.path.basename(fichier)+'sanscode.txt', 'w') as image_txt: 
+##             image_txt.write(str(encoded_string))
+##
+##gif2txt("nom du fichier gif")
+##print("fini")
+##
+##from PIL import Image, ImageTk
+##import io
+##import  tkinter as tk
+### Exemple de données d'image recopié :
+##searchGifNonEncode=b"GIF89a\x18\x00\x18\x00\x85\x001\x00\x00\x00\x04\x04\x04\x08\x08\x08\x0c\x0c\x0c\x10\x10\x10\x14\x14\x14\x18\x18\x18\x1c\x1c\x1c   $$$(((,,,000444888<<<@@@DDDHHHLLLPPPUUUYYY]]]aaaeeeiiimmmqqquuuyyy}}}\x81\x81\x81\x85\x85\x85\x89\x89\x89\x8d\x8d\x8d\x91\x91\x91\x95\x95\x95\x99\x99\x99\x9d\x9d\x9d\xa1\xa1\xa1\xa5\xa5\xa5\xaa\xaa\xaa\xae\xae\xae\xb2\xb2\xb2\xb6\xb6\xb6\xba\xba\xba\xbe\xbe\xbe\xc2\xc2\xc2\xc6\xc6\xc6\xca\xca\xca\xce\xce\xce\xd2\xd2\xd2\xd6\xd6\xd6\xda\xda\xda\xde\xde\xde\xe2\xe2\xe2\xe6\xe6\xe6\xea\xea\xea\xee\xee\xee\xf2\xf2\xf2\xf6\xf6\xf6\xfa\xfa\xfa\xff\xff\xff,\x00\x00\x00\x00\x18\x00\x18\x00\x05\x06}\xc0\x9fpH,\x1a\x8f\xc8\xa4r\xc9\x84Y\x0e\x80\x83\x05\xc6\x1c\xfa4\x80\xac\x16\xa0\xf1U\xb1\x80\x8e\x8c'\xebd5\xcd\xec\xab\xf8\xcaR\x95\x95\xf0\xd1\\Y\x1a\x00\xb2\xa3\x0c`X\x06\x00;G;\x00\x01vxz|Kq\x1ds\x00uJ0jlnL`bdf\x8eUW[Zq\x077UNP\x06\x15TP\x08\xa1UF7\x08\x00\xa9\xab\xac\xae\xb0\xb1D\xad\xaf\xaa\xb5B\xad\xb4\xba\xbb\xb9\xbe\xc1\xc2\xb5A\x00;"
+##root = tk.Tk()
+### Ouvrir l'image à partir des données en utilisant PIL
+##image = Image.open(io.BytesIO(searchGifNonEncode))
+##image50=image.resize((50,50))
+### Créer une instance de PhotoImage à partir de l'image ouverte
+##photo = ImageTk.PhotoImage(image50)
+### Afficher l'image dans un Label
+##label = tk.Label(root, image=photo)
+##label.pack() 
 ##################################### Calcul du volume entre 2 MNT
 
 def infoVolume():
@@ -17374,22 +17442,22 @@ def tracerProfil():
     ligneProfil = pointille(x1,y1,x2,y2,pas)
     pointsZ = interpol(gauche,haut,pas,ncols,semis,ligneProfil,noData)
     # affichage de la polyligne après suppression des noData :
-    pointsZ = [0 if e==noData else e for e in pointsZ]
+    pointsZ = [None if e==noData else e for e in pointsZ]
     
     ############## Création par matplotlib du fichier profil.png et affichage par l'outil système par défaut
 
-    plt.plot(pointsZ)
-    plt.ylabel(_('Altitude'))
-    plt.xlabel(_('pas = %s ') % pas)
-    plt.title(_("Profil entre (%.4f;%.4f) et (%.4f;%.4f)\nNom du MNT : %s" % (x1,y1,x2,y2,nomMNT)))
-    plt.savefig("profil.png")
-    plt.close()
-    if os.path.exists("profil.png"):
-        interface.encadreEtTrace(_("Le profil est généré dans le fichier\nprofil.png\nsous le répertoire\n%s)" % interface.repTravail))
-        open_file("profil.png")
+    # avec pygal pour remplacer matplotlib
+
+    line_chart = pygal.Line()
+    line_chart.title = (_("Profil entre (%.4f;%.4f) et (%.4f;%.4f)\nNom du MNT : %s" % (x1,y1,x2,y2,nomMNT)))
+    line_chart.add('Altitude', pointsZ)
+    line_chart.render_to_file('profil.svg')
+    if os.path.exists("profil.svg"):
+        interface.encadreEtTrace(_("Le profil est généré dans le fichier\nprofil.svg\nsous le répertoire\n%s)" % interface.repTravail))
+        open_file("profil.svg")
     else:
         interface.encadre(_("Le profil n'a pas été généré."))
-        
+   
 def interpol(gauche,haut,pas,ncols,semis,points,noData):   # Altitude d'un point
     # calcul de la position X,Y du point dans le semis :
     pointsZ=list()
@@ -18256,7 +18324,7 @@ if __name__ == "__main__":
         dataFlecheGauche = tkinter.PhotoImage(data=flecheGauche)        
         dataLogoCerema   = tkinter.PhotoImage(data=logoCerema)
         dataLogoIGN      = tkinter.PhotoImage(data=logoIGN)
-        dataSearchGif    = tkinter.PhotoImage(data=searchGif)
+        dataSearchGif    = tkinter.PhotoImage(data=searchGif) # pour afficher les barres d'outil
         # création de l'interface : menu, widgets...        
         interface = Interface(fenetre)
         # Zone de test éventuel :
