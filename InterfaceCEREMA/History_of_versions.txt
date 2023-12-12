@@ -1,5 +1,7 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
+Version 5.75 December 12, 2023
+
 Version 5.74 November 5, 2023 :
 	- msi installer size reduced (from 201 MO to 38 LO)
 	- DTM calculation (trade tool menu) accelerated (by a factor of 20)

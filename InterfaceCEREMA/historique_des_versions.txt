@@ -1,5 +1,12 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 5.75 12 décembre 2023 :
+                - Ajout d'un item : objectif dans le menu MicMac :
+                  oriente l'utilisateur en fonction de son but
+                - Ajout du calcul de la profondeur moyenne de profil 'PMP) et de
+                  la rugosité dans les informations sur un MNT
+                - plusieurs modifications mineures : voir le script
+
 			Version 5.74 5 novembre 2023 :
                 - Diminution de la taille de l'installateur msi (de 201 MO à 38 LO)
                 - Calcul des MNT (menu outil métiers) accéléré (d'un facteur 20)

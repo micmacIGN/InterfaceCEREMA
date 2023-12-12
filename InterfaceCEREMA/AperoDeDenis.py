@@ -757,7 +757,7 @@
 # ajout d'une barre d'outil
 
 # version 5.74
-# - suppression de scipy griddata,  remplacer par un programme perso : creermnt, et suppression de matplotlib remplacé par pygal
+# - suppression de scipy griddata, remplacer par un programme perso : creermnt, et suppression de matplotlib remplacé par pygal
 #     - gain de plus de 100 MO,
 #     - suppresssion de problèmes multiples de compatibilité avec et après cx_freeze (utilisation de zip_include_packages)
 # - numpy reste utilisé (plus gros module restant, avant osgeo)
@@ -770,6 +770,39 @@
 # - ajout de : self.resul100.lift()  dans encadre : à vérifier
 # - modification de l'aide sur expert/navigation gps
 
+# Version 5.75
+# - suppression bouton "ouvrir en grand" dans la fenêtre "duMénage"
+# - suppression de l'item de menu : afficher outils (menu paramètre) le code reste pour le futur
+# - Information sur un fichier ply :  ajout des infos pour les binaires (correction d'un bug)
+# - réactivation de la recherche d'une nouvelle version au lancement
+# - suppression du mail @cerema.fr dans l'a_propos
+# - tracer profil : si la mosaïque n'existe pas on ne la crée pas : on informe l'utilisateur qu'il peut la créer par menu/outils
+# - suppression 2 print dans le filtre malt
+# - Suppression de 2 messages sur la fenêtre de saisie des points : (mise à l'échelle , profil)
+# - remplacer longueur par hauteur dans demandeMNTPourInfo
+# - visualiser le nuage dense affiche le nuage dense et non le nuage tipunch (colloque HUMANUM)
+# - dans l'a propos : indiquer 2024 au lieu de 2023
+# - remplacer des / par des // : vérifier que tout marche encore !
+# - ajout d'une fonction pour modifier les MNT au format ASC, dans le menu outils métier : translate les X,Y et Z
+# - remplacer 5 fois "cols" par "ncols" dans la gestion des mnt ign (en fait peu de conséquence, car usage local)
+# - demandeFichier(....) : le répertoire par défaut "" est remplacé par os.getcwd()
+# - au chargement d'un chantier on possitionne explicitement le répertoire courant comme étant le répertoire du chantier
+# - Initialisation de self.Offs = [0,0,0] au lieu de '[0,0,0,]' (liste au lieu de str)
+#   Changement consécutifs
+# - La création d'un MNT (menu Outils métier) rétablit l'offset qui a été modifié pour le nuage dense
+#   cela intervient dans les systèmes de projection métriques
+#   le MNT est directement lisible dans QGIS si le projet est dans le bon système (en lambert 93 en france métropolitaine)
+# - suppression des références au forum-micmac (qui n'existe plus)
+# - ajout d'un item dans le menu micmac pour choisir la filière ! grosse modif !
+# - suppression car non appelés : copierHomolOriTarama et copierorientation
+# - renomme copier_les_fichiers_utiles_orientation en copier_les_fichiers_utiles_calibration
+# - choisirUnChantier(....) : ajout du paramètre "silence", faux par défaut mais si vrai et un seul chantier : retourne ce chantier sans poser de questions.
+
+# a voir : lancer micmac propose le choix densification alors que l'orientation est pas faite (aprés import des homoloques)
+# affiche etat de la calibration si elle est dans les objectifs.
+# pb si la valeur "1 1 1" des pts gps est incorrecte
+# pb pour l'ajout d'un chantier à partir d'un répertoire qui a été recopié ailleurs
+
 # !!!!!!!!! attention : *.JPG est aussi présent en *.jpg et confusionnent avec la variable self.extensionChoisie
 
 # éviter les doublons "def infobulle"
@@ -780,6 +813,8 @@
 # à faire bouton pour supprimer masque 2D tarama
 # à faire : adapter l'aide, corriger l'orthographe,
 # vérifier la numérotation des modèles 3D : fait, c'est correct, on tient compte des modèles ET des tipunch maillés 
+# def lireMNTIGN(mntIgn):
+    # pb : le retour peut être None, str ou dict !! à corriger
 
 # vérifier : maillagetipunch.jpg reste sous le chantier ce qui ajoute un jpg parasite (chantier mauchaussat_8photos, vendredi 10 mars 23 14h) : pas reproduit
 # info :
@@ -1144,7 +1179,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales et certaines constantes
 
-numeroVersion = "5.74"
+numeroVersion = "5.75"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour contrôler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -1245,6 +1280,10 @@ atexit.register(fin)
 # version MicMac non déterminée
 
 pasDeVersionMicMac = _("Pas de version identifiée de MicMac")
+
+# suppression des éventuels mm3d encours en cours
+
+killMm3d()
 
 ############################ FIN DE L'INITIALISATION #########################################################
 
@@ -1625,13 +1664,6 @@ class CalibrationGPS:   # Paramètres : fenetre maître,Nom du fichier image, li
         if interface.etatDuChantier<=3 and afficherSuivantPrecedent: # pas de point homologues
              ttk.Label(self.frame5,text=_("*** Remarque : Calculer les points homologues pour aider la saisie ***")).pack()   
         ttk.Label(self.frame5,text=_("Utiliser la molette pour zoomer/dezoomer pendant la saisie.")).pack()
-        ttk.Label(self.frame5,text=_("La position du curseur devient le centre du zoom suivant.")).pack()
-        if interface.etatDuChantier>3:
-            if interface.afficherPointsHomologues:
-                messagePointsHomologues = _("Les points homologues sont affichés en couleur. Voir menu expert.")
-            else:
-                messagePointsHomologues = _("Les points homologues ne sont pas affichés. Voir menu expert.")           
-            ttk.Label(self.frame5,text=messagePointsHomologues).pack()
         self.frame5.pack()
         
         # évènements
@@ -2274,7 +2306,8 @@ class Interface(ttk.Frame):
 
         self.lancementMultiple()
         
-        #affiche le logo durant 5 secondes, sauf demande expresse
+        # affiche le logo durant 5 secondes, sauf demande expresse
+        
         if self.tacky:
             try:
                 global compteur
@@ -2381,8 +2414,9 @@ class Interface(ttk.Frame):
         # MicMac
                 
         menuMicMac = tkinter.Menu(mainMenu,tearoff = 0)                                         ## menu fils : menuFichier, par défaut tearoff = 1, détachable
-        #menuMicMac.add_command(label=_("Choisir des photos"), command=self.lesPhotos)
-        menuMicMac.add_command(label=_("Options"), accelerator="Ctrl+P", command=self.optionsOnglet)
+        menuMicMac.add_command(label=_("Préciser l'objectif du chantier"), command=self.filiereChantier)
+        menuMicMac.add_separator()
+        menuMicMac.add_command(label=_("Modifier les options"), accelerator="Ctrl+P", command=self.optionsOnglet)
         menuMicMac.add_separator()     
         menuMicMac.add_command(label=_("Lancer MicMac"), accelerator="Ctrl+M", command=self.lanceMicMac)                 ## Ajout d'une option au menu fils menuFile
 
@@ -2485,6 +2519,7 @@ class Interface(ttk.Frame):
         menuMetier = tkinter.Menu(mainMenu,tearoff = 0)         ## menu fils : menuFichier, par défaut tearoff = 1, détachable
         menuMetier.add_command(label=_("Ecrire un MNT à partir d'un PLY"), accelerator="Ctrl+1", command=self.ply2Mnt)
         menuMetier.add_command(label=_("Ecrire un MNT à partir d'un fichier XYZ"), command=self.xyz2Mnt)
+        menuMetier.add_command(label=_("Corriger les altitudes (et les coordonnées)"), command=self.translateMNT)
         menuMetier.add_command(label=_("Visualiser un fichier MNT"), command=afficheMNTIGN)        
         menuMetier.add_separator()
         menuMetier.add_command(label=_("Calculer le volume d'un MNT"),  accelerator="Ctrl+2", command=calculVolumeMnt)        
@@ -2534,7 +2569,8 @@ class Interface(ttk.Frame):
         menuParametres.add_command(label=_("Désactive/Active la recherche d'une nouvelle version au lancement"),command=self.modifierGitHub)
         menuParametres.add_separator()          
         menuParametres.add_command(label=_("Raccourcis clavier"), accelerator="Ctrl+6", command = self.raccourcisClavier)      
-        menuParametres.add_command(label=_("Afficher la barre d'outils"), command = self.afficherBarreOutil)      
+        # pour le futur : pas encore mûr (le 14/11/2023) il manque les icones 
+        # menuParametres.add_command(label=_("Afficher la barre d'outils"), command = self.afficherBarreOutil)      
      
         # Aide
         
@@ -2608,6 +2644,10 @@ class Interface(ttk.Frame):
         # annonce du lancement :
 
         self.ajoutTraceComplete(heure()+" "+_("lancement d'aperodedenis")+version+".")
+
+        # vérifie la présence d'une nouvelle version sur github
+
+        self.verifieVersion()
 
         # zone de test éventuel :
 
@@ -3204,7 +3244,16 @@ class Interface(ttk.Frame):
         self.langues = list()
         self.langues = ("Français/French","Anglais/English","Allemand/Deutsch","Espagnol/Español",
                         "Italien/Italiano","Chinois/中文","Arabe/عربى")
-       
+
+        # Pour définir l'objectif du chantier (menu MicMac, Objectif)
+
+        self.objectifChantier           = tkinter.StringVar()
+        self.chargerCalibration         = tkinter.IntVar()
+        self.definirReferentiel         = tkinter.IntVar()
+        self.definirGPSouMetrique       = tkinter.StringVar()
+        self.texteChargerCalib          = tkinter.StringVar()
+        self.pointsMaillage             = tkinter.StringVar()        
+        
         # L'onglet :
         
         self.onglets = ttk.Notebook(fenetre)                           # create Notebook in "master" : boite à onglet, supprimé par menageEcran() comme les frames
@@ -3654,7 +3703,7 @@ class Interface(ttk.Frame):
         self.item1002 = ttk.Label(self.item1000,
                                   text= _("Indiquer les dimensions du capteur, en mm.") + "\n"+\
                                         _("par exemple :") + "\n\n                                  5.7  7.6  \n\n"+\
-                                        _("Le site :") + "\n \http://www.dpreview.com/products\n"+\
+                                        _("Le site :") + "\n http://www.dpreview.com/products\n"+\
                                         _("fournit les dimensions de presque tous les appareils photos."))
         self.item1003 = ttk.Entry(self.item1000)
         self.item1004 = ttk.Button(self.item1000,
@@ -3783,8 +3832,112 @@ class Interface(ttk.Frame):
         self.item3020.pack(pady=5)        
         self.item3021.pack(pady=5)
 
-        # La boite de dialogue pour demander le nombre de photos à retenir parmi les meilleures
         
+        # La fenetre pour la translation des MNT au format ASC : modif des X,Y et Z
+
+        self.translateX    =   tkinter.StringVar()
+        self.translateY    =   tkinter.StringVar()
+        self.translateZ    =   tkinter.StringVar()
+
+        self.translateX.set("0") 
+        self.translateY.set("0") 
+        self.translateZ.set("0")
+        
+        self.item4000 = ttk.Frame(fenetre)
+        self.item4010 = ttk.Label(self.item4000,
+                                  text=_("Translation d'un MNT") + "\n\n" + _("Valeur à ajouter aux altitudes : "))
+        self.item4011 = ttk.Entry(self.item4000,
+                                  textvariable=self.translateZ)         
+        self.item4001 = ttk.Label(self.item4000,
+                                  text=_("\n\n" + _("Valeur à ajouter aux X : ")))
+        self.item4002 = ttk.Entry(self.item4000,
+                                  textvariable=self.translateX)        
+        self.item4003 = ttk.Label(self.item4000,
+                                  text= _("Valeur à ajouter aux Y : "))
+        self.item4004 = ttk.Entry(self.item4000,
+                                  textvariable=self.translateY)
+
+        self.item4020 = ttk.Button(self.item4000,
+                                text=_('Valider et mettre à jour le MNT'),
+                                command=self.translateOK)          # bouton permettant de tout valider
+        self.item4021 = ttk.Button(self.item4000,
+                                text=_(' Annuler'),
+                                command=self.translateKO)          # bouton permettant de tout annuler
+        
+        self.item4010.pack(pady=5)
+        self.item4011.pack(pady=1)        
+        self.item4001.pack(pady=5)
+        self.item4002.pack(pady=1)
+        self.item4003.pack(pady=5)
+        self.item4004.pack(pady=1)
+        self.item4020.pack(pady=5)        
+        self.item4021.pack(pady=5)
+
+        # Boite dialogue pour préciser le type de chantier : permet de modifier les options par défaut
+        
+        self.item4100 = ttk.Frame(fenetre,borderwidth=5,height=50,relief='sunken',padding="0.3cm")        
+        self.item4101 = ttk.Label(self.item4100, text=_("Préciser l'objectif du chantier :"))
+        self.item4150 = ttk.Frame(self.item4100,height=50,relief='sunken',padding="0.3cm")      # pour le check button, fera un encadrement        
+        self.item4102 = ttk.Radiobutton(self.item4150, text=_("Nuage dense"),          variable=self.objectifChantier, value='dense',  command=self.modifierOptionsChantier)
+        self.item4103 = ttk.Radiobutton(self.item4150, text=_("Orthomosaïque"),        variable=self.objectifChantier, value='ortho',  command=self.modifierOptionsChantier)
+        self.item4104 = ttk.Radiobutton(self.item4150, text=_("Nuage dense avec masque 3D sur le nuage non dense "), variable=self.objectifChantier, value='masque3D',  command=self.modifierOptionsChantier)
+        self.item4105 = ttk.Radiobutton(self.item4150, text=_("Nuage dense avec masque 2D sur certaines photos "),   variable=self.objectifChantier, value='masque2D',  command=self.modifierOptionsChantier)
+        self.item4106 = ttk.Radiobutton(self.item4150, text=_("Nuage dense avec masque sur la mosaïque des photos "),   variable=self.objectifChantier, value='masqueMosaique',  command=self.modifierOptionsChantier)
+        self.item4107 = ttk.Radiobutton(self.item4150, text=_("Orthomosaïque avec masque sur la mosaïque des photos "),   variable=self.objectifChantier, value='masqueOrtho',  command=self.modifierOptionsChantier)        
+        self.item4108 = ttk.Radiobutton(self.item4150, text=_("Nuage non dense seul "),   variable=self.objectifChantier, value='nondense',  command=self.modifierOptionsChantier)
+        self.item4109 = ttk.Radiobutton(self.item4150, text=_("Chantier pour calibrer l'appareil photo"),   variable=self.objectifChantier, value='calib',  command=self.modifierOptionsChantier)
+        self.item4110 = ttk.Radiobutton(self.item4150, text=_("Modèle numérique de terrain MNT"),   variable=self.objectifChantier, value='MNT',  command=self.modifierOptionsChantier)        
+
+        self.item4121 = ttk.Label(self.item4100, text=_("Voulez-vous utiliser une calibration et/ou un référentiel ?"))
+        self.item4130 = ttk.Frame(self.item4100,height=50,relief='sunken',padding="0.3cm")      # encadrement
+        self.item4131 = ttk.Checkbutton(self.item4130, variable=self.chargerCalibration, textvariable=self.texteChargerCalib,command=self.chargerCalib)
+        self.item4132 = ttk.Checkbutton(self.item4130, variable=self.definirReferentiel, text=_("Définir un référentiel géographique pour le chantier : Lambert 93 ou code EPSG"),command=self.definirRef)
+
+        self.item4170 = ttk.Label(self.item4100, text=_("Pour le nuage dense : voulez-vous un nuage de point ou un maillage ?"))
+        self.item4172 = ttk.Frame(self.item4100,height=50,relief='sunken',padding="0.3cm")      # encadrement
+        self.item4174 = ttk.Radiobutton(self.item4172, variable=self.pointsMaillage, value="points", text=_("Nuage de points"),command=self.nuageOuMaillage)
+        self.item4176 = ttk.Radiobutton(self.item4172, variable=self.pointsMaillage, value="maillage", text=_("Maillage"),command=self.nuageOuMaillage)        
+
+        self.item4161 = ttk.Label(self.item4100, text=_("Voulez-vous définir un repère ?"))        
+        self.item4160 = ttk.Frame(self.item4100,height=50,relief='sunken',padding="0.3cm")      # encadrement        
+        self.item4133 = ttk.Radiobutton(self.item4160, variable=self.definirGPSouMetrique, text=_("Repère MicMac par défaut"), value="MicMac",command=self.GPSouMetrique)
+        self.item4134 = ttk.Radiobutton(self.item4160, variable=self.definirGPSouMetrique, text=_("Définir des points de repère GPS"), value="GPS",command=self.GPSouMetrique)
+        self.item4135 = ttk.Radiobutton(self.item4160, variable=self.definirGPSouMetrique, text=_("Définir une métrique et un repère local"),value="echelle",command=self.GPSouMetrique)       
+        self.item4140 = ttk.Button(self.item4100, text=_('Fermer'), command=self.afficheEtat)    # bouton permettant de fermer la fenêtre
+        self.item4141 = ttk.Button(self.item4100, text=_('Lancer MicMac'), command=self.lanceMicMac)    # bouton permettant de lancer MicMac
+
+       
+        self.item4101.pack(pady=3,anchor='w')
+        self.item4150.pack(pady=3,anchor='w')        
+        self.item4102.pack(pady=3,anchor='w')
+        self.item4103.pack(pady=3,anchor='w')
+        self.item4109.pack(pady=3,anchor='w')        
+        self.item4104.pack(pady=3,anchor='w')        
+        self.item4105.pack(pady=3,anchor='w')                
+        self.item4106.pack(pady=3,anchor='w')
+        self.item4107.pack(pady=3,anchor='w')
+        self.item4108.pack(pady=3,anchor='w')
+        self.item4110.pack(pady=3,anchor='w')
+
+        self.item4170.pack(pady=3,anchor='w')
+        self.item4172.pack(pady=3,anchor='w')
+        self.item4174.pack(pady=3,side='left')        
+        self.item4176.pack(pady=3,side='right')
+        
+        self.item4161.pack(pady=3,anchor='w')
+        self.item4160.pack(pady=3,anchor='w')
+        self.item4133.pack(pady=3,anchor='w')
+        self.item4134.pack(pady=3,anchor='w')
+        self.item4135.pack(pady=3,anchor='w')        
+        self.item4121.pack(pady=3,anchor='w')
+        self.item4130.pack(pady=3,anchor='w')
+        self.item4131.pack(pady=3,anchor='w')
+        self.item4132.pack(pady=3,anchor='w')        
+        self.item4140.pack(pady=3,side='left')
+        self.item4141.pack(pady=3,side="right")
+
+        
+        # La boite de dialogue pour demander le nombre de photos à retenir parmi les meilleure
         self.item9000 = ttk.Frame(fenetre)
         self.item9002 = ttk.Label(self.item9000,
                                   text= _("Indiquer le nombre de photos à retenir.") + "\n"+
@@ -4775,7 +4928,6 @@ class Interface(ttk.Frame):
                   5  Voir sur internet :
                      https://www.reddit.com/r/MicMac
                      https://micmac.ensg.eu/index.php/Accueil
-                     http://forum-micmac.forumprod.com/
                      https://www.youtube.com/channel/UCvXP6f2g3ppOChasqlnBI6w
                   6  Pour être informé des nouveautés de l'interface envoyer "News AperoDeDenis" à denis.jouin@gmail.com''')+ self.aideFinDePage  
 
@@ -4784,10 +4936,19 @@ class Interface(ttk.Frame):
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
               _('''
+Version 5.75 24 novembre 2023
+
+Version 5.74 24 novembre 2023
+
+    - diminution taille du msi
+    - divers corrections
+    
+                ''')+\
+            _('''
 
 Version 5.73 24 avril 2023
     - Ajout de touches 'raccourcis' pour les principales fonctions de l'interface''')+\
-              _('''
+            _('''
     - ajout d'une barre d'outils
 
 Version 5.72 6 avril 2023 :
@@ -5187,8 +5348,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                          ou, sous windows, limiter la longueur du chemin menant aux fichiers en recopiant les photos sous la racine du disque.          
                                          Le nombre maximum de photos d'un chantier sous windows semble être de 250 à 300, si plus utiliser Linux ou Mac          
                                       9  Si la trace synthétique contient : 'Not Enough Equation in ElSeg3D::L2InterFaisceaux' alors choisir 'radialbasic'.          
-                                      10  consulter le wiki micmac (https://micmac.ensg.eu/index.php           
-                                      11  consulter le forum micmac (http://forum-micmac.forumprod.com           
+                                      10  consulter le wiki micmac (https://micmac.ensg.eu/index.php                     
                                       12  faites appel à l'assistance de l'interface (voir adresse dans l'a-propos      denis.jouin@gmail.com''')
 
         self.aide10 =   _('''Plusieurs focales, plusieurs dimensions de photos, plusieurs appareils            
@@ -5231,8 +5391,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     # A propos
     
-        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2023") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
-                                _("CEREMA Normandie Centre") + "\n\n" + "mail : interface-micmac@cerema.fr"+ "\n\n" + "mail : denis.jouin@gmail.com"+
+        self.aide7=self.titreFenetre+("\n\n" + _("Réalisation Denis Jouin 2015-2024") + "\n\n" + _("Laboratoire Régional de Rouen") + "\n\n"+
+                                _("CEREMA Normandie Centre") + "\n\n" + "mail : denis.jouin@gmail.com"+
                                 "\n\n"+"GitHub : https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA"+
                                  "\n\n" + "youtube : https://www.youtube.com/channel/UCvXP6f2g3ppOChasqlnBI6w/videos")
 
@@ -5245,9 +5405,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                          Le passage au paramètre 'BigMac' ou a 'Malt' a permis l'obtention d'un nuage dense.          
                                       2  assurez-vous que le sujet est immobile (pas de végétation mouvante, de pluie          
                                       3  assurez-vous que le recouvrement des photos est suffisant : chaque point du sujet doit être sur 3 photos au moins          
-                                      4  assurez-vous qu'il n'y a pas une photo très mauvaise : une seule photo suffit à faire échouer un chantier,          
-                                      5  consulter le forum micmac (http://forum-micmac.forumprod.com           
-                                      6  faites appel à l'assistance de l'interface (voir adresse dans l'a-propos''')+ self.aideFinDePage
+                                      4  assurez-vous qu'il n'y a pas une photo très mauvaise : une seule photo suffit à faire échouer un chantier,                   
+                                      5  faites appel à l'assistance de l'interface (voir adresse dans l'a-propos''')+ self.aideFinDePage
 
     # La photogrammétrie
         self.aide9 =  _(''' Deux mots sur la photogrammétrie.           
@@ -5368,7 +5527,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     # fichier pour modifier la clé de registre de saisiemasqQT : par défaut, l'origine est le centre, ce qui rend invisible les nuages en EPSG.
     # ce fichier remet le centre au barycentre, il permettrait de modifier l'épaisseur des traits, la taille des points par défaut
 
-        self.cleMasqQT    =  "HKEY_USERS\S-1-5-21-1400669940-2874269118-2294255063-1600\Software\Culture3D\SaisieMasqQT\Drawing settings"
+        self.cleMasqQT    =  "HKEY_USERS\\S-1-5-21-1400669940-2874269118-2294255063-1600\\Software\\Culture3D\\SaisieMasqQT\\Drawing settings"
         self.sousCleMasqQT=  "SceneCenterType"
         self.majCleMasqQT =  (
                                 self.cleMasqQT+"\n"+                                      
@@ -5475,7 +5634,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     # Calculer le nuage non dense :
     
-        self.calculNuageNonDense.set(0)                         # par défaut : le nuage non dense est calculé=1, pas calculé = 0
+        self.calculNuageNonDense.set(0)                         # le nuage non dense est calculé=1, pas calculé = 0
 
     # Premier indice des nuages denses successifs :
 
@@ -5501,7 +5660,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     # nuage2Ply
     
         self.nuage2Mesh.set(True)                               # par défaut maillage et pas nuage
-        self.Offs                       = '[0,0,0]'             # décalage pour recentrer les données, éviter la limite 32 bits,
+        self.Offs                       = [0,0,0]               # décalage pour recentrer les données, éviter la limite 32 bits,
                                                                 # qui crée des bandes blanches dans les nuages
     # DENSIFICATION
     # choix de la densification par défaut : C3DC ou MALT
@@ -5596,17 +5755,23 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     # pour les barres d'outils, valeurs initiales
 
-        self.lesOutils=list()       # liste vide des items de menu
+        self.lesOutils = list()     # liste vide des items de menu
         self.toolbarFichier = list()# les boutons des barres d'd'outil
         self.indexBarre = -1        # index de la barre en cours de création
-        self.xMax=2                 # longueur x de la prochaine barre
+        self.xMax = 2               # longueur x de la prochaine barre
         self.barresSelection=list() # la liste des barres d'outils sélectionnés par l'utilisateur
         self.barreGeometry = dict() # position des barres d'outils
         self.iconePlace = dict()    # place des icones dans les barres d'outil
         
         # titres des barres d'outils = item du menu principal (que je ne reussis pas à extraire du menu !!!) 
         self.lesTitres=[_("Fichier"),_("Edition"),"MicMac",_("Vidéo"),_("Outils"),_("Expert"), _("Outils métier"),_("Paramètres"),_("Aide")]
-    
+
+    # Pour les objectifs du chantier
+
+        self.objectifChantier.set("dense")
+        self.definirGPSouMetrique.set("MicMac")
+        self.calibrationChargee = False
+        self.pointsMaillage.set('maillage')# menu MicMac/objectif        
         
     # divers 
 
@@ -6163,7 +6328,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
 
             # Options pour Tapas :
-            if self.chantierOrigineCalibration and self.choixCalibration.get()=="chantier":
+            if self.chantierOrigineCalibration and (self.choixCalibration.get()=="chantier" or self.chargerCalibration.get()==1): # options ou objectifs
                 texte = texte+_("Calibration de l'appareil par le chantier %s.") % (self.chantierOrigineCalibration) + '\n'
             else:
                 if self.modeCheckedTapas.get()!='':
@@ -6174,9 +6339,20 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                          texte = texte+_('Ces photos servent uniquement à la calibration.') + '\n'
             if self.lancerTarama.get()==1:
                 texte = texte+_('Tarama demandé après orientation') + '\n'                     
+
+
+            if self.objectifChantier.get()=="calib":
+                texte = texte+"\n"+_('Chantier pour calibration seule.') + '\n'
+                if os.path.exists(os.path.join(self.repTravail,"Ori-Calib")):
+                    texte+="\n"+_("Calibration effectuée")
+                self.ecritureTraceMicMac()
+                self.sauveParam()
+                self.encadre(texte)
+                return
+
             if self.arretApresTapas.get()==1:
                 texte = texte+_('Arrêt demandé après orientation') + '\n'
-
+                
             # Calcul du nuage non dense
 
             if self.calculNuageNonDense.get():
@@ -6361,8 +6537,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             if os.path.exists(self.modele3DEnCours) or os.path.exists(self.modele3DFinal):
                texte = texte+_("Nuage de points densifié généré.")+"\n"
                nbPly+=1
-##               if self.Offs!="[0,0,0]":
-##                   texte = texte+_("Offset de décalage : %s") % (self.Offs)+"\n"   
+               if self.Offs!=[0,0,0]:
+                   texte = texte+_("Offset de décalage : %s") % (str(self.Offs))+"\n"   
             else:   
                 if self.etatDuChantier == 7:		
                     texte = texte+"\n" + _("La densification a échoué : pas de nuage dense généré.") + "\n"
@@ -6759,7 +6935,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 return
         xyz=os.path.basename(xyz)
         if not os.path.exists(self.meshlab):
-            self.encadre(_("Définir un outil pour ouvrir les fichiers Ply et XYZ : %s Paramètres\Associer Meshlab ou CloudCompare") % ("\n\n"))
+            self.encadre(_("Définir un outil pour ouvrir les fichiers Ply et XYZ : %s Paramètres\\Associer Meshlab ou CloudCompare") % ("\n\n"))
             return
         meshlab = [self.meshlab, xyz]        
         self.lanceCommande(meshlab,
@@ -8197,11 +8373,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             
     #""""""""""""""""""""""""   Options de Malt
 
-    def chargerCalibrationIntrinsequeDepuisMenu(self,repertoireInconnu=True):
+    def chargerCalibrationIntrinsequeDepuisMenu(self):
         if self.etatDuChantier == 0:                                        # pas encore de chantier
             self.encadre(self.pasDeChantier)
             return        
-        bilan = self.chargerCalibrationIntrinseque(repertoireInconnu=repertoireInconnu)
+        bilan = self.chargerCalibrationIntrinseque()
         if bilan:
             self.encadre(bilan)
             return bilan
@@ -8210,18 +8386,18 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.encadre(bilanOK)
         return bilanOK
     
-    def chargerCalibrationIntrinseque(self,repertoireInconnu=True): 
+    def chargerCalibrationIntrinseque(self): 
         # contrôles :
         if self.pasDePhoto(False):
             self.item572.configure(text=self.pasDeChantier,foreground='red')
             return
-        if repertoireInconnu:
-            bilan = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration de l'appareil."),filtre="calib")
-            if bilan!=None:
-                message = _("Pas de chantier compatible avec calibration.") + "\n" + bilan + "\n"
-                self.item572.configure(text=message)
-                self.choixCalibration.set("sans")    # on remet le choix à "sans" 
-                return message
+        # choisir le chantier origine :
+        bilan = self.choisirUnChantier(_("Choisir le chantier pour copier la calibration de l'appareil."),filtre="calib")
+        if bilan!=None:
+            message = _("Pas de chantier compatible avec calibration.") + "\n" + bilan + "\n"
+            self.item572.configure(text=message)
+            self.choixCalibration.set("sans")    # on remet le choix à "sans" 
+            return message
         origine  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Calib")
         if not os.path.exists(origine):
             bilan = _("le chantier choisi \n%s\n n'a pas de données de calibration pour l'appareil photo.") % (origine)
@@ -8229,7 +8405,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return bilan
        # copie du répertoire origine vers répertoire calib du chantier calibChantier
         destination = os.path.join(self.repTravail,"Ori-Calib")  # répertoire destination
-        bilan = self.copier_les_fichiers_utiles_orientation(origine,destination)
+        bilan = self.copier_les_fichiers_utiles_calibration(origine,destination)
         if bilan:
             self.item572.configure(text=_("la copie de la calibration a échouée."))
             bilan = _("La copie de la calibration de l'appareil à partir de\n %s \na échoué.") % (origine)
@@ -9071,7 +9247,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     ################################## LANCEMENT DE MICMAC ########################################################### 
         
     def lanceMicMac(self):          # contrôles puis Aiguillage en fonction de l'etatDuChantier
-        print(heure(),'lancement micmac etat =',self.etatDuChantier)
         if self.etatDuChantier==5:  # Chantier terminé
 ##            titre = _("Attention : chantier terminé")
 ##            rapport = _("Attention : Le chantier %s est terminé après %s"+"\n") % (self.chantier,self.choixDensification.get())
@@ -9576,7 +9751,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
       
         if self.arretApresTapas.get():          # L'utilisateur a demandé l'arrêt
             ligne="\n" + _("Arrêt après Tapas ")+heure()+_(". Lancer MicMac pour reprendre le traitement.") + "\n"              
-            ligne=ligne+"\n\-------------- " + _("Arrêt après Tapas sur demande utilisateur") + " --------------\n\n"        
+            ligne=ligne+"\n\\-------------- " + _("Arrêt après Tapas sur demande utilisateur") + " --------------\n\n"        
             self.ajoutLigne(ligne)
             self.nouveauDepart()                # sauvegarde les paramètres, écrit la trace, relance "interface" si on est sous nt
             return
@@ -10050,6 +10225,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             if calibrationKO(): return                              # contrôle résultat calibration
             self.orientationCourante = "Calib"                 
             self.ajoutLigne(_("Calibration de l'appareil photo effectuée."))# bilan : calibration OK, liste des photos modifiées (avec, sans chemin, de calibration)
+            if self.objectifChantier.get()=="calib": return         #chantier pour calibration seule : c'est fini            
             if verifierNombrePhotosApresCalibration():return
             ######## calibration faite, recherche orientation :  
             if retirerPhotosCalibration(): return   # exclusion des images pour la calibration de l'appareil si elles ne servent plus après                      
@@ -10461,7 +10637,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                      
         
     def filtreMalt(self,ligne):
-        print("ligne filtre malt =",ligne)
         if ligne[0]=="|":
             return ligne
         if 'BEGIN STEP' in ligne:
@@ -10473,7 +10648,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if 'cAppliMICMAC::VerifSzFile' in ligne: # bloque la suite, il faut un retour chariot
             if self.exe.poll()==None: # le subprocess tourne encore
                 self.exe.communicate(input='\n')
-        print("fin filtre malt")
 
     def reinitialiseMaitreEtMasque(self):                                                       # on conserve si la photo appartient au nouveau lot
         self.masqueSansChemin           =   str()                                               # image masque : en TIF, choisi par l'utilisateur       
@@ -10709,6 +10883,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         supprimeRepertoire("PIMs-BigMac")
         
         # calcul du paramètre Offs pour C3DC (Offset de décalage pour éviter les bandes blanches si les x,y sont trop "grands"
+        # retour : liste de 3 valeurs
         
         self.Offs = construireOffs(self.orientationCourante)
 
@@ -10724,8 +10899,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     "Masq3D="+self.masque3DSansChemin,
                     "Out="+self.modele3DFinal,
                     "PlyCoul=1"]
-            if self.Offs!="[0,0,0]":
-                    C3DC.append("OffsetPly="+self.Offs)
+            if self.Offs!=[0,0,0]:
+                    C3DC.append("OffsetPly="+str(self.Offs))
         else:
             C3DC = [self.mm3d,
                     "C3DC",
@@ -10735,8 +10910,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     ]+self.C3DCPerso.get().split(",")+[  # surcharge la suite
                     "Out="+self.modele3DFinal,
                     "PlyCoul=1"]
-            if self.Offs!="[0,0,0]":
-                    C3DC.append("OffsetPly="+self.Offs)
+            if self.Offs!=[0,0,0]:
+                    C3DC.append("OffsetPly="+str(self.Offs))
             
         self.lanceCommande(C3DC,
                            filtre=self.filtreC3DC,
@@ -10882,7 +11057,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                      'Mesh='+mesh,                                        
                      'Attr='+self.maitreSansChemin,
                      'Out='+self.modele3DEnCours,
-                     'Offs='+self.Offs,                     
+                     'Offs='+str(self.Offs),                     
                      ]
         self.lanceCommande(Nuage2Ply)
                            
@@ -10901,7 +11076,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                      ]+self.nuage2PlyPerso.get().split(",")+[  # surcharge la suite                        
                      'Mesh='+mesh,
                      'Out='+self.modele3DEnCours,
-                     'Offs='+self.Offs,         # pour supprimer l'effet 'bandes blanches' : décalage pour supprimer les grands nombres (32 bits)        
+                     'Offs='+str(self.Offs),         # pour supprimer l'effet 'bandes blanches' : décalage pour supprimer les grands nombres (32 bits)        
                      ]
             self.lanceCommande(Nuage2Ply)
 
@@ -10919,7 +11094,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                          'Mesh='+mesh,                        
                          "Attr="+orthoMosaique,             # pour draper le ply (l'ortho est créée par Tawny)
                          'Out='+self.modele3DEnCours,
-                         'Offs='+self.Offs,                         
+                         'Offs='+str(self.Offs),                         
                          ]
         else:
             Nuage2Ply = [self.mm3d,
@@ -10928,7 +11103,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                          ]+self.nuage2PlyPerso.get().split(",")+[  # surcharge la suite                          
                          'Mesh='+mesh,
                          'Out='+self.modele3DEnCours,
-                         'Offs='+self.Offs,
+                         'Offs='+str(self.Offs),
                          ]            
         self.lanceCommande(Nuage2Ply)        
         
@@ -11314,7 +11489,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 if f.split("=").__len__()==2:
                     param = f.split("=")[0]
                     val = f.split("=")[1]
-                    if not(re.match("(\w)",param) and re.match("(.)+",val)):
+                    if not(re.match("(\\w)",param) and re.match("(.)+",val)):
                         listeNoMatch.append(f)                
                         self.dicoPerso[e] = ""
                     else:
@@ -11720,7 +11895,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                             # cette orientation est définie dans le repère choisi : local  ou Lambert 93 ou GeoC...
                                             # self.repereChoisi est soit un mot clé (Lambert93, soir le nom d'un fichier xml contenant la description du repère
                                             # cette orientation devra être "mixée" avec l'orientation issue de Tapas par centerBascule
-                                            # voir : http://forum-micmac.forumprod.com/first-time-micmac-grandleez-tutorial-t1352-10.html
                                             # datum lambert 93  (http://magrit.cnrs.fr/docs/projection_list_fr.html)
                                             # +proj=lcc +lat_1=49 +lat_2=44 +lat_0=46.5 +lon_0=3 +x_0=700000 +y_0=6600000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs                                            
         convert = [self.mm3d,
@@ -11837,9 +12011,13 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     def messageCoordonnees(self):
         if xyz:=XYZChantier(self.orientationCourante):
             centre = "["+str(int(float(xyz[0])))+","+str(int((float(xyz[1]))))+","+str(int((float(xyz[2]))))+"]"
+            print('"centre="["+str(int(float(xyz[0])))+","+str(int((float(xyz[1]))))+","+str(int((float(xyz[2]))))+"]""',centre)
+            centre = str(xyz)
+            print("centre=str(xyz)",centre)            
             message = (_("Coordonnées du centre dans ce référentiel : ")+"\n"+centre+"\n")                
-            if self.Offs!="[0,0,0]":
-                message+=(_("Décalage pour centrer le nuage : ")+"\n"+self.Offs+"\n")
+            if self.Offs!=[0,0,0]:
+                message+=(_("Décalage pour centrer le nuage : ")+"\n"+str(self.Offs)+"\n")
+                print ("message=",message)
                 return message
             
 # suppression/ajout des données de navigation par l'utilisateur :
@@ -12017,7 +12195,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return
         self.nomCamera = list(l.keys())[0]
         if self.nomCamera=="": # pas de nom d'appareil photo dans les exifs
-            message=_("\Pas de nom d'appareil photo dans l'exif")
+            message=_("\\Pas de nom d'appareil photo dans l'exif")
             self.encadre(message)
             return
         if nb == 1:  # un seul appareil photo
@@ -12173,7 +12351,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         lignes = new.saisie.split("\n")
         self.cadreVide()
         self.ecritureTraceMicMac()
-        entete = "\n"+_("résultat de la commande python : ")+str(lignes)+"\n"
+        entete = "\n\n"+_("résultat de la commande python : ")+str(lignes)
         self.encadre(entete)
         self.ajoutLigne(heure()+entete)
         for ligne in lignes:
@@ -12186,6 +12364,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 try: resul1=exec(ligne)
                 except Exception as e:
                     e_exec=str(e)
+                    
                 try: resul2=eval(ligne,globals(),locals())
                 except Exception as e:
                     e_eval=str(e)              
@@ -12232,6 +12411,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if len(code)==0: return abandon(_("Pas de ligne exécutable :\n %s \n") % ("\n".join(lignes)))
         ## affichage et traitement       
         afficheEntete()
+        oschdir(self.repTravail)   # on ne sait pas ce qu'a fait l'utilisateur        
         [self.executeLignePipeline(e) for e in code] # traitement ligne par ligne
         message=""
         if self.arretPipeline:
@@ -12348,13 +12528,14 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             filtre = "filtre"+decompose[1][1:]   #vCommande : on retire le "v"
         else:
             filtre = "filtre"+decompose[1]
+        oschdir(self.repTravail)   # on ne sait pas ce qu'a fait l'utilisateur             
         if filtre in dir(self):
             initVariablesFiltres()
             filtre = eval("self."+filtre)
             self.lanceCommande(decompose,filtre)
         else:
             self.lanceCommande(decompose)
-
+ 
     ################################## FIN du menu Expert : exec système, python, pipeline
     
         
@@ -12712,8 +12893,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         menagePointsHomologues("Homol")
         menagePointsHomologues("Homol_mini")
 
-    # copie raisonnable des seuls fichiers de calibration (ou d'orientation, même structure) utiles
-    def copier_les_fichiers_utiles_orientation(self,origine,destination):
+    # copie raisonnable des seuls fichiers de calibration utiles pour les photos du chantier
+    def copier_les_fichiers_utiles_calibration(self,origine,destination):
         supprimeFichier(destination)                # du ménage
         supprimeRepertoire(destination)             # du ménage
         os.mkdir(destination)                       # création répertoire
@@ -12733,60 +12914,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                         try: shutil.copy(fi,destination)          # fichier non lié à une photo
                         except Exception as e:
                             bilan = _("Fichier impossible à copier : ")+x+"\n"+_("erreur=")+str(e)
-                            return bilan                    
-        return        
-# l'orientation obtenue après Tapas est Ori-Arbitrary, durant tapas il peut y avoir Ori-Calib                                                                       
-    def copierOrientation(self,repertoireInconnu=True):
-       
-        self.menageEcran()
-        message = str()
-        if self.etatDuChantier == 0:
-            message = self.pasDeChantier
-            self.encadre(message)
-            return message
-        # choisir le chantier origine de la copie de l'orientation :
-        if repertoireInconnu:
-            bilan = self.choisirUnChantier(_("Choisir le chantier d'où copier l'orientation. Seuls les chantiers compatibles sont proposés."),
-                                           filtre="orientation")
-            if bilan!=None:
-                message = _("Aucun chantier choisi.") + "\n" + bilan + "\n"
-                self.afficheEtat(message)
-                return message
-        orientationACopier  =   os.path.join(self.selectionRepertoireAvecChemin,"Ori-Arbitrary")
-        orientationCible = os.path.join(self.repTravail,"Ori-Arbitrary")
-        bilan = self.copier_les_fichiers_utiles_orientation(orientationACopier,orientationCible)
-        if bilan :
-            self.encadre(bilan)
-            return bilan
-        if not os.path.exists(orientationCible):
-            print(_("pas d'orientation copiée depuis %s") % (orientationACopier))
-            return (_("pas d'orientation copiée depuis %s") % (orientationACopier))
-        if self.etatDuChantier in [1,2,3,35]: # si etatDuChantier avant la fin de Tapas on indique que Tapas est fini
-            self.etatDuChantier = 4
-        self.ajoutLigne ("\n"+_("Copie de l'orientation depuis : %s") % (self.selectionRepertoireAvecChemin)+"\n")
-        self.ecritureTraceMicMac()
-        message = _("Orientation copiée")
-        self.encadre(message)
-        return str()
-                                                                     
-    def copierHomolOriTarama(self): #copie les points homologues, la calibration et l'orientation
-        return # mis en sommeil dans la version 5.64, il faudra vérifier que le chantier choisi possède tous les critères
-        self.encadre(_("Patience : copie des points homologues"))
-        bilan  = self.copierPointsHomologues()
-        if bilan != str():
-            self.encadre(bilan)
-            return
-        self.encadre(_("copie des points homologues effectuée : %s") % bilan +"\n"+_("Patience : copie de l'orientation en cours"))
-        bilan += str(self.copierOrientation(repertoireInconnu=False))
-        self.encadre(_("copie des points homologues effectuée,")+
-                     "\n"+_("copie de l'orientation en cours")+"\n"+
-                     _("bilan %s") % bilan)                    
-        bilan += str(self.chargerCalibrationIntrinseque(repertoireInconnu=False))
-        if len(bilan)>5: # bilan = None : len=4 ! j'avoue, c'est nul !
-            self.encadre(_("Copie non totalement effectuée : ")+"\n"+bilan)
-        else:
-            self.encadre(_("Copie des points homologues, de l'orientation, de la calibration, et de la mosaïque Tarama :")+"\n"+
-                         self.selectionRepertoireAvecChemin)
+                            return bilan                            
             
 #######################################
         
@@ -13082,6 +13210,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                          self.orientationReference,         # répertoire orientation de référence, copié d'un autre chantier (chemin complet)
                          self.dicoProfil,                   # les points du profil, menu métier
                          self.dicoPipeline,                 # pour le pipeline : nom du fichier
+                         self.objectifChantier.get(),       # menu MicMac/objectif
+                         self.chargerCalibration.get(),     # menu MicMac/objectif
+                         self.definirReferentiel.get(),     # menu MicMac/objectif
+                         self.definirGPSouMetrique.get(),   # menu MicMac/objectif
+                         self.pointsMaillage.get()          # menu MicMac/objectif                         
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -13288,7 +13421,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.masque3DSansChemin         = r[61] # nom du fichier XML du masque 3D, fabriqué par Saisie MasqQT (sur AperiCloud ou sur Modele3D)
             self.masque3DBisSansChemin      = r[62] # nom du second fichier XML pour le masque 3D                         
             self.tailleDuChantierEnMO       = r[63] # taille sous la racine du chantier (juin 2020)
-            self.Offs                       = r[64]
+            self.Offs                       = r[64] # décalage d'offset pour le nuage dense
             self.nbFocales                  = r[65] # pour affichage messages (calculé lors du choix des photos)
             self.dimensionsOK               = r[66] # booléen : vrai si toutes les photos sont de même dimension
             self.lancerSchnaps.set           (r[67])# options nouvelles
@@ -13306,6 +13439,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.orientationReference       = r[79] # chemin complet local de l'orientation de référence copiée 
             self.dicoProfil                 = r[80] # les infos relatives au profil (menu outils métier)
             self.dicoPipeline               = r[81] # nom du fichier pipeline,
+            self.objectifChantier.set        (r[82])# menu MicMac/objectif
+            self.chargerCalibration.set      (r[83])# menu MicMac/objectif
+            self.definirReferentiel.set      (r[84])# menu MicMac/objectif
+            self.definirGPSouMetrique.set    (r[85])# menu MicMac/objectif
+            self.pointsMaillage.set          (r[86])# menu MicMac/objectif
+            
         except Exception as e:
             print(_("Erreur restauration param chantier : "),str(e))
             
@@ -13341,6 +13480,19 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         self.uniteDistance = extraireUniteDistance(self.distance.get())
 
+        # Mise à jour de la bdd objectifs
+
+        if self.chargerCalibration.get():
+            self.texteChargerCalib.set(_("Calibration chargée"))
+            self.item4131["state"]="disabled"
+            self.calibrationChargee = True            
+        else:
+            self.texteChargerCalib.set(_("Utiliser un autre chantier pour calibrer l'appareil photo"))        
+
+        # positionne le répertoire de travail comme répertoire courant
+
+        os.chdir(self.repTravail)
+
         # Restauration des paramètres nommés personnalisés : si pas de dico alors initialisation
         
         self.restauPerso()
@@ -13348,7 +13500,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
     ########################### affiche les messages à l'écran : cadre, état, boites de dialogues standards, ménage                
 
-    def encadreEtTrace(self,texte,nbLignesMax=40,aligne='center'):
+    def encadreEtTrace (self,texte,nbLignesMax=40,aligne='center'):
         self.ajoutLigne(texte)
         self.ecritureTraceMicMac()                          # on écrit la trace        
         self.encadre(texte,nbLignesMax,aligne)
@@ -13462,7 +13614,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
            self.item2000.pack_forget()
         if self.item3000.winfo_manager()=="pack":
            self.item3000.pack_forget()
-
+        if self.item4000.winfo_manager()=="pack":
+           self.item4000.pack_forget()           
+        if self.item4100.winfo_manager()=="pack":
+           self.item4100.pack_forget()
+           
         if self.item9000.winfo_manager()=="pack":
            self.item9000.pack_forget()
 
@@ -13667,7 +13823,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                      _("Nombre de chantiers : %s") % (self.tousLesChantiers.__len__()),
                              boutonDeux=_("Annuler"),
                              objets=_('repertoires'),
-                             testPresenceRepertoire=False)      # renvoi  : self.selectionPhotosAvecChemin
+                             testPresenceRepertoire=False,
+                             ouvrirEnGrand=False)      # renvoi  : self.selectionPhotosAvecChemin
+        
         self.messageSiPasDeFichier = 1
         # rien à faire
         
@@ -14190,7 +14348,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.fermerVisuPhoto()                          #  s'il y a une visualisation en cours des photos ou du masque on la ferme             
         if os.path.exists(self.ffmpeg)==False:
             self.encadre("\n"+_("L'outil ffmpeg n'est pas installé sur votre ordinateur.\n\n Traitement des vidéos impossible.")+"\n\n"+
-                         _("Utiliser le menu Paramètre\Associer ffmpeg")+"\n")
+                         _("Utiliser le menu Paramètre\\Associer ffmpeg")+"\n")
             return
         
         repIni = ""                                     # répertoire initial de la boite de dialogue
@@ -14345,7 +14503,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         ffmpeg = [self.ffmpeg,
                 "-i",
                 video,
-                self.repTravail+"\Im_0000_%5d_Ok"+self.extensionChoisie]
+                self.repTravail+"\\Im_0000_%5d_Ok"+self.extensionChoisie]
         self.lanceCommande(ffmpeg,
                            filtre=self.filtreFfmpeg,
                            info=_("ATTENTION : cette procédure est longue : patience !"))
@@ -14372,11 +14530,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     # si pas de modèle dense : retourne le nom du premier : modele3D_V1.ply
     def modele3DActuel(self):  
         for i in range(100,0,-1):       # si le plus grand numéro correspond à un maillage texturé C3DC on le retient :
-            cloud,mesh,cheminMesh = self.nomsModele3D(i)
-            if os.path.exists(cheminMesh): 
-                return cheminMesh                       
+            cloud,mesh,cheminMesh = self.nomsModele3D(i)                     
             if os.path.exists(cloud):  # sinon le plus grand numéro non texturé :
                 return cloud
+            if os.path.exists(cheminMesh): 
+                return cheminMesh              
         return cloud
             
         # sinon : self.modele3DFinal vaut modele3D_V1.ply, qui n'existe pas
@@ -14595,8 +14753,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     #           - None si tout va bien
     #           - Un message dans une chaine explicative est renvoyée si pas de répertoire possible
     #             dans ce cas la liste self.selectionRepertoireAvecChemin est vide
-    #          
-    def choisirUnChantier(self,titre,mode='single',filtre=None):              # mode="single" ou 'extended'
+    #    - si silence=True et s'il y a un seul répertoire "possible" il est retourné dans self.retourChoixRepertoire et en return
+    
+    def choisirUnChantier(self,titre,mode='single',filtre=None,silence=False):              # mode="single" ou 'extended'
         def compatibleChantierEnCours():    # élimine des chantiers proposés ceux qui ne contiennent pas les photos du chantier en cours
             try:
                 liste = list(self.fichierProposes)
@@ -14729,7 +14888,13 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.encadre(message)
             return message
 
-        #oui, il y a des chantiers à proposer :
+        # S'il y a un seul répertoire possible et si le paramètre silence=True alors on retourne cette valeur
+
+        if silence and len(self.fichierProposes)==1:
+            self.retourChoixRepertoire=self.fichierProposes[0]
+            return self.retourChoixRepertoire
+
+        # oui, il y a des chantiers à proposer :
         
         self.selectionRepertoireAvecChemin=str()    # sélection vide à priori
         # création fenêtre
@@ -14787,6 +14952,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         fenetre.wait_window(self.topRepertoire)    
         return self.retourChoixRepertoire
 
+
+
     def yviewRepertoire(self, *args):
         if args[0] == 'scroll':
             self.selectionRepertoire.yview_scroll(args[1],args[2])
@@ -14811,6 +14978,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.topRepertoire.destroy()
         self.retourChoixRepertoire=_("Abandon utilisateur.")
 
+    ############################### Fin du Choix d'un chantier dans la liste des répertoires de travail, avec scrollbar
 
     ########## pour renommer homol    
 
@@ -15099,11 +15267,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.encadre(_("Patience : lecture du fichier : %s") % (ply))
         info = _("%s") % (ply)+"\n\n"
         typePly = typeDePly(ply)
+        print("typePly=",typePly)
         if typePly in ("nuage de points ascii","mesh ascii","mesh binary","nuage de points binaire"):
             info += _("Type du fichier ply :\n %s") % (typePly)
         elif typePly == None:
             info += _("Le contenu de ce fichier n'est pas du type Ply")
-        elif typePly in ("nuage de points binaire","mesh binary"):
+        if typePly in ("nuage de points binaire","mesh binary"):
             mnt = extraireLesXyzDuPly(ply)
             if type(mnt) != type(dict()):
                 self.encadre(_("Abandon : \n%s\n%s ") % (ply,mnt))
@@ -15145,12 +15314,16 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if len(self.selectionPhotosAvecChemin)==0: return abandon()
         mnt = self.selectionPhotosAvecChemin[0]        
         mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData = self.infoSurMNT(mnt)
+        ######## pour test
+        pmp,rugo=calcul_pmp(mnt)
+        ########
         if affiche:          
-            texte = ("MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s\nlargeur = %s\nlongueur = %s" %
-            (mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur))
+            texte = ("MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s %s\nlargeur = %s\nhauteur = %s \nProfondeur moyenne de profil = %s %s\n rugosité = %s ") % \
+            (mnt,ncols,nrows,xllcorner,yllcorner,cellsize,self.uniteDistance,largeur,hauteur,round(pmp,3),self.uniteDistance,round(rugo,3))
             self.encadre(texte)
+            self.ajoutLigne(texte)
         else:
-            return mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData
+            return mnt,ncols,nrows,xllcorner,yllcorner,cellsize,self.uniteDistance,largeur,hauteur,basGauche,semis,noData
 
     def infoSurMNT(self,mntIGN):
         with open(mntIGN) as ign:
@@ -15223,7 +15396,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if liste.__len__()==0:
             return
         if self.pasDeConvertMagick():
-            rapport = _("Le programme de conversion n'est pas présent. \nAjoutez le : Menu paramètres\Associer convert")
+            rapport = _("Le programme de conversion n'est pas présent. \nAjoutez le : Menu paramètres\\Associer convert")
             self.encadreEtTrace(rapport)
             return False
         if liste==list():
@@ -15323,6 +15496,215 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         # SetExif crée des copies des fichiers initiaux, on les supprime ;
         self.supprimeFichiersTemporairesExiftool()
         return ""
+
+    ################### translation d'un MNT au forat ASC       
+                
+    def translateMNT(self):
+        self.menageEcran()
+        self.mntTranslate = demandeFichier(types=[("asc","*.ASC"),(_("Tous"),"*")],titre="MNT à translater")
+        if not self.mntTranslate:                                        # pas de mnt choisi
+            return abandon()                 
+        self.item4000.pack()
+        return
+
+    def translateOK(self):
+        self.item4000.pack_forget()     # pour éviter la question par menageEcran
+        if isNumber(self.translateX.get()):
+            self.deltaX = float(self.translateX.get())
+        else:
+            self.deltaX = 0
+        if isNumber(self.translateY.get()):
+            self.deltaY = float(self.translateY.get())
+        else:
+            self.deltaY = 0      
+        if isNumber(self.translateZ.get()):
+            self.deltaZ = float(self.translateZ.get())
+        else:
+            self.deltaZ = 0
+        if self.deltaZ==0 and self.deltaX==0 and self.deltaY==0:
+            return abandon("Abandon : pas de modifications")
+        message = _(" Modification du MNT :\n %s") % (self.mntTranslate)+"\n\n"
+        if self.deltaZ: message += _("ajout de %s pour l'altitude") % (self.deltaZ)+"\n"
+        if self.deltaX: message += _("ajout de %s pour les X")% (self.deltaX)+"\n"
+        if self.deltaY: message += _("ajout de %s pour les Y")% (self.deltaY)
+        
+        if MyDialog_OK_KO(fenetre,titre="Translation du MNT",texte=message,b1="Lancer",b2="Abandon").retour:
+            self.translate()
+            self.encadreEtTrace(message)
+        else:
+            self.translateKO()       
+        
+    def translateKO(self):
+        self.item4000.pack_forget()     # pour éviter la question par menageEcran        
+        self.encadre(_("Abandon"))
+        
+    def translate(self):
+        # en retour : cols, rows, xll, yll sont numériques
+        infoMnt = lireMNTIGN(self.mntTranslate)
+        if type(infoMnt)!=type(dict()):
+            return abandon(_("Format de fichier incorrect"))
+        # Fichier OK : on tranlate !
+        message=str()
+        if self.deltaX:
+            infoMnt["xllcorner"]+=self.deltaX
+            message = "X + %s" % (self.deltaX)
+        if self.deltaY:
+            infoMnt["yllcorner"]+=self.deltaY
+            message = "Y + %s" % (self.deltaY)
+        if self.deltaZ:
+            message = "Altitude Z + %s" % (self.deltaZ)
+            table = infoMnt["table"]
+            abscence = infoMnt["remplissage"]
+            for ligne in table:
+                for i in range(len(ligne)):
+                    v = ligne[i]
+                    if v!=abscence:
+                        ligne[i] = str(round(float(v)+self.deltaZ,3))
+        ecrireInfoMnt(self.mntTranslate,infoMnt)
+
+    ###### les filières prédéterminées par menu micmac / définir l'objectif du chantier
+
+    def filiereChantier(self):
+        print("ok")
+        self.menageEcran()
+        self.item4100.pack()
+        
+
+    def modifierOptionsChantier(self):
+        print("self.objectifChantier.get()=",self.objectifChantier.get())
+        # raz des valeurs modifiées
+        
+        # c3dc, micmac 
+        if self.objectifChantier.get()=="dense":
+            self.choixDensification.set("C3DC")
+            self.modeC3DC.set("BigMac")
+            message = _('''
+                        - lancer MicMac 
+                        - La densification sera effectuée par C3DC option Bigmac
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info créer un nuage dense",texte=message,b1="OK",b2="")
+            
+        if self.objectifChantier.get()=="ortho":
+            self.choixDensification.set("Malt")
+            self.modeCheckedMalt.set("Ortho")
+            message = _('''
+                        - lancer MicMac 
+                        - La densification sera effectuée par Malt option Ortho
+                        - une orthomosaïque sera créée : 
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info orthomosaïque",texte=message,b1="OK",b2="")
+            
+            
+        if self.objectifChantier.get()=="calib":
+            self.choixCalibration.set("photos")
+            # on prend toutes les photos pour calibrer l'appareil
+            self.photosCalibrationSansChemin = self.photosSansChemin
+            self.photosPourCalibrationIntrinseque = self.photosAvecChemin
+            self.arretApresTapas.set(1)
+            message = _('''
+                        - lancer MicMac (menu MicMac)
+                        - Les points homologues et l'orientation seront calculés
+                        - La calibration de l'appareil sera mémorisée
+                          et utilisable dans d'autres chantiers utilisant le même appareil
+                          avec la même focale
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info masque sur mosaïque tarama",texte=message,b1="OK",b2="")
+
+        if self.objectifChantier.get()=="ndense":
+            self.calculNuageNonDense.set(1)
+            self.arretApresTapas.set(1)
+            message = _('''
+                        - lancer MicMac (menu MicMac)
+                        - Les points homologues et l'orientation seront calculés.
+                        - Le nuage non dense sera calculé et affiché. Le programme s'arrêtera.                                            
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info masque sur moqaïque tarama",texte=message,b1="OK",b2="")            
+
+        if self.objectifChantier.get()=="masque3D":
+            self.calculNuageNonDense.set(1)
+            self.arretApresTapas.set(1)
+            self.choixDensification.set("C3DC")
+            self.modeC3DC.set("BigMac")
+            message = _('''
+                        La densification sera faite par C3DC option BigMac.
+                        Le masque sera défini sur le nuage non dense généré aprés l'orientation.
+                        lancer MicMac pour calculer le nuage non dense. 
+                        MicMac s'arrête pour définir le masque :
+                         - aller dans l'onglet 'densification' de MicMac/options
+                         - Tracer un masque 3D
+                         - relancer Micmac
+                                              
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info masques sur photos",texte=message,b1="OK",b2="")            
+
+        if self.objectifChantier.get()=="masque2D":
+            self.choixDensification.set("Malt")
+            self.modeCheckedMalt.set("geoImage")
+            message = _('''
+                        La densification sera faite par Malt option geoimage.
+                        Les masques doivent se définir avant le lancement de MicMac.
+                        Pour définir les masques :
+                         - aller dans l'onglet 'densification' de MicMac/options
+                         - définir les photos maîtres
+                         - sur chaque photo vous pouvez définir un masque
+                         Remarque : le nuage de points final ne comportera que les parties 'visibles" sur une des images maitres.
+                         - Lancer MicMac (menu MicMac)
+                                              
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info masques sur photos",texte=message,b1="OK",b2="")
+            
+        if self.objectifChantier.get()=="masqueMosaique":
+            self.choixDensification.set("Malt")
+            self.modeCheckedMalt.set("ortho")
+            self.lancerTarama.set(1)
+            self.arretApresTapas.set(1)
+            message = _('''
+                        La densification sera faite par Malt option ortho.
+                        Le masque sera défini sur la mosaïque des photos aprés calcul de l'orientation.
+                         - menu Micmac/lancer MicMac
+                         - lorsqu le calcul s'arrête :
+                             - aller dans l'onglet 'densification' de MicMac/options
+                             - définir le masque sur la mosaïque Taram
+                             - puis menu MicMac/lancer MicMac                                              
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info masque sur moqaïque tarama",texte=message,b1="OK",b2="")
+
+    def nuageOuMaillage(self):
+        pass
+    
+            
+    def chargerCalib(self):
+        if self.chargerCalibration.get()==0: return
+        if self.calibrationChargee: return
+        self.chargerCalibrationIntrinseque()
+        self.texteChargerCalib.set(_("Calibration chargée"))
+        self.item4131["state"]="disabled"
+        self.calibrationChargee = True
+        pass
+
+    def definirRef(self):
+        if self.definirReferentiel.get():
+            message = _('''Pour définir un référentiel géographique le chantier doit être
+                        référencé par des points GPS ou les métadonnées des photos.
+                        Le choix du référentiel se fait par le menu 'expert' item 'navigation GPS'.
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info référentiel",texte=message,b1="OK",b2="")
+
+    def GPSouMetrique(self):
+        if self.definirReferentiel.get():
+            message = _('''Pour définir les points GPS ou la métrique:
+                           menu MicMac/Options onglet référentiel
+                        ''')
+            MyDialog_OK_KO(fenetre,titre="Info GPS ou métrique",texte=message,b1="OK",b2="")
+
+    def objectifOK(self):
+        pass
+
+    def objectifKO(self):
+        pass
+
+    def objectifLancer(self):
+        pass
            
     #################### Utilitaires : tests de la présence de photos, de mm3d, d'exiftool,
     # et compte le nombre d'extensions différentes dans une liste, affiche un texte long et scroll
@@ -15638,7 +16020,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             if fichierPourMnt[-4:].upper() in (".ASC",".XYZ",".CSV",".TXT"):
                 with open(fichierPourMnt) as f:
                     ligne = f.readline()
-                    if "cols" in ligne:
+                    if "ncols" in ligne:
                         self.encadre("\n"+_("Le fichier\n %s \nest déjà un mnt.\n\n") % (fichierPourMnt))
                         return False
                     typePly = "ASC"
@@ -15748,9 +16130,14 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             with open(self.fichierIgnASC,"w") as ign:
                 ign.write("ncols "+str(mnt["mnt"].shape[1])+"\n")
                 ign.write("nrows "+str(mnt["mnt"].shape[0])+"\n")
-                ign.write("xllcorner "+str(round(float(mnt["min_y"]),3))+"\n")
-                ign.write("yllcorner "+str(round(float(mnt["min_x"]),3))+"\n")
-                ign.write("cellsize "+str(self.lePas)+"\n")
+                # ajout de l'offset retiré sur le nuage : +self.Offs[0]
+                xll = float(mnt["min_y"])+self.Offs[0]
+                yll = float(mnt["min_x"])+self.Offs[1]
+                xll = str(round(xll,3))
+                yll = str(round(yll,3))
+                ign.write("xllcorner "   + xll+"\n")
+                ign.write("yllcorner "   + yll+"\n")
+                ign.write("cellsize "    + str(self.lePas)+"\n")
                 ign.write("NODATA_value "+str("-9999")+"\n")
                 ign.write(tableauTexte)
             self.ajoutLigne(_("Mnt IGN écrit : %s.") % (self.fichierIgnASC))
@@ -15820,7 +16207,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return semisDePoints
                 
 ######################## le traitement :
-        semisDePoints = extraireLesXyz(fichierPourMnt) # récupère le semis de points x y z dans l e fichier asc ou ply
+        semisDePoints = extraireLesXyz(fichierPourMnt) # récupère le semis de points x y z dans le fichier asc ou ply
         if not isinstance(semisDePoints,dict): return abandon(_("Fichier ply incorrect"))        
         if "surface" not in semisDePoints: return      
         lePas = demandeLePas(semisDePoints["surface"],semisDePoints["nb"])
@@ -16580,6 +16967,20 @@ def creerMnt(semisDePoints,lePas):
     semisDePoints["mnt"]=grid
     return semisDePoints
 
+# Ecrire infoMnt dans un fichier :
+
+def ecrireInfoMnt(fichier,mnt):
+
+    with open(fichier,"w") as ign:
+        ign.write("ncols "+str(mnt["ncols"])+"\n")
+        ign.write("nrows "+str(mnt["nrows"])+"\n")                  
+        ign.write("xllcorner "+str(mnt["xllcorner"])+"\n")
+        ign.write("yllcorner "+str(mnt["yllcorner"])+"\n")
+        ign.write("cellsize "+str(mnt["cellsize"])+"\n")
+        ign.write("NODATA_value "+mnt["remplissage"]+"\n")
+        lignes=[" ".join(e) for e in mnt["table"]]
+        [ign.write(f+"\n") for f in lignes]
+
 ## Pour insérer une image, ou un logo, dans un script, utilisable ensuite par Tkinter : (effectuer les points 2 et 3)
 ## 1) Enregistrer l'image au format GIF (sinon il faudra utiliser PIL) voir (les images dans http://tkinter.fdex.eu/doc/sa.html#images)
 ## 2) Convertir le binaire GIF en texte encodé en 64 bits par le bout de code suivant :
@@ -16676,7 +17077,7 @@ def calculVolumeMnt():
         except Exception as e:
             erreur = _("erreur : le fichier %s n'est pas un MNT") % (fond) +str(e)
 
-    if "cols" in l6[0]: 
+    if "ncols" in l6[0]: 
         infoMnt["colsFond"] = int(l6[0].split()[1])
     else:
         erreur += "fichier incorrect"
@@ -16826,7 +17227,7 @@ def calculVolumeEntre2Mnt():
                 except Exception as e:
                     return "erreur : "+str(e)
 
-            if "cols" in l6[0]: 
+            if "ncols" in l6[0]: 
                 infoMnt["colsFond"] = float(l6[0].split()[1])
             else:
                 erreur += "cols fond incorrecte"
@@ -16886,7 +17287,7 @@ def calculVolumeEntre2Mnt():
                 except Exception as e:
                     return "erreur : "+str(e)
                 
-            if "cols" in l6[0]: 
+            if "ncols" in l6[0]: 
                 infoMnt["colsDessus"] = float(l6[0].split()[1])
             else:
                 erreur += _("cols dessus incorrecte : %s") % (l6[0])                        
@@ -17365,7 +17766,7 @@ def calculVolumeEntre2Mnt():
     rapport += " "+_("- l'écart minimum est de %s %s, au point %s.") % (infoMnt["ecartMin"][0],interface.uniteDistance,infoMnt["ecartMin"][1])  +"\n"
     rapport += " "+_("- globalement l'écart moyen entre les 2 MNT est de %s %s.") % (infoMnt["ecartMoyen"],interface.uniteDistance)  +"\n\n"     
     rapport += " "+_("- la trace mémorise ces résultats.")+"\n"
-    rapport += " "+_("- le nuage de points XYZ des écarts est consultable par le menu 'Outil_Metier\Visualiser l'écart'") +"\n\n"
+    rapport += " "+_("- le nuage de points XYZ des écarts est consultable par le menu 'Outil_Metier\\Visualiser l'écart'") +"\n\n"
     rapport += _("Remarque : Le  calcul du volume dépend d'un paramètre : la tolérance qui vaut %s %s. (modifiable par menu)")% (tolerance,interface.uniteDistance)+"\n"
     rapport += _("Un écart d'altitude inférieur à la tolérance est ignoré, considéré comme nul, dans l'épaisseur du trait.")+"\n\n"    
     interface.ecartXyz = infoMnt["fichierEcart"]
@@ -17388,9 +17789,6 @@ def tracerProfil():
         return
     conversionMosaiqueTIFVersJPG()
     mosaique = interface.mosaiqueTaramaJPG
-    if not os.path.exists(mosaique):  # si ce n'est pas déjà fait !
-        interface.lanceTarama()
-        time.sleep(2)
     if not os.path.exists(mosaique):  # si cela n'a pas marché
         interface.encadre(_("La mosaïque TARAMA n'existe pas.\n Elle permet de fixer les extrémités du profil.\nVous pouvez la générer par le menu outils"))
         return
@@ -17490,8 +17888,9 @@ def pointille(x1,y1,x2,y2,pas): # renvoi la liste des pointillés entre les 2 po
     return [((x1+i*vx,y1+i*vy)) for i in range (int(nombrePoints))]
          
 ################################ lire MNT
-@decorateTry   
+@decorateTrySilencieux   
 def lireMNTIGN(mntIgn):
+    # pb : le retour peut être None, str ou dict !! à corriger
     if not mntIgn: return _("pas de fichier")
     erreur = str()
     infoMnt = dict()
@@ -17502,8 +17901,8 @@ def lireMNTIGN(mntIgn):
         except Exception as e:
             erreur = _("erreur : le fichier %s n'est pas un MNT") % (mntIgn) +str(e)
     l6 = tout[:6]
-    if "cols" in l6[0]: 
-        infoMnt["cols"] = int(l6[0].split()[1])
+    if "ncols" in l6[0]: 
+        infoMnt["ncols"] = int(l6[0].split()[1])
     else:
         erreur += "cols incorrecte"
     if "nrows" in l6[1]: 
@@ -17572,7 +17971,7 @@ def MNTIGN2XYZ(mntIgn):
     return fichierXYZ
 
 def ecrireXYZ(infoMnt,fichierXYZ):
-    cols = infoMnt["cols"]
+    cols = infoMnt["ncols"]
     rows = infoMnt["nrows"]
     xinf = infoMnt["xllcorner"]
     ysup = infoMnt["yllcorner"]
@@ -17594,8 +17993,8 @@ def abandon(message=_("Abandon utilisateur")):
     interface.encadre(message)
     
 ############### demande fichier    
-def demandeFichier(repIni="",types=[("txt","*.txt"),(_("Tous"),"*")],multiple=False,titre="Fichier ?"):
-
+def demandeFichier(types=[("txt","*.txt"),(_("Tous"),"*")],multiple=False,titre="Fichier ?"):
+    repIni=os.getcwd()
     interface.menageEcran()
     f = tkinter.filedialog.askopenfilename( initialdir=repIni,                                                 
                                                 filetypes=types,
@@ -17901,6 +18300,42 @@ def extraireUniteDistance(distance): # distance est la chaine de caractère sais
         if len(l)>1:
             return l[1]
     return "m"
+
+def calcul_pmp(mntIgn):
+    def calcul_profil( profil, tableau):
+        ## permet de calculer la profondeur moyenne de profil
+        profil = [float(e) for e in profil]
+        pivot = int(len(profil)/2) # milieu du profil
+        pic_1 = max(profil[:pivot]) # 1ère saillie
+        pic_2 = max(profil[pivot:]) # 2ème saillie
+        profil_moyen = sum(tableau)/len(tableau)  
+        return 0.5*(pic_1 + pic_2) - profil_moyen
+    
+    ## permet de calculer la profondeur moyenne de profil sur une surface (moyenne des pmp
+    infoMnt = lireMNTIGN(mntIgn) # le tableau des valeurs
+    no_data = infoMnt["remplissage"]
+    hauteurs = infoMnt["table"]
+    tableau_val = []
+    for k in range(1, len(hauteurs)): #  + 1):
+        profil = list(hauteurs[k])
+        try: # suppression des bords sans data
+            while profil[0]==no_data:
+                profil.pop(0)
+            while profil[-1]==no_data:
+                profil.pop()
+        except:
+            profil=[no_data,]   # pour éviter les listes vides
+        taux = profil.count(no_data)/len(profil)
+        if taux < 0.2 and len(profil)>1:
+            work = [float(x) for x in profil if x != no_data]                
+            # on stocke les pmp calculées dans un tableau
+            tableau_val.append(calcul_profil(profil, work))
+    moyenne_pmp = sum(tableau_val)/len(tableau_val)
+    temp = [(i - moyenne_pmp) for i in tableau_val]
+    # Rq rugosité moyenne quadratique
+    epsilon = math.sqrt(sum(list(map(lambda x: x*x, temp)))/len(temp))
+    return moyenne_pmp, epsilon
+    
 '''################################## Crée un fichier contenant l'icône de l'application et en renvoie le nom conserver pour exemple de fichier temporaire
 
 def iconeGrainSel():
@@ -18245,14 +18680,15 @@ def barre():
 
       
 
-################################## construire le paramètre Offs pour Nuage2Ply à partir de l'orientation courante:
+################################## construire le paramètre Offs pour Nuage2Ply à partir de l'orientation courante :
+################################## Changement de repère si x ou y > 10000 seulement
 
 def construireOffs(orientationCourante):
     xyz = XYZChantier(orientationCourante) # liste (x,y,z)
     if xyz:
         return valOffs(xyz[0],xyz[1],xyz[2])
     else:
-        return "[0,0,0]"
+        return [0,0,0]
 
 def XYZChantier(orientationCourante): # recherche les coordonnées XYZ d'un point dans le xml qui va bien
     lesXmlOrientation = glob.glob(os.path.join("Ori-"+orientationCourante,"Orientation*.xml"))
@@ -18273,10 +18709,9 @@ def valOffs(x,y,z): # construction d'un paramètre de décalage pour éviter les
         if z>1000:      deltaZ = int(z/1000)*10000
         elif z<-1000:   deltaZ = (int(z/1000)-1)*1000
         else:           deltaZ = 0
-        decal = "["+str(deltaX)+", "+str(deltaY)+", "+str(deltaZ)+"]"
-        return decal
+        return [deltaX,deltaY,deltaZ]
     else:
-        return "[0,0,0]"
+        return [0,0,0]
 
 def lireFichier(fichier):
     if not os.path.exists(fichier): return

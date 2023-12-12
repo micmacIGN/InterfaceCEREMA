@@ -1,6 +1,8 @@
 The CEREMA interface provides a user-friendly graphical user interface for 
 MICMAC, the IGN's free photogrammetry tool.
 
+Version V 5.75 december, 12, 2023
+
 Version V 5.74 november, 5, 2023
 	- Diminution de la taille de l'installateur msi (de 201 MO à 38 LO)
 	- Calcul des MNT (menu outil métiers) accéléré (d'un facteur 20)
