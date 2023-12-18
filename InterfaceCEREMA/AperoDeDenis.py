@@ -788,6 +788,7 @@
 # - demandeFichier(....) : le répertoire par défaut "" est remplacé par os.getcwd()
 # - au chargement d'un chantier on possitionne explicitement le répertoire courant comme étant le répertoire du chantier
 # - Initialisation de self.Offs = [0,0,0] au lieu de '[0,0,0,]' (liste au lieu de str)
+#   Changement de type lors de la restauration pour les anciens chantiers
 #   Changement consécutifs
 # - La création d'un MNT (menu Outils métier) rétablit l'offset qui a été modifié pour le nuage dense
 #   cela intervient dans les systèmes de projection métriques
@@ -797,12 +798,13 @@
 # - suppression car non appelés : copierHomolOriTarama et copierorientation
 # - renomme copier_les_fichiers_utiles_orientation en copier_les_fichiers_utiles_calibration
 # - choisirUnChantier(....) : ajout du paramètre "silence", faux par défaut mais si vrai et un seul chantier : retourne ce chantier sans poser de questions.
-
+# 
+# à corriger : lors de la construction d'un mnt on ajoute l'offset du chantier "en cours" m^me si le nuage vient d'ailleurs : il faudrait poser la question
 # a voir : lancer micmac propose le choix densification alors que l'orientation est pas faite (aprés import des homoloques)
 # affiche etat de la calibration si elle est dans les objectifs.
 # pb si la valeur "1 1 1" des pts gps est incorrecte
 # pb pour l'ajout d'un chantier à partir d'un répertoire qui a été recopié ailleurs
-
+# dans les infos sur MNT : permettre la recherche d'un fichier ailleurs que dans le chantier
 # !!!!!!!!! attention : *.JPG est aussi présent en *.jpg et confusionnent avec la variable self.extensionChoisie
 
 # éviter les doublons "def infobulle"
@@ -12012,8 +12014,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if xyz:=XYZChantier(self.orientationCourante):
             centre = "["+str(int(float(xyz[0])))+","+str(int((float(xyz[1]))))+","+str(int((float(xyz[2]))))+"]"
             print('"centre="["+str(int(float(xyz[0])))+","+str(int((float(xyz[1]))))+","+str(int((float(xyz[2]))))+"]""',centre)
-            centre = str(xyz)
-            print("centre=str(xyz)",centre)            
+            centre = str(xyz)          
             message = (_("Coordonnées du centre dans ce référentiel : ")+"\n"+centre+"\n")                
             if self.Offs!=[0,0,0]:
                 message+=(_("Décalage pour centrer le nuage : ")+"\n"+str(self.Offs)+"\n")
@@ -13421,7 +13422,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.masque3DSansChemin         = r[61] # nom du fichier XML du masque 3D, fabriqué par Saisie MasqQT (sur AperiCloud ou sur Modele3D)
             self.masque3DBisSansChemin      = r[62] # nom du second fichier XML pour le masque 3D                         
             self.tailleDuChantierEnMO       = r[63] # taille sous la racine du chantier (juin 2020)
-            self.Offs                       = r[64] # décalage d'offset pour le nuage dense
+            self.Offs                       = r[64] # décalage d'offset pour le nuage dense, str puis lst suivant les versions
             self.nbFocales                  = r[65] # pour affichage messages (calculé lors du choix des photos)
             self.dimensionsOK               = r[66] # booléen : vrai si toutes les photos sont de même dimension
             self.lancerSchnaps.set           (r[67])# options nouvelles
@@ -13447,7 +13448,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             
         except Exception as e:
             print(_("Erreur restauration param chantier : "),str(e))
-            
+
+        # pour compatibilité avec ancienne versions :
+
+        if isinstance(self.Offs,str): self.Offs=eval(self.Offs)
+        
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
         # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
         if self.listePointsGPS.__len__()>0:
@@ -18685,10 +18690,11 @@ def barre():
 
 def construireOffs(orientationCourante):
     xyz = XYZChantier(orientationCourante) # liste (x,y,z)
-    if xyz:
-        return valOffs(xyz[0],xyz[1],xyz[2])
-    else:
-        return [0,0,0]
+    if isinstance(xyz,list):
+        if len(xyz)==3:
+            if xyz:
+                return valOffs(xyz[0],xyz[1],xyz[2])
+    return [0,0,0]
 
 def XYZChantier(orientationCourante): # recherche les coordonnées XYZ d'un point dans le xml qui va bien
     lesXmlOrientation = glob.glob(os.path.join("Ori-"+orientationCourante,"Orientation*.xml"))
