@@ -798,12 +798,17 @@
 # - suppression car non appelés : copierHomolOriTarama et copierorientation
 # - renomme copier_les_fichiers_utiles_orientation en copier_les_fichiers_utiles_calibration
 # - choisirUnChantier(....) : ajout du paramètre "silence", faux par défaut mais si vrai et un seul chantier : retourne ce chantier sans poser de questions.
-# 
-# à corriger : lors de la construction d'un mnt on ajoute l'offset du chantier "en cours" m^me si le nuage vient d'ailleurs : il faudrait poser la question
+
+# Version 5.76
+# remplacement de "m" par "" comme unité par défaut, modif dans la fonction "referentiel", corrections subséquentes
+# ajout d'un chantier à partir d'un répertoire qui a été recopié ailleurs : modif restaureparam (try pour os.chhdir repTravail)
+
+# calcul PMP : ajouter écart type médiane, nombre de profils, mini, maxi
+# à corriger : lors de la construction d'un mnt on ajoute l'offset du chantier "en cours" même si le nuage vient d'ailleurs : il faudrait poser la question
 # a voir : lancer micmac propose le choix densification alors que l'orientation est pas faite (aprés import des homoloques)
 # affiche etat de la calibration si elle est dans les objectifs.
 # pb si la valeur "1 1 1" des pts gps est incorrecte
-# pb pour l'ajout d'un chantier à partir d'un répertoire qui a été recopié ailleurs
+
 # dans les infos sur MNT : permettre la recherche d'un fichier ailleurs que dans le chantier
 # !!!!!!!!! attention : *.JPG est aussi présent en *.jpg et confusionnent avec la variable self.extensionChoisie
 
@@ -1181,7 +1186,7 @@ def lambert93OK(latitude,longitude): # vérifie si le point est compatible Lambe
 
 # Variables globales et certaines constantes
 
-numeroVersion = "5.75"
+numeroVersion = "5.76"
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour contrôler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
 continuer = True                    # si False on arrête la boucle de lancement de l'interface
@@ -4938,7 +4943,9 @@ class Interface(ttk.Frame):
               _("Historique des versions de l'interface CEREMA pour MicMac") + "\n"+\
               "----------------------------------------------------------"+\
               _('''
-Version 5.75 24 novembre 2023
+Version 5.76
+
+Version 5.75 24 décembre 2023
 
 Version 5.74 24 novembre 2023
 
@@ -5713,7 +5720,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.savePlanH                  =   "savePlanH"                 # sauvegarde utile si abandon
         self.savePlanV                  =   "savePlanV"
         self.distance.set("")
-        self.uniteDistance              =   "m"                         # peut changer si mise à l'échelle ou référentiel MicMac
+        self.uniteDistance              =   ""                          # peut changer si mise à l'échelle ou référentiel MicMac modif ; version 5.76 "" au lieu de "m"
         self.dicoCalibre                =   dict()                      # les 2 points décrivant un segment de longueur donnée sur 2 photos
 
     # affichage des points GCP ou distance dans la boite de dialogue de visu:saisie des photos
@@ -6201,9 +6208,6 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if os.path.isdir(nouveauRepChantier):       # c'est bien un répertoire
             param = os.path.join(nouveauRepChantier,self.paramChantierSav)
             if os.path.isfile(param): # il existe un fichier paramètre
-                if nouveauRepChantier in self.tousLesChantiers:
-                    self.encadre(_("Le répertoire du nouveau chantier \n %s \n est déjà un chantier.\n Abandon.") % (nouveauRepChantier))
-                    return
                 self.encadre(_("Répertoire correct. Patience..."))
             # on ajoute le chantier dans les paramètres généraux
                 self.restaureParamChantier(param)
@@ -6949,7 +6953,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                         basDePage=_("La tolérance est l'écart d'altitude minimum pris en compte dans le calcul du volume")+"\n"+
                         _("Valeur actuelle : %s %s.") % (self.tolerance,self.uniteDistance)+"\n"+
                         _("Tout écart d'altitude inférieur à %s %s sera considéré comme nul, dans l'épaisseur du trait.")
-                             % (str(round(self.tolerance*100,1)),self.uniteDistance)+"\n\n"+
+                             % (str(round(self.tolerance,3)),self.uniteDistance)+"\n\n"+
                         _("Cette valeur est enregistrée par le menu Outils/sauvegarder les paramètres par défaut")).saisie
         if tolerance in (False,""):
             self.encadre(_("Abandon utilisateur, tolérance inchangée : %s %s")% (self.tolerance,self.uniteDistance))
@@ -7479,6 +7483,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         if self.GpsExif():      # return True s'il y a des données gps extraites des photos :
             self.choixReferentiel.set("META")   # on modifie le choix du référentiel par défaut
+            self.uniteDistance = "m"
             self.metadonneesGpsPresentes = True
         else:
             self.choixReferentiel.set("MicMac")
@@ -7958,7 +7963,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         # mise à jour de l'unité de la métrique
 
-        self.uniteDistance = extraireUniteDistance(self.distance.get())
+        self.uniteDistance = extraireUniteDistance(self.distance.get(),self.uniteDistance)
         
         # contrôle métrique :
         if self.dicoCalibre.__len__()>0:
@@ -11194,6 +11199,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if self.choixReferentiel.get()=="GPS":
             if os.path.exists(self.mesureAppuis):
                 self.orientationCourante = "Arbitrary"
+                self.uniteDistance = "m"
                 self.ajoutLigne(_("Vous avez choisi un referentiel points GPS.")+"\n")                
                 self.lanceGCPBascule()          # des points GCP : fabrique l'orientation "bascul"
                 # lancement de campari avec points GCP 
@@ -11209,6 +11215,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if self.choixReferentiel.get()=="META":
             if os.path.isdir("Ori-nav-Brut"):
                 self.orientationCourante = "nav-Brut"
+                self.uniteDistance = "m"                
                 self.ajoutLigne(_("Vous avez choisi un referentiel lié aux métadonnées des photos")+"\n")                
                 self.lanceCenterBascule()               # prend Arbitrary + nav_brut pour fabriquer l'orientation "nav"
                 self.lanceCampari()                     # Campari sans points GCP  (compensation de mesures hétérogènes)          
@@ -11222,6 +11229,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if self.choixReferentiel.get()=="MAL":
             if self.controleMiseALEchelle():            # mise à l'échelle OK = True   
                 self.orientationCourante = "Arbitrary"
+                self.uniteDistance = extraireUniteDistance(self.distance.get(),self.uniteDistance)
                 self.ajoutLigne(_("Vous avez choisi une mise à l'échelle")+"\n")
                 self.lanceApero()                       # exploite un fichier xml et fabrique l'orientation "echelle3"                    
                 self.lanceCampari()                     # Campari sans points GCP
@@ -11234,6 +11242,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         if self.choixReferentiel.get()=="CHANTIER":
             self.orientationCourante = "Arbitrary"
+            self.uniteDistance = ""            
             self.lanceCampari() # Campari pour compenser les mesures hétérogènes
             self.lanceMorito()  # Morito pour se mettre dans le référentiel du chantier choisi, fabrique "morito"
             if os.path.exists("Ori-morito"):
@@ -13211,11 +13220,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                          self.orientationReference,         # répertoire orientation de référence, copié d'un autre chantier (chemin complet)
                          self.dicoProfil,                   # les points du profil, menu métier
                          self.dicoPipeline,                 # pour le pipeline : nom du fichier
-                         self.objectifChantier.get(),       # menu MicMac/objectif
-                         self.chargerCalibration.get(),     # menu MicMac/objectif
-                         self.definirReferentiel.get(),     # menu MicMac/objectif
-                         self.definirGPSouMetrique.get(),   # menu MicMac/objectif
-                         self.pointsMaillage.get()          # menu MicMac/objectif                         
+                         self.objectifChantier.get(),       # menu MicMac/objectif du chantier
+                         self.chargerCalibration.get(),     # menu MicMac/objectif du chantier
+                         self.definirReferentiel.get(),     # menu MicMac/objectif du chantier
+                         self.definirGPSouMetrique.get(),   # menu MicMac/objectif du chantier
+                         self.pointsMaillage.get(),         # menu MicMac/objectif du chantier
+                         self.uniteDistance,                # mémorise la valeur de l'unité, mise à jour à la lecture des photos
                          ),     
                         sauvegarde1)
             sauvegarde1.close()
@@ -13445,13 +13455,23 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.definirReferentiel.set      (r[84])# menu MicMac/objectif
             self.definirGPSouMetrique.set    (r[85])# menu MicMac/objectif
             self.pointsMaillage.set          (r[86])# menu MicMac/objectif
+            self.uniteDistance              = r[87] # unité mise à jour à la lecture des photos
             
         except Exception as e:
             print(_("Erreur restauration param chantier : "),str(e))
 
         # pour compatibilité avec ancienne versions :
 
-        if isinstance(self.Offs,str): self.Offs=eval(self.Offs)
+        if not isinstance(self.Offs,list):
+            try:
+                self.Offs=eval(self.Offs)
+            except:
+                self.Offs=[0,0,0]
+        if isinstance(self.Offs,list):
+            if len(self.Offs)!=3:
+                self.Offs=[0,0,0]
+        else:
+            self.Offs=[0,0,0]
         
         # pour assurer la compatibilité ascendante suite à l'ajout de l'incertitude dans la description des points GCP
         # passage vers la version 2.60 de la liste des points GCP (un item de plus dans le tuple)
@@ -13483,7 +13503,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         # Mise à jour de la métrique utilisée
 
-        self.uniteDistance = extraireUniteDistance(self.distance.get())
+        self.uniteDistance = extraireUniteDistance(self.distance.get(),self.uniteDistance)
 
         # Mise à jour de la bdd objectifs
 
@@ -13495,8 +13515,10 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.texteChargerCalib.set(_("Utiliser un autre chantier pour calibrer l'appareil photo"))        
 
         # positionne le répertoire de travail comme répertoire courant
-
-        os.chdir(self.repTravail)
+        try:    # s'il s'agit de la restauration d'un chantier alors le répertoire peut ne pas exister
+            os.chdir(self.repTravail)   
+        except:
+            pass
 
         # Restauration des paramètres nommés personnalisés : si pas de dico alors initialisation
         
@@ -15320,11 +15342,14 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         mnt = self.selectionPhotosAvecChemin[0]        
         mnt,ncols,nrows,xllcorner,yllcorner,cellsize,largeur,hauteur,basGauche,semis,noData = self.infoSurMNT(mnt)
         ######## pour test
-        pmp,rugo=calcul_pmp(mnt)
+        pmp,rugo,nb,mini,maxi=calculPmp(mnt)
         ########
-        if affiche:          
-            texte = ("MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s %s\nlargeur = %s\nhauteur = %s \nProfondeur moyenne de profil = %s %s\n rugosité = %s ") % \
-            (mnt,ncols,nrows,xllcorner,yllcorner,cellsize,self.uniteDistance,largeur,hauteur,round(pmp,3),self.uniteDistance,round(rugo,3))
+        if affiche:
+            t="MNT : \n%s\n\nncols = %s\nnrows = %s\nxllcorner = %s\nyllcorner = %s\ncellsize = %s %s\nlargeur =  %s "+\
+                     "\nhauteur = %s \n\n _________________\n\nProfondeur moyenne de profil (pmp) = %s %s\n écart type pmp = %s "+\
+                     "\n Nombre de valeurs = %s \nmini,maxi= %s %s"
+            texte = t % (mnt,ncols,nrows,xllcorner,yllcorner,cellsize,self.uniteDistance,largeur,hauteur,round(pmp,3),self.uniteDistance,round(rugo,3),nb,mini,maxi)
+            
             self.encadre(texte)
             self.ajoutLigne(texte)
         else:
@@ -15570,13 +15595,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     ###### les filières prédéterminées par menu micmac / définir l'objectif du chantier
 
     def filiereChantier(self):
-        print("ok")
         self.menageEcran()
         self.item4100.pack()
         
 
     def modifierOptionsChantier(self):
-        print("self.objectifChantier.get()=",self.objectifChantier.get())
         # raz des valeurs modifiées
         
         # c3dc, micmac 
@@ -16098,12 +16121,17 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         def demandeLePas(surface,nb_points): # demande la taille de la maille
             lePas = False
             texte  = _("Fichier : %s") % (fichierPourMnt)
-            texte += "\n\n"+_("Indiquer la taille de la maille utilisée pour le MNT, en %s :") % (self.uniteDistance)
-            texte += "\n\n"+_("Le nombre de points est de %s, la surface couverte est de %s %s2.") % (nb_points,int(surface),self.uniteDistance)
-            texte += "\n\n"+_("Il y a %s points au %s2.") % (round(nb_points/surface),self.uniteDistance)
+
+            if self.uniteDistance:
+                texte += "\n\n"+_("Indiquer la taille de la maille utilisée pour le MNT, en %s :") % (self.uniteDistance)                
+                texte += "\n\n"+_("Le nombre de points est de %s, la surface couverte est de %s %s2.") % (nb_points,int(surface),self.uniteDistance)
+                texte += "\n\n"+_("Il y a %s points au %s2.") % (round(nb_points/surface),self.uniteDistance)                
+            else:
+                texte += "\n\n"+_("Indiquer la taille de la maille utilisée pour le MNT :")               
+                texte += "\n\n"+_("Le nombre de points est de %s, la surface couverte est de %s.") % (nb_points,int(surface))
             texte += "\n\n"+_("Une taille de %s %s correspond à 1 point du nuage par maille.") % (round((surface/nb_points)**0.5,2),self.uniteDistance)
             if self.choixReferentiel.get()=="MicMac":
-                 texte += "\n\n"+_("Remarque : L'unité de distance est fixée par MicMac, ce n'est pas le mètre.")   
+                 texte += "\n\n"+_("Remarque : L'unité de distance est arbitraire, fixée par MicMac, ce n'est pas le mètre.")   
             new = MyDialog(fenetre,texte)
             if new.saisie in (False,"",None):
                 return
@@ -17939,7 +17967,7 @@ def lireMNTIGN(mntIgn):
         sizF = float(l6[4].split()[1])
         infoMnt["cellsize"] = sizF
     else:
-        erreur += "cellsize incorrecte"
+         erreur += "cellsize incorrecte"
         
     if "NODATA_value" in l6[5]: 
         infoMnt["remplissage"] = l6[5].split()[1]
@@ -18297,49 +18325,48 @@ def curseurFrame(frame):   # renvoie la chaine de caractère représentant le cu
     except:
         pass
 
-def extraireUniteDistance(distance): # distance est la chaine de caractère saisie dans la stringvar self.distance
-    # retourne la distance utilisée par la mise à l'échelle, sinon le mètre.
+def extraireUniteDistance(distance,unite): # distance est la chaine de caractère saisie dans la stringvar self.distance
+    # retourne la distance utilisée par la mise à l'échelle, sinon la distance en cours
     # par défaut l'unité est le mètre
     if isinstance(distance,str):
         l = distance.split()
         if len(l)>1:
-            return l[1]
-    return "m"
+            return l[1]      
+    return unite
 
-def calcul_pmp(mntIgn):
-    def calcul_profil( profil, tableau):
+def calculPmp(mntIgn):
+    def calcul_pmp( profil, utile): # pour un profil
         ## permet de calculer la profondeur moyenne de profil
         profil = [float(e) for e in profil]
         pivot = int(len(profil)/2) # milieu du profil
         pic_1 = max(profil[:pivot]) # 1ère saillie
         pic_2 = max(profil[pivot:]) # 2ème saillie
-        profil_moyen = sum(tableau)/len(tableau)  
+        profil_moyen = numpy.mean(utile) # niveau moyen lorsqu'il y a une valeur  
         return 0.5*(pic_1 + pic_2) - profil_moyen
     
     ## permet de calculer la profondeur moyenne de profil sur une surface (moyenne des pmp
     infoMnt = lireMNTIGN(mntIgn) # le tableau des valeurs
     no_data = infoMnt["remplissage"]
     hauteurs = infoMnt["table"]
-    tableau_val = []
+    tableau_pmp = []
     for k in range(1, len(hauteurs)): #  + 1):
         profil = list(hauteurs[k])
         try: # suppression des bords sans data
-            while profil[0]==no_data:
-                profil.pop(0)
-            while profil[-1]==no_data:
-                profil.pop()
+            while profil[0]==no_data:  profil.pop(0)
+            while profil[-1]==no_data: profil.pop()
         except:
             profil=[no_data,]   # pour éviter les listes vides
         taux = profil.count(no_data)/len(profil)
         if taux < 0.2 and len(profil)>1:
-            work = [float(x) for x in profil if x != no_data]                
+            utile = [float(x) for x in profil if x != no_data]                
             # on stocke les pmp calculées dans un tableau
-            tableau_val.append(calcul_profil(profil, work))
-    moyenne_pmp = sum(tableau_val)/len(tableau_val)
-    temp = [(i - moyenne_pmp) for i in tableau_val]
+            tableau_pmp.append(calcul_pmp(profil, utile)) # ajout pmp pour chaque profil
     # Rq rugosité moyenne quadratique
-    epsilon = math.sqrt(sum(list(map(lambda x: x*x, temp)))/len(temp))
-    return moyenne_pmp, epsilon
+    ecartType=numpy.std(tableau_pmp)
+    pmp=numpy.mean(tableau_pmp)
+    nb=tableau_pmp.__len__()
+    mint,maxt=round(min(tableau_pmp),2),round(max(tableau_pmp),2)
+    return pmp, ecartType, nb, mint, maxt 
     
 '''################################## Crée un fichier contenant l'icône de l'application et en renvoie le nom conserver pour exemple de fichier temporaire
 
@@ -18692,8 +18719,7 @@ def construireOffs(orientationCourante):
     xyz = XYZChantier(orientationCourante) # liste (x,y,z)
     if isinstance(xyz,list):
         if len(xyz)==3:
-            if xyz:
-                return valOffs(xyz[0],xyz[1],xyz[2])
+            return valOffs(xyz[0],xyz[1],xyz[2])
     return [0,0,0]
 
 def XYZChantier(orientationCourante): # recherche les coordonnées XYZ d'un point dans le xml qui va bien
