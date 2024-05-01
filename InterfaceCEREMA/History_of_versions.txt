@@ -1,5 +1,11 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
+Version 5.78 May 1, 2024
+	- Unlimited number of photos
+	- 64-bit point clouds: no offset for geographic reference frames
+	- increased speed (GPU, search for homologous points)
+	- change of reference frame for point clouds without recalculation
+				
 Version 5.75 December 12, 2023
 
 Version 5.74 November 5, 2023 :

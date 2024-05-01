@@ -1,5 +1,11 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 5.78 1 mai 2024
+				- Nombre de photos non limité
+				- Nuages de points en 64 bits : suppression des offset pour les référentiels géographique
+				- rapidité accrue (GPU, recherche des points homologues)
+				- changement de référentiel pour les nuages de points sans recalcul
+
 			Version 5.75 12 décembre 2023 :
                 - Ajout d'un item : objectif dans le menu MicMac :
                   oriente l'utilisateur en fonction de son but

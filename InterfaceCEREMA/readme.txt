@@ -1,6 +1,12 @@
 The CEREMA interface provides a user-friendly graphical user interface for 
 MICMAC, the IGN's free photogrammetry tool.
 
+Version V 5.78 May, 1, 2024
+	- Unlimited number of photos
+	- 64-bit point clouds: no offset for geographic reference frames
+	- increased speed (GPU, search for homologous points)
+	- change of reference frame for point clouds without recalculation      
+
 Version V 5.76 january, 14, 2024
 
 Version V 5.75 december, 12, 2023

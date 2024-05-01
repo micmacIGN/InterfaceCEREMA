@@ -1,9 +1,2 @@
-Lien vers l'installateur windows de la version 5.76 de l'interface Cerema :
-https://drive.google.com/file/d/1sqMRFB-C1Q3aPEdYrvbUMJ2sc0X6SOdl/view?usp=sharing
-
-
-
-
-
-
-
+Lien vers l'installateur windows de la version 5.78 de l'interface Cerema :
+https://drive.google.com/file/d/1NQZFtkZ-s2LZFczcU527hTZ3hNoxAUNB/view?usp=sharing
