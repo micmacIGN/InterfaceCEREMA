@@ -1,1 +1,2 @@
-actif
+inactif
+L'automate est actuellement occupé
