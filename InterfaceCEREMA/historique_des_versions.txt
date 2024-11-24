@@ -1,5 +1,12 @@
 ﻿Historique des principales versions de l'interface CEREMA AperoDeDenis
 
+			Version 6.0 25 novembre 2024
+				- Rupture dans l'expérience utilisateur : nouveau look
+				- Rupture pédagogique : MicMac disparait
+				- Géoréférencement augmenté : référentiel automatique, changement de référentiel
+				- calage a posteriori
+				- traitement à distance proposé
+
 			Version 5.78 1 mai 2024
 				- Nombre de photos non limité
 				- Nuages de points en 64 bits : suppression des offset pour les référentiels géographique

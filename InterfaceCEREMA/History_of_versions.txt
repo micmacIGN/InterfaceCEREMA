@@ -1,5 +1,12 @@
 ﻿History of the main versions of the CEREMA AperoDeDenis interface
 
+Version 6.0 November 25, 2024
+	- A break with the user experience: new look
+	- Pedagogical breakthrough: MicMac disappears
+	- Enhanced georeferencing: automatic reference frame, change of reference frame
+	- a posteriori calibration
+	- remote processing available
+				
 Version 5.78 May 1, 2024
 	- Unlimited number of photos
 	- 64-bit point clouds: no offset for geographic reference frames

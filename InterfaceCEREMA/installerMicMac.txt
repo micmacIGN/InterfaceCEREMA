@@ -1,5 +1,8 @@
 Pour installer MicMac sous Windows, télécharger :
 https://github.com/micmacIGN/micmac/releases/download/v1.1.1/micmac_windows.zip
 
+Pour installer micMac sous linux, télécharger : 
+https://github.com/micmacIGN/micmac/releases/download/v1.1.1/micmac_linux.tgz
+
 Pour installer micMac sous d'autres OS, consulter : 
 https://github.com/micmacIGN/micmac/releases
