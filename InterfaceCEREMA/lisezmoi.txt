@@ -8,6 +8,8 @@ Version 6.0 - 25 novembre 2024
 
 		- Rupture dans l'expérience utilisateur : nouveau look
 		- Rupture pédagogique : MicMac disparait
+		- raccourcis clavier pour les principales fonctions
+		- Ouverture des fichiers "récents"
 		- Géoréférencement augmenté : référentiel automatique, changement de référentiel
 		- calage a posteriori
 		- traitement à distance proposé

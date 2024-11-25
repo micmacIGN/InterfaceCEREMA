@@ -3,6 +3,8 @@
 Version 6.0 November 25, 2024
 	- A break with the user experience: new look
 	- Pedagogical breakthrough: MicMac disappears
+	- keyboard shortcuts for main functions
+	- Open “recent” files
 	- Enhanced georeferencing: automatic reference frame, change of reference frame
 	- a posteriori calibration
 	- remote processing available

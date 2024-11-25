@@ -891,11 +891,16 @@
 # lors du changement d'epsg pour un nuage : on crée un nouveau nuage SAUF pour apericloud.ply (utile pour masque 3D). Demi mesure à confirmer
 # vérification de la présence d'un masque avant calcul de profil, abandon si oui
 
+# version 6.01
+# le chemin de la mosaïque Tarama est modifié lors du renommage du chantier
+# message en plus pour l'ouverture du masque 3D : si la photo est coincée ouvrir apericloud par le menu
+
 # soucis :
+
 # faut-il vraiement interdire les espaces dans le chemin de mm3d ?
 # la suppression des options personnalisées ne semble pas marcher ???
 # profil sur nuage avec masque : voir ci-dessus : peut-on autoriser avec d'autres calculs ?
-
+# la modification du référentiel pose pb avec les points de calage 
 
 # Un souci :
 # dicoPerso est sauvegardé avec les info du chantier et avec les options de micmac !!!!
@@ -1436,8 +1441,6 @@ def conversionWGS84VersEPSG3D(EPSG,latitude,longitude,altitude): # epsg sous la 
     
 def conversionEPSG1VersEPSG2(epsg1,epsg2,latitude,longitude): # epsg sous la forme EPSG:32631 ou crs ; latitude longitude dans l'unité de epsg1 (numérique)
     if epsg1=="" or epsg2=="": return 0,0
-    if epsg1=="RTL":
-        epsg1=interface.copieWkt()
     if epsg2=="RTL":
         epsg2=interface.copieWkt()
     transformer = Transformer.from_crs(epsg1, epsg2)
@@ -6377,6 +6380,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             Il faut attendre que le programme se lance, puis le programme ouvre une photo du chantier puis, enfin,
             il ouvre le nuage non dense sur lequel la saisie du masque pourra se faire.
             L'ouverture d'une photo JPG évite le plantage, qui arrive parfois, de façon aléatoire, lors du chargement du nuage de point non dense.
+
+            Si l'affichage reste bloqué sur la photo alors ouvrir le fichier AperiCloud.ply.
             
             S'il plante au lancement par AperoDeDenis alors essayer de le relancer.            
             Vous pouvez aussi lancer  "SaisieQT SaisieMasqQT" dans une console,
@@ -7058,8 +7063,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                          # si le chantier n'est plus sous le répertoire des photos alors le répertoire des photos devient le chantier lui même       
         self.photosAvecChemin   = [os.path.join(self.repTravail,os.path.basename(self.afficheChemin(e))) for e in self.photosAvecChemin]
         self.listeDesMaitresses = [os.path.join(self.repTravail,os.path.basename(self.afficheChemin(e))) for e in self.listeDesMaitresses]
-        self.listeDesMasques    = [os.path.join(self.repTravail,os.path.basename(self.afficheChemin(e))) for e in self.listeDesMasques]                              
+        self.listeDesMasques    = [os.path.join(self.repTravail,os.path.basename(self.afficheChemin(e))) for e in self.listeDesMasques]
 
+        # constantes tarama : (version 6.01)
+        self.mosaiqueTaramaTIF = os.path.join(self.repTravail,"TA","TA_LeChantier.tif")      
+        self.mosaiqueTaramaJPG = os.path.join(self.repTravail,"TA","TA_LeChantier.JPG")
+        self.masqueTarama = os.path.join(os.path.splitext(self.mosaiqueTaramaJPG)[0]+"_Masq.tif")
 
         # le répertoire où se trouvent les photos pour la calibration de l'appareil change après Tapas :
  
@@ -8035,7 +8044,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.item903 = ttk.Button(self.item900,text=_('Fermer'),command=lambda : self.topMasque3D.destroy())              
         self.item903.pack(ipady=2,pady=10)
         texte902=(_("Affichage du masque 3D :") + "\n\n"+
-                _("Cliquer sur le bouton visualiser puis ATTENDRE : une photo apparait et se ferme, puis le nuage 3D s'affiche") + "\n\n"+                                 
+                _("Cliquer sur le bouton visualiser puis ATTENDRE : une photo apparait et se ferme, puis le nuage 3D s'affiche") + "\n\n"+
+                _("Si la photo reste coincée alors ouvrir le fichier AperiCloud.ply par le menu fichier")+"\n\n"+
                 _("Les points BLANCS du nuage sont dans le masque") + "\n"+
                 _("Les points BLEUS du nuage sont en dehors du masque") + "\n"+                                 
                 _("Pour grandir/diminuer la taille des points : +/-") + "\n\n"+
@@ -10231,6 +10241,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     Dans la fenêtre de saisie qui va s'ouvrir il faut :
 
                     1) ATTENDRE plusieurs secondes la fermeture de la photo et l'ouverture du nuage non dense
+
+                       Si la photo reste coincée alors ouvrir le fichier AperiCloud.ply par le menu fichier                    
                     
                     2) Positionner le nuage pour saisir le masque
                     3) F9 pour commencer à saisir le masque
