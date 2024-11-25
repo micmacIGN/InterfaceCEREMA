@@ -894,6 +894,7 @@
 # version 6.01
 # le chemin de la mosaïque Tarama est modifié lors du renommage du chantier
 # message en plus pour l'ouverture du masque 3D : si la photo est coincée ouvrir apericloud par le menu
+# mis en try le module nbTachesMm3d plante parfois)
 
 # soucis :
 
@@ -22151,12 +22152,16 @@ def testNbTachesMm3d():
                     )
     
 def nbTachesMm3d():     # nombre de processus mm3d en mémoire : pour avertir l'utilisateur de rebooter si trop !
-    commande = ('tasklist /fi "IMAGENAME eq mm3d.exe" /NH > mm3d')
-    os.system(commande)
-    with open("mm3d") as f:
-        lignes=f.readlines()        
-    nbMm3d=len(lignes)       
-    return nbMm3d
+    try:
+        commande = ('tasklist /fi "IMAGENAME eq mm3d.exe" /NH > mm3d')
+        os.system(commande)
+        with open("mm3d") as f:
+            lignes=f.readlines()        
+        nbMm3d=len(lignes)       
+        return nbMm3d
+    except Exception as e:
+        print("erreur nbTachesMm3d %s" % e)
+        return 0
 
 def memoMm3d(commande,pid=""):   # pour test uniquement : mémorise le nombre de processus mm3d après chaque lancement de commande
                                  # dans le fichier fichierSuiviId
