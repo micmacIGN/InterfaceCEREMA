@@ -1,2 +1,2 @@
-actif
-active
+inactif
+pour longtemps
