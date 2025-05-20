@@ -504,7 +504,7 @@
 # ajout d'un chantier dans la liste : strip() du chemin 
 # modif mydialogtexte : la saisie en retour est strictement la saisie effectuée par l'utilisateur, sans \n
 # modif expert/commande système et python si saisie = '' : message d'abandon utilisateur
-# modif version : 5.56.1
+# modif version : 5.5
 # correction du message si il y a un espace dans le chemin de micmac/bin (le début était absent)
 # remplacement du chemin de micmac/bin : source devient source.strip()
 # début version 5.56.2
@@ -895,6 +895,30 @@
 # le chemin de la mosaïque Tarama est modifié lors du renommage du chantier
 # message en plus pour l'ouverture du masque 3D : si la photo est coincée ouvrir apericloud par le menu
 # mis en try le module nbTachesMm3d plante parfois)
+# version 6.02
+# mise sous try tous les accès fichiers
+# teste la connexion internet avant ouverture de page
+# mise sous _( ) des messages print
+
+# Version 6.1
+# modif encadre : si pas de texte : return
+# ajout d'une fonction qui extrait une zone carrée dans un ply : SelectionCarreauPly
+# ajout d'une fonction "carroyage"
+# ajout d'un item dans le menu outils pour fermer CloudCompare
+# ajout de l'export des ply au format d'échange obj :
+#  - ajout de l'import de fonction matplotlib
+#  - ajout d'une classe pour exporter les ply en obj
+#  - ajout d'un item dans le menu expert : exporter au format obj
+# Fix : dans le choix d'un fichier "ouvrir en grand" affichait toujours le premier fichier
+# Fix : dans le choix d'un epsg il y avait toujours erreur (test sur présence fichier invalide)
+
+# suppression de nouveauDepart="oui" remplacé par "non" (posait pb au relancement et sert sans doute plus à rien)
+
+# à faire :
+#  - carroyage des nuages ?
+# adapter l'aide (option file)
+# ajouter des infos sur les infos des plys : texture interne, externe, uv 
+
 
 # soucis :
 
@@ -958,7 +982,7 @@
 ##################### ATTENTION / LE MODULE tawny DE MMVII ne semble pas fonctionner (compilé avec une mauvaise option
 
 # quelques soucis :
-#le mode 'extended' de choisirUnChantier ne marche pas (i n'est pas utilisé mais serait utile pour le ménage)
+# le mode 'extended' de choisirUnChantier ne marche pas (i n'est pas utilisé mais serait utile pour le ménage)
 # calage : si plusieurs nuages ont le même mode avec des repères différents cela peut conduire à des résultats erronés
 # aprés recale certaines fonctions ne marchent pus (générer un maillage texturé) : vérifier et interdire
 # problème des infos bulles lors de la visualistion des points de calage
@@ -1188,6 +1212,7 @@ import traceback                            # uniquement pour pv : affiche les p
 from   PIL import Image                     # pour travailler sur les images, définir le masque, placer les points GCP : PIL
 from   PIL import ImageTk
 from   PIL import ImageDraw
+from   PIL import ImageFilter
 import base64
 import inspect
 import zipfile
@@ -1216,6 +1241,7 @@ from pyproj import Transformer
 import gc
 import sched
 import pyperclip #  .copy et .paste pour gérer le presse papier (copier le wkt)
+import trimesh
 
 def foreach_window(hwnd, lParam):
     if IsWindowVisible(hwnd):
@@ -1241,13 +1267,13 @@ def killMm3d(): # https://stackoverflow.com/questions/19447603/how-to-kill-a-pyt
                                   universal_newlines=True) # pour communiquer en string et pas en binaire
             p.communicate(input='\n') # pour débloquer si besoin
         except Exception as e:
-            print("erreur tskill mm3d: ",str(e))            
+            print(_("erreur tskill mm3d: "),str(e))            
     if os.name=='posix':
         try:
             p = subprocess.Popen("kill -9 $(pidof mm3d)",shell=True,universal_newlines=True) # https://korben.info/commande-kill-linux-tuer-processus.html
             p.communicate(input='\n') # pour débloquer si besoin  
         except Exception as e:
-            print("erreur kill linux: ",str(e))
+            print(_("erreur kill linux: "),str(e))
                             
 def fin(codeRetour=0):
     print(heure()+" fin AperoDeDenis")
@@ -1322,7 +1348,7 @@ class InitialiserLangue(tkinter.Frame):
     def langueAnglaise(self):
         global langue
         langue = "en"
-        print("anglais, langue = ",langue)
+        print(_("anglais, langue = "),langue)
         frame.destroy()
         
     def langueAllemande(self):
@@ -1468,7 +1494,7 @@ def lireFichierInternet(adresse):
         sock.close
         return htmlLu
     except Exception as e:
-        print("erreur lecture web : ",url,"\n",str(e))
+        print(_("erreur lecture web : "),url,"\n",str(e))
 
 ################################## parser html : appel par :
         # parser = MyHTMLParser(tagrecherché)
@@ -1497,9 +1523,13 @@ class MyHTMLParser(HTMLParser):
 # Lit le fichier html et renvoie la première valeur du tag
 
 def parseFichierHtml(fichier,tag):
-    with open(fichier) as f:
-        html=f.readlines()
-    return parseHTML(html,tag) 
+    try:
+        with open(fichier) as f:
+            html=f.readlines()
+        return parseHTML(html,tag)
+    except Exception as e:
+        print(_("parse html, erreur="),str(e))
+        return str()
 
 def parseHTML(html,tag):
     parser=MyHTMLParser(tag)
@@ -1540,7 +1570,7 @@ def interpolate_idw(X, Y, points, power=2):
 
     for x, y, z in points:
         # Calcul de la distance entre le point cible et le point connu
-        dist = np.sqrt((X - x) ** 2 + (Y - y) ** 2)
+        dist = numpy.sqrt((X - x) ** 2 + (Y - y) ** 2)
 
         # Évite la division par zéro en cas de distance nulle (point identique)
         if dist == 0:
@@ -1585,7 +1615,7 @@ def interpolate_idw(X, Y, points, power=2):
 
 # Variables globales et certaines constantes
 
-numeroVersion = "6.0"
+numeroVersion = "6.1"
 
 version = " V "+numeroVersion       # conserver si possible ce format, utile pour contrôler
 versionInternet = str()             # version internet disponible sur GitHub, "" au départ
@@ -2638,7 +2668,8 @@ class AfficheHomologues:   # Paramètres : fenetre maître,Nom du fichier image,
         #self.bulle.mainloop()                                          # boucle d'attente d'événement sur la fenêtre (pas de pack possible)
         time.sleep(1)
         try: self.bulle.destroy()
-        except Exception as e: print("erreur info bulle : ",str(e))
+        except Exception as e:
+            print(_("erreur info bulle : "),str(e))
 
     def quitter(self):
         self.root.destroy()
@@ -2654,7 +2685,7 @@ class AfficheHomologues:   # Paramètres : fenetre maître,Nom du fichier image,
             self.root.destroy()
             AfficheHomologues(fenetre,self.image,self.taille,position,self.listeCouleurs)
         except Exception as e:
-            print("erreur lors de l'affichage du suivant = ",str(e))
+            print(_("erreur lors de l'affichage du suivant = "),str(e))
 
     def precedent(self): # photo précédente sur la saisie des points/polylignes/polylignes 
         index = interface.photosSansChemin.index(self.file)
@@ -2895,9 +2926,13 @@ class Interface(ttk.Frame):
         menuOutils.add_command(label=_("Créer un point cible pour caler les nuages"), command=self.creerPointDeCalage)
         menuOutils.add_command(label=_("Caler un nuage de point"), command=self.calerNuage)
         menuOutils.add_command(label=_("Caler l'orthomosaïque"), command=self.calerOrthomosaique)        
-        menuOutils.add_separator()        
+        menuOutils.add_separator()
+        menuOutils.add_command(label=_("Carroyer le dernier nuage dense non mailllé"), command=lancerCarroyageSurNuageDense)        
+        menuOutils.add_separator()           
         menuOutils.add_command(label=_("Afficher les options par défaut"), command=self.afficheOptionsParDefaut)        
         menuOutils.add_command(label=_("Modifier les options par défaut"), command=self.majOptionsParDefaut)
+        menuOutils.add_separator()
+        menuOutils.add_command(label=_("Fermer tout CloudCompare"), command=killCC)
         menuOutils.add_separator()
         menuOutils.add_command(label=_("Vérifie la présence d'une nouvelle version sur GitHub"), accelerator="Ctrl+G", command=self.verifVersion)    ## meshlab
         
@@ -2943,6 +2978,13 @@ class Interface(ttk.Frame):
         menuPlusieursAppareilsPhotos.add_command(label=_("Lister les appareils photos"), command=self.listeAppareils)
 
         menuExpert.add_cascade(label = _("Plusieurs appareils photos"),menu=menuPlusieursAppareilsPhotos)
+
+        # Menu expert : exporter un ply au format d'échange "obj, mtl, jpg
+
+        menuExpert.add_separator() 
+        menuExpert.add_cascade(label = _("Exporter un ply du chantier au format obj avec mtl et jpg"),command=self.exportObjChantier)
+        #menuExpert.add_cascade(label = _("Exporter un ply au format obj avec mtl et jpg"),command=self.exportObj) # en attente
+        
 
         # sous menu du menu expert : Navigation GPS
 
@@ -3443,7 +3485,7 @@ class Interface(ttk.Frame):
                                 e[-1].place(x=x,y=y)         # affectation de la position
                                 self.iconePlace[icone]=(x,y)   # identifiant : texte du bouton
             except Exception as e:
-                print("erreur dans le positionnement des widgets",str(e))
+                print(_("erreur dans le positionnement des widgets"),str(e))
 
             
         # self.lesOutils : liste créée à partir du menu principal par extraction des libellés et des commandes
@@ -5583,7 +5625,7 @@ class Interface(ttk.Frame):
                         Autre exemple : Tapioca MulScale admet NbMinPt=XX indiquant le nombre minimum de points pour conserver les paires.
                         
                       - Consulter le fichier de logging MicMac : mm3d-logFile.txt.
-                      
+        
                       - Importer les points homologues, les points GCP/GPS:
                               - Recopier des points GCP à partir d'un autre chantier.                      
                               - Recopier les points homologues à partir d'un autre chantier, seuls les chantiers compatibles sont proposés.
@@ -5603,6 +5645,14 @@ class Interface(ttk.Frame):
                                     que chaque préfixe corresponde à un appareil. Certains appareils proposent de modifier ce préfixe.    
                                   - Définir la longueur du préfixe utilisé dans l'item précédent.    
                                   - Lister les appareils photos présents dans le lot de photos.
+
+                      - Exporter un fichier ply au format OBJ : le format OBJ est un format d'échange de fichier 3D.
+                        Dans cette version, 6.1, l'export s'effectue sur des fichiers maillés et texturés avec une texture externe.
+                        Ces fichiers sont obtenus en laissant les paramètres par défaut (fichier dense, maillé, par C3DC).
+                        L'export est effectué en abondant 3 fichiers :
+                               - un fichier .obj, contenant les coordonnées des points et des faces des objets représentés
+                               - un fichier .mtl, caractérisant les matériaux utilisés et leurs caractéristiques optiques
+                               - un fichier .jpg, contenant les informations de texture des objets                                  
                                   
                       - Navigation GPS : utilisation des données GPS mémorisées par les caméras embarquées sur les drones.    
                         Les données sont exploitées automatiquement et un repère local WGS84 est créé.    
@@ -5940,7 +5990,7 @@ Version 5.56.2 :	début le 30 décembre 2020
 
 		- Quelques améliorations/corrections. Voir le script.
 
-Version 5.56.1 :	29 décembre 2020
+Version 5.5 :	29 décembre 2020
 
 		- Quelques améliorations/corrections. Voir le script.
 
@@ -7296,7 +7346,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         try:
             shutil.copy(paramSource,self.paramCible)
         except Exception as e:
-            print("copierParamSourceVersCible échec : %s vers %s, erreur %s") % (paramSource,paramCible,str(e))
+            print(_("copierParamSourceVersCible échec : %s vers %s, erreur %s")) % (paramSource,paramCible,str(e))
 
     ################################## LE MENU EDITION : afficher l'état simplifié pour la version 6 ############################
                                                 
@@ -7353,14 +7403,16 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         # peut-on lancer un traitement à distance :
         # 2 conditions :
         # 1) aucun traitement local déjà lancé
-        # 2) l'automate est actif (véifier sur github)
+        # 2) l'automate est actif (vérifier sur github)
         self.item160V6.config(state=NORMAL)
         if self.item155V6.winfo_manager()=="pack":
            self.item155V6.pack_forget()
         if self.lanceV6LocalOK or not automateOK():
             self.item160V6.config(state=DISABLED)
-        if not automateOK():
-            self.messageAutomateInactif.set(self.automateOccupe) 
+        if automateOK():
+            self.messageAutomateInactif.set("")
+        else:
+            self.messageAutomateInactif.set(self.automateOccupe)            
         if self.lanceV6LocalOK:    
             self.messageAutomateInactif.set(self.traitementEffectue)            
         self.item155V6.pack()
@@ -8071,7 +8123,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                  messageBouton=_("Fermer"))     
             else:
                 self.monImage_PlanTif = self.monImage_MaitrePlan = str()
-                self.encadre("Pas de plan horizontal ou vertical défini pour ce chantier")          
+                self.encadre(_("Pas de plan horizontal ou vertical défini pour ce chantier"))
         else:
             self.encadre(_("Pas de plan horizontal ou vertical défini pour ce chantier"))
 
@@ -9072,6 +9124,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     
     def quelChantier(self,unePhoto):                            # on a une photo ou une vidéo : quel répertoire de travail et quel chantier ?
         self.chantier = os.path.basename(self.repTravail)       #   par défaut on suppose que le répertoire existe déjà : on ne change rien
+        self.ajoutChantiersRecents()                            # ajout dans la liste des chantiers récents
         # Le répertoire de unePhoto est-il le répertoire des photos : si oui on ne change pas le répertoire de travail, sinon nouveau $repTravail et nouveau chantier
         
         oldRepertoireDesphotos =  self.repertoireDesPhotos
@@ -9272,48 +9325,58 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return False
         
         oschdir(self.repTravail)
-        with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: # écriture de la description de chaque point GCP
-            infile.write(self.dicoAppuisDebut)
-            for Nom,X,Y,Z,actif,ident,incertitude in self.listePointsGPS:   # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
-                if actif and isNumber(X) and isNumber(Y) and isNumber(Z) and Nom and re.match("\\d+\\s+\\d+\\s+\\d+\\s*$",incertitude):        # si actif et tous les éléments présent    
-                    point=self.dicoAppuis1Point.replace("Nom",Nom)
-                    point=point.replace("X",X)
-                    point=point.replace("Y",Y)
-                    point=point.replace("Z",Z)
-                    point=point.replace("10 10 10",incertitude)
-                    infile.write(point)
-                    listePointsOK.append(Nom)
-                else:
-                    nbPointsIncorrect += 1
-            infile.write(self.dicoAppuisFin)
-
-        with open(self.mesureAppuis, 'w', encoding='utf-8') as infile:             
-                                                                        # modification des xml 
-                infile.write(self.mesureAppuisDebut)
-                key = ""
-                listeDico=list(self.dicoPointsGPSEnPlace.items())       # dicoPointsGPSEnPlace key = nom point, photo avec chemin, identifiant, value = x,y
-                listeDico.sort(key= lambda e:  e[0][1])
-                listeDico = [e for e in listeDico if e[0][0] in listePointsOK] # seuls les points actifs et complets
-                for cle,p in listeDico:
-                    if key!=cle[1]:
-                        if key!="":
-                            infile.write(self.mesureAppuisFinPhoto)                    
-                        key = cle[1]   
-                        photo = self.mesureAppuisDebutPhoto.replace("NomPhoto",os.path.basename(cle[1]))
-                        infile.write(photo)
-                        point = self.mesureAppuis1Point.replace("NomPoint",cle[0])
-                        point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
-                        point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
-                        if  cle[0] not in self.pointsPlacesUneFois:   # on n'écrit pas le point s'il  n'est présent que sur une seule photo
-                            infile.write(point)                   
+        try:
+            with open(self.dicoAppuis, 'w', encoding='utf-8') as infile: # écriture de la description de chaque point GCP
+                infile.write(self.dicoAppuisDebut)
+                for Nom,X,Y,Z,actif,ident,incertitude in self.listePointsGPS:   # listePointsGPS : 7-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
+                    if actif and isNumber(X) and isNumber(Y) and isNumber(Z) and Nom and re.match("\\d+\\s+\\d+\\s+\\d+\\s*$",incertitude):        # si actif et tous les éléments présent    
+                        point=self.dicoAppuis1Point.replace("Nom",Nom)
+                        point=point.replace("X",X)
+                        point=point.replace("Y",Y)
+                        point=point.replace("Z",Z)
+                        point=point.replace("10 10 10",incertitude)
+                        infile.write(point)
+                        listePointsOK.append(Nom)
                     else:
-                        point = self.mesureAppuis1Point.replace("NomPoint",cle[0])
-                        point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
-                        point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
-                        if  cle[0] not in self.pointsPlacesUneFois:   # on n'écrit pas le point s'il  n'est présent que sur une seule photo
-                            infile.write(point)
-                infile.write(self.mesureAppuisFinPhoto)
-                infile.write(self.mesureAppuisFin)
+                        nbPointsIncorrect += 1
+                infile.write(self.dicoAppuisFin)
+        except Exception as e:
+            print(_("écriture dicoAppuis, erreur : "),str(e))
+            self.encadre(_("écriture dicoAppuis, erreur : "),str(e))
+            return False            
+            
+        try:
+            with open(self.mesureAppuis, 'w', encoding='utf-8') as infile:             
+                                                                            # modification des xml 
+                    infile.write(self.mesureAppuisDebut)
+                    key = ""
+                    listeDico=list(self.dicoPointsGPSEnPlace.items())       # dicoPointsGPSEnPlace key = nom point, photo avec chemin, identifiant, value = x,y
+                    listeDico.sort(key= lambda e:  e[0][1])
+                    listeDico = [e for e in listeDico if e[0][0] in listePointsOK] # seuls les points actifs et complets
+                    for cle,p in listeDico:
+                        if key!=cle[1]:
+                            if key!="":
+                                infile.write(self.mesureAppuisFinPhoto)                    
+                            key = cle[1]   
+                            photo = self.mesureAppuisDebutPhoto.replace("NomPhoto",os.path.basename(cle[1]))
+                            infile.write(photo)
+                            point = self.mesureAppuis1Point.replace("NomPoint",cle[0])
+                            point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
+                            point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
+                            if  cle[0] not in self.pointsPlacesUneFois:   # on n'écrit pas le point s'il  n'est présent que sur une seule photo
+                                infile.write(point)                   
+                        else:
+                            point = self.mesureAppuis1Point.replace("NomPoint",cle[0])
+                            point = point.replace("X",self.dicoPointsGPSEnPlace[cle][0].__str__())
+                            point = point.replace("Y",self.dicoPointsGPSEnPlace[cle][1].__str__())
+                            if  cle[0] not in self.pointsPlacesUneFois:   # on n'écrit pas le point s'il  n'est présent que sur une seule photo
+                                infile.write(point)
+                    infile.write(self.mesureAppuisFinPhoto)
+                    infile.write(self.mesureAppuisFin)
+        except Exception as e:
+            print(_("écriture mesureAppuis , erreur : "),str(e))
+            self.encadre(_("écriture mesureAppuis, erreur : "),str(e))
+            return False            
         return True
     
     def controlePointsGPS(self):            # contrôle pour affiche état et afficher tous les points : informer de la situation :
@@ -9528,11 +9591,15 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         xml = xml.replace("monImage_MaitrePlan",os.path.basename(self.monImage_MaitrePlan))                # Nom de l'image maître du plan repère (sans extension)
         xml = xml.replace("monImage_Plan",os.path.basename(self.monImage_PlanTif))                          # nom du masque correspondant 
         
-        if existe:  #si le plan horizontal ou vertical existe
-            with open(self.miseAEchelle, 'w', encoding='utf-8') as infile:
-                infile.write(xml)
-            with open("MiseAEchelleInitial", 'w', encoding='utf-8') as infile:      # uniquement pour info
-                infile.write(self.miseAEchelleXml)                
+        if existe:  # si le plan horizontal ou vertical existe
+            try:
+                with open(self.miseAEchelle, 'w', encoding='utf-8') as infile:
+                    infile.write(xml)
+                with open("MiseAEchelleInitial", 'w', encoding='utf-8') as infile:      # uniquement pour info
+                    infile.write(self.miseAEchelleXml)
+            except Exception as e:
+                print(_("erreur écriture mise à l'échelle : "),str(e))
+                supprimeFichier(self.miseAEchelle)
         else:
             supprimeFichier(self.miseAEchelle)      
             
@@ -9798,10 +9865,14 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                     # on affecte self.nomEpsg, self.epsg 
         def copieOrientation():
             # Recherche de l'orientation du chantier distant qu'il faut copier (orientationCourante)
-            with open(os.path.join(self.chantierReferentiel,self.paramChantierSav),mode='rb') as sauvegarde1:
-                    r = pickle.load(sauvegarde1)
-                    orientationDistante = "Ori-"+r[74]
-                    nuageDistant = r[37]
+            try:
+                with open(os.path.join(self.chantierReferentiel,self.paramChantierSav),mode='rb') as sauvegarde1:
+                        r = pickle.load(sauvegarde1)
+                        orientationDistante = "Ori-"+r[74]
+                        nuageDistant = r[37]
+            except Exception as e:
+                return
+                    
             orientationACopier = os.path.join(self.chantierReferentiel,orientationDistante)
             nuageDistantACopier = os.path.join(self.chantierReferentiel,nuageDistant)
             self.orientationReference = os.path.basename(orientationACopier)+"_"+chantierOrigine
@@ -10146,9 +10217,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.masqueXML=self.masqueXML.replace("largeur",str(self.dimensionsDesPhotos[0][1][0]))    # x = self.dimensionsDesPhotos[0][0] 
         self.masqueXML=self.masqueXML.replace("hauteur",str(self.dimensionsDesPhotos[0][1][1]))    # y=self.densionsDesPhotos[0][1]
         self.fichierMasqueXML=masqueTIF.replace(".tif",".xml")      # nom du fichier xml
-
-        with open(self.fichierMasqueXML, 'w', encoding='utf-8') as infile:
-            infile.write(self.masqueXML)
+        try:
+            with open(self.fichierMasqueXML, 'w', encoding='utf-8') as infile:
+                infile.write(self.masqueXML)
+        except:
+            pass
 
     # masque sur mosaique Tarama pour Malt
 
@@ -11185,8 +11258,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return 0,0,0        
             
         # écrire le fichier contenant le point, nécessaire pour Im2XYZ :
-        with open("pointCalage.txt", mode = "w") as fichier:            
-            fichier.write(str(i)+" "+str(j))  # 
+        try:
+            with open("pointCalage.txt", mode = "w") as fichier:            
+                fichier.write(str(i)+" "+str(j))  #
+        except:
+            return 0,0,0
         # lancer Im2XYZ
         self.echecIm2XYZ = False        
         im2XYZ = [self.mm3d,
@@ -11212,10 +11288,13 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 self.encadre (_("Echec de im2XYZ")) 
         
         # réussite : lire et retourner les valeurs :
-        
-        with open("point3D.txt", mode = "r") as fichier:
-            ligne = fichier.readline()
-        self.ajoutLigne(_("Coordonnées 3D du pixel %s,%s de la photo %s : ") %(i,j,laPhoto) +str(ligne.split()))
+        try:
+            ligne=str()
+            with open("point3D.txt", mode = "r") as fichier:
+                ligne = fichier.readline()
+            self.ajoutLigne(_("Coordonnées 3D du pixel %s,%s de la photo %s : ") %(i,j,laPhoto) +str(ligne.split()))
+        except:
+            pass
         if ligne=="":
             return 0,0,0
         return ligne.split()
@@ -11284,7 +11363,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     x,y,z = conversionWGS84VersEPSG3D(crs,latitude,longitude,altitude)
                     
                 except Exception as e:
-                    print("erreur calageLongitude=",str(e))
+                    print(_("erreur calageLongitude="),str(e))
                     abandon(_("Erreur %s lors du calcul des coordonnées du point de calage dans le géoréférencement du nuage. Abandon") % str(e))
                     return
             
@@ -11755,7 +11834,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         homolMini = homol+"_mini"
         # il faut au moins un fichier par photo :
         if compteurFichiers(homolMini)<len(self.photosSansChemin) and compteurFichiers(homol)<len(self.photosSansChemin) :
-            self.encadre("Pas de points homologues après schnaps. Abandon")
+            self.encadre(_("Pas de points homologues après schnaps. Abandon"))
             return       
         # points homologues trouvés, corrects, second module : Tapas positionne les prises de vue dans l'espace
         # Tapas prend en compte les photos pour la calibration de l'appareil
@@ -12966,7 +13045,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         def denomme(utiles):    # supprime l'extension des photos inutiles sans modifier self.photosSansChemin
             [os.rename(e,os.path.splitext(e)[0]) for e in self.photosSansChemin if e not in utiles]            
         def renomme():          # remet l'extension des photos qui sont listées dans self.photosSansChemin
-            [os.rename(os.path.splitext(e)[0],e) for e in self.photosSansChemin if (os.path.exists(os.path.splitext(e)[0]) and not (os.path.exists(e)))]
+            [(time.sleep (0.1),os.rename(os.path.splitext(e)[0],e)) for e in self.photosSansChemin if (os.path.exists(os.path.splitext(e)[0]) and not (os.path.exists(e)))]
         def copieSousRepertoireMaillage():
             # déplace les fichiers créés par TiPunch et Tequila sous le répertoire maillageC3DC :  self.maillageTiPunch et maillage_UVtexture.jpg        
             # raison : l'ajout du fichier JPG UVTexture.jpg sous le répertoire du chantier empêche le lancement de micmac.       
@@ -13073,7 +13152,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     "Out="+self.maillageTiPunch,
                     "Rm=1",     # supprime les fichiers temporaires
                     ]+self.tiPunchPerso.get().split(",")+[  # surcharge la suite
-                    "Depth=6",]
+                    "Depth=8",
+                    ]
         self.lanceCommande(tiPunch,
                             )
         
@@ -13083,6 +13163,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                    ".*"+self.extensionChoisie,
                    self.orientationCourante,
                    self.maillageTiPunch,
+                   "Sz=16384",
+                   "QUAL=90",
                     ]
         self.lanceCommande(tequila,
                            )
@@ -13118,7 +13200,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             xyFloat2Double(self.modele3DFinal)
             translatePly(self.modele3DFinal,self.Offs[0],self.Offs[1],self.Offs[2])
             self.Offs = [0,0,0]        
-        profondeur="6"  # détermine la qualité du résultat (4,6,8 la meilleure)
+        profondeur="8"  # détermine la qualité du résultat (4,6,8 la meilleure)
         poisson = os.path.splitext(plyIn)[0]+"_poisson_depth"+profondeur+".ply"
         supprimeFichier(poisson)
         tiPunch = [self.mm3d,
@@ -13138,6 +13220,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                    ".*"+self.extensionChoisie,
                    self.orientationCourante,
                    meshOut,
+                    "Sz=16384",
+                   "QUAL=90",
                     ]
         self.lanceCommande(tequila,
                           )
@@ -13420,8 +13504,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 for fic in fichiers:
                     fi = rep+os.sep+fic
                     if os.path.exists(fi):
-                        with  open(fi) as infile:
-                            lignes = infile.readlines() 
+                        try: 
+                            with  open(fi) as infile:
+                                lignes = infile.readlines()
+                        except:
+                            pass
 
         self.ajoutLigne("\n ****** " + _("Fin d'examen de qualité des photos."))
 
@@ -13508,7 +13595,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.menageEcran()
         repertoireHomol = os.path.join(self.repTravail,"Homol")  # répertoire des homologues
         if os.path.isdir(repertoireHomol)==False:
-            self.encadre("Lancer d'abord la recherche des points homologues.")
+            self.encadre(_("Lancer d'abord la recherche des points homologues."))
             return
         self.item9000.pack()
         pass
@@ -13781,7 +13868,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
     @decorateTrySilencieux
     def traceDicoPerso(self):
 
-        [ print("Option personnalisée : ",e,f,"\n") for e,f in self.dicoPerso.items() if f!=""]
+        [ print(_("Option personnalisée : "),e,f,"\n") for e,f in self.dicoPerso.items() if f!=""]
         
     @decorateTry
     def avertissementOptionsPerso(self):
@@ -13979,8 +14066,9 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             
         # si repère local : il faut créer un xml le décrivant :
         if self.repereChoisi==self.repereLocalXml: # création du fichier xml repère local tangent si besoin
-            self.creationRepereLocal()             # création du système de coordonnée local RTL (repère terrestre local) : SysCoRTL.xml
-
+            if self.creationRepereLocal()==False:             # création du système de coordonnée local RTL (repère terrestre local) : SysCoRTL.xml
+                self.encadrePlus("\n\n"+_("Repère non créé : erreur oriConvert, consulter la trace complète !")+"\n")                
+                return False
         # création, à partir des données GPS récupérée par ecritureOriTxtInFile, et du référentiel choisi, d'une orientation provisoire par OriConvert (nav-brut)
         # CenterBascule sera appelé pour transformer cette orientation provisoire en orientation définitive, nav,  lorsque Tapas sera fini
         # self.encadrePlus(_("Conversion des exif gps vers une orientation Ori-nav-brut: ")+self.repereChoisi+"\n\n")
@@ -14022,8 +14110,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         xml = xml.replace("longitude",str(longitude))        
         xml = xml.replace("latitude",str(latitude)) 
         xml = xml.replace("altitude",str(altitude))
-        with open(self.repereChoisi,"w") as out:
-            out.write(xml)
+        try:
+            with open(self.repereChoisi,"w") as out:
+                out.write(xml)
+        except:
+            return False
         x,y = conversionWGS84enRGF93(latitude,longitude) # origine du repère local en x,y RGF93
         self.lesTagsExif["Repere tangent local"]=(latitude,longitude,x,y,photo)
         self.messageRepereLocal =   ( "----------------------\nRTL (Repère Tangent Local)\n"+ 
@@ -14096,13 +14187,18 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
         SysEpsgChoisi = self.SysCoEpsg.replace("epsg2proj4", proj4) # constitue le corps du fichier xml
         SysEpsgChoisi = SysEpsgChoisi.replace("nomEpsg", self.nomEpsg) # commentaire, constitue le corps du fichier xml
-        with open(self.repereEpsgXml,"w") as out:
-            out.write(SysEpsgChoisi)
-        if not os.path.exists(SysEpsgChoisi):
+        try:
+            with open(self.repereEpsgXml,"w") as out:
+                out.write(SysEpsgChoisi)
+        except Exception as e:
+            print("erreur write : %s, fichier %s\n%s" % (e,self.repereEpsgXml,SysEpsgChoisi))
+        print("pas d'erreur write :  fichier %s\n%s" % (self.repereEpsgXml,SysEpsgChoisi))
+
+        if not os.path.exists(self.repereEpsgXml):
             if len(self.photosSansChemin)<=5:
                 self.encadre(_("Pas assez de photos ! "))
             else:
-                self.encadre("Impossible de déterminer un repère : choisir le repère WGS84.")
+                self.encadre(_("Impossible de déterminer un repère : choisir le repère WGS84."))
                 return False           
         
             
@@ -14383,30 +14479,32 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
 
             
         # les données existent pour toutes les photos, on écrit le fichier :
-        with open(self.nomOriGPS,"w",encoding='utf-8') as ori:
-            ori.write("#F=N Y X Z K W P\n")
-            ori.write("# photo latitude longitude altitude yaw pitch roll de la caméra\n")
-            for photo in pourNuage:
-                yaw = float(self.lesTagsExif[("GimbalYawDegree",photo)])
-                pitch = float(self.lesTagsExif[("GimbalPitchDegree",photo)])
-                roll = float(self.lesTagsExif[("GimbalRollDegree",photo)])
-                if ("AbsoluteAltitude",photo) in self.lesTagsExif:
-                    altitude = self.lesTagsExif[("AbsoluteAltitude",photo)]
-                if ("Altitude",photo) in self.lesTagsExif:  # priorité à l'altitude
-                    altitude = self.lesTagsExif[("Altitude",photo)] 
-                ligne = "\t".join([photo,
-                          str(DMS2DD(self.lesTagsExif[("GPSLatitude",photo)])),
-                          str(DMS2DD(self.lesTagsExif[("GPSLongitude",photo)])),
-                          altitude,
-                          str(yaw),
-                          str(pitch),
-                          str(roll)                           
-                                   ])
-                ori.write(ligne+"\n")
+        try:
+            with open(self.nomOriGPS,"w",encoding='utf-8') as ori:
+                ori.write("#F=N Y X Z K W P\n")
+                ori.write("# photo latitude longitude altitude yaw pitch roll de la caméra\n")
+                for photo in pourNuage:
+                    yaw = float(self.lesTagsExif[("GimbalYawDegree",photo)])
+                    pitch = float(self.lesTagsExif[("GimbalPitchDegree",photo)])
+                    roll = float(self.lesTagsExif[("GimbalRollDegree",photo)])
+                    if ("AbsoluteAltitude",photo) in self.lesTagsExif:
+                        altitude = self.lesTagsExif[("AbsoluteAltitude",photo)]
+                    if ("Altitude",photo) in self.lesTagsExif:  # priorité à l'altitude
+                        altitude = self.lesTagsExif[("Altitude",photo)] 
+                    ligne = "\t".join([photo,
+                              str(DMS2DD(self.lesTagsExif[("GPSLatitude",photo)])),
+                              str(DMS2DD(self.lesTagsExif[("GPSLongitude",photo)])),
+                              altitude,
+                              str(yaw),
+                              str(pitch),
+                              str(roll)                           
+                                       ])
+                    ori.write(ligne+"\n")
+        except Exception as e:
+            print(_("erreur écriture métadonnées GPS = "),str(e))
+            return False
         self.item1125.pack(side='left')
         return True
-
-
 
 # utilitaires : photos pour nuage, coordonnées en degré/minutes/secondes/orientation vers degrés décimaux
          
@@ -14434,9 +14532,13 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return
         
         self.dicoCamera = str()
-        if os.path.exists(self.CameraXML):              # si pas de fichier dicoCamera : retour (il est vrai que la taille pourrait être ailleurs !) 
-            with  open(self.CameraXML) as infile:
-                self.dicoCamera = infile.readlines()    #lecture dicoCamera.xml
+        if os.path.exists(self.CameraXML):              # si pas de fichier dicoCamera : retour (il est vrai que la taille pourrait être ailleurs !)
+            try:
+                self.dicoCamera = str()
+                with  open(self.CameraXML) as infile:
+                    self.dicoCamera = infile.readlines()    #lecture dicoCamera.xml
+            except:
+                pass
         else: return -2
                           
         texte = str()
@@ -14463,7 +14565,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
           self.encadre(_("DicoCamera.xml non trouvé : paramétrer au préalable le chemin de MicMac\\bin."))
           return
         message = str()
-        self.encadre("Patience... recherche les noms de tous les appareils photos du chantier...")
+        self.encadre(_("Patience... recherche les noms de tous les appareils photos du chantier..."))
         nb,l = self.nombreDeExifTagDifferents("Model")
         self.menageEcran()
         if nb == 0:
@@ -14512,7 +14614,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             float(vals[0])
             float(vals[1])
         except:
-            self.encadre("Dimensions capteur incorrectes : "+self.item1003.get()+"\n exemple correct : 7.5 12.3")
+            self.encadre(_("Dimensions capteur incorrectes : ")+self.item1003.get()+_("\n exemple correct : 7.5 12.3"))
             return
         dimension = " ".join(vals)
         # paragraphe à rajouter à DicoCamera  : modif
@@ -14528,8 +14630,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 texte = texte.replace("tailleEnMM",dimension)
                 modif += texte
         #lecture dicocamera.xml :
-        with  open(self.CameraXML) as infile:
-            self.dicoCamera = infile.readlines()    #lecture dicoCamera.xml
+        try:
+            with  open(self.CameraXML) as infile:
+                self.dicoCamera = infile.readlines()    #lecture dicoCamera.xml
+        except Exception as e:
+            self.encadre(_("Fichier DicoCamera.xml invalide : ")+"\n"+str(e))
+            return            
         # ajout du paragraphe enfin de xml : on vérifie d'abord sa présence parmi les 10 dernières lignes du fichier
         if self.dicoCameraXMLFin not in "".join(self.dicoCamera[-10:]):
             self.encadre(_("Fichier DicoCamera.xml invalide : balise de fin manquante : ")+"\n"+self.dicoCameraXMLFin)
@@ -14725,7 +14831,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         oschdir(self.repTravail)   # on ne sait pas ce qu'a fait l'utilisateur
 
     ################################## le menu Expert : pipeline
-
+    @decorateTry
     def pipeline(self): # lit un .bat et l'exécute
             
         def afficheEntete():
@@ -14896,7 +15002,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.encadre(_("Pas de points homologues. lancer menu MicMac : Lancer MicMac"))
         
 ############################# Recopie depuis c'autres chantier : points homologues, points GCP, orientation 
-
+    @decorateTry
     def ajoutPointsGPSAutreChantier(self):  # à revoir : double ouverture du fichier param de l'autre chantier
         if self.etatDuChantier == 0:                                        # pas encore de chantier
             self.encadre(self.pasDeChantier)
@@ -14981,7 +15087,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.listePointsGPS             =   list()                      # 6-tuples (nom du point, x, y et z GCP, booléen actif ou supprimé, identifiant)
         self.idPointGPS                 =   0				# identifiant des points, incrémenté de 1 a chaque insertion
         self.dicoPointsGPSEnPlace       =   dict()                      # dictionnaire des points GCP placés dans les photos (créé par la classe CalibrationGPS)    
-    
+
+    @decorateTry    
     def ajoutPointsGPSDepuisFichier(self):
         # Ajout de points GCP à partir d'un fichier de points : format =
         # #F=N X Y Z Ix Iy Iz
@@ -15071,11 +15178,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         lesNomsConnus = dict(lesPointsConnus)
         nbAjout = int()
     # lecture et contrôle du fichier
-        with open(fichierPointsGPSPhotos, "r") as fichier:              
-            for ligne in fichier:
-                if ligne[0]!="#":
-                    self.idPointGPS += 1
-                    try:
+        try:    
+            with open(fichierPointsGPSPhotos, "r") as fichier:              
+                for ligne in fichier:
+                    if ligne[0]!="#":
+                        self.idPointGPS += 1
                         nom,photo,x,y =ligne.split()
                         if nom in lesNomsConnus:
                             # dicoPointsGPSEnPlace key = nom point, photo avec chemin, identifiant, value = x,y
@@ -15095,8 +15202,10 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                                 rapport += _("la photo %s n'existe pas : ligne %s" % (photo,ligne) )+"\n"
                         else:
                             rapport += _("le point %s n'existe pas : ligne (%s" % (nom,ligne) )+"\n"
-                    except Exception as e:
-                        rapport += _("Ligne lue incorrecte : ")+ligne+"erreur : "+str(e)+"\n"
+        except Exception as e:
+            rapport += _("Ligne GPS incorrecte : ")+ligne+"erreur : "+str(e)+"\n"
+            self.encadre( _("Ligne GPS incorrecte : ")+ligne+"erreur : "+str(e)+"\n")
+            return
         rapport += "\n\n"+_("Nombre de points ajoutés : %s" % (nbAjout))+"\n\n"
         # mise à jour du dico des cibles, avec écrasement des anciennes si présentes
         self.dicoPointsGPSEnPlace.update(dicoPointsGPSPhotoLu)
@@ -15118,11 +15227,14 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return        
         # structure interne de la liste self.listePointsGPS : [nom,x,y,z,True,self.idPointGPS,(" ").join([dx,dy,dz]) le tout en texte
         # structure externe fichier : Nom_du_point  X  Y  Z  dx  dy  dz si True
-        lesPoints = [" ".join([nom,"-" if x=="" else x,"-" if y=="" else y,"-" if z=="" else z,dx]) for nom,x,y,z,true,id,dx in self.listePointsGPS if true==True]
-        with  open("PointsGPSTerrain.txt",mode="w") as outfile:
-            outfile.write(str("\n".join(lesPoints)))
-        self.encadreEtTrace("Fichier PointsGPSTerrain.txt écrit :\n\nNom_du_point  X  Y  Z  dx  dy  dz\n\n"+"\n".join(lesPoints))
-        
+        try:
+            lesPoints = [" ".join([nom,"-" if x=="" else x,"-" if y=="" else y,"-" if z=="" else z,dx]) for nom,x,y,z,true,id,dx in self.listePointsGPS if true==True]
+            with  open("PointsGPSTerrain.txt",mode="w") as outfile:
+                outfile.write(str("\n".join(lesPoints)))
+            self.encadreEtTrace("Fichier PointsGPSTerrain.txt écrit :\n\nNom_du_point  X  Y  Z  dx  dy  dz\n\n"+"\n".join(lesPoints))
+        except Exception as e:
+            self.encadre(_("erreur export des points GPS : %s ") % e)
+            
 # Exporter les points GPS photos vers un fichier texte
     def exportPointsGPSPhotosVersFichier(self):
         if self.etatDuChantier == 0:                                        # pas encore de chantier
@@ -15130,9 +15242,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return        
         # dicoPointsGPSEnPlace key = nom point, photo avec chemin, identifiant, value = x,y    
         lesPoints = [" ".join([a[0],os.path.basename(a[1]),str(b[0]),str(b[1])]) for a,b in self.dicoPointsGPSEnPlace.items()]
-        with  open("PointsGPSPhoto.txt",mode="w") as outfile:
-            outfile.write(str("\n".join(lesPoints)))
-        self.encadreEtTrace("Fichier PointsGPSPhoto.txt écrit :\n\nNom_du_point photo  X  Y"+"\n".join(lesPoints))
+        try:
+            with  open("PointsGPSPhoto.txt",mode="w") as outfile:
+                outfile.write(str("\n".join(lesPoints)))
+            self.encadreEtTrace("Fichier PointsGPSPhoto.txt écrit :\n\nNom_du_point photo  X  Y"+"\n".join(lesPoints))
+        except Exception as e:
+            self.encadre(_("erreur export des points GPS : %s ") % e)
             
 # Copie répertoire Homol d'un chantier à un autre
 
@@ -15334,7 +15449,8 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.encadre(message)
         self.ajoutLigne("Les appareils photos : \n"+message)
         self.ecritureTraceMicMac()
-        
+
+    @decorateTry    
     def logMm3d(self):
         if self.etatDuChantier == 0:                                        # pas encore de chantier
             self.encadre(self.pasDeChantier)
@@ -15693,7 +15809,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             [os.rename(os.path.splitext(e)[0],e) for e in self.photosAvecChemin if (os.path.exists(os.path.splitext(e)[0]) and not (os.path.exists(e)))]
             [os.rename(e,os.path.splitext(e)[0]+".ply") for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]==".pyl"]  # remise à l'état initial
         except Exception as e:
-            print("erreur tentative restauration après plantage : ",str(e))
+            print(_("erreur tentative restauration après plantage : "),str(e))
         # il reste le pb des photos déplacées pour la calibration de l'appareil photo
 
 
@@ -15912,7 +16028,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         self.encadre(texte,nbLignesMax,aligne)
 
     def encadre(self,texte,nbLignesMax=44,aligne='center',nouveauDepart='non'):
-       
+        if not texte: return
         if texte.__class__==tuple().__class__:
             texte=' '.join(texte)
         if texte.__class__==list().__class__:
@@ -15947,7 +16063,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.texte101.configure(text=self.texte101Texte)
             fenetre.update()
         except Exception as e:
-            print("erreur encadre plus : "+str(e))
+            print(_("erreur encadre plus : ")+str(e))
 
     def demandeUnObjectif(self):
         self.item4202.pack(pady=3)      # s'il n'y a pas d'objectifpour le chantier      
@@ -16318,7 +16434,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     except Exception as err:
                         erreur +="erreur rmtree = "+str(err)
                     if erreur:
-                        print("erreur supprime chantier  :",erreur)
+                        print(_("erreur supprime chantier  :"),erreur)
                     else:
                         self.ajoutLigne(_("Suppression du chantier : %s Espace gagné : %s MO\n" % (e,str(tailleASupprimer))))
                 if os.path.isfile(e):
@@ -16330,7 +16446,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                         ajout(supprime,e)                   
                         self.tousLesChantiers.remove(e)
                     except Exception as e:
-                        print("erreur suppression de chantier : ",str(e))
+                        print(_("erreur suppression de chantier : "),str(e))
                         print(self.tousLesChantiers)
                 self.encadrePlus("...")
             if len(supprime)>=1:            
@@ -16442,7 +16558,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.resul300.destroy()
             return self.bouton
         except Exception as e:
-            print("erreur 3 boutons=",str(e))
+            print(_("erreur 3 boutons="),str(e))
             return self.bouton      # pour le cas ou Aperodedenis est fermé avec ce module en cours !
         
     def bouton1(self):
@@ -16594,18 +16710,21 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             oschdir(self.repTravail)                            # on se met dans le répertoire de travail, indispensable
 
     def initialisationFichiersTrace(self):                      # vide les fichiers et écrit une nouvelle entête avec le nom des photos
-        open(self.traceMicMacSynthese,'w').close()              # création d'un fichier de trace synthétique, vide
-        open(self.traceMicMacComplete,'w').close()              # création d'un fichier de trace complète, vide
-        self.effaceBufferTrace()                                # RAZ d'un ajoutLigne éventuel (notamment par affichage de la trace )
-        self.ajoutLigne(heure()+" : "+self.titreFenetre+"\n-----------------------\n")
-        self.ajoutTraceComplete(_("Trace complète"))
-        self.ajoutTraceSynthese(_("Trace synthétique"))
-        self.ajoutLigne("\n-----------------------\n\n")
-        if len(self.photosAvecChemin)>0:
-            self.ajoutLigne(heure()+ "\n\n" + _("Choix des photos :") + "\n"+"\n".join(self.photosAvecChemin))
-        self.ajoutLigne("\n\n" + _("répertoire du chantier :") + "\n"+self.repTravail+"\n\n")
-        self.ajoutLigne(_("Version MicMac : ")+self.mercurialMicMac+"\n")
-        self.ecritureTraceMicMac()
+        try:
+            open(self.traceMicMacSynthese,'w').close()              # création d'un fichier de trace synthétique, vide
+            open(self.traceMicMacComplete,'w').close()              # création d'un fichier de trace complète, vide
+            self.effaceBufferTrace()                                # RAZ d'un ajoutLigne éventuel (notamment par affichage de la trace )
+            self.ajoutLigne(heure()+" : "+self.titreFenetre+"\n-----------------------\n")
+            self.ajoutTraceComplete(_("Trace complète"))
+            self.ajoutTraceSynthese(_("Trace synthétique"))
+            self.ajoutLigne("\n-----------------------\n\n")
+            if len(self.photosAvecChemin)>0:
+                self.ajoutLigne(heure()+ "\n\n" + _("Choix des photos :") + "\n"+"\n".join(self.photosAvecChemin))
+            self.ajoutLigne("\n\n" + _("répertoire du chantier :") + "\n"+self.repTravail+"\n\n")
+            self.ajoutLigne(_("Version MicMac : ")+self.mercurialMicMac+"\n")
+            self.ecritureTraceMicMac()
+        except:
+            pass
                     
     # ajout de lignes dans les traces
 
@@ -16621,7 +16740,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         if self.lignePourTrace.__len__()>10000:
             self.ecritureTraceMicMac()
            
-    def ajoutTraceSynthese(self,ligne):     # ajout dans la synthèse, mais pas dans la trace complète
+    def ajoutTraceSynthese(self,ligne):     # ajout dans la synthèse, mais aussi dans la trace complète (cf ci dessous)
         if not ligne: return                # ajout dans la fenêtre d'affichage si ouverte
         if ligne[0:2]=="**": return         # commentaires micmac ignorés
         self.ligneFiltre += str(ligne)      # ajout dans la trace synthétique
@@ -16634,7 +16753,11 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 self.texte201.see('end') 
                 self.texte201.config(state=DISABLED)
         except Exception as e:
-            print("erreur ajoutTraceSynthése : ",str(e))                         
+            print(_("erreur ajoutTraceSynthése : "),str(e))
+
+        # modification du 20/05/2025 : on met quand même dans la trace complète si pas mis
+        if ligne not in self.lignePourTrace:
+            self.lignePourTrace += str(ligne)    
     def effaceBufferTrace(self):            # raz de la trace
         self.lignePourTrace = str()
         self.ligneFiltre = str()
@@ -16671,7 +16794,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         def ouvrirPhoto():
             try:
                 i = self.current[0]
+                print("i=",i)
+                i = self.selectionPhotos.curselection()[0]
+                print("cur=",i)
                 p = listeAvecChemin[i]
+                print(p)
+                print("liste=",listeSansChemin,listeAvecChemin)
                 if os.path.exists(p):
                     open_file(p)
             except: pass
@@ -16697,14 +16825,15 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 time.sleep(15)
                 return
             # restriction de la liste aux fichiers non calibrant :
-            listeAvecChemin = [ h for h in listeAvecChemin if os.path.basename(h) not in [os.path.basename(i) for i in self.photosPourCalibrationIntrinseque]]
+            if self.photosPourCalibrationIntrinseque:
+                listeAvecChemin = [ h for h in listeAvecChemin if os.path.basename(h) not in [os.path.basename(i) for i in self.photosPourCalibrationIntrinseque]]
          
         self.dicoPointsAAfficher = dicoPoints                               # pour passer l'info à afficherTousLesPointsDuDico
         self.dicoInfoBullesAAfficher = bulles                               # pour passer l'info à afficherLesInfosBullesDuDico
         self.fermerVisuPhoto()                                              # pour éviter les fenêtres multiples
-        self.listeChoisir = list(set(listeAvecChemin))                      # liste de choix par copie de la liste ou du tuple paramètre, sans doublons
-        self.listeChoisir.sort(key=os.path.basename)                        # tri alpha
-        listeSansChemin = [os.path.basename(e) for e in self.listeChoisir]
+        listeAvecChemin = sorted(listeAvecChemin, key=lambda f: os.path.basename(f)) # tri alpha des noms de base
+        listeSansChemin = [os.path.basename(e) for e in listeAvecChemin]
+        self.listeChoisir = listeAvecChemin
         self.topVisuPhoto = tkinter.Toplevel(fenetre,relief='sunken')       # fenêtre principale de choix de la photo (maître, ou autre)
         self.topVisuPhoto.title(titre)
         self.topVisuPhoto.geometry(self.positionBddChoixPhoto)
@@ -17300,7 +17429,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                     if cameraLocal!=cameraDistant:
                         self.fichierProposes.remove(e)
             except Exception as e:
-                print("erreur controleAppareilPhoto =",str(e))
+                print(_("erreur controleAppareilPhoto ="),str(e))
                 pass    # pas grave
                 
         # traitement :z
@@ -17538,8 +17667,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                         taille = os.path.getsize(f)
                         nbPoints = (taille-8)/44    # fichier binaire : 44 octets par point homologue
                     if f[-3:]=="txt":               # fichier texte : une ligne par point homologue
-                        with  open(f) as infile:    # il faut lire de fichier (longueur variable)
-                            nbPoints = infile.readlines().__len__()
+                        try:
+                            nbPoints = str()
+                            with  open(f) as infile:    # il faut lire de fichier (longueur variable)
+                                nbPoints = infile.readlines().__len__()
+                        except:
+                            pass
                     for photo in self.photosSansChemin:
                         if photo in e: # nom de la photo dans le nom du répertoire : on incrémente le nb points
                             homol[photo] += nbPoints
@@ -17709,7 +17842,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         supprimeFichier(nomFinal)   # tentative de suppression du fichier résultat
         # on va fusionner tous les ply, on dénomme ceux qui ne doivent pas l'être :
         listeDesFichiersARenommer = [e for e in os.listdir(self.repTravail) if os.path.splitext(e)[1]=='.ply' and e not in liste]
-        [(print("renomme e=",e),os.rename(e,os.path.splitext(e)[0]+".pyl")) for e in listeDesFichiersARenommer]  # pour ne traiter que le nécessaire (self.)
+        [(print(_("renomme e="),e),os.rename(e,os.path.splitext(e)[0]+".pyl")) for e in listeDesFichiersARenommer]  # pour ne traiter que le nécessaire (self.)
         time.sleep(1) 
         mergePly = [self.mm3d,
                     "MergePly",
@@ -17726,21 +17859,33 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             self.encadreEtTrace(_("La fusion n'a pu se réaliser.") + "\n" + _("Consulter la trace."))
 
     ###############  Informations sur les fichiers ply
-    
-    def demandePlyChantierPourInfo(self):
+
+    def choisirUnPlyDuChantier(self,messageBouton=_("Rechercher les infos"),
+                               message=_("Choisir le fichier:"),
+                               titre=_("Information sur un fichier PLY")): #soit avec ou sans texture externe
         listePly = [e for e in self.dicoCRSNuage]
+        #provisoirement on prend touss les ply du répertoire
+        #listePly = [e for e in os.listdir() if os.path.splitext(e)[1]==".ply"]
+        if listePly==list():
+            self.encadre(_("Aucun nuage de points dans ce chantier."))
+            return
         if listePly==list():
             self.encadre(_("Aucun nuage de points dans ce chantier."))
             return
         self.choisirUnePhoto(listePly,
-                             titre=_("Information sur un fichier PLY"),
-                             message=_("Choisir le fichier:"),
-                             messageBouton=_("Rechercher les infos"),                             
+                             titre,
+                             message,
+                             messageBouton=_(messageBouton),                             
                              boutonDeux=_("Fermer"),
                              mode='extended')
         if len(self.selectionPhotosAvecChemin)==0: return abandon()
         ply = self.selectionPhotosAvecChemin[0]        
-        self.infoSurPly(ply)
+        return ply
+
+    
+    def demandePlyChantierPourInfo(self):
+        if ply:=self.choisirUnPlyDuChantier():
+            self.infoSurPly(ply)
 
     def demandePlyPourInfo(self):
         ply = tkinter.filedialog.askopenfilename( initialdir="",                                                 
@@ -17833,8 +17978,12 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return mnt,ncols,nrows,xllcorner,yllcorner,cellsize,self.uniteDistance,largeur,hauteur,basGauche,semis,noData
 
     def infoSurMNT(self,mntIGN):
-        with open(mntIGN) as ign:
-            lignes = ign.readlines()
+        try:
+            lignes=str()
+            with open(mntIGN) as ign:
+                lignes = ign.readlines()
+        except:
+            pass      
         semis = list()
         noData="-9999"  #valeur par défaut
         for ligne in lignes:
@@ -17944,7 +18093,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
                 CRS.from_string(crs)   # scr par numéro d'epsg, sinon erreur
                 nuages.append(e)
             except Exception as f:     # si erreur, pas un scr
-                print("erreur modifEpsgPly ; %s pour le nuage %s" % (f,e))
+                print(_("erreur modifEpsgPly ; %s pour le nuage %s") % (f,e))
                 print("crs=",str(crs))
                 pass
         if nuages==list():
@@ -18005,8 +18154,13 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return
         # lire les coordonnées actuelles de l'ortho :
         tfw = orthoMosaique[:-3]+"tfw"
-        with open(tfw) as fichier:
-            lignes = fichier.readlines()
+        try:
+            with open(tfw) as fichier:
+                lignes = fichier.readlines()
+        except Exception as e:
+            print(_("fichier tfw non lu")+str(e))
+            self.encadre(_("fichier tfw non lu")+str(e))
+            return            
         try:
             x = lignes[4]
             y = lignes[5]
@@ -18024,13 +18178,16 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             return
         xnew,ynew=conversionEPSG1VersEPSG2(self.CRSOrthomosaique,epsgCible,x,y)
         supprimeFichier(tfw)
-        with open(tfw,"w") as fichier:
-            fichier.write(lignes[0])
-            fichier.write(lignes[1])
-            fichier.write(lignes[2])
-            fichier.write(lignes[3])            
-            fichier.write(str(xnew)+"\n")
-            fichier.write(str(ynew))
+        try:
+            with open(tfw,"w") as fichier:
+                fichier.write(lignes[0])
+                fichier.write(lignes[1])
+                fichier.write(lignes[2])
+                fichier.write(lignes[3])            
+                fichier.write(str(xnew)+"\n")
+                fichier.write(str(ynew))
+        except Exception as e:
+            print(_("Erreur écriture orthomosaïque : "),str(e))
         if not os.path.exists(tfw):
             self.encadre(_("echec de la conversion de l'orthomosaïque vers l'epsg %s")%epsgCible)
         else:
@@ -18609,7 +18766,7 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
             if self.messageNouveauDepart==str():
                 self.afficheEtat()
             else:
-                self.encadre(self.messageNouveauDepart,nouveauDepart='oui')
+                self.encadre(self.messageNouveauDepart,nouveauDepart='non')
             self.messageNouveauDepart = str()
             
         if self.systeme=='nt':       
@@ -19287,6 +19444,29 @@ Version 1.5  : première version diffusée sur le site de l'IGN le 23/11/2015.
         chantiers = [os.path.basename(e) for e in self.tousLesChantiers]
         self.chantiersRecents = [e for e in self.chantiersRecents if e in chantiers]
         # sauveparam fait par l'appelant
+
+    def exportObjChantier(self):
+
+        if ply:=self.choisirUnPlyDuChantier(messageBouton=_("Exporter au format Obj"),
+                                            titre=_("Export vers le format OBJ"),
+                                            message=_("Choisir un fichier ply texturé et maillé")
+                                            ):
+            converter = PLYToOBJConverter(ply)
+            converter.convert()
+            self.encadre(converter.retour)
+            print("export fini")
+
+    def exportObj(self):
+
+        ply = tkinter.filedialog.askopenfilename( initialdir="",                                                 
+                                                filetypes=[(_("ply"),"*.ply"),(_("Tous"),"*")],
+                                                multiple=False,
+                                                title = _("Export Ply au format Obj"))
+        if len(ply)==0: return abandon()
+        converter = PLYToOBJConverter(ply)
+        converter.convert()
+        self.encadre(converter.retour)
+        print("export fini")        
         
 ################################## FIN DE LA CLASSE INTERFACE ###########################################################
     
@@ -19323,10 +19503,13 @@ def copieRepertoire(source,cible): # copie d'une arborescence de répertoire apr
 
 def copieFichier(source,cible): # cible est un répertoire ou un fichier, écrase le fichier cible si il existe
     if os.path.isfile(source)==False:
+        message = _("fichier source pour copie %s n'est pas trouvé sur disque, cible : %s") % (source,cible)
+        interface.ajoutLigne(message)        
         return False
     supprimeFichier(cible)
     try: shutil.copy(source,cible)
     except Exception as e:
+        interface.ajoutLigne(_("erreur copie fichier %s vers %s : %s") % (source,cible,str(e)))
         return False
     return True
 
@@ -19339,6 +19522,7 @@ def supprimeFichier(fichier): # supprime le fichier.. Retour pas testé en gén�
     if not os.path.isfile(fichier): return
     try:    os.remove(fichier)
     except Exception as e:
+        interface.ajoutLigne(_("erreur suppression fichier %s : %s") % (source,str(e)))        
         return _("Erreur suppression fichier :")+str(e)
 
 def changeLesExtensions(liste,ext):  # retourne True si tout correct, False sinon
@@ -19350,7 +19534,10 @@ def changeLesExtensions(liste,ext):  # retourne True si tout correct, False sino
 
 def changeExtension(fichier,ext):   # ajoute à l'extension actuelle ".ext", retour True si fait, False sinon
     cible = os.path.splitext(fichier)[0]+"."+ext
-    return renommeFichier(fichier,cible)
+    try:
+        renommeFichier(fichier,cible)
+    except Exception as e:
+        interface.ajoutLigne(_("erreur renomme fichier %s en %s : %s") % (fichier,cible,str(e)))        
 
 def renommeFichier(f1,f2): # retourne False si pas possible ou pas fait, True sinon
     if f1==f2:                      return True
@@ -19359,7 +19546,10 @@ def renommeFichier(f1,f2): # retourne False si pas possible ou pas fait, True si
     if fileLocked(f1):              return False
     if fileLocked(f2):              return False
     if supprimeFichier(f2)!=None:   return False
-    os.rename(f1,f2)
+    try:
+        os.rename(f1,f2)
+    except Exception as e:
+        interface.ajoutLigne(_("erreur renomme fichier %s en %s : %s") % (f1,f2,str(e)))           
     if os.path.isfile(f2):
         return True
     else:
@@ -19371,7 +19561,8 @@ def fileLocked(fichier): # return True si le fichier est bloqué ou s'il s'agit 
         try:
             os.rename(fichier,fichier)
             return False
-        except:
+        except Exception as e:
+            interface.ajoutLigne(_(" fichier repéré comme locké %s en %s : %s") % (fichier,str(e)))
             return True
     else:
         return False
@@ -19382,19 +19573,22 @@ def supprimeRepertoire(repertoire):
     try:
         shutil.rmtree(repertoire)
     except Exception as e:
-        erreur = _("Erreur lors de la suppression du répertoire : %s\n%s") % (repertoire,str(e))
-        return erreur
+        interface.ajoutLigne(_("Erreur lors de la suppression du répertoire : %s\nerreur : %s") % (repertoire,str(e)))
+        return "erreur"
     if os.path.exists(repertoire):
-        erreur=_("Erreur répertoire non supprimé : %s" % (repertoire))        
-        return erreur
+        interface.ajoutLigne(_("Erreur répertoire non supprimé : %s" % (repertoire)) )       
+        return "erreur"
 
 def creeRepertoire(repertoire): # crée le répertoire s'il n'existe pas, sinon ne fait rien
     if os.path.isdir(repertoire):     
         return
     if os.path.isfile(repertoire):     
         supprimeFichier(repertoire)    
-    os.mkdir(repertoire)
-    
+    try:
+        os.mkdir(repertoire)
+    except Exception as e:
+        interface.ajoutLigne(_("Erreur lors de la création du répertoire : %s\nerreur : %s") % (repertoire,str(e)))
+        return "erreur"    
     
 # nombre de "fichiers" dans l'arborescence du répertoire
 def compteurFichiers(repertoire):
@@ -19503,7 +19697,7 @@ def mercurialMm3d(mm3d):            # Il faudrait que la version de MicMac autor
     try:
         mercurial = subprocess.check_output([mm3d,"CheckDependencies"],universal_newlines=True,shell=True)
     except Exception as e:
-        print("Erreur recherche version MicMac : ",str(e))
+        print(_("Erreur recherche version MicMac : "),str(e))
         return pasDeVersionMicMac
     else:
         return mercurial.splitlines()[0]
@@ -19541,11 +19735,17 @@ def sizeDirectoryMO(path):
     return round(size/1000000)
 
 def ouvrirPageWEBAperoDeDenis():
-    webbrowser.open("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")  
+    if check_internet():
+        webbrowser.open("https://github.com/micmacIGN/InterfaceCEREMA/tree/master/InterfaceCEREMA")
+    else:
+        interface.encadre(_("Pas d'accès à Internet"))
 
 def lireReadMe():
-    webbrowser.open("https://raw.githubusercontent.com/micmacIGN/InterfaceCEREMA/master/InterfaceCEREMA/readme.txt")     
-
+    if check_internet():
+        webbrowser.open("https://raw.githubusercontent.com/micmacIGN/InterfaceCEREMA/master/InterfaceCEREMA/readme.txt")
+    else:
+        interface.encadre(_("Pas d'accès à Internet"))
+        
 def ouvreInterfaceCeremaGItHub():
     threading.Thread(target=ouvrirPageWEBAperoDeDenis).start()  # ouverture de la page WEB dans un thread (join=0 pour désynchroniser si besoin)
 
@@ -19576,22 +19776,22 @@ def isNumber(s):       # https://stackoverflow.com/questions/354038/how-do-i-che
 def lanceVerifCommande(exe):   
     def verifCommande():
         try:
-            print("début vérif commande %s" % exe.pid)
+            print(_("début vérif commande %s") % exe.pid)
             if exe.poll()!=None:
-                print("fin vérif commande %s" % exe.pid)
+                print(_("fin vérif commande %s") % exe.pid)
                 return       # fin récursion
 
             duree = time.time()- interface.retourLigne
-            print("durée depuis dernière output : %s" % duree)
+            print(_("durée depuis dernière output : %s") % duree)
             if duree>20:
                 
-                #interface.encadre("durée de latence = %s" % int(duree))
-                print("durée de latence = %s" % int(duree))
+                #interface.encadre(_("durée de latence = %s") % int(duree))
+                print(_("durée de latence = %s") % int(duree))
             s.enter(20,1,verifCommande)  # attention : récursion
         except Exception as e:
-            print("exception: %s" % e)
+            print(_("exception: %s") % e)
     # vérif thread en cours
-    print("lanceverif commande")
+    print(_("lanceverif commande"))
     s = sched.scheduler(time.time, time.sleep) # création d'un scheduler (séquenceur ?)
     s.enter(20,1,verifCommande)  # param sceduleur : 5 secones, priorité 1, lance verifcommande
     # Exécute l'ordonnanceur dans un thread séparé
@@ -19617,29 +19817,33 @@ def lanceVerifCommande(exe):
 
 def typeDePly(fichier):              # retour :
     nbFaces = 0
+    formatPly = ""
+    texture_externe ="\nPas de texture externe"
     with open (fichier,"r",encoding="latin-1") as f:
         lignes = f.readlines(1000)
     if lignes[0][:3]!="ply":
         return _("%s \nn'est pas un fichier ply") % (fichier)
     for i in range(min(20,lignes.__len__())):
         if "ascii" in lignes[i]:
-            format = "ascii"
+            formatPly = "ascii"
         if "binary" in lignes[i]:
-            format = "binary"            
+            formatPly = "binary"            
         if "element vertex " in lignes[i]:
             nbSommets = int(float(lignes[i].split()[2]))
         if "element face " in lignes[i]:
             nbFaces = int(float(lignes[i].split()[2]))
         if "end_header" in lignes[i]:
             debut = i+1
+        if "TextureFile" in lignes[i]:
+            texture_externe = "\ntexture externe : "+lignes[i].split()[-1]
 
-    if format=="binary" and nbFaces==0:
+    if formatPly=="binary" and nbFaces==0:
         return ("nuage de points binaire")  #_("mesh binary") serait mieux mais pas traité plus loin
-    if format=="binary" and nbFaces==0:
+    if formatPly=="binary" and nbFaces==0:
         return ("nuage de points ascii")
-    if format=="ascii" and nbFaces>0:
+    if formatPly=="ascii" and nbFaces>0:
         return ("mesh ascii")
-    if format=="binary" and nbFaces>0:
+    if formatPly=="binary" and nbFaces>0:
         return ("mesh binary")
     
 #@decorateTry  
@@ -19657,12 +19861,12 @@ def extraireLesXyzDuPly(fichierPly):    # retour : un dictionnaire : mnt ou une 
     lignes = ligne.splitlines()                                     # coupure du flux binaire en "lignes"
     if lignes[0]!=b'ply':                                           # vérification que le tag "ply" est présent en entête de fichier
         erreur = "erreur : le fichier\n"+fichierPly+"\nn'est pas un fichier de type ply."
-        print("extraireLesXyzDuPly : erreur = ",str(erreur))
+        print(_("extraireLesXyzDuPly : erreur = "),str(erreur))
         return erreur                                               # Abandon si pas fichier ply
 
     if b"ascii" in lignes[1]:                                        # pas prévu pour lire les fichiers ply "ASCII" choisir binary lors de l'écriture
         erreur = _("erreur : le fichier\n %s \nest un fichier de type ply au format ASCII.\nUtiliser CloudCompare pour l'enregistrer au format Binary.") % (fichierPly)
-        print("extraireLesXyzDuPly : erreur = ",str(erreur))        
+        print(_("extraireLesXyzDuPly : erreur = "),str(erreur))        
         return erreur
     
     nombre_faces = 0    # si absent ! correction version 5.111
@@ -19718,6 +19922,9 @@ def extraireLesXyzDuPly(fichierPly):    # retour : un dictionnaire : mnt ou une 
     plageData = ligne[debutData:finData]
     finFichier = ligne[finData:]
     fmt=endian+fmt
+    # position du nombre de vertex :
+    positionNbVertex = ligne.find(b"element vertex",0,1000)+15
+    longueurNbVertex = len(str(nombre_points))
     # extraction des Y,X,Z du ply :
     # valeur=tuple([e for e in fmt])
     try:
@@ -19732,9 +19939,10 @@ def extraireLesXyzDuPly(fichierPly):    # retour : un dictionnaire : mnt ou une 
         mnt["longueur header"] = debutData
         mnt["min_x"]  = min([x for x,y,z in lesXyz])     # bornes
         mnt["max_x"]  = max([x for x,y,z in lesXyz])
-        mnt["min_y"]  = min([y for x,y,z in lesXyz])
+        mnt["min_y"]  = min([y for x,y,z in lesXyz]) 
         mnt["max_y"]  = max([y for x,y,z in lesXyz])
         mnt["longueur data"] = longueurData
+        mnt["longueur vertex"] = longstruct
         mnt["nb"]     = len(lesXyz)
         mnt["nombre_faces"] = nombre_faces
         mnt["lesXyz"] = lesXyz
@@ -19745,6 +19953,10 @@ def extraireLesXyzDuPly(fichierPly):    # retour : un dictionnaire : mnt ou une 
         mnt["finFichier"] = finFichier
         mnt["lesNoms"] = lesNoms
         mnt["toutesLesValeurs"] = toutesLesValeurs
+        mnt["positionNbVertex"] = positionNbVertex
+        mnt["longueurNbVertex"] = longueurNbVertex
+        mnt["nombreVertex"] = nombre_points
+        
 
 # ajout pour infos :
 
@@ -19754,7 +19966,7 @@ def extraireLesXyzDuPly(fichierPly):    # retour : un dictionnaire : mnt ou une 
         mnt["volume"] = mnt["surface"]*(mnt["max_z"]-mnt["min_z"])
     except Exception as e:
         erreur=( _("Erreur lors du décodage des données du fichier Ply. Erreur = ")+"\n"+str(e))
-        print("extraireLesXyzDuPly : erreur = ",str(erreur))        
+        print(_("extraireLesXyzDuPly : erreur = "),str(erreur))        
         return erreur
     #interface.mnt[fichierPly]=mnt # fausse bonne idée ? l'entête du fichier est modifiée par xyFloat2Double ainsi que les valeurs
     return mnt
@@ -19948,33 +20160,36 @@ def plyEpsg1ToEpsg2(nomDuPly,epsg1,epsg2):
     lesNoms      = infos["lesNoms"]
     fmtVertex    = infos["fmtVertex"]
     finFichier   = infos["finFichier"]
+    try:
+        with open(nouveauPly, "wb") as fichier:
+            # Ecriture du header
+            h = bytes(header)
+            h = struct.pack('{}s'.format(len(h)), h)
+            fichier.write(h)
+            
+            # Ecriture des vertex
+            positionX= lesNoms.index("x")
+            positionY= lesNoms.index("y")
+            positionZ= lesNoms.index("z")
+            longstruct=struct.calcsize(fmtVertex)
+            for i in range(nbVertex):
+                x = toutesLesValeurs[i][positionX] # de nouveau on intervertit x et y (en fait dépend peut-être des CRS :!!!)
+                y = toutesLesValeurs[i][positionY] # voir ci dessus
+                z = toutesLesValeurs[i][positionZ]           
+                x1,y1,z1 =transformer_3d.transform(x,y,z)   #changement de référentiel
+                toutesLesValeurs[i][positionX] = x1
+                toutesLesValeurs[i][positionY] = y1 
+                toutesLesValeurs[i][positionZ] = z1
+                vertex = struct.pack(fmtVertex.format(longstruct),*toutesLesValeurs[i])
+                fichier.write(vertex)
 
-    with open(nouveauPly, "wb") as fichier:
-        # Ecriture du header
-        h = bytes(header)
-        h = struct.pack('{}s'.format(len(h)), h)
-        fichier.write(h)
-        
-        # Ecriture des vertex
-        positionX= lesNoms.index("x")
-        positionY= lesNoms.index("y")
-        positionZ= lesNoms.index("z")
-        longstruct=struct.calcsize(fmtVertex)
-        for i in range(nbVertex):
-            x = toutesLesValeurs[i][positionX] # de nouveau on intervertit x et y (en fait dépend peut-être des CRS :!!!)
-            y = toutesLesValeurs[i][positionY] # voir ci dessus
-            z = toutesLesValeurs[i][positionZ]           
-            x1,y1,z1 =transformer_3d.transform(x,y,z)   #changement de référentiel
-            toutesLesValeurs[i][positionX] = x1
-            toutesLesValeurs[i][positionY] = y1 
-            toutesLesValeurs[i][positionZ] = z1
-            vertex = struct.pack(fmtVertex.format(longstruct),*toutesLesValeurs[i])
-            fichier.write(vertex)
-
-        # Ecriture de la fin du fichier
-        f = bytes(finFichier)
-        f = struct.pack('{}s'.format(len(f)), f)
-        fichier.write(f)            
+            # Ecriture de la fin du fichier
+            f = bytes(finFichier)
+            f = struct.pack('{}s'.format(len(f)), f)
+            fichier.write(f)
+    except Exception as e:
+        print(_("erreur changement d'epsg : "),str(e))
+        return
                
     message = ("\n"+_(
         '''Passage du référentiel\n %s \nau référentiel %s \n
@@ -19985,6 +20200,147 @@ def plyEpsg1ToEpsg2(nomDuPly,epsg1,epsg2):
                        attendre=False)
     return nouveauPly
 
+# Carroyage du dernier nuage dense non maillé :
+
+def lancerCarroyageSurNuageDense():
+
+    nomNuage = interface.modeleFinalNonMaille()[0]
+    print("nom du nuage dense = ",nomNuage)
+    if not os.path.exists(nomNuage):
+        interface.encadre("Il n'y a pas de nuage dense non maillé pour lancer le carroyage")
+        return
+    infos        = extraireLesXyzDuPly(nomNuage)
+    if infos["nombreVertex"]==0:
+        interface.encadre("Nuage dense maillé : demander un nuage dense non maillé")
+        return
+    lePas = MyDialog(fenetre,"Saisir le pas du caroyage (nombre entier) : ",basDePage=("Le dernier nuage dense non maillé\n\n%s\n\nsera découpé en carreaux de cette taille" % nomNuage)).saisie
+    if lePas in (False,""):
+        interface.encadre(_("Abandon utilisateur"))
+        return
+    if lePas.isdigit()==False:
+        interface.encadre(_("Abandon : Indiquez un chiffre"))
+        return
+    nbOk = carroyageNuageDense(nomNuage,float(lePas))
+    if nbOk:
+        interface.encadre("Carroyage réussi\n\nNombre de fichiers ply créés pour le carroyage : %s" %nbOk)
+    else:
+        interface.encadre("Echec : aucun carreau créé")
+    
+    
+def carroyageNuageDense(nomNuage,lePas):
+    print("nom=",nomNuage," 0 = ",os.path.split(nomNuage)[0])
+    infos        = extraireLesXyzDuPly(nomNuage)
+    minx =    infos["min_x"]
+    maxx =    infos["max_x"]
+    miny =    infos["min_y"]
+    maxy =    infos["max_y"]
+    x = minx
+    y = maxy
+    ligne = 1
+    colonne = 1
+    nbOk = 0
+    while y>miny-lePas:
+        while x<maxx:        
+            print("x=",x,"y=",y," colonne=",colonne," ligne=",ligne," lePas = ",lePas)
+            nomCarreau = os.path.splitext(nomNuage)[0]+"_l_"+str(ligne)+"_c_"+str(colonne)+"_pas_"+str(lePas)+".ply"
+            if SelectionCarreauPly(nomNuage,x,y,lePas,nomCarreau): nbOk+=1
+            x+=lePas
+            colonne+=1
+        y -= lePas
+        x =  minx
+        colonne=1
+        ligne+=1
+    print("Nombre de carreaux créés : %s" % nbOk)
+    return nbOk        
+        
+# extrait un carreau 
+
+def SelectionCarreauPly(nomDuPly,gauche,haut,large,nouveauNom=""):
+    message = "\n\n"+_('''Carroyage du nuage demandé : haut %s gauche %s largeur %s''') % (haut,gauche,large)
+    interface.encadreEtTrace(message)
+
+    
+    infos        = extraireLesXyzDuPly(nomDuPly)
+    if not isinstance(infos,dict):
+        return abandon(_("Fichier ply %s incorrect : \n%s")%(nomDuPly,str(infos)))
+
+    debut        = infos["longueur header"]
+    longueurData = infos["longueur data"]
+    nbVertex     = infos["nb"]    
+    longueurVertex = int(longueurData/nbVertex)
+    lesXYZ       = infos["lesXyz"]
+    endian       = infos["endian"]
+    fmt          = infos["fmtVertex"]
+    positionNbVertex = infos["positionNbVertex"]
+    longueurNbVertex = infos["longueurNbVertex"]    
+    lesNoms      = infos["lesNoms"] # noms des variables
+    
+    positionY = lesNoms.index("x")
+    positionX = lesNoms.index("y") 
+    formatx      = endian+fmt[1]
+    formaty      = endian+fmt[2]
+    formatz      = endian+fmt[3]
+
+# Ouvrir le fichier en mode lecture/écriture binaire
+
+    if nouveauNom=="":
+        nouveauNom=os.path.splitext(nomDuPly)[0]+"h"+str(haut)+"d"+str(droit)+"l"+str(large)+".ply"
+    else:
+        copieFichier(nomDuPly,nouveauNom) # pas de copie si même nom (return False), écrase nouveauNom
+        
+    with open(nouveauNom, "r+b") as fichier:          
+        fichier.seek(debut)
+        nbNewVertex = 0
+        for i in range(nbVertex):        
+            x = lesXYZ[i][1]
+            y = lesXYZ[i][0]
+            z = lesXYZ[i][2]
+
+            # Eciture en écrasement sur disque des seuls vertex utiles (préserve la mémoire) 
+            if gauche<=x<gauche+large and haut-large<=y<haut:             
+                nbNewVertex+=1
+                x = struct.pack(formatx, x)
+                y = struct.pack(formaty, y)
+                z = struct.pack(formatz, z)                
+                fichier.write(x+y)
+                fichier.write(z)            
+                debut = debut+longueurVertex
+                fichier.seek(debut)
+            else :
+                if i in( 1000,5000):
+                    print("i,x,y,z=%s,%s,%s,%s" % (i,x,y,z))
+    
+        if nbNewVertex>1:
+            # écriture du nombre de vertex dans le ply :
+            fichier.seek(positionNbVertex)
+            nb =str(nbNewVertex)
+            nbEspaces = longueurNbVertex - len(nb)
+            nb = " " * nbEspaces + nb
+            nb = str.encode(nb)
+            fichier.write(nb)
+            # copie du début du fichier : longueur nécessaire = infos["longueur header"] + nbNewVertex*longueurVertex
+            longueurFichier = infos["longueur header"] + nbNewVertex*longueurVertex
+    
+        # fichier fermé
+    
+    if nbNewVertex>1:
+        # réussite : on copie la longueur utile du fichier dans le fichier destination
+        with open(nouveauNom, 'rb') as infile:                          # lecture du fichier en mode "binaire"
+            ligne = infile.read(longueurFichier)
+        with open(nouveauNom, 'wb') as infile:                          # lecture du fichier en mode "binaire"
+            infile.write(ligne)
+        message = "\n\n"+_('''Carroyage du nuage effectué : haut %s gauche %s largeur %s nombre de vertex copiés %s''') % (haut,gauche,large,nbNewVertex)
+        ok = True   
+    else:
+        # échec :
+        message = "\n\n"+_('''Carroyage du nuage NON effectué : haut %s gauche %s largeur %s nombre de vertex copiés %s''') % (haut,gauche,large,nbNewVertex)
+        supprimeFichier(nouveauNom)
+        ok = False
+    interface.ajoutLigne(message)
+    return ok
+
+####################################
+    
 def valideEpsg(epsg):
     valid = positionScene(epsg)    # test la validité du référentiel cible pour la scène, retour True OK ou si l'utilateur l'accepte, sinon False
     if valid==False:
@@ -20031,7 +20387,7 @@ def positionScene(epsg_code): # retour : True si la scéne est compatible avec l
           lon=DMS2DD(interface.lesTagsExif[("GPSLongitude",photo)])
           return verify_crs_bounds(lon, lat, epsg_code)
     except Exception as e:
-        print("Exception position scéne : ",str(e))
+        print(_("Exception position scéne : "),str(e))
         pass
 
 def verify_crs_bounds(lon, lat, epsg_code):
@@ -20090,26 +20446,30 @@ def extraireLesXyzDuAsc(fichierASC):# fichier texte semis de points 3D comportan
     if not os.path.exists(fichierASC):
         self.message=_("Pas de fichier XYZ.")
         return False
-    with open (fichierASC) as asc:
-        xyz = asc.readlines()
-        separateurDecimal,separateurDeChamp = rechercheSeparateur(xyz[-3])   # -2 mieux que 1 qui peut être spéciale, si pas 3 ligne, dommage
-        if separateurDecimal==separateurDeChamp:
-            message = _("Format de fichier incorrect : le fichier doit comporter las valeur X,Y et Z sur chaque ligne : \n"+ligne)
-            self.encadre(message)
-            return False
-        if separateurDecimal=="," or separateurDeChamp == str() :      # remise du point comme séparateur décimal
-            xyz = [ligne.replace(",",".") for ligne in xyz]
-        # OK
-        for ligne in xyz:
-            if ligne[0]=="#": continue      # commentaire possible
-            ligneXyz = ligne.split(separateurDeChamp)[:3]
-            if len(ligneXyz)<3: continue    # moins de 3 valeurs
-            try:
-                point = (float(ligneXyz[1]),float(ligneXyz[0]),float(ligneXyz[2])) # pour tromper l'ennemi : transposition y,x
-                lesXyz.append(point)
-            except Exception as e:
-                erreur = (" erreur ligne"+str(ligneXyz)+" : "+str(e))
-                return erreur
+    try:
+        with open (fichierASC) as asc:
+            xyz = asc.readlines()
+            separateurDecimal,separateurDeChamp = rechercheSeparateur(xyz[-3])   # -2 mieux que 1 qui peut être spéciale, si pas 3 ligne, dommage
+            if separateurDecimal==separateurDeChamp:
+                message = _("Format de fichier incorrect : le fichier doit comporter las valeur X,Y et Z sur chaque ligne : \n"+ligne)
+                self.encadre(message)
+                return False
+            if separateurDecimal=="," or separateurDeChamp == str() :      # remise du point comme séparateur décimal
+                xyz = [ligne.replace(",",".") for ligne in xyz]
+            # OK
+            for ligne in xyz:
+                if ligne[0]=="#": continue      # commentaire possible
+                ligneXyz = ligne.split(separateurDeChamp)[:3]
+                if len(ligneXyz)<3: continue    # moins de 3 valeurs
+                try:
+                    point = (float(ligneXyz[1]),float(ligneXyz[0]),float(ligneXyz[2])) # pour tromper l'ennemi : transposition y,x
+                    lesXyz.append(point)
+                except Exception as e:
+                    erreur = (" erreur ligne"+str(ligneXyz)+" : "+str(e))
+                    return erreur
+    except Exception as e:
+        return str(erreur)
+    
     if not lesXyz: return _("erreur dans la lecture du fichier")
     mnt = dict()    
     mnt["min_x"]  = min([x for x,y,z in lesXyz])     # bornes
@@ -20158,7 +20518,7 @@ def creerMnt(semisDePoints,lePas):
         Xpp = int((y-minY)/lePas)
         grid[Ypp,Xpp] += z
         nbgrid[Ypp,Xpp] += 1
-     
+    print("warning=",grid,nbgrid)
     grid= grid/nbgrid   # peut générer un warning
     numpy.nan_to_num(grid, copy=False, nan=-9999)
     semisDePoints["mnt"]=grid
@@ -20167,16 +20527,19 @@ def creerMnt(semisDePoints,lePas):
 # Ecrire infoMnt dans un fichier :
 
 def ecrireInfoMnt(fichier,mnt):
-
-    with open(fichier,"w") as ign:
-        ign.write("ncols "+str(mnt["ncols"])+"\n")
-        ign.write("nrows "+str(mnt["nrows"])+"\n")                  
-        ign.write("xllcorner "+str(mnt["xllcorner"])+"\n")
-        ign.write("yllcorner "+str(mnt["yllcorner"])+"\n")
-        ign.write("cellsize "+str(mnt["cellsize"])+"\n")
-        ign.write("NODATA_value "+mnt["remplissage"]+"\n")
-        lignes=[" ".join(e) for e in mnt["table"]]
-        [ign.write(f+"\n") for f in lignes]
+    try:
+        with open(fichier,"w") as ign:
+            ign.write("ncols "+str(mnt["ncols"])+"\n")
+            ign.write("nrows "+str(mnt["nrows"])+"\n")                  
+            ign.write("xllcorner "+str(mnt["xllcorner"])+"\n")
+            ign.write("yllcorner "+str(mnt["yllcorner"])+"\n")
+            ign.write("cellsize "+str(mnt["cellsize"])+"\n")
+            ign.write("NODATA_value "+mnt["remplissage"]+"\n")
+            lignes=[" ".join(e) for e in mnt["table"]]
+            [ign.write(f+"\n") for f in lignes]
+    except Exception as e:
+        self.encadre(_("Erreur écriture Mnt : "),str(e))
+        
 
 ## Pour insérer une image, ou un logo, dans un script, utilisable ensuite par Tkinter : (effectuer les points 2 et 3)
 ## 1) Enregistrer l'image au format GIF (sinon il faudra utiliser PIL) voir (les images dans http://tkinter.fdex.eu/doc/sa.html#images)
@@ -20191,6 +20554,7 @@ def ecrireInfoMnt(fichier,mnt):
 
 #import base64 (déjà fait)
 #import os
+@decorateTry
 def gif2txt(fichier):
     with open(fichier, 'rb') as image_file: 
         encoded_string = base64.b64encode(image_file.read())
@@ -20409,6 +20773,7 @@ def calculVolumeMnt():
     interface.encadre(rapport)
     traceMetier(rapport,fond,'volume')
 
+@decorateTry
 def calculVolumeEntre2Mnt():    
     def lectureInfoFichiers(fond,dessus):
         
@@ -20690,11 +21055,9 @@ def calculVolumeEntre2Mnt():
         infoMnt["surfaceCouverteFond"]=round(nbValFond*infoMnt["cellsizeFond"]**2,arrondi)
         infoMnt["volumeFond"] = round(infoMnt["sommeFond"]*infoMnt["cellsizeFond"]**2,arrondi)
         
-        # lire le mnt du dessus :
-
+        # lire le mnt du dessus : (protégé par decorateTry)
         with open (dessus,"r") as q:
                 lignes=q.readlines()
-                
         tableDessus = list()
         for ligne in lignes[6:]:
             tableDessus.append(ligne.split())
@@ -20764,17 +21127,21 @@ def calculVolumeEntre2Mnt():
 
         ####### tableEcart = [[-9999]*(cols+1)]*(rows+1) # piège !!! on duplique le même élément, qui sera modifié..... pour toutes les lignes
         tableEcart = [[-9999 for i in range (cols+1)] for j in range(rows+1)]
-        with open (fond) as p:
-            lignesFond=p.readlines()
+        try:
+            with open (fond) as p:
+                lignesFond=p.readlines()
 
-        for ligneFond in lignesFond[6:]:
-            tableFond.append(ligneFond.split())
-            
-        with open (dessus) as q:
-            lignesDessus=q.readlines()
+            for ligneFond in lignesFond[6:]:
+                tableFond.append(ligneFond.split())
+                
+            with open (dessus) as q:
+                lignesDessus=q.readlines()
 
-        for ligneDessus in lignesDessus[6:]:
-            tableDessus.append(ligneDessus.split())
+            for ligneDessus in lignesDessus[6:]:
+                tableDessus.append(ligneDessus.split())
+        except Exception as e:
+            print(_("erreur lecture fond ou dessus : %s"),str(e))
+            return str(e)
 
         di,dj = infoMnt["vecteurPassageFondVersDessus"]
       
@@ -20786,7 +21153,7 @@ def calculVolumeEntre2Mnt():
                 try:                
                     valFond   = tableFond[j+dj][i+di]
                 except:
-                    print("erreur j+dj : i,j,dj =",i,j,dj)
+                    print(_("erreur j+dj : i,j,dj ="),i,j,dj)
                     continue
                 if valFond==remplissage:
                     nbRemplissageFond += 1
@@ -20882,7 +21249,7 @@ def calculVolumeEntre2Mnt():
         sizF = infoMnt["cellsizeFond"]
         sizD = infoMnt["cellsizeDessus"]
         if sizF!=sizD:
-            return
+            return False
         fichierFond = infoMnt["fichierFond"]
         fichierDessus = infoMnt["fichierDessus"] 
         base = ("ecart_tolerance_"+str(tolerance)+"_"+
@@ -20897,18 +21264,22 @@ def calculVolumeEntre2Mnt():
         ysup = infoMnt["yrecouvreSup"]
         cols,rows = infoMnt["dimensionRecouvrement"]
         table = infoMnt["tableEcart"]
-        with open(fichierEcart,"w") as f:
-            for i in range(cols+1):
-                for j in range(rows+1):
-                    x = xinf + i * sizF
-                    y = ysup - j * sizF
-                    v = table[j][i]
-                    if v!=float(remplissage):
+        try:
+            with open(fichierEcart,"w") as f:
+                for i in range(cols+1):
+                    for j in range(rows+1):
+                        x = xinf + i * sizF
+                        y = ysup - j * sizF
+                        v = table[j][i]
+                        if v!=float(remplissage):
 
-                        if -tolerance<v<tolerance:
-                            v=0         # on annule les "petits écarts", dans l'épaisseur du trait.
-                        t = (str(round(x,arrondi)),str(round(y,arrondi)),str(round(v,arrondi)))
-                        f.write(" ".join(t)+"\n")
+                            if -tolerance<v<tolerance:
+                                v=0         # on annule les "petits écarts", dans l'épaisseur du trait.
+                            t = (str(round(x,arrondi)),str(round(y,arrondi)),str(round(v,arrondi)))
+                            f.write(" ".join(t)+"\n")
+        except Exception as e:
+            print(_("erreur écriture fichier des écarts = "),str(e))
+            return False
                 
     ##################################################################################################### Début    
 
@@ -20919,7 +21290,7 @@ def calculVolumeEntre2Mnt():
                                                 title = _("MNT constituant le territoire initial, le socle, le fond"))
     if fond==str():
         interface.encadre(_("Calcul de volume abandonné."))
-        return
+        return False
 
     dessus = tkinter.filedialog.askopenfilename( initialdir="",                                                 
                                                 filetypes=[(_("asc"),"*maillage*.asc"),(_("Tous"),"*")],
@@ -20927,7 +21298,7 @@ def calculVolumeEntre2Mnt():
                                                 title = _("MNT constituant le territoire final, le dessus"))
     if dessus==str():
         interface.encadre(_("Calcul de volume abandonné."))
-        return
+        return False
                                 
     # initialisations  
     remplissage = "-9999"
@@ -20940,14 +21311,16 @@ def calculVolumeEntre2Mnt():
     # recherche des infos,  calcul du volume
     infoMnt = lectureInfoFichiers( fond, dessus)  # exploite les 6 premières lignes du MNT, calcule la zone de recouvrement
     if type(infoMnt) != type(dict()):
-        interface.encadre("Erreur : "+str(infoMnt))
-        return
+        interface.encadre(_("Erreur : ")+str(infoMnt))
+        return False
     calculDesVolumesFondEtDessus( fond, dessus) # calcul du volume de chaque couche, indépendamment de l'autre 
     retourCalcul =calculEcart (fond, dessus)   # calcul de l'écart, uniquement sur les valeurs communes
     if retourCalcul!=None:
-        interface.encadre("Erreur : "+str(retourCalcul))
-        return        
-    ecrireTableDesEcarts(infoMnt)    # retour :
+        interface.encadre(_("Erreur : ")+str(retourCalcul))
+        return False     
+    if ecrireTableDesEcarts(infoMnt)==False:    # retour KO
+        self.encadre(_("erreur lors de l'écriture des écarts"))
+        return
     if interface.uniteDistance=="":
         cube=""
         carre=""
@@ -21066,6 +21439,9 @@ def tracerProfil():
     line_chart.title = (titreChart)
     line_chart.add('Altitude', pointsZ)
     taux=int(pointsZ.__len__()/10)
+    if taux==0:
+        interface.encadre(_("Le profil n'a pas été généré."))
+        return
     line_chart.x_labels  = [str(x) if x % taux == 0 else "" for x in range(1,pointsZ.__len__())]
     line_chart.render_to_file('profil.svg')
     if os.path.exists("profil.svg"):
@@ -21091,7 +21467,7 @@ def interpol(gauche,haut,pas,ncols,semis,points,noData):   # Altitude d'un point
             except Exception as e:
                 pass
     return pointsZ,pointsXYZ
-        
+         
 def pointsSurMosaiqueTARAMA(): # retourne un n-tuple de 2 tuples : ((x0,y0),(x1,y1 (x2,y2) ...)) si cela marche 
     mosaique = interface.mosaiqueTaramaJPG
     if not os.path.exists(mosaique): return 0
@@ -21342,7 +21718,7 @@ def sauveUnParametre(fichierPickle, numeroParam, valeur):  # permet de sauver un
         with open(fichierPickle,mode='rb') as f:
             r = pickle.load(f)      #r est un tuple                
     except Exception as e:
-        print("erreur lire sauveUnParametre : ",str(e))
+        print(_("erreur lire sauveUnParametre : "),str(e))
         return
     if numeroParam<len(r):
         l = list(r)            
@@ -21353,13 +21729,13 @@ def sauveUnParametre(fichierPickle, numeroParam, valeur):  # permet de sauver un
         l.append(valeur)
         r = tuple(l)            
     else:
-        print("pas assez de paramètres pour sauvegarder la valeur dans le numéro %s, longueur tuple = %s chantier %s" % (numeroParam,len(r),fichierPickle))
+        print(_("pas assez de paramètres pour sauvegarder la valeur dans le numéro %s, longueur tuple = %s chantier %s") % (numeroParam,len(r),fichierPickle))
         return
     try:
         with open(fichierPickle,mode='wb') as f:          
             pickle.dump(r,f)               
     except Exception as e:
-        print("erreur dump sauveUnParametre : ",str(e))
+        print(_("erreur dump sauveUnParametre : "),str(e))
         return
 
 # vérification du paramètre de centrage de saisieMasqQT
@@ -21474,8 +21850,15 @@ def lireFichierHomolDat(fichier):
                fmt += "d"                                           # indique qu'il y a 8 octets à lire
     '''
     liste=list()
-    with open (fichier,"rb") as f:
-        tout=f.read()    
+    
+    try:
+        tout = str()
+        with open (fichier,"rb") as f:
+            tout=f.read()
+    except:
+        return list()
+        
+        
     endian = "<" # petit boutiste à priori sous windows et linux, pas sur sous mac (dépend processeur)
     fmtPoints = endian+"Iddddd" # un entier pour pour le nombre de points, un double pour l'échelle  et 4 double pour les coordonnées des points
     debutPoints = 8
@@ -21487,7 +21870,7 @@ def lireFichierHomolDat(fichier):
     try:       
         liste = [(valeur[2],valeur[3],valeur[4],valeur[5],origine) for [*valeur] in struct.iter_unpack(fmtPoints,plageDataPoints).__iter__() ]        
     except Exception as e:
-        print("erreur struct.iter = ",str(e))
+        print(_("erreur struct.iter = "),str(e))
     return liste
 
 # renvoi les coordonnées dans photoDest du pointIni de photoIni. Si impossible : (-1,-1)
@@ -21757,7 +22140,7 @@ class MyDialog_OK_KO:
         try:
             fenetreIcone(self.top)
         except Exception as e:
-            print("erreur fenetre icône : ",str(e))
+            print(_("erreur fenetre icône : "),str(e))
         self.top.title(titre)
         l=ttk.Label(self.top, text=texte)   # anchor = "center", justify...
         hauteur = l.winfo_reqheight()+100   # pour adapter la taille au texte
@@ -21784,6 +22167,127 @@ class MyDialog_OK_KO:
         self.retour = 0
         self.top.destroy()
 
+################################## Classe pour exporter les ply au format .obj, .mtl et .jpg
+
+class PLYToOBJConverter:
+    def __init__(self, ply_path, min_size=512, max_size=4096):
+        self.ply_path = ply_path
+        self.min_size = min_size
+        self.max_size = max_size
+        self.retour = ""
+        self.base = os.path.splitext(self.ply_path)[0]
+        self.obj_path = self.base + ".obj"
+        self.mtl_path = self.base + ".mtl"
+        self.tex_path = self.base + ".jpg"
+
+    def compute_texture_size(self, face_count):
+        size = int(numpy.sqrt(face_count) * 10)
+        size = 2 ** int(numpy.log2(max(self.min_size, min(size, self.max_size))))
+        print("size=%s face count=%s" % (size,face_count))
+        return size
+
+    def bake_texture_from_vertex_colors(self, mesh, img_size):
+        uv = mesh.visual.uv
+        color = mesh.visual.vertex_colors[:, :3]
+        faces = mesh.faces
+        uv_faces = uv[faces]
+
+        img = numpy.zeros((img_size, img_size, 3), dtype=numpy.uint8)
+
+        for i, f in enumerate(faces):
+            uv_tri = uv_faces[i]
+            if numpy.any(uv_tri < 0) or numpy.any(uv_tri > 1):
+                continue
+
+            pts = (uv_tri * (img_size - 1)).astype(int)
+            pts = numpy.clip(pts, 0, img_size - 1)
+            px = pts[:, 0]
+            py = pts[:, 1]
+            cx = color[f][:, 0]
+            cy = color[f][:, 1]
+            cz = color[f][:, 2]
+            c = numpy.array([numpy.mean(cx), numpy.mean(cy), numpy.mean(cz)], dtype=numpy.uint8)
+
+            rr, cc = numpy.meshgrid(
+                numpy.arange(min(py), max(py) + 1),
+                numpy.arange(min(px), max(px) + 1),
+                indexing='ij'
+            )
+            rr = rr.flatten()
+            cc = cc.flatten()
+            img[rr, cc] = c
+
+        image = Image.fromarray(img).filter(ImageFilter.BoxBlur(2))
+        rgb_im = Image.convert('RGB') #pour supprimer la transparence si il y en a
+        return rgb_im
+
+    def write_mtl_file(self):
+        mtl_text = f"""newmtl material_0
+Ka 1.000 1.000 1.000
+Kd 1.000 1.000 1.000
+Ks 0.000 0.000 0.000
+d 1.0
+illum 2
+map_Kd {os.path.basename(self.tex_path)}
+"""
+        with open(self.mtl_path, "w") as f:
+            f.write(mtl_text)
+
+    def handle_external_texture(self, mesh):
+        image = mesh.visual.material.image
+        if not isinstance(image, Image.Image):
+            raise ValueError("L'image externe n'est pas reconnue comme une image PIL.")
+
+        image.save(self.tex_path)
+        self.write_mtl_file()
+        mesh.export(self.obj_path, file_type='obj')
+        if os.path.exists(self.obj_path):
+            message = _("[OK] Conversion au format OBJ terminée\n\n")
+            message += "OBJ : %s\n\n" % self.obj_path
+            message +="MTL : %s\n\n" % self.mtl_path
+            message +=_("Texture : %s") % self.tex_path
+            self.retour = message
+        else:
+            self.retour = _("Conversion au format OBJ non effectuée")
+
+    def convert(self):
+        mesh = trimesh.load(self.ply_path, process=False)
+
+        if not isinstance(mesh, trimesh.Trimesh):
+            self.retour = ("Le fichier PLY %s n'est pas un fichier maillé." % (self.ply_path))
+            return 
+
+        # Cas 1 : texture externe détectée
+        if hasattr(mesh.visual, 'material') and hasattr(mesh.visual.material, 'image') and mesh.visual.material.image is not None:
+            print("[INFO] Texture externe détectée dans le PLY %s" % (self.ply_path))
+            self.handle_external_texture(mesh)
+            return
+
+        # Cas 2 : vertex colors + UV
+        print ("mesh.visual : ",mesh.visual)
+        if mesh.visual.kind == 'vertex' and hasattr(mesh.visual, 'uv') and mesh.visual.uv is not None:
+            print("[INFO] Texture interne via vertex colors détectée dans le PLY %s"  % (self.ply_path))
+            img_size = self.compute_texture_size(len(mesh.faces))
+            image = self.bake_texture_from_vertex_colors(mesh, img_size)
+            image.save(self.tex_path)
+            self.write_mtl_file()
+            mesh.visual = trimesh.visual.texture.TextureVisuals(uv=mesh.visual.uv)
+            mesh.export(self.obj_path, file_type='obj')
+            if os.path.exists(self.obj_path):
+                message = _("[OK] Conversion au format OBJ terminée\n\n")
+                message += "OBJ : %s\n\n" % self.obj_path
+                message +="MTL : %s\n\n" % self.mtl_path
+                message +=_("Texture : %s") % self.tex_path
+                self.retour = message
+            else:
+                self.retour = _("Conversion au format OBJ non effectuée")                
+        else:
+            self.retour = "Le fichier PLY\n\n %s \n\nne contient ni texture externe ni vertex colors avec UV."  % self.ply_path
+
+# Exemple d’utilisation :
+# converter = PLYToOBJConverter("chemin/vers/fichier.ply")
+# converter.convert()
+        
 
 ################################## Barre de progression
 
@@ -21942,14 +22446,14 @@ def lireFichier(fichier):
             contenu = f.read()
             return contenu
         except Exception as e:                     # pour compatibilité ascendante
-            print("erreur lecture fichier utf8 %s : %s" % (fichier,str(e)))
+            print(_("erreur lecture fichier utf8 %s : %s") % (fichier,str(e)))
             pass     
     with open(fichier,encoding="latin-1") as f:
         try:
             contenu = f.read()
             return contenu
         except Exception as e:                     # pour compatibilité ascendante
-            print("erreur lecture fichier latin 1 %s : %s" % (fichier,str(e)))
+            print(_("erreur lecture fichier latin 1 %s : %s") % (fichier,str(e)))
             pass          
 
 # lire les métadonnées de l'orthomosaique tawny, le référentiel est dans CRSOrthomosaique
@@ -22118,10 +22622,10 @@ def distancePhoto1Photo2(p1,p2):
 def isValid(email):
     regex = re.compile(r'([A-Za-z0-9]+[.-_])*[A-Za-z0-9]+@[A-Za-z0-9-]+(\.[A-Z|a-z]{2,})+')
     if re.fullmatch(regex, email):
-      print("Valid email : ",email)
+      print(_("email valide : "),email)
       return True
     else:
-      print("Invalid email : ",email)
+      print(_("email invalide : "),email)
       return False
 
 def chercheDistance(self):  # parfois la variable self.unitedistance disparait mystérieusement, on la cherche
@@ -22160,7 +22664,7 @@ def nbTachesMm3d():     # nombre de processus mm3d en mémoire : pour avertir l'
         nbMm3d=len(lignes)       
         return nbMm3d
     except Exception as e:
-        print("erreur nbTachesMm3d %s" % e)
+        print(_("erreur nbTachesMm3d %s") % e)
         return 0
 
 def memoMm3d(commande,pid=""):   # pour test uniquement : mémorise le nombre de processus mm3d après chaque lancement de commande
@@ -22185,7 +22689,19 @@ def memoMm3d(commande,pid=""):   # pour test uniquement : mémorise le nombre de
         with open(interface.fichierSuiviId,"a") as f:
            f.write(ecrire)       
     except Exception as e:
-         print("erreur memoMm3d : ",str(e))
+         print(_("erreur memoMm3d : "),str(e))
+
+ ########### teste la connexion internet
+
+def check_internet():
+    try:
+        # Essayer d'ouvrir une connexion à un site web
+        urllib.request.urlopen('http://www.google.com', timeout=5)
+        return True
+    except urllib.error.URLError:
+        return False
+    except Exception as e:
+        return False        
 
  ########### extrait la liste des noms sans chemins du dictionnaire renvoyé par CalibrationGPS
         
@@ -22252,6 +22768,10 @@ if __name__ == "__main__":
         # création de l'interface : menu, widgets...        
         interface = Interface(fenetre)
         # Zone de test éventuel (semble incompatible avec recherche CUDA):
+
+        #SelectionCarreauPly("Modele3D_V1.ply",100,100,5,nouveauNom="testCarreau.ply")
+        #carroyageNuageDense("Modele3D_V1.ply",3)
+        
         time.sleep(2)
 ##        interface.pointDeCalage()
         
